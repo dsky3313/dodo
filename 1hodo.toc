@@ -1,0 +1,36 @@
+## Interface: 110000
+## Title: |cffeda55f1|r |cffffffffhodo|r
+## Version: 11.0.1
+## Author: hodo
+## Notes: hodo QoL
+## IconTexture: Interface\ICONS\Trade_engineering
+## SavedVariables: hodoDB
+## RequiredDeps: Details
+
+# 2020.11.23 제작
+
+#UI/Table.lua
+UI/Checkbox.lua
+UI/CheckboxDropdown.lua
+UI/CheckboxSlider.lua
+UI/DropDown.lua
+UI/Slider.lua
+
+AuctionFilter.lua
+Camera.lua
+ChatBubble.lua
+DeleteNow.lua
+FrameScale.lua
+InsDifficulty.lua
+
+
+1Option.lua
+
+
+#MyKey.lua
+#NewLFG.lua
+#PartyClass.lua
+#KeyRoll.lua
+#SkyRiding.lua
+Slash.lua
+#Teleport.lua
