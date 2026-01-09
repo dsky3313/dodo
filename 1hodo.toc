@@ -22,15 +22,15 @@ ChatBubble.lua
 DeleteNow.lua
 FrameScale.lua
 InsDifficulty.lua
+NewLFG.lua
 
 
+Slash.lua
 1Option.lua
 
 
 #MyKey.lua
-#NewLFG.lua
 #PartyClass.lua
 #KeyRoll.lua
 #SkyRiding.lua
-Slash.lua
 #Teleport.lua

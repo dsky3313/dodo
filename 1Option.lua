@@ -41,38 +41,36 @@ function hodoCreateOptions()
     DropDown(OptionCategory, "CB_FontPath", "말풍선 글꼴", "원하는 폰트를 선택하세요.", FontOption, FontOption[1].value)
     Slider(OptionCategory, "CB_FontSize", "글꼴 크기", "설명", 8, 14, 1, 10, "Integer")
 
-    -- 인스턴스 난이도
-    local InsDifficultyHeader = CreateSettingsListSectionHeaderInitializer("인스턴스 난이도")
-    hodoOptionLayout:AddInitializer(InsDifficultyHeader)
-    CheckBoxDropDown(OptionCategory, "useInsDifficultyDungeon", "InsDifficultyDungeon", "던전 난이도", "파티장일 시, 해당 난이도로 자동 변경합니다.", difficultyTable.dungeon, true, "23")
-    CheckBoxDropDown(OptionCategory, "useInsDifficultyRaid", "InsDifficultyRaid", "공격대 난이도", "파티장이 되면 공격대 난이도를 자동으로 변경합니다.", difficultyTable.raid, true, "16")
-    CheckBoxDropDown(OptionCategory, "useInsDifficultyLegacy", "InsDifficultyLegacy", "낭만 공격대 규모", "공격대 인원 및 이전 확장팩 난이도를 설정합니다.", difficultyTable.legacy, true, "4")
-
     -- 지금삭제
     local DeleteNowHeader = CreateSettingsListSectionHeaderInitializer("지금삭제")
     hodoOptionLayout:AddInitializer(DeleteNowHeader)
     local parentSetting, parentInit = Checkbox(OptionCategory, "DeleteNow", "삭제 간소화", "아이템 삭제 과정을 간소화합니다.", true)
     local childSetting, childInit = Checkbox(OptionCategory, "DeleteNowEditbox", "'지금삭제' 자동 기입 모드", "문구를 자동으로 입력합니다.", false)
-        if parentInit and childInit then
-            local function IsModifiable()
-                return parentSetting:GetValue(); -- 부모가 체크되어 있으면 true 반환
-            end
-            childInit:SetParentInitializer(parentInit, IsModifiable)
+    if parentInit and childInit then
+        local function IsModifiable()
+            return parentSetting:GetValue(); -- 부모가 체크되어 있으면 true 반환
         end
+        childInit:SetParentInitializer(parentInit, IsModifiable)
+    end
 
     -- 파티 편의기능
     local PartyQoLHeader = CreateSettingsListSectionHeaderInitializer("파티 편의기능")
     hodoOptionLayout:AddInitializer(PartyQoLHeader)
+    Checkbox(OptionCategory, "usePartyClass", "파티 클래스 현황 표시", "유틸리티 보유 현황을 PVE 프레임 옆에 표시합니다.", true)
+    CheckBoxDropDown(OptionCategory, "useInsDifficultyDungeon", "InsDifficultyDungeon", "던전 난이도", "파티장일 시, 해당 난이도로 자동 변경합니다.", difficultyTable.dungeon, true, difficultyTable.dungeon[3].value)
+    CheckBoxDropDown(OptionCategory, "useInsDifficultyRaid", "InsDifficultyRaid", "공격대 난이도", "파티장이 되면 공격대 난이도를 자동으로 변경합니다.", difficultyTable.raid, true, difficultyTable.raid[3].value)
+    CheckBoxDropDown(OptionCategory, "useInsDifficultyLegacy", "InsDifficultyLegacy", "낭만 공격대 규모", "공격대 인원 및 이전 확장팩 난이도를 설정합니다.", difficultyTable.legacy, true, difficultyTable.legacy[2].value)
+
     Checkbox(OptionCategory, "useMyKey", "내돌", "파티 제목란에 돌을 보여줍니다.", true)
     local parentSetting, parentInit = CheckBoxDropDown(OptionCategory, "useNewLFG", "NewLFG_AlertSoundTableID", "파티 신청 알림", "신규 파티 신청자가 있을 때,\n알림 메시지와 선택한 소리를 재생합니다.", NewLFG_AlertSoundTable, true, "5274")
     local childSetting, childInit = Checkbox(OptionCategory, "NewLFG_LeaderOnly", "파티장 일때 활성화", "본인이 파티장일 시 기능 활성화.", true)
-        if parentInit and childInit then
-            local function IsModifiable()
-                return parentSetting:GetValue();
-            end
-            childInit:SetParentInitializer(parentInit, IsModifiable)
+    if parentInit and childInit then
+        local function IsModifiable()
+            return parentSetting:GetValue();
         end
-    Checkbox(OptionCategory, "usePartyClass", "파티 클래스 현황 표시", "유틸리티 보유 현황을 PVE 프레임 옆에 표시합니다.", true)
+        childInit:SetParentInitializer(parentInit, IsModifiable)
+    end
+
 
     -- 카메라
     local CameraTiltHeader = CreateSettingsListSectionHeaderInitializer("카메라 ")
