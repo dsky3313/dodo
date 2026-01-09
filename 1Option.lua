@@ -12,20 +12,20 @@ function hodoCreateOptions()
         Settings.RegisterAddOnCategory(OptionCategory)
         hodoOptionCategoryRegistered = true
     end
-    
+
     if not hodoOptionLayout and OptionCategory then
         hodoOptionLayout = SettingsPanel:GetLayout(OptionCategory)
     end
-    
+
     if not hodoOptionLayout then
         return
     end
-    
+
     if hodoOptionsCreated then
         return OptionCategory
     end
-    
-    
+
+
     ------------------------------
     -- 설정값
     ------------------------------
@@ -44,9 +44,9 @@ function hodoCreateOptions()
     -- 인스턴스 난이도
     local InsDifficultyHeader = CreateSettingsListSectionHeaderInitializer("인스턴스 난이도")
     hodoOptionLayout:AddInitializer(InsDifficultyHeader)
-    CheckBoxDropDown(OptionCategory, "useInsDifficultyDungeon", "InsDifficultyDungeon", "던전 난이도", "파티장일 시, 해당 난이도로 자동 변경합니다.", difficultyTable.dungeon[3].Value, true, "23")
-    CheckBoxDropDown(OptionCategory, "useInsDifficultyRaid", "InsDifficultyRaid", "공격대 난이도", "파티장이 되면 공격대 난이도를 자동으로 변경합니다.", difficultyTable.raid[3].Value, true, "16")
-    CheckBoxDropDown(OptionCategory, "useInsDifficultyLegacy", "InsDifficultyLegacy", "낭만 공격대 규모", "공격대 인원 및 이전 확장팩 난이도를 설정합니다.", difficultyTable.lagacy[2].Value, true, "4")
+    CheckBoxDropDown(OptionCategory, "useInsDifficultyDungeon", "InsDifficultyDungeon", "던전 난이도", "파티장일 시, 해당 난이도로 자동 변경합니다.", difficultyTable.dungeon, true, "23")
+    CheckBoxDropDown(OptionCategory, "useInsDifficultyRaid", "InsDifficultyRaid", "공격대 난이도", "파티장이 되면 공격대 난이도를 자동으로 변경합니다.", difficultyTable.raid, true, "16")
+    CheckBoxDropDown(OptionCategory, "useInsDifficultyLegacy", "InsDifficultyLegacy", "낭만 공격대 규모", "공격대 인원 및 이전 확장팩 난이도를 설정합니다.", difficultyTable.legacy, true, "4")
 
     -- 지금삭제
     local DeleteNowHeader = CreateSettingsListSectionHeaderInitializer("지금삭제")
