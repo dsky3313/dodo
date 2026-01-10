@@ -3,70 +3,86 @@
 ------------------------------
 local addonName, ns = ...
 
+------------------------------
+-- 디스플레이
+------------------------------
 -- 아이템 링크
 local DeleteItemLink = StaticPopup1:CreateFontString(nil, "OVERLAY", "GameFontNormalMed1")
 DeleteItemLink:SetPoint("CENTER", StaticPopup1, "CENTER", 0, 10)
-
--- 자동기입
-local function getDeleteText()
-    local rawText = gsub(DELETE_GOOD_ITEM, "[\r\n]", "")
-    local _, DeleteNowText = strsplit('"', rawText)
-    return DeleteNowText or "삭제"
-end
+DeleteItemLink:Hide()
 
 -- 안내 문구 제거
-local TypeDeleteLine = gsub(DELETE_GOOD_ITEM, "[\r\n]", "@")
-local _, DeleteNowLocalizeDeleteText = strsplit("@", TypeDeleteLine, 2)
-DeleteNowLocalizeDeleteText = gsub(DeleteNowLocalizeDeleteText or "", "%%s", "")
-DeleteNowLocalizeDeleteText = gsub(DeleteNowLocalizeDeleteText, "@", "")
+local localizedDeleteMsg = ""
+do
+    local _, secondPart = strsplit("@", gsub(DELETE_GOOD_ITEM, "[\r\n]", "@"), 2)
+    localizedDeleteMsg = gsub(secondPart or "", "%%s", "")
+    localizedDeleteMsg = gsub(localizedDeleteMsg, "@", "")
+end
 
+-- 자동 기입용 단어
+local cachedDeleteWord = ""
+do
+    local rawText = gsub(DELETE_GOOD_ITEM, "[\r\n]", "")
+    cachedDeleteWord = select(2, strsplit('"', rawText)) or "삭제"
+end
 
 ------------------------------
 -- 동작
 ------------------------------
-function ns.DeleteNow()
+local function DeleteNow()
+    local _, instanceType = GetInstanceInfo()
+    if instanceType ~= "none" then return end
+
     local db = hodoDB or {}
     if not StaticPopup1 or not StaticPopup1EditBox then return end
 
     local _, _, itemLink = GetCursorInfo()
     if not itemLink then return end
+
     SetCVar("alwaysCompareItems", 0)
+    DeleteItemLink:SetText("")
 
-    if db.DeleteNowEditbox then -- 자동입력
-        StaticPopup1EditBox:Show()
-        StaticPopup1EditBox:SetText(getDeleteText())
-        StaticPopup1EditBox:SetFocus()
+    if db.deleteNowHideEditbox then
+        StaticPopup1EditBox:Hide()
         StaticPopup1Button1:Enable()
-    else
-        StaticPopup1EditBox:Hide() -- Editbox 숨김
-        StaticPopup1Button1:Enable()
-
-        DeleteItemLink:SetText(itemLink)
+        DeleteItemLink:SetText(itemLink) -- 입력창 숨김 + 아이템링크 표시
         DeleteItemLink:Show()
 
         local currentText = StaticPopup1Text:GetText() or ""
-        if DeleteNowLocalizeDeleteText ~= "" then
-            currentText = gsub(currentText, DeleteNowLocalizeDeleteText, "")
+        if localizedDeleteMsg ~= "" then
+            StaticPopup1Text:SetText((gsub(currentText, localizedDeleteMsg, "")))
         end
-    StaticPopup1Text:SetText(currentText)
+    elseif db.deleteNowAutoFill then
+        StaticPopup1EditBox:Show()
+        StaticPopup1EditBox:SetText(cachedDeleteWord) -- 자동 입력
+        StaticPopup1EditBox:SetFocus()
+        StaticPopup1Button1:Enable()
+    else
+        return
     end
 
-    if itemLink then
-        GameTooltip:SetOwner(StaticPopup1, "ANCHOR_NONE")
-        GameTooltip:SetPoint("TOP", StaticPopup1, "BOTTOM", 0, -5)
-        GameTooltip:SetHyperlink(itemLink)
-        GameTooltip:Show()
-    end
+    GameTooltip:SetOwner(StaticPopup1, "ANCHOR_NONE")
+    GameTooltip:SetPoint("TOP", StaticPopup1, "BOTTOM", 0, -5)
+    GameTooltip:SetHyperlink(itemLink)
+    GameTooltip:Show()
 end
 
+ns.DeleteNow = DeleteNow
 
 ------------------------------
 -- 이벤트
 ------------------------------
-local initDeleteNow = CreateFrame("Frame")
-initDeleteNow:RegisterEvent("DELETE_ITEM_CONFIRM")
-initDeleteNow:SetScript("OnEvent", function()
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
     hodoDB = hodoDB or {}
+    if hodoCreateOptions then hodoCreateOptions() end
+    self:UnregisterAllEvents()
+end)
+
+local eventDeleteNow = CreateFrame("Frame")
+eventDeleteNow:RegisterEvent("DELETE_ITEM_CONFIRM")
+eventDeleteNow:SetScript("OnEvent", function()
     C_Timer.After(0.1, DeleteNow)
 end)
 

@@ -2,7 +2,8 @@
 -- 테이블
 ------------------------------
 local addonName, ns = ...
-FontOption = {
+
+fontOption = {
     { label = "2002", value = "Fonts\\2002.TTF" },
     { label = "2002b", value = "Fonts\\2002b.TTF" },
     { label = "ARIALN", value = "Fonts\\ARIALN.TTF" },
@@ -14,11 +15,11 @@ FontOption = {
 ------------------------------
 -- 동작
 ------------------------------
-function ns.ChatBubble()
+local function ChatBubble()
     local db = hodoDB or {}
 
-    local fontPath = db.CB_FontPath or "Fonts\\2002.TTF"
-    local fontSize = db.CB_FontSize or 10
+    local fontPath = db.chatbubbleFontPath or "Fonts\\2002.TTF"
+    local fontSize = db.chatbubbleFontSize or 10
     local fontFlag = "OUTLINE"
 
     if ChatBubbleFont then
@@ -26,6 +27,7 @@ function ns.ChatBubble()
     end
 end
 
+ns.ChatBubble = ChatBubble
 
 ------------------------------
 -- 이벤트
@@ -34,7 +36,7 @@ local initChatBubble = CreateFrame("Frame")
 initChatBubble:RegisterEvent("PLAYER_LOGIN")
 initChatBubble:SetScript("OnEvent", function(self, event)
     hodoDB = hodoDB or {}
-    if ChatBubble then ChatBubble() end
     if hodoCreateOptions then hodoCreateOptions() end
+    if ChatBubble then ChatBubble() end
     self:UnregisterAllEvents()
 end)
