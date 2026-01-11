@@ -21,8 +21,9 @@ function hodoCreateOptions()
     -- 설정값 등록
     --[[
     Checkbox(OptionCategory, "DB저장명", "이름", "툴팁", true)
-    Slider(OptionCategory, DB저장명, 이름, 툴팁, 최소값, 최대값, 틱, 기본값, 포매터)
-    DropDown(OptionCategory, "DB저장명", "이름", "툴팁", 테이블명, 테이블명[1].value)
+    Slider(OptionCategory, "DB저장명", "이름", "툴팁", 최소값, 최대값, 틱, 기본값, 포매터)
+    DropDown(OptionCategory, "DB저장명", "이름", "툴팁", 테이블, 테이블[1].value)
+    CheckBoxDropDown(OptionCategory, "체크박스DB저장명", "드롭다운DB저장명", "이름", "툴팁", 테이블, true, 테이블[1].value)
     ]]
 
     -- 글꼴
@@ -37,6 +38,11 @@ function hodoCreateOptions()
     Slider(OptionCategory, "cameraBase", "기본 시점", "기본시점 각도를 조절합니다.", 0.3, 1.0, 0.05, 0.55, "Decimal2")
     Slider(OptionCategory, "cameraDown", "탑다운 뷰", "수직으로 내렸을 때 각도를 조절합니다.", 0.3, 1.0, 0.05, 0.55, "Decimal2")
     Slider(OptionCategory, "cameraFlying", "하늘비행 탈것 시점", "하늘비행 탈것 탑승 시 각도를 조절합니다.", 0.3, 1.0, 0.05, 0.55, "Decimal2")
+
+    -- 파티
+    local CameraFrame = CreateSettingsListSectionHeaderInitializer("파티")
+    hodoOptionLayout:AddInitializer(CameraFrame)
+    CheckBoxDropDown(OptionCategory, "useNewLFG", "soundID", "파티신청 알림", "새로운 파티신청 시 알림", NewLFG_AlertSoundTable, true, NewLFG_AlertSoundTable[2].value)
 
     -- 편의기능
     local QoLHeader = CreateSettingsListSectionHeaderInitializer("편의기능")

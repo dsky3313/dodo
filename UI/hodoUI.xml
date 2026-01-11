@@ -3,10 +3,10 @@
 ..\FrameXML\UI.xsd">
     <!-- Option -->
     <CheckButton name="hodoCheckboxTemplate" inherits="SettingsCheckboxControlTemplate" virtual="true"/>
-    <Slider name="hodoSliderTemplate" inherits="SettingsSliderControlTemplate" virtual="true"/>
     <Frame name="hodoDropdownTemplate" inherits="SettingsDropDownControlTemplate" virtual="true"/>
-    <Frame name="hodoCheckboxSliderTemplate" inherits="SettingsCheckBoxSliderControlTemplate" virtual="true"/>
+    <Slider name="hodoSliderTemplate" inherits="SettingsSliderControlTemplate" virtual="true"/>
     <Frame name="hodoCheckboxDropdownTemplate" inherits="SettingsCheckBoxDropDownControlTemplate" virtual="true"/>
+    <Frame name="hodoCheckboxSliderTemplate" inherits="SettingsCheckBoxSliderControlTemplate" virtual="true"/>
 
     <!-- Frame -->
     <Frame name="hodoCopyKeyTemplate" virtual="true" inherits="GameDialogTemplate" toplevel="true" movable="true" enableMouse="true" frameStrata="DIALOG" hidden="true">

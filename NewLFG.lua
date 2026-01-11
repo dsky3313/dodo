@@ -44,7 +44,7 @@ function NewLFG()
         end
     end
 
-    local soundID = (hodoDB and hodoDB.NewLFG_AlertSoundTableID) or "5274"
+    local soundID = (hodoDB and hodoDB.soundID) or "5274"
     PlaySound(soundID, "Master")
 
     NewLFG_Alert:Show()

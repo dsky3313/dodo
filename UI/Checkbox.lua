@@ -1,5 +1,11 @@
+------------------------------
+-- 테이블
+------------------------------
 local addonName, ns = ...
 
+------------------------------
+-- 체크박스
+------------------------------
 function Checkbox(category, varName, label, tooltip, default)
     local varID = "hodo_" .. varName
 

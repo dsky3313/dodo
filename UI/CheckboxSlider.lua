@@ -1,5 +1,5 @@
 ------------------------------
--- 테이블 및 네임스페이스
+-- 테이블
 ------------------------------
 local addonName, ns = ...
 
@@ -11,13 +11,13 @@ local Formatters = {
 }
 
 ------------------------------
--- [메인] 체크박스 + 슬라이더 복합 함수
+-- 체크박스 슬라이더
 ------------------------------
 
 function CheckboxSlider(category, varNameCB, varNameSlider, label, tooltip, min, max, step, defaultCB, defaultSlider, formatType)
     local varID_CB = "hodo_" .. varNameCB
     local varID_Slider = "hodo_" .. varNameSlider
-    
+
     local cbSetting = Settings.GetSetting(varID_CB) or Settings.RegisterAddOnSetting(category, varID_CB, varNameCB, hodoDB, Settings.VarType.Boolean, label, defaultCB or false)
     local sliderSetting = Settings.GetSetting(varID_Slider) or Settings.RegisterAddOnSetting(category, varID_Slider, varNameSlider, hodoDB, Settings.VarType.Number, label, tonumber(defaultSlider) or min)
 

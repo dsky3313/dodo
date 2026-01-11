@@ -8,6 +8,7 @@
 
 # 2020.11.23 제작
 
+#UI/Table.lua
 UI/hodoUI.xml
 UI/Checkbox.lua
 UI/DropDown.lua
@@ -20,14 +21,12 @@ CameraTilt.lua
 ChatBubble.lua
 DeleteNow.lua
 FrameScale.lua
-#NewLFG.lua
+NewLFG.lua
 Slash.lua
+
 Option.lua
 
 
-#UI/Table.lua
-
-#FrameScale.lua
 #InsDifficulty.lua
 #MyKey.lua
 #PartyClass.lua
