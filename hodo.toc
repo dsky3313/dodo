@@ -12,34 +12,24 @@ UI/hodoUI.xml
 UI/Checkbox.lua
 UI/DropDown.lua
 UI/Slider.lua
+UI/CheckboxDropdown.lua
+UI/CheckboxSlider.lua
 
 AuctionFilter.lua
 CameraTilt.lua
 ChatBubble.lua
 DeleteNow.lua
 FrameScale.lua
+#NewLFG.lua
 Slash.lua
 Option.lua
 
 
-
-
-
-
-#UI/CheckboxDropdown.lua
-#UI/CheckboxSlider.lua
-
-
 #UI/Table.lua
-
-
-
-#
 
 #FrameScale.lua
 #InsDifficulty.lua
 #MyKey.lua
-#NewLFG.lua
 #PartyClass.lua
 #KeyRoll.lua
 #SkyRiding.lua

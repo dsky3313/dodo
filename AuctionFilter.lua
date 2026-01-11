@@ -9,14 +9,14 @@ local AHF = Enum.AuctionHouseFilter.CurrentExpansionOnly
 -- 동작
 ------------------------------
 -- 인스?
-local function IsIns()
+local function isIns()
     local _, instanceType, difficultyID = GetInstanceInfo()
     return (difficultyID == 8 or instanceType == "raid")
 end
 
 -- 경매장 필터
 local function checkAuctionFilter()
-    if IsIns() then return end
+    if isIns() then return end
 
     local isChecked = (hodoDB.useAuctionFilter ~= false) -- 기본값 true
     local AuctionFrame = AuctionHouseFrame and AuctionHouseFrame.SearchBar
@@ -28,7 +28,7 @@ end
 
 -- 주문제작 필터
 local function checkCraftFilter()
-    if IsIns() then return end
+    if isIns() then return end
 
     local isChecked = (hodoDB.useCraftFilter ~= false) -- 기본값 true
     local craftFrame = ProfessionsCustomerOrdersFrame
@@ -55,7 +55,7 @@ initFilterFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 initFilterFrame:SetScript("OnEvent", function(self, event, arg1)
       if event == "PLAYER_ENTERING_WORLD" then
         C_Timer.After(0.1, function()
-            if IsIns() then
+            if isIns() then
                 initFilterFrame:UnregisterEvent("AUCTION_HOUSE_SHOW")
                 initFilterFrame:UnregisterEvent("CRAFTINGORDERS_SHOW_CUSTOMER")
             else

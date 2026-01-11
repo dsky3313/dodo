@@ -29,17 +29,21 @@ end
 ------------------------------
 -- 동작
 ------------------------------
+local function isIns()
+    local _, instanceType, difficultyID = GetInstanceInfo()
+    return (difficultyID == 8 or instanceType == "raid")
+end
+
 local function DeleteNow()
-    local _, instanceType = GetInstanceInfo()
-    if instanceType ~= "none" then return end
+    if isIns() then return end
 
     local db = hodoDB or {}
-    if not StaticPopup1 or not StaticPopup1EditBox then return end
-
     local _, _, itemLink = GetCursorInfo()
-    if not itemLink then return end
 
+    if not StaticPopup1 or not StaticPopup1EditBox then return end
+    if not itemLink then return end
     SetCVar("alwaysCompareItems", 0)
+    DeleteItemLink:Hide()
     DeleteItemLink:SetText("")
 
     if db.deleteNowHideEditbox then
@@ -72,25 +76,30 @@ ns.DeleteNow = DeleteNow
 ------------------------------
 -- 이벤트
 ------------------------------
-local initFrame = CreateFrame("Frame")
-initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:SetScript("OnEvent", function(self)
-    hodoDB = hodoDB or {}
-    if hodoCreateOptions then hodoCreateOptions() end
-    self:UnregisterAllEvents()
-end)
-
-local eventDeleteNow = CreateFrame("Frame")
-eventDeleteNow:RegisterEvent("DELETE_ITEM_CONFIRM")
-eventDeleteNow:SetScript("OnEvent", function()
-    C_Timer.After(0.1, DeleteNow)
-end)
-
-hooksecurefunc("StaticPopup_OnHide", function()
-    if GameTooltip then GameTooltip:Hide() end
-    if DeleteItemLink then
-        DeleteItemLink:SetText("")
-        DeleteItemLink:Hide()
+local initDeleteNow = CreateFrame("Frame")
+initDeleteNow:RegisterEvent("PLAYER_ENTERING_WORLD")
+initDeleteNow:RegisterEvent("DELETE_ITEM_CONFIRM")
+initDeleteNow:SetScript("OnEvent", function(self, event)
+    if event == "PLAYER_ENTERING_WORLD" then
+        C_Timer.After(0.1, function ()
+            if isIns() then
+                initDeleteNow:UnregisterEvent("DELETE_ITEM_CONFIRM")
+            else
+                initDeleteNow:RegisterEvent("DELETE_ITEM_CONFIRM")
+            end
+        end)
+    elseif event == "DELETE_ITEM_CONFIRM" then
+        C_Timer.After(0.1, DeleteNow)
     end
-    SetCVar("alwaysCompareItems", 1)
+end)
+
+hooksecurefunc("StaticPopup_OnHide", function(self)
+    if self == StaticPopup1 then
+        if GameTooltip then GameTooltip:Hide() end
+        if DeleteItemLink then
+            DeleteItemLink:SetText("")
+            DeleteItemLink:Hide()
+        end
+        SetCVar("alwaysCompareItems", 1)
+    end
 end)
