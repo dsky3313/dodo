@@ -35,7 +35,6 @@ ns.ChatBubble = ChatBubble
 local initChatBubble = CreateFrame("Frame")
 initChatBubble:RegisterEvent("PLAYER_LOGIN")
 initChatBubble:SetScript("OnEvent", function(self, event)
-    hodoDB = hodoDB or {}
     if hodoCreateOptions then hodoCreateOptions() end
     if ChatBubble then ChatBubble() end
     self:UnregisterAllEvents()

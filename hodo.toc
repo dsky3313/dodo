@@ -8,7 +8,6 @@
 
 # 2020.11.23 제작
 
-#UI/Table.lua
 UI/hodoUI.xml
 UI/Checkbox.lua
 UI/DropDown.lua
@@ -23,6 +22,8 @@ DeleteNow.lua
 FrameScale.lua
 MyKey.lua
 NewLFG.lua
+PartyClass.lua
+
 Slash.lua
 
 Option.lua
@@ -30,7 +31,6 @@ Option.lua
 
 #InsDifficulty.lua
 #
-#PartyClass.lua
 #KeyRoll.lua
 #SkyRiding.lua
 #Teleport.lua

@@ -31,7 +31,7 @@ end
 ------------------------------
 local function isIns()
     local _, instanceType, difficultyID = GetInstanceInfo()
-    return (difficultyID == 8 or instanceType == "raid")
+    return (difficultyID == 8 or instanceType == "raid") -- 1 일반 / 8 쐐기
 end
 
 local function DeleteNow()

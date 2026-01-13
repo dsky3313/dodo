@@ -2,7 +2,6 @@
 -- 테이블
 ------------------------------
 local addonName, ns = ...
-hodoDB = hodoDB or {}
 
 local openRaidLib = LibStub:GetLibrary("LibOpenRaid-1.0", true)
 

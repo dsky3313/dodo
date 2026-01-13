@@ -12,6 +12,43 @@
     <Frame name="hodoGameMenuFrame" inherits="MainMenuFrameTemplate" virtual="true"/> <!-- ESC 게임메뉴  -->
     <Frame name="hodoPopupTemplate" inherits="StaticPopupBaseTemplate" virtual="true"/> <!-- 아이템삭제  -->
     <Frame name="hodoDialogHeaderTemplate" inherits="DialogHeaderTemplate" virtual="true"/> <!-- 게임메뉴 헤더  -->
+    
+    <Frame name="PartyClassFrame" inherits="DefaultPanelBaseTemplate" parent="UIParent" frameStrata="LOW" hidden="true">
+        <Size x="542" y="212"/>
+        <Anchors>
+            <Anchor point="TOPLEFT" relativeTo="PVEFrame" relativePoint="BOTTOMLEFT" x="20" y="2"/>
+        </Anchors>
+
+        <Layers>
+            <Layer level="BACKGROUND">
+                <Texture parentKey="Background" atlas="UI-DialogBox-Background-Dark" alpha="0.7">
+                    <Anchors>
+                        <Anchor point="TOPLEFT" x="6" y="-2"/>
+                        <Anchor point="BOTTOMRIGHT" x="-2" y="2"/>
+                    </Anchors>
+                </Texture>
+            </Layer>
+        </Layers>
+
+        <Frames>
+            <Frame parentKey="TitleContainer" frameLevel="510">
+                <Size x="0" y="20"/>
+                <Anchors>
+                    <Anchor point="TOPLEFT" x="30" y="-1"/>
+                    <Anchor point="TOPRIGHT" x="-24" y="-1"/>
+                </Anchors>
+                <Layers>
+                    <Layer level="OVERLAY">
+                        <FontString parentKey="TitleText" inherits="GameFontNormal" text="파티 유틸리티 현황" justifyH="RIGHT">
+                            <Anchors>
+                                <Anchor point="TOPRIGHT" x="-15" y="-5"/>
+                            </Anchors>
+                        </FontString>
+                    </Layer>
+                </Layers>
+            </Frame>
+        </Frames>
+</Frame>
 
     <!-- Font  -->
     <Font name="hodoFontNormal" inherits="UserScaledFontGameNormal" virtual="true"/> <!-- 12, yellow  -->

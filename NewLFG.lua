@@ -2,7 +2,6 @@
 -- 테이블
 ------------------------------
 local addonName, ns = ...
-hodoDB = hodoDB or {}
 
 local function isIns() -- 인스확인
     local _, instanceType, difficultyID = GetInstanceInfo()
