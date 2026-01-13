@@ -37,14 +37,14 @@ difficultyFrame:SetSize(230, 124)
 difficultyFrame:SetPoint("TOPLEFT", 5, -5)
 difficultyFrame:EnableMouse(true)
 
-difficultyFrame.bg = CreateFrame("Frame", nil, difficultyFrame, "FlatPanelBackgroundTemplate")
-difficultyFrame.bg:SetFrameLevel(difficultyFrame:GetFrameLevel() - 1)
-difficultyFrame.bg:SetPoint("TOPLEFT", 7, -18)
-difficultyFrame.bg:SetPoint("BOTTOMRIGHT", -3, 3)
-
 difficultyFrame.NineSlice.Text = difficultyFrame.NineSlice:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 difficultyFrame.NineSlice.Text:SetPoint("TOP", 0, -5)
 difficultyFrame.NineSlice.Text:SetText("인스턴스 난이도 설정")
+
+difficultyFrame.Background = CreateFrame("Frame", nil, difficultyFrame, "FlatPanelBackgroundTemplate")
+difficultyFrame.Background:SetFrameLevel(difficultyFrame:GetFrameLevel() - 1)
+difficultyFrame.Background:SetPoint("TOPLEFT", 7, -18)
+difficultyFrame.Background:SetPoint("BOTTOMRIGHT", -3, 3)
 
 local function CreateCategoryRow(parent, yOffset, titleText)
     local row = CreateFrame("Frame", nil, parent)
