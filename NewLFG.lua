@@ -19,10 +19,11 @@ NewLFG_AlertSoundTable = {
     { label = "RaidWarning", value = "8959" },
 }
 
-local lastApps = 0
-local armedAt = 0
-local lastTrig = 0
 local alertTimer
+local apps = C_LFGList.GetApplicants()
+local armedAt = 0
+local lastApps = 0
+local lastTrig = 0
 
 ------------------------------
 -- 디스플레이
@@ -40,12 +41,12 @@ NewLFG_Alert.Text:SetText("|cffffff00[ 신규 신청 ]|r\n\n파티창을 확인�
 -- 동작 (행동 대장)
 ------------------------------
 function NewLFG()
-    if not InCombatLockdown() then
-        if GroupFinderFrame and not GroupFinderFrame:IsVisible() then
-            PVEFrame_ShowFrame("GroupFinderFrame")
-            if GroupFinderFrameGroupButton3 then
-                GroupFinderFrameGroupButton3:Click()
-            end
+    if isIns() or InCombatLockdown() then return end
+
+    if GroupFinderFrame and not GroupFinderFrame:IsVisible() then
+        PVEFrame_ShowFrame("GroupFinderFrame")
+        if GroupFinderFrameGroupButton3 then
+            GroupFinderFrameGroupButton3:Click()
         end
     end
 
@@ -53,73 +54,68 @@ function NewLFG()
     PlaySound(soundID, "Master")
 
     NewLFG_Alert:Show()
-
-    if alertTimer then alertTimer:Cancel() end -- 타이머 중첩 방지 (기존 예약 취소 후 재예약)
+    if alertTimer then alertTimer:Cancel() end -- 타이머 중첩 방지
     alertTimer = C_Timer.After(7, function() NewLFG_Alert:Hide() end)
 end
 
-ns.NewLFG = NewLFG
-
 ------------------------------
--- 이벤트 (감시관)
+-- 이벤트
 ------------------------------
-local function OnLFGUpdate(self, event)
-    if isIns() then
-        self:UnregisterAllEvents()
-        self:RegisterEvent("PLAYER_ENTERING_WORLD") -- 밖으로 나갈 때 감지용
+local initNewLFG = CreateFrame("Frame")
+initNewLFG:RegisterEvent("PLAYER_ENTERING_WORLD")
+initNewLFG:RegisterEvent("LFG_LIST_APPLICANT_LIST_UPDATED")
+initNewLFG:RegisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
+
+initNewLFG:SetScript("OnEvent", function (self, event, arg1)
+    if event == "PLAYER_ENTERING_WORLD" then
+        C_Timer.After(0.5, function()
+            if isIns() then
+                self:UnregisterEvent("LFG_LIST_APPLICANT_LIST_UPDATED")
+                self:UnregisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
+                lastApps = 0
+            else
+                self:RegisterEvent("LFG_LIST_APPLICANT_LIST_UPDATED")
+                self:RegisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
+                -- 밖으로 나왔을 때 초기 카운트 설정
+                local apps = C_LFGList.GetApplicants()
+                lastApps = (apps and #apps) or 0
+                armedAt = GetTime() + 1.5
+            end
+        end)
+        return
+    end
+
+    if isIns() then return end
+
+    local useNewLFG = (hodoDB and hodoDB.useNewLFG ~= false)
+    if not useNewLFG then return end
+
+    if hodoDB and hodoDB.NewLFG_LeaderOnly and IsInGroup() and not UnitIsGroupLeader("player") then
         lastApps = 0
         return
     end
 
-    local hodoDB = hodoDB or { useNewLFG = true }
-    if not hodoDB.useNewLFG then return end
 
-    if hodoDB.NewLFG_LeaderOnly and IsInGroup() and not UnitIsGroupLeader("player") then
-        lastApps = 0
-        return
-    end
-
-    local hasEntry = C_LFGList.HasActiveEntryInfo and C_LFGList.HasActiveEntryInfo()
-    if not hasEntry then
-        self:UnregisterEvent("LFG_LIST_APPLICANT_LIST_UPDATED")
-        lastApps = 0
-        return
-    else
-        self:RegisterEvent("LFG_LIST_APPLICANT_LIST_UPDATED")
-    end
-
-    local now = GetTime()
+    local now = GetTime() -- 신청자 체크 로직
     local apps = C_LFGList.GetApplicants()
     local count = (apps and #apps) or 0
 
-    if now < armedAt then
-        lastApps = count
-        return
-    end
-
-    if event == "LFG_LIST_ACTIVE_ENTRY_UPDATE" or event == "PLAYER_ENTERING_WORLD" then
+    if event == "LFG_LIST_ACTIVE_ENTRY_UPDATE" then -- 파티 모집을 등록 및 변경 시, 스팸 방지
         lastApps = count
         armedAt = now + 1.5
         return
     end
 
-    if count > lastApps then
-        if (now - lastTrig) > 1.0 then -- 1초 스팸 방지
-            ns.NewLFG()
-            lastTrig = now
+    if now >= armedAt then -- 신청자 업데이트 감지
+        if count > lastApps then
+            if (now - lastTrig) > 1.0 then -- 1초 내부 쿨타임
+                NewLFG() -- 알림 실행
+                lastTrig = now
+            end
         end
     end
     lastApps = count
-end
+end)
+armedAt = GetTime() + 2 -- 시작 대기 시간 설정
 
-------------------------------
--- 이벤트 등록 (수신기)
-------------------------------
-local initNewLFG = CreateFrame("Frame")
-initNewLFG:RegisterEvent("LFG_LIST_APPLICANT_LIST_UPDATED")
-initNewLFG:RegisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
-initNewLFG:RegisterEvent("PLAYER_ENTERING_WORLD")
-initNewLFG:SetScript("OnEvent", OnLFGUpdate)
-
--- 시작 대기 시간 설정
-armedAt = GetTime() + 2
+ns.NewLFG = NewLFG
