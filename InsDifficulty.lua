@@ -1,244 +1,153 @@
-------------------------------
--- 테이블
-------------------------------
 local addonName, ns = ...
 
-difficultyTable = {
+------------------------------
+-- 1. 테이블 및 데이터
+------------------------------
+-- 인스턴스 확인 (통합 로직)
+local function isIns()
+    local _, instanceType, difficultyID = GetInstanceInfo()
+    -- 1: 일반 던전, raid: 공격대, none: 필드 제외 나머지는 특수 인스턴스(수정 불가)로 취급
+    return not (difficultyID == 1 or instanceType == "raid" or instanceType == "none")
+end
+
+local difficultyTable = {
     dungeon = {{label="일반", value="1"}, {label="영웅", value="2"}, {label="신화", value="23"}},
     raid = {{label="일반", value="14"}, {label="영웅", value="15"}, {label="신화", value="16"}},
     legacy = {{label="10인", value="3"}, {label="25인", value="4"}},
 }
 
-local GetDungeonDifficultyID = GetDungeonDifficultyID
-local GetRaidDifficultyID = GetRaidDifficultyID
-local GetLegacyRaidDifficultyID = GetLegacyRaidDifficultyID
-local InCombatLockdown = InCombatLockdown
-local IsInGroup, IsInRaid, IsInInstance = IsInGroup, IsInRaid, IsInInstance
-local SetDungeonDifficultyID = SetDungeonDifficultyID
-local SetRaidDifficultyID = SetRaidDifficultyID
-local SetLegacyRaidDifficultyID = SetLegacyRaidDifficultyID
-local ResetInstances = ResetInstances
-local tonumber, unpack, pairs, ipairs = tonumber, unpack, pairs, ipairs
-local UnitIsGroupLeader = UnitIsGroupLeader
-
-local currentDiffCache = { dungeon = 23, raid = 16, legacy = 4 }
-local NORMAL_COLOR = {1, 0.82, 0}
-local SELECTED_COLOR = {1, 1, 1}
-local btn_select = "UI-Frame-DastardlyDuos-Bar-Frame-gold"
-local btn_highlight = "glues-characterSelect-nameBG"
+local NORMAL_COLOR, SELECTED_COLOR = {1, 0.82, 0}, {1, 1, 1}
+local btn_select, btn_highlight = "UI-Frame-DastardlyDuos-Bar-Frame-gold", "glues-characterSelect-nameBG"
 local buttons = { dungeon = {}, raid = {}, legacy = {} }
 
+local frame = DifficultyFrame
+local resetBtn = frame.resetBtn
+
 ------------------------------
--- 디스플레이
+-- 2. 디스플레이 (프레임 생성)
 ------------------------------
-local difficultyFrame = CreateFrame("Frame", "DifficultySelector", UIParent, "DefaultPanelBaseTemplate")
-difficultyFrame:SetSize(230, 124)
-difficultyFrame:SetPoint("TOPLEFT", 5, -5)
-difficultyFrame:EnableMouse(true)
-
-difficultyFrame.bg = CreateFrame("Frame", nil, difficultyFrame, "FlatPanelBackgroundTemplate")
-difficultyFrame.bg:SetFrameLevel(difficultyFrame:GetFrameLevel() - 1)
-difficultyFrame.bg:SetPoint("TOPLEFT", 7, -18)
-difficultyFrame.bg:SetPoint("BOTTOMRIGHT", -3, 3)
-
-difficultyFrame.NineSlice.Text = difficultyFrame.NineSlice:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-difficultyFrame.NineSlice.Text:SetPoint("TOP", 0, -5)
-difficultyFrame.NineSlice.Text:SetText("인스턴스 난이도 설정")
-
-local function CreateCategoryRow(parent, yOffset, titleText)
-    local row = CreateFrame("Frame", nil, parent)
-    row:SetSize(220, 35)
-    row:SetPoint("TOP", parent, "TOP", 0, yOffset)
-
-    row.bg = row:CreateTexture(nil, "BACKGROUND")
-    row.bg:SetAllPoints()
-    row.bg:SetAtlas("legionmission-hearts-background")
-
-    row.titleBg = row:CreateTexture(nil, "ARTWORK")
-    row.titleBg:SetSize(60, 25)
-    row.titleBg:SetPoint("LEFT", 10, 0)
-    row.titleBg:SetAtlas("UI-Character-Info-Title")
-
-    row.title = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    row.title:SetPoint("CENTER", row.titleBg, "CENTER", 0, 0)
-    row.title:SetText(titleText)
-    return row
-end
+local OnDifficultyClick 
 
 local function CreateDifficultyButton(parentRow, category, index, data)
-    local label = data.label
     local xOffsets = { ["일반"] = 0, ["영웅"] = 45, ["신화"] = 90, ["10인"] = 20, ["25인"] = 80 }
     local btn = CreateFrame("Button", nil, parentRow)
     btn:SetSize(45, 30)
-    btn:SetPoint("LEFT", parentRow, "LEFT", 70 + (xOffsets[label] or 0), 0)
-    btn:EnableMouse(true)
-    btn:RegisterForClicks("LeftButtonUp")
-    btn:SetFrameLevel(parentRow:GetFrameLevel() + 10)
+    btn:SetPoint("LEFT", parentRow, "LEFT", 70 + (xOffsets[data.label] or 0), 0)
+    
+    -- 버튼이 행(Row) 배경보다 위에 오도록 설정
+    btn:SetFrameLevel(parentRow:GetFrameLevel() + 5)
 
     btn.highlightBg = btn:CreateTexture(nil, "BACKGROUND")
-    btn.highlightBg:SetSize(45, 25)
-    btn.highlightBg:SetPoint("CENTER", btn, "CENTER", 0, 0)
-    btn.highlightBg:Hide()
+    btn.highlightBg:SetSize(45, 25); btn.highlightBg:SetPoint("CENTER"); btn.highlightBg:Hide()
 
     btn.text = btn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    btn.text:SetPoint("CENTER")
-    btn.text:SetText(label)
+    btn.text:SetPoint("CENTER"); btn.text:SetText(data.label)
 
-    btn.category = category
-    btn.value = data.value
-    btn.label = label
-
+    btn.category, btn.value, btn.label = category, data.value, data.label
     buttons[category][index] = btn
+
+    btn:SetScript("OnClick", function(self) OnDifficultyClick(self) end)
+    btn:SetScript("OnEnter", function(s) 
+        if not s.isSelected then s.highlightBg:SetAtlas(btn_highlight) s.highlightBg:Show() s.text:SetTextColor(unpack(SELECTED_COLOR)) end 
+    end)
+    btn:SetScript("OnLeave", function(s) 
+        if not s.isSelected then s.highlightBg:Hide() s.text:SetTextColor(unpack(NORMAL_COLOR)) end 
+    end)
     return btn
 end
 
-local row1 = CreateCategoryRow(difficultyFrame, -25, "던전")
-for i, data in ipairs(difficultyTable.dungeon) do CreateDifficultyButton(row1, "dungeon", i, data) end
+-- 행(Row) 생성 및 계층 지정
+local rows = {
+    dungeon = CreateFrame("Frame", nil, frame, "DifficultyRowTemplate"),
+    raid = CreateFrame("Frame", nil, frame, "DifficultyRowTemplate"),
+    legacy = CreateFrame("Frame", nil, frame, "DifficultyRowTemplate")
+}
 
-local row2 = CreateCategoryRow(difficultyFrame, -55, "공격대")
-for i, data in ipairs(difficultyTable.raid) do CreateDifficultyButton(row2, "raid", i, data) end
+-- 행이 메인 프레임 배경(bg)보다 위로 오도록 설정
+local rowLevel = frame:GetFrameLevel() + 10
+for _, row in pairs(rows) do row:SetFrameLevel(rowLevel) end
 
-local row3 = CreateCategoryRow(difficultyFrame, -85, "낭만")
-for i, data in ipairs(difficultyTable.legacy) do CreateDifficultyButton(row3, "legacy", i, data) end
+rows.dungeon:SetPoint("TOP", frame, "TOP", 0, -25); rows.dungeon.title:SetText("던전")
+rows.raid:SetPoint("TOP", frame, "TOP", 0, -55); rows.raid.title:SetText("공격대")
+rows.legacy:SetPoint("TOP", frame, "TOP", 0, -85); rows.legacy.title:SetText("낭만")
 
-local resetBtn = CreateFrame("Button", nil, difficultyFrame.NineSlice, "SquareIconButtonTemplate")
-resetBtn:SetSize(30, 30)
-resetBtn:SetPoint("TOPRIGHT", difficultyFrame, "TOPRIGHT", 4, 4)
-resetBtn.Icon:SetAtlas("UI-RefreshButton")
-resetBtn:SetFrameLevel(difficultyFrame.NineSlice:GetFrameLevel() + 10)
+-- 버튼 생성
+for cat, dataList in pairs(difficultyTable) do
+    for i, data in ipairs(dataList) do CreateDifficultyButton(rows[cat], cat, i, data) end
+end
 
 ------------------------------
--- 동작
+-- 3. 동작 (기능 로직)
 ------------------------------
-
--- 활성조건 (전투 체크 삭제)
 local function checkPermission()
-    local inInstance, instanceType = IsInInstance()
-    if inInstance and instanceType ~= "none" then return false end
+    if isIns() then return false end
     return (not IsInGroup() and not IsInRaid()) or UnitIsGroupLeader("player")
 end
 
--- UI 업데이트
 local function UpdateUIStatus(forceCategory, forceValue)
-    local inInstance, instanceType = IsInInstance()
-    
-    -- 인스턴스 체크 (Hide/Show 로직 유지)
-    if inInstance and instanceType ~= "none" then
-        if difficultyFrame:IsShown() then difficultyFrame:Hide() end
-        return
-    else
-        if not difficultyFrame:IsShown() then difficultyFrame:Show() end
+    -- 인스턴스 안이면 UI 숨김 처리
+    if isIns() then 
+        if frame:IsShown() then frame:Hide() end 
+        return 
+    else 
+        if not frame:IsShown() then frame:Show() end 
     end
 
     local hasPermission = checkPermission()
-    local currentDifficulty = {
+    local currentDiff = {
         dungeon = GetDungeonDifficultyID(),
         raid = GetRaidDifficultyID(),
         legacy = GetLegacyRaidDifficultyID()
     }
 
-    for category, group in pairs(buttons) do
-        local targetVal = (category == forceCategory) and tonumber(forceValue) or tonumber(currentDifficulty[category])
-
-        for _, btn in pairs(group) do   
+    for cat, group in pairs(buttons) do
+        local targetVal = (cat == forceCategory) and tonumber(forceValue) or tonumber(currentDiff[cat])
+        for _, btn in pairs(group) do
             btn:SetEnabled(hasPermission)
             btn:SetAlpha(hasPermission and 1 or 0.5)
 
-            local btnVal = tonumber(btn.value)
-            if btnVal and targetVal and (btnVal == targetVal) then
-                btn.highlightBg:SetAtlas(btn_select)
-                btn.highlightBg:Show()
-                btn.text:SetTextColor(unpack(SELECTED_COLOR))
-                btn.isSelected = true
-            else
-                btn.highlightBg:SetAtlas(btn_highlight)
-                btn.highlightBg:Hide()
-                btn.text:SetTextColor(unpack(NORMAL_COLOR))
-                btn.isSelected = false
-            end
+            local isSelected = tonumber(btn.value) == targetVal
+            btn.highlightBg:SetAtlas(isSelected and btn_select or btn_highlight)
+            btn.highlightBg:SetShown(isSelected)
+            btn.text:SetTextColor(unpack(isSelected and SELECTED_COLOR or NORMAL_COLOR))
+            btn.isSelected = isSelected
         end
     end
 end
 
-local function OnDifficultyClick(self)
+OnDifficultyClick = function(self)
     if not checkPermission() then return end
-
     local val = tonumber(self.value)
-    if self.category == "dungeon" then
-        SetDungeonDifficultyID(val)
-    elseif self.category == "raid" then 
-        SetRaidDifficultyID(val)
-    elseif self.category == "legacy" then 
-        SetLegacyRaidDifficultyID(val)
-    end
-
-    print(string.format("|cff00ff00[알림]|r %s 난이도 변경: |cffffffff[%s]|r", self.category, self.label))
+    if self.category == "dungeon" then SetDungeonDifficultyID(val)
+    elseif self.category == "raid" then SetRaidDifficultyID(val)
+    elseif self.category == "legacy" then SetLegacyRaidDifficultyID(val) end
+    
     PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     UpdateUIStatus(self.category, val)
-end
-
-local function SyncDifficultyWithDB()
-    if not checkPermission() or not hodoDB then return end
-
-    if hodoDB.useInsDifficultyDungeon and hodoDB.InsDifficultyDungeon then
-        SetDungeonDifficultyID(tonumber(hodoDB.InsDifficultyDungeon))
-    end
-    if hodoDB.useInsDifficultyRaid and hodoDB.InsDifficultyRaid then
-        SetRaidDifficultyID(tonumber(hodoDB.InsDifficultyRaid))
-    end
-    if hodoDB.useInsDifficultyLegacy and hodoDB.InsDifficultyLegacy then
-        SetLegacyRaidDifficultyID(tonumber(hodoDB.InsDifficultyLegacy))
-    end
-    UpdateUIStatus()
-end
-
-------------------------------
--- 이벤트
-------------------------------
-local initInsDifficulty = CreateFrame("Frame")
-initInsDifficulty:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
-initInsDifficulty:RegisterEvent("PARTY_LEADER_CHANGED")
-initInsDifficulty:RegisterEvent("GROUP_ROSTER_UPDATE")
-initInsDifficulty:RegisterEvent("PLAYER_ENTERING_WORLD")
-initInsDifficulty:RegisterEvent("ADDON_LOADED")
-
-initInsDifficulty:SetScript("OnEvent", function(self, event, arg1)
-    if event == "ADDON_LOADED" and arg1 == "1hodo" then
-        hodoDB = hodoDB or {}
-        UpdateUIStatus()
-    elseif event == "PLAYER_ENTERING_WORLD" or event == "PARTY_LEADER_CHANGED" then
-        SyncDifficultyWithDB()
-    else
-        UpdateUIStatus()
-    end
-end)
-
-for _, group in pairs(buttons) do
-    for _, btn in pairs(group) do
-        btn:SetScript("OnEnter", function(self)
-            if not self.isSelected then
-                self.highlightBg:SetAtlas(btn_highlight)
-                self.highlightBg:Show()
-                self.text:SetTextColor(unpack(SELECTED_COLOR))
-            end
-        end)
-        btn:SetScript("OnLeave", function(self)
-            if not self.isSelected then
-                self.highlightBg:Hide()
-                self.text:SetTextColor(unpack(NORMAL_COLOR))
-            end
-        end)
-        btn:SetScript("OnClick", OnDifficultyClick)
-    end
 end
 
 resetBtn:SetScript("OnClick", function()
     if checkPermission() then
         ResetInstances()
         print("|cff00ff00[알림]|r 모든 인스턴스가 초기화되었습니다.")
-        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end
 end)
 
-ns.setDifficulty = SyncDifficultyWithDB
+------------------------------
+-- 4. 이벤트 및 초기화
+------------------------------
+local ev = CreateFrame("Frame")
+ev:RegisterEvent("PLAYER_ENTERING_WORLD")
+ev:RegisterEvent("ADDON_LOADED")
+
+ev:SetScript("OnEvent", function(self, event, arg1)
+    if event == "ADDON_LOADED" and arg1 == addonName then
+        UpdateUIStatus()
+    else
+        UpdateUIStatus()
+    end
+end)
+
+-- 실행 시점 즉시 업데이트
 UpdateUIStatus()
+ns.UpdateDifficultyUI = UpdateUIStatus

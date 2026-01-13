@@ -9,10 +9,11 @@
     <Frame name="hodoCheckboxSliderTemplate" inherits="SettingsCheckBoxSliderControlTemplate" virtual="true"/>
 
     <!-- Frame -->
-    <Frame name="hodoGameMenuFrame" inherits="MainMenuFrameTemplate" virtual="true"/> <!-- ESC 게임메뉴  -->
-    <Frame name="hodoPopupTemplate" inherits="StaticPopupBaseTemplate" virtual="true"/> <!-- 아이템삭제  -->
-    <Frame name="hodoDialogHeaderTemplate" inherits="DialogHeaderTemplate" virtual="true"/> <!-- 게임메뉴 헤더  -->
-    
+    <!-- <Frame name="hodoGameMenuFrame" inherits="MainMenuFrameTemplate" virtual="true"/> ESC 게임메뉴  -->
+    <!-- <Frame name="hodoPopupTemplate" inherits="StaticPopupBaseTemplate" virtual="true"/> 아이템삭제  -->
+    <!-- <Frame name="hodoDialogHeaderTemplate" inherits="DialogHeaderTemplate" virtual="true"/> 게임메뉴 헤더  -->
+
+    <!-- PartyClassFrame -->
     <Frame name="PartyClassFrame" inherits="DefaultPanelBaseTemplate" parent="UIParent" frameStrata="LOW" hidden="true">
         <Size x="542" y="212"/>
         <Anchors>
@@ -48,7 +49,89 @@
                 </Layers>
             </Frame>
         </Frames>
-</Frame>
+    </Frame>
+
+    <!-- DifficultyFrame -->
+    <Frame name="DifficultyRowTemplate" virtual="true">
+        <Size x="220" y="35"/>
+        <Layers>
+            <Layer level="BACKGROUND">
+                <Texture parentKey="bg" atlas="legionmission-hearts-background">
+                    <Anchors><Anchor point="TOPLEFT"/><Anchor point="BOTTOMRIGHT"/></Anchors>
+                </Texture>
+            </Layer>
+            <Layer level="ARTWORK">
+                <Texture parentKey="titleBg" atlas="UI-Character-Info-Title">
+                    <Size x="60" y="25"/>
+                    <Anchors><Anchor point="LEFT" x="10" y="0"/></Anchors>
+                </Texture>
+            </Layer>
+            <Layer level="OVERLAY">
+                <FontString parentKey="title" inherits="GameFontHighlightSmall">
+                    <Anchors><Anchor point="CENTER" relativeKey="$parent.titleBg"/></Anchors>
+                </FontString>
+            </Layer>
+        </Layers>
+    </Frame>
+
+    <Frame name="DifficultyFrame" inherits="DefaultPanelBaseTemplate" parent="UIParent">
+        <Size x="230" y="124"/>
+        <Anchors>
+            <Anchor point="TOPLEFT" x="5" y="-5"/>
+        </Anchors>
+        <Frames>
+            <Frame parentKey="TitleArea" frameLevel="510">
+                <Size x="0" y="20"/>
+                <Anchors>
+                    <Anchor point="TOPLEFT" x="10" y="-1"/>
+                    <Anchor point="TOPRIGHT" x="-10" y="-1"/>
+                </Anchors>
+                <Layers>
+                    <Layer level="OVERLAY">
+                        <FontString parentKey="Text" inherits="GameFontNormal" text="인스턴스 난이도 설정">
+                            <Anchors><Anchor point="TOP" x="0" y="-5"/></Anchors>
+                        </FontString>
+                    </Layer>
+                </Layers>
+            </Frame>
+
+            <Frame parentKey="bg" inherits="FlatPanelBackgroundTemplate">
+                <Anchors>
+                    <Anchor point="TOPLEFT" x="7" y="-18"/>
+                    <Anchor point="BOTTOMRIGHT" x="-3" y="3"/>
+                </Anchors>
+            </Frame>
+
+            <Button parentKey="resetBtn" frameLevel="600">
+                <Size x="30" y="30"/>
+                <Anchors>
+                    <Anchor point="TOPRIGHT" x="4" y="4"/>
+                </Anchors>
+                <Layers>
+                    <Layer level="ARTWORK" textureSubLevel="5">
+                        <Texture parentKey="Icon" file="Interface\Buttons\UI-RefreshButton">
+                            <Size x="16" y="16"/>
+                            <Anchors><Anchor point="CENTER" x="0" y="0"/></Anchors>
+                        </Texture>
+                    </Layer>
+                </Layers>
+                <NormalTexture file="Interface\Buttons\UI-SquareButton-Up"/>
+                <PushedTexture file="Interface\Buttons\UI-SquareButton-Down"/>
+                <DisabledTexture file="Interface\Buttons\UI-SquareButton-Disabled"/>
+                <HighlightTexture file="Interface\Buttons\UI-Common-MouseHilight" alphaMode="ADD"/>
+                <Scripts>
+                    <OnMouseDown>self.Icon:SetPoint("CENTER", 1, -1);</OnMouseDown>
+                    <OnMouseUp>self.Icon:SetPoint("CENTER", 0, 0);</OnMouseUp>
+                </Scripts>
+            </Button>
+        </Frames>
+        <Scripts>
+            <OnLoad>
+                if self.NineSlice then NineSliceUtil.ApplyLayout(self.NineSlice, "Dialog") end
+                self.bg:SetFrameLevel(self:GetFrameLevel() - 1)
+            </OnLoad>
+        </Scripts>
+    </Frame>
 
     <!-- Font  -->
     <Font name="hodoFontNormal" inherits="UserScaledFontGameNormal" virtual="true"/> <!-- 12, yellow  -->
