@@ -1,4 +1,63 @@
 ------------------------------
+-- 편집 모드 (Edit Mode)
+------------------------------
+-- /ed 또는 /ㄷㅇ 입력 시 편집 모드 프레임 출력
+local function OpenEditMode()
+    if InCombatLockdown() then 
+        print("전투 중에는 편집 모드를 열 수 없습니다.") 
+        return 
+    end
+    
+    -- EditModeManagerFrame이 있으면 호출
+    if EditModeManagerFrame then
+        ShowUIPanel(EditModeManagerFrame)
+    else
+        -- 하위 버전이나 특수 상황 대비 기본 명령어 실행 방식
+        ChatFrame1EditBox:SetText("/run ShowUIPanel(EditModeManagerFrame)")
+        ChatEdit_SendText(ChatFrame1EditBox)
+    end
+end
+
+SLASH_EDITMODE1 = "/ed"
+SLASH_EDITMODE2 = "/ㄷㅇ" -- 한글 오타 대응
+SlashCmdList["EDITMODE"] = function()
+    OpenEditMode()
+end
+
+
+------------------------------
+-- CDM
+------------------------------
+-- API cache
+local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
+local InCombatLockdown = InCombatLockdown
+
+-- Global environment
+local _G = _G
+local CooldownViewerSettings = _G.CooldownViewerSettings
+
+-- Don't register /wa if WeakAuras is loaded
+local waLoaded = IsAddOnLoaded('WeakAuras')
+if waLoaded then
+	print('Cooldown Manager Slash Command: WeakAuras AddOn detected, only registering /cd and skipping /wa')
+end
+
+local function ShowCooldownViewerSettings()
+	if InCombatLockdown() or not CooldownViewerSettings then return end
+
+	if not CooldownViewerSettings:IsShown() then
+		CooldownViewerSettings:Show()
+	else
+		CooldownViewerSettings:Hide()
+	end
+end
+
+SLASH_CDMSC1 = "/cd"
+function SlashCmdList.CDMSC(msg, editbox)
+	ShowCooldownViewerSettings()
+end
+
+------------------------------
 -- DBM
 ------------------------------
 local function dbm(x)
@@ -49,10 +108,9 @@ SLASH_RELOAD2 = "/ㄱㄷ"
 
 ------------------------------
 -- 매크로
-SlashCmdList.MACRO = function() 
+SlashCmdList.MACRO = function()
   ShowMacroFrame()	end
-SLASH_MACRO1 = "/ㅡ"   
-
+SLASH_MACRO1 = "/ㅡ"
 
 ------------------------------
 -- 위크오라
@@ -67,7 +125,6 @@ SLASH_WEAK_AURA3 = "/aw"
 SlashCmdList["WEAK_AURA"] = function(x)
   wa(x)
 end
-
 
 ------------------------------
 -- 전투준비 + 채팅 메시지 출력 (공격대/파티 자동 감지)

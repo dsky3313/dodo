@@ -1,6 +1,6 @@
-## Interface: 110000
+## Interface: 120000
 ## Title: hodo
-## Version: 11.0.1
+## Version: 12.0.0
 ## Author: hodo
 ## Notes: hodo QoL
 ## IconTexture: Interface\ICONS\Trade_engineering
@@ -16,6 +16,7 @@ UI/CheckboxDropdown.lua
 UI/CheckboxSlider.lua
 
 AuctionFilter.lua
+BrowseGroup.lua
 CameraTilt.lua
 ChatBubble.lua
 DeleteNow.lua
@@ -27,10 +28,13 @@ NewLFG.lua
 PartyClass.lua
 QuickBobber.lua
 
+#Resource.lua
+#Resource2.lua
+
 Teleport.lua
+
+SkyRiding.lua
+
 Slash.lua
 
 Option.lua
-
-#SkyRiding.lua
-#

@@ -1,7 +1,6 @@
 ------------------------------
 -- 테이블
 ------------------------------
-
 local expTable = {
     { category = "Classic", name = "오리지널", iconID = 135763 },
     { category = "BC", name = "불성", iconID = 135760 },
@@ -129,22 +128,21 @@ local teleportTable = {
     { spellID = 1233637, type = "macro", iconID = 409599, category = "ETC", name = "하우징" },
 }
 
--- [에러 방지] 루프에서 사용하기 전에 미리 lookup 테이블을 생성합니다.
 local expLookup = {}
-for _, info in ipairs(expTable) do 
-    expLookup[info.category] = info 
+for _, info in ipairs(expTable) do
+    expLookup[info.category] = info
 end
 
 ------------------------------
--- 배경
+-- 디스플레이
 ------------------------------
 
-local TeleportBackground = CreateFrame("Frame", "TeleportMenuFrame", UIParent, "BackdropTemplate") -- 배경 생성
-TeleportBackground:SetSize(650, 750) -- 크기 설정
-TeleportBackground:SetPoint("LEFT", GameMenuFrame, "RIGHT", 20, 0) -- 위치 설정
-TeleportBackground:Hide() -- 처음엔 숨김
+local TeleportBackground = CreateFrame("Frame", "TeleportMenuFrame", UIParent, "BackdropTemplate")
+TeleportBackground:SetSize(650, 750)
+TeleportBackground:SetPoint("LEFT", GameMenuFrame, "RIGHT", 20, 0)
+TeleportBackground:Hide()
 
-NineSliceUtil.ApplyLayoutByName(TeleportBackground, "Dialog") -- NineSlice 레이아웃 적용
+NineSliceUtil.ApplyLayoutByName(TeleportBackground, "Dialog")
 
 TeleportBackground.Bg = TeleportBackground:CreateTexture(nil, "BACKGROUND")
 TeleportBackground.Bg:SetPoint("TOPLEFT", 8, -8)
@@ -223,11 +221,11 @@ TeleportMenuFrame:SetScript("OnHide", function()
     eventFrame:UnregisterAllEvents()
 end)
 
-GameMenuFrame:HookScript("OnShow", function() 
-    TeleportBackground:Show() 
+GameMenuFrame:HookScript("OnShow", function()
+    TeleportBackground:Show()
 end)
-GameMenuFrame:HookScript("OnHide", function() 
-    TeleportBackground:Hide() 
+GameMenuFrame:HookScript("OnHide", function()
+    TeleportBackground:Hide()
 end)
 
 

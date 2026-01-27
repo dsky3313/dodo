@@ -42,7 +42,6 @@ partyClassFrame:SetSize(542, 214)
 partyClassFrame:SetPoint("TOPLEFT", PVEFrame, "BOTTOMLEFT", 20, 2)
 partyClassFrame:SetFrameStrata("MEDIUM")
 
-
 partyClassFrame.NineSlice.Text = partyClassFrame.NineSlice:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 partyClassFrame.NineSlice.Text:SetPoint("TOPRIGHT", partyClassFrame, "TOPRIGHT", -40, -5)
 partyClassFrame.NineSlice.Text:SetText("파티 클래스 현황")

@@ -2,10 +2,11 @@
 -- 테이블
 ------------------------------
 local addonName, ns = ...
+hodoDB = hodoDB or {}
 
 local function isIns() -- 인스확인
     local _, instanceType, difficultyID = GetInstanceInfo()
-    return (difficultyID == 8 or instanceType == "raid") -- 1 일반 / 8 쐐기
+    return (difficultyID == 8 or instanceType == "raid") -- 1 일반 / 8 쐐기 / raid 레이드
 end
 
 local AHF = Enum.AuctionHouseFilter.CurrentExpansionOnly
@@ -51,7 +52,7 @@ initFilterFrame:RegisterEvent("ADDON_LOADED")
 initFilterFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 
 initFilterFrame:SetScript("OnEvent", function(self, event, arg1)
-      if event == "PLAYER_ENTERING_WORLD" then
+    if event == "PLAYER_ENTERING_WORLD" then
         C_Timer.After(0.1, function()
             if isIns() then
                 initFilterFrame:UnregisterEvent("AUCTION_HOUSE_SHOW")
