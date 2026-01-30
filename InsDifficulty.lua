@@ -5,13 +5,24 @@ local addonName, dodo = ...
 
 local function isIns() -- 인스확인
     local _, instanceType, difficultyID = GetInstanceInfo()
-    return (difficultyID == 8 or instanceType == "raid") -- 1 일반 / 8 쐐기
+    return (difficultyID == 8 or instanceType == "raid") -- 1 일반 / 8 쐐기 / raid 레이드
 end
 
 difficultyTable = {
-    dungeon = {{label="일반", value="1"}, {label="영웅", value="2"}, {label="신화", value="23"}},
-    raid = {{label="일반", value="14"}, {label="영웅", value="15"}, {label="신화", value="16"}},
-    legacy = {{label="10인", value="3"}, {label="25인", value="4"}},
+    dungeon = {
+        {label="일반", value="1"},
+        {label="영웅", value="2"},
+        {label="신화", value="23"}
+    },
+    raid = {
+        {label="일반", value="14"},
+        {label="영웅", value="15"},
+        {label="신화", value="16"}
+    },
+    legacy = {
+        {label="10인", value="3"},
+        {label="25인", value="4"}
+    },
 }
 
 local GetDungeonDifficultyID = GetDungeonDifficultyID
@@ -98,7 +109,7 @@ for i, data in ipairs(difficultyTable.dungeon) do CreateDifficultyButton(row1, "
 local row2 = CreateCategoryRow(difficultyFrame, -55, "공격대")
 for i, data in ipairs(difficultyTable.raid) do CreateDifficultyButton(row2, "raid", i, data) end
 
-local row3 = CreateCategoryRow(difficultyFrame, -85, "낭만")    
+local row3 = CreateCategoryRow(difficultyFrame, -85, "낭만")
 for i, data in ipairs(difficultyTable.legacy) do CreateDifficultyButton(row3, "legacy", i, data) end
 
 local resetBtn = CreateFrame("Button", nil, difficultyFrame.NineSlice, "SquareIconButtonTemplate")
@@ -178,7 +189,12 @@ end
 resetBtn:SetScript("OnClick", function()
     if checkPermission() then
         ResetInstances()
-        print("|cff00ff00[알림]|r 모든 인스턴스가 초기화되었습니다.")
+        local msg = "인스턴스 초기화 완료!"
+        if IsInGroup() or IsInRaid() then
+            C_ChatInfo.SendChatMessage(msg, "PARTY")
+        else
+            C_ChatInfo.SendChatMessage(msg, "SAY")
+        end
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end
 end)

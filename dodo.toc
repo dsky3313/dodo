@@ -22,21 +22,21 @@ ChatBubble.lua
 DeleteNow.lua
 ExpFilter.lua
 FrameScale.lua
+InsDifficulty.lua
+KeyRoll.lua
 NewLFG.lua
 QuickBobber.lua
 
-#InsDifficulty.lua
-#KeyRoll.lua
-#MyKey.lua
 #PartyClass.lua
-
-#Resource.lua
-#Resource2.lua
 
 #Teleport.lua
 
-#SkyRiding.lua
-
-
 Slash.lua
 Option.lua
+
+#Resource.lua
+#Resource2.lua
+#SkyRiding.lua
+#MyKey.lua
+#StatusBarOverlay.xml
+#StatusBarController.lua

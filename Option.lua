@@ -42,7 +42,7 @@ function dodoCreateOptions()
     local PartyQoLFrame = CreateSettingsListSectionHeaderInitializer("파티")
     dodoOptionLayout:AddInitializer(PartyQoLFrame)
     Checkbox(OptionCategory, "useBrowseGroup", "파티 탐색하기 버튼", "파티원일 경우에도 '파티 탐색하기' 버튼을 표시합니다.", true, dodo.browseGroupsButton)
-    -- Checkbox(OptionCategory, "useKeyRoll", "쐐기돌 굴림 알림", "쐐기 완료 후, 파티원의 돌목록과 돌변경 알림을 띄웁니다.", true, dodo.Mykey)
+    Checkbox(OptionCategory, "useKeyRoll", "쐐기돌 굴림 알림", "쐐기 완료 후, 파티원의 돌목록과 돌변경 알림을 띄웁니다.", true, dodo.KeyRoll)
     -- Checkbox(OptionCategory, "useMyKey", "쐐기 던전명 복사", "파티 생성창에서 파티원의 쐐기돌 이름을 복사할 수 있습니다.", true, dodo.Mykey)
     -- Checkbox(OptionCategory, "usePartyClass", "클래스 현황", "파티원의 유틸 현황을 확인할 수 있습니다.", true, dodo.PartyClass)
     local settingParentNewLFG, _, initParentNewLFG = CheckBoxDropDown(OptionCategory, "useNewLFG", "soundID", "파티신청 알림", "새로운 파티신청 시 알림", newLFG_AlertSoundTable, true, newLFG_AlertSoundTable[2].value, dodo.NewLFG)
@@ -58,10 +58,26 @@ function dodoCreateOptions()
         end)
     end
 
-    -- Checkbox(OptionCategory, "useInsDifficulty", "던전 난이도 고정", "솔플 혹은 파티장일 시, 던전 난이도를 자동으로 변경합니다.", true)
-    -- CheckBoxDropDown(OptionCategory, "useInsDifficultyDungeon", "InsDifficultyDungeon", "던전 난이도", "던전 난이도를 고정합니다.", difficultyTable.dungeon, true, difficultyTable.dungeon[3].value, dodo.InsDifficulty)
-    -- CheckBoxDropDown(OptionCategory, "useInsDifficultyRaid", "InsDifficultyRaid", "공격대 난이도", "공격대 난이도를 고정합니다.", difficultyTable.raid, true, difficultyTable.raid[3].value, dodo.InsDifficulty)
-    -- CheckBoxDropDown(OptionCategory, "useInsDifficultyLegacy", "InsDifficultyLegacy", "낭만 난이도", "낭만 난이도를 고정합니다.", difficultyTable.legacy, true, difficultyTable.legacy[2].value, dodo.InsDifficulty)
+    local settingParentInsDifficulty, initParentInsDifficulty = Checkbox(OptionCategory, "useInsDifficulty", "인스 난이도 고정", "솔플 혹은 파티장일 시, 던전 난이도를 자동으로 변경합니다.", true, dodo.InsDifficulty)
+    local settingChildInsDifficulty1, _, initChildInsDifficulty1 = CheckBoxDropDown(OptionCategory, "useInsDifficultyDungeon", "InsDifficultyDungeon", "던전 난이도", "던전 난이도를 고정합니다.", difficultyTable.dungeon, true, difficultyTable.dungeon[3].value, dodo.InsDifficulty)
+    local settingChildInsDifficulty2, _, initChildInsDifficulty2 = CheckBoxDropDown(OptionCategory, "useInsDifficultyRaid", "InsDifficultyRaid", "공격대 난이도", "공격대 난이도를 고정합니다.", difficultyTable.raid, true, difficultyTable.raid[3].value, dodo.InsDifficulty)
+    local settingChildInsDifficulty3, _, initChildInsDifficulty3 = CheckBoxDropDown(OptionCategory, "useInsDifficultyLegacy", "InsDifficultyLegacy", "낭만 난이도", "낭만 난이도를 고정합니다.", difficultyTable.legacy, true, difficultyTable.legacy[2].value, dodo.InsDifficulty)
+
+    if settingParentInsDifficulty then
+        settingParentInsDifficulty:SetValueChangedCallback(function(_, value)
+            if value == false then
+                if settingChildInsDifficulty1 then settingChildInsDifficulty1:SetValue(false) end
+                if settingChildInsDifficulty2 then settingChildInsDifficulty2:SetValue(false) end
+                if settingChildInsDifficulty3 then settingChildInsDifficulty3:SetValue(false) end
+            end
+            if type(dodo.InsDifficulty) == "function" then dodo.InsDifficulty() end
+        end)
+
+        local function ParentActive() return settingParentInsDifficulty:GetValue() end
+        if initChildInsDifficulty1 then initChildInsDifficulty1:SetParentInitializer(initParentInsDifficulty, ParentActive) end
+        if initChildInsDifficulty2 then initChildInsDifficulty2:SetParentInitializer(initParentInsDifficulty, ParentActive) end
+        if initChildInsDifficulty3 then initChildInsDifficulty3:SetParentInitializer(initParentInsDifficulty, ParentActive) end
+    end
 
     -- 편의기능
     local QoLHeader = CreateSettingsListSectionHeaderInitializer("편의기능")

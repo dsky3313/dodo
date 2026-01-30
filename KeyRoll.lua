@@ -111,20 +111,8 @@ initKeyRoll:SetScript("OnEvent", function(self, event, arg1)
     end
 end)
 
-------------------------------
--- 3. 초기화 함수 (스위치 역할)
-------------------------------
 function dodo.KeyRoll()
-    -- 초기 실행 시 필요한 이벤트만 등록
     initKeyRoll:RegisterEvent("PLAYER_ENTERING_WORLD")
-
-    -- 명령어 등록
-    SLASH_KEYROLL1 = "/돌"
-    SlashCmdList["KEYROLL"] = function(msg)
-        if msg == "닫기" then KeyRollFrame:Hide() else UpdateDisplay() end
-    end
-
-    -- (선택 사항) 초기화 시점에 이미 게임에 들어와 있다면 이벤트를 즉시 체크
     if IsLoggedIn() then
         initKeyRoll:GetScript("OnEvent")(initKeyRoll, "PLAYER_ENTERING_WORLD")
     end
