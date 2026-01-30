@@ -1,7 +1,7 @@
 ------------------------------
 -- 테이블
 ------------------------------
-local addonName, ns = ...
+local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
 local gmf = GameMenuFrame
@@ -33,4 +33,4 @@ initFrameScale:SetScript("OnEvent", function(self, event)
     self:UnregisterAllEvents()
 end)
 
-ns.FrameScale = FrameScale
+dodo.FrameScale = FrameScale

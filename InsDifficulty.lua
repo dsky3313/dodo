@@ -1,7 +1,7 @@
 ------------------------------
 -- 테이블
 ------------------------------
-local addonName, ns = ...
+local addonName, dodo = ...
 
 local function isIns() -- 인스확인
     local _, instanceType, difficultyID = GetInstanceInfo()
@@ -116,7 +116,7 @@ local function checkPermission()
 end
 
 local function UpdateUIStatus(forceCategory, forceValue)
-    local isEnabled = (hodoDB and hodoDB.useInsDifficulty ~= false)
+    local isEnabled = (dodoDB and dodoDB.useInsDifficulty ~= false)
     if not isEnabled or isIns() then
         if difficultyFrame:IsShown() then difficultyFrame:Hide() end
         return
@@ -154,15 +154,15 @@ local function OnDifficultyClick(self)
 end
 
 local function InsDifficulty()
-    if not checkPermission() or not hodoDB then return end
-    if hodoDB.useInsDifficultyDungeon and hodoDB.InsDifficultyDungeon then
-        SetDungeonDifficultyID(tonumber(hodoDB.InsDifficultyDungeon))
+    if not checkPermission() or not dodoDB then return end
+    if dodoDB.useInsDifficultyDungeon and dodoDB.InsDifficultyDungeon then
+        SetDungeonDifficultyID(tonumber(dodoDB.InsDifficultyDungeon))
     end
-    if hodoDB.useInsDifficultyRaid and hodoDB.InsDifficultyRaid then
-        SetRaidDifficultyID(tonumber(hodoDB.InsDifficultyRaid))
+    if dodoDB.useInsDifficultyRaid and dodoDB.InsDifficultyRaid then
+        SetRaidDifficultyID(tonumber(dodoDB.InsDifficultyRaid))
     end
-    if hodoDB.useInsDifficultyLegacy and hodoDB.InsDifficultyLegacy then
-        SetLegacyRaidDifficultyID(tonumber(hodoDB.InsDifficultyLegacy))
+    if dodoDB.useInsDifficultyLegacy and dodoDB.InsDifficultyLegacy then
+        SetLegacyRaidDifficultyID(tonumber(dodoDB.InsDifficultyLegacy))
     end
     UpdateUIStatus()
 end
@@ -192,7 +192,7 @@ initInsDifficulty:RegisterEvent("PLAYER_ENTERING_WORLD")
 
 initInsDifficulty:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
-        hodoDB = hodoDB or {}
+        dodoDB = dodoDB or {}
         UpdateUIStatus()
 
     elseif event == "PLAYER_ENTERING_WORLD" then
@@ -214,5 +214,5 @@ initInsDifficulty:SetScript("OnEvent", function(self, event, arg1)
     end
 end)
 
-ns.InsDifficulty = InsDifficulty
+dodo.InsDifficulty = InsDifficulty
 UpdateUIStatus()

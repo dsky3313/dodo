@@ -1,7 +1,7 @@
 ------------------------------
 -- 테이블
 ------------------------------
-local addonName, ns = ...
+local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
 local function isIns() -- 인스확인
@@ -40,7 +40,7 @@ local function checkCraftFilter()
 end
 
 -- 통합 실행 함수 (외부 공유용)
-function ns.expFilter()
+function dodo.expFilter()
     checkAuctionFilter()
     checkCraftFilter()
 end
@@ -61,7 +61,7 @@ initFilterFrame:SetScript("OnEvent", function(self, event, arg1)
             else
                 initFilterFrame:RegisterEvent("AUCTION_HOUSE_SHOW")
                 initFilterFrame:RegisterEvent("CRAFTINGORDERS_SHOW_CUSTOMER")
-                ns.expFilter()
+                dodo.expFilter()
             end
         end)
     elseif event == "ADDON_LOADED" and arg1 == "Blizzard_AuctionHouseUI" then

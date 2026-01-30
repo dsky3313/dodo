@@ -1,7 +1,7 @@
 ------------------------------
 -- 테이블
 ------------------------------
-local addonName, ns = ...
+local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
 chatbubbleFontTable = {
@@ -37,4 +37,4 @@ initChatBubble:SetScript("OnEvent", function(self, event)
     self:UnregisterAllEvents()
 end)
 
-ns.ChatBubble = ChatBubble
+dodo.ChatBubble = ChatBubble

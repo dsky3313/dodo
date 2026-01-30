@@ -1,7 +1,7 @@
 ------------------------------
 -- 테이블
 ------------------------------
-local addonName, ns = ...
+local addonName, dodo = ...
 
 local Formatters = {
     ["Percent"] = function(v) return ("%d%%"):format(math.floor((v or 0) * 100 + 0.5)) end, -- 백분율
@@ -13,7 +13,7 @@ local Formatters = {
 ------------------------------
 -- 슬라이더
 ------------------------------
-function Slider(category, varName, label, tooltip, min, max, step, default, formatType)
+function Slider(category, varName, label, tooltip, min, max, step, default, formatType, func)
     local varID = "dodo_" .. varName
 
     local setting = Settings.GetSetting(varID)
@@ -26,11 +26,9 @@ function Slider(category, varName, label, tooltip, min, max, step, default, form
     sliderOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, selectedFormatter)
     local initializer = Settings.CreateControlInitializer("dodoSliderTemplate", setting, sliderOptions, tooltip)
     setting:SetValueChangedCallback(function()
-
-        if ns.CameraTilt then ns.CameraTilt() end
-        if ns.ChatBubble then ns.ChatBubble() end
-        if ns.FrameScale then ns.FrameScale() end
-
+        if type(func) == "function" then
+            func()
+        end
     end)
 
     local layout = SettingsPanel:GetLayout(category)

@@ -1,7 +1,7 @@
 ------------------------------
 -- 테이블
 ------------------------------
-local addonName, ns = ...
+local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
 ------------------------------
@@ -32,4 +32,4 @@ initCamera:SetScript("OnEvent", function(self, event)
     self:UnregisterAllEvents()
 end)
 
-ns.CameraTilt = CameraTilt
+dodo.CameraTilt = CameraTilt

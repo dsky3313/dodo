@@ -9,6 +9,7 @@
 # 2020.11.23 제작
 
 UI/dodoUI.xml
+UI/Icon.lua
 UI/Checkbox.lua
 UI/DropDown.lua
 UI/Slider.lua
@@ -22,12 +23,12 @@ DeleteNow.lua
 ExpFilter.lua
 FrameScale.lua
 NewLFG.lua
+QuickBobber.lua
 
 #InsDifficulty.lua
 #KeyRoll.lua
 #MyKey.lua
 #PartyClass.lua
-#QuickBobber.lua
 
 #Resource.lua
 #Resource2.lua

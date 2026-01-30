@@ -1,7 +1,7 @@
 ------------------------------
 -- 테이블
 ------------------------------
-local addonName, ns = ...
+local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
 local function isIns() -- 인스확인
@@ -130,4 +130,4 @@ if C_AddOns and C_AddOns.IsAddOnLoaded("Blizzard_GroupFinder") then
     initBtn()
 end
 
-ns.BrowseGroup = updateBtn
+dodo.BrowseGroup = updateBtn

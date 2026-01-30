@@ -1,6 +1,9 @@
 ------------------------------
 -- 테이블
 ------------------------------
+local addonName, dodo = ...
+dodoDB = dodoDB or {}
+
 local expTable = {
     { category = "Classic", name = "오리지널", iconID = 135763 },
     { category = "BC", name = "불성", iconID = 135760 },

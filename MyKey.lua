@@ -1,7 +1,7 @@
 ------------------------------
 -- 테이블
 ------------------------------
-local addonName, ns = ...
+local addonName, dodo = ...
 
 local openRaidLib = LibStub:GetLibrary("LibOpenRaid-1.0", true)
 
@@ -91,7 +91,7 @@ local function RefreshKeyInfo() -- 돌 새로고침
 end
 
 local function MyKey()
-    local isEnabled = hodoDB.usePartyClass ~= false -- 기본값 true
+    local isEnabled = dodoDB.usePartyClass ~= false -- 기본값 true
     if not isEnabled or isIns() then
         keyDropDown:Hide()
         return
@@ -203,4 +203,4 @@ initMyKey:SetScript("OnEvent", function (self, event, arg1)
     end
 end)
 
-ns.MyKey = MyKey
+dodo.MyKey = MyKey

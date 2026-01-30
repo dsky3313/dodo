@@ -1,7 +1,7 @@
 ------------------------------
 -- 테이블
 ------------------------------
-local addonName, ns = ...
+local addonName, dodo = ...
 
 -- 슬라이더 숫자 포맷 정의
 local Formatters = {
@@ -13,32 +13,31 @@ local Formatters = {
 ------------------------------
 -- 체크박스 슬라이더
 ------------------------------
-
-function CheckboxSlider(category, varNameCB, varNameSlider, label, tooltip, min, max, step, defaultCB, defaultSlider, formatType)
+function CheckboxSlider(category, varNameCB, varNameSlider, label, tooltip, min, max, step, defaultCB, defaultSlider, formatType, func)
     local varID_CB = "dodo_" .. varNameCB
     local varID_Slider = "dodo_" .. varNameSlider
-
     local cbSetting = Settings.GetSetting(varID_CB) or Settings.RegisterAddOnSetting(category, varID_CB, varNameCB, dodoDB, Settings.VarType.Boolean, label, defaultCB or false)
     local sliderSetting = Settings.GetSetting(varID_Slider) or Settings.RegisterAddOnSetting(category, varID_Slider, varNameSlider, dodoDB, Settings.VarType.Number, label, tonumber(defaultSlider) or min)
-
     local sliderOptions = Settings.CreateSliderOptions(min, max, step)
-    -- 여기에 필요 시 Formatters 적용 가능
+    local selectedFormatter = Formatters[formatType] or Formatters["Percent"]
+    sliderOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, selectedFormatter)
 
-    -- 블리자드 표준 데이터 구조
     local data = {
         name = label,
         tooltip = tooltip,
         cbSetting = cbSetting,
         sliderSetting = sliderSetting,
-        sliderOptions = sliderOptions,
+        sliderOptions = sliderOptions, -- 이제 포매터가 포함된 옵션이 전달됩니다.
     }
 
-    -- dodoUI.xml에서 만든 템플릿 사용
     local initializer = Settings.CreateSettingInitializer("dodoCheckboxSliderTemplate", data)
 
     local function OnValueChanged()
-        if ns.CameraTilt then ns.CameraTilt() end
+        if type(func) == "function" then
+            func(true) -- 체크박스/슬라이더 변경 시 실행
+        end
     end
+    
     cbSetting:SetValueChangedCallback(OnValueChanged)
     sliderSetting:SetValueChangedCallback(OnValueChanged)
 
@@ -46,4 +45,7 @@ function CheckboxSlider(category, varNameCB, varNameSlider, label, tooltip, min,
     if layout then
         layout:AddInitializer(initializer)
     end
+    
+    -- 부모-자식 연결을 위해 리턴값 추가 (필요 시)
+    return cbSetting, sliderSetting, initializer
 end

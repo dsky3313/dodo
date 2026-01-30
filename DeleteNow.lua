@@ -1,7 +1,7 @@
 ------------------------------
 -- 테이블
 ------------------------------
-local addonName, ns = ...
+local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
 local function isIns() -- 인스확인
@@ -99,4 +99,4 @@ hooksecurefunc("StaticPopup_OnHide", function(self)
     end
 end)
 
-ns.DeleteNow = DeleteNow
+dodo.DeleteNow = DeleteNow

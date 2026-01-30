@@ -1,7 +1,7 @@
 ------------------------------
 -- 테이블
 ------------------------------
-local addonName, ns = ...
+local addonName, dodo = ...
 
 local function isIns() -- 인스확인
     local _, instanceType, difficultyID = GetInstanceInfo()
@@ -116,8 +116,8 @@ function PartyClass()
         return
     end
 
-    local isEnabled = hodoDB.usePartyClass ~= false -- 기본값 true
-    local usePartyClass = not (hodoDB and hodoDB.usePartyClass == false)
+    local isEnabled = dodoDB.usePartyClass ~= false -- 기본값 true
+    local usePartyClass = not (dodoDB and dodoDB.usePartyClass == false)
     local pveShown = PVEFrame and PVEFrame:IsShown()
 
     if not (isEnabled and usePartyClass and pveShown) then
@@ -187,4 +187,4 @@ initPartyClass:SetScript("OnEvent", function(self, event, arg1)
     end
 end)
 
-ns.PartyClass = PartyClass
+dodo.PartyClass = PartyClass

@@ -1,12 +1,12 @@
 ------------------------------
 -- 테이블
 ------------------------------
-local addonName, ns = ...
+local addonName, dodo = ...
 
 ------------------------------
 -- 드롭다운
 ------------------------------
-function DropDown(category, varName, label, tooltip, options, default)
+function DropDown(category, varName, label, tooltip, options, default, func)
     local varID = "dodo_" .. varName
 
     local setting = Settings.GetSetting(varID)
@@ -24,9 +24,9 @@ function DropDown(category, varName, label, tooltip, options, default)
 
     local initializer = Settings.CreateControlInitializer("dodoDropdownTemplate", setting, GetOptions, tooltip)
     setting:SetValueChangedCallback(function()
-
-        if ns.ChatBubble then ns.ChatBubble() end
-
+        if type(func) == "function" then
+            func()
+        end
     end)
 
     local layout = SettingsPanel:GetLayout(category)

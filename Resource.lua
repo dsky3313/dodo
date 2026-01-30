@@ -1,7 +1,7 @@
-local _, ns = ...;
+local addonName, dodo = ...;
 
 -- 1. 설정값 (항상 보이도록 알파값을 1로 고정)
-ns.configs = {
+dodo.configs = {
     font        = STANDARD_TEXT_FONT,
     fontSize    = 12,
     fontOutline = "OUTLINE",
@@ -21,10 +21,10 @@ ns.configs = {
 
 -- 2. 메인 프레임 (분노/자원 바)
 local main_frame = CreateFrame("StatusBar", "ResourceBar", UIParent)
-main_frame:SetSize(ns.configs.width, ns.configs.height)
-main_frame:SetPoint("CENTER", UIParent, "CENTER", ns.configs.xpoint, ns.configs.ypoint)
+main_frame:SetSize(dodo.configs.width, dodo.configs.height)
+main_frame:SetPoint("CENTER", UIParent, "CENTER", dodo.configs.xpoint, dodo.configs.ypoint)
 main_frame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-main_frame:SetFrameLevel(ns.configs.framelevel)
+main_frame:SetFrameLevel(dodo.configs.framelevel)
 main_frame:SetMovable(true)
 main_frame:SetClampedToScreen(true)
 
@@ -33,25 +33,25 @@ bg:SetAllPoints(true)
 bg:SetColorTexture(0, 0, 0, 0.7)
 
 local text = main_frame:CreateFontString(nil, "OVERLAY")
-text:SetFont(ns.configs.font, ns.configs.fontSize, ns.configs.fontOutline)
+text:SetFont(dodo.configs.font, dodo.configs.fontSize, dodo.configs.fontOutline)
 text:SetPoint("CENTER", main_frame, "CENTER", 0, 0)
 
 -- 3. 고통 감내 바 (전투 중에도 즉시 갱신되도록 설정)
 local ipBar = CreateFrame("StatusBar", nil, main_frame)
-ipBar:SetSize(ns.configs.width, ns.configs.comboheight)
+ipBar:SetSize(dodo.configs.width, dodo.configs.comboheight)
 ipBar:SetPoint("BOTTOMLEFT", main_frame, "TOPLEFT", 0, 2)
 ipBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
 ipBar:SetStatusBarColor(1, 0.8, 0, 1) -- 금색
 ipBar:Hide()
 
 local ipText = ipBar:CreateFontString(nil, "OVERLAY")
-ipText:SetFont(ns.configs.font, ns.configs.fontSize - 1, ns.configs.fontOutline)
+ipText:SetFont(dodo.configs.font, dodo.configs.fontSize - 1, dodo.configs.fontOutline)
 ipText:SetPoint("CENTER", ipBar, "CENTER", 0, 0)
 
 -- 4. 업데이트 함수
 local function UpdateIgnorePain()
     -- C_UnitAuras를 사용하여 전투 중에도 실시간 중첩 체크
-    local aura = C_UnitAuras.GetPlayerAuraBySpellID(ns.configs.ignorePainID)
+    local aura = C_UnitAuras.GetPlayerAuraBySpellID(dodo.configs.ignorePainID)
     
     if aura and aura.applications then
         local stacks = aura.applications
@@ -91,7 +91,7 @@ C_Timer.NewTicker(0.1, function()
     UpdateIgnorePain()
     
     -- [수정] 전투 여부와 상관없이 항상 normalalpha(1)를 유지하도록 강제 설정
-    main_frame:SetAlpha(ns.configs.normalalpha)
+    main_frame:SetAlpha(dodo.configs.normalalpha)
 end)
 
 -- 이동 기능 (Alt + 드래그)

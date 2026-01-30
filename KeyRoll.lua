@@ -1,7 +1,7 @@
 ------------------------------
 -- 테이블
 ------------------------------
-local addonName, ns = ...
+local addonName, dodo = ...
 
 local function GetLib()
     return LibStub and LibStub:GetLibrary("LibOpenRaid-1.0", true)
@@ -46,7 +46,7 @@ local function GetKeyLink(keystone)
 end
 
 local function UpdateDisplay()
-    local isEnabled = hodoDB.useKeyRoll ~= false
+    local isEnabled = dodoDB.useKeyRoll ~= false
     if not isEnabled then return end
 
     local LibOpenRaid = GetLib()
@@ -84,7 +84,7 @@ initKeyRoll:RegisterEvent("PLAYER_ENTERING_WORLD")
 initKeyRoll:RegisterEvent("CHALLENGE_MODE_COMPLETED")
 initKeyRoll:RegisterEvent("CHAT_MSG_LOOT")
 initKeyRoll:SetScript("OnEvent", function(self, event, arg1)
-    local isEnabled = hodoDB.useKeyRoll ~= false
+    local isEnabled = dodoDB.useKeyRoll ~= false
     if event == "PLAYER_ENTERING_WORLD" then
         if isEnabled then
             self:RegisterEvent("CHALLENGE_MODE_COMPLETED")
@@ -114,7 +114,7 @@ end)
 ------------------------------
 -- 3. 초기화 함수 (스위치 역할)
 ------------------------------
-function ns.KeyRoll()
+function dodo.KeyRoll()
     -- 초기 실행 시 필요한 이벤트만 등록
     initKeyRoll:RegisterEvent("PLAYER_ENTERING_WORLD")
 
@@ -128,4 +128,4 @@ function ns.KeyRoll()
     if IsLoggedIn() then
         initKeyRoll:GetScript("OnEvent")(initKeyRoll, "PLAYER_ENTERING_WORLD")
     end
-end 
+end

@@ -1,7 +1,7 @@
 ------------------------------
 -- 테이블
 ------------------------------
-local addonName, ns = ...
+local addonName, dodo = ...
 
 ------------------------------
 -- 체크박스 드롭다운
@@ -39,11 +39,9 @@ function CheckBoxDropDown(category, varNameCB, varNameDD, label, tooltip, option
     local initializer = Settings.CreateSettingInitializer("dodoCheckboxDropdownTemplate", data)
 
     local function OnValueChanged()
-
         if type(func) == "function" then
             func(true)
         end
-
     end
     cbSetting:SetValueChangedCallback(OnValueChanged)
     ddSetting:SetValueChangedCallback(OnValueChanged)

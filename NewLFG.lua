@@ -1,7 +1,7 @@
 ------------------------------
 -- 테이블
 ------------------------------
-local addonName, ns = ...
+local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
 local function isIns() -- 인스확인
@@ -37,7 +37,8 @@ newLFG_Alert.Text = newLFG_Alert:CreateFontString(nil, "OVERLAY", "GameFontNorma
 newLFG_Alert.Text:SetPoint("CENTER")
 local fontPath, _, fontFlags = newLFG_Alert.Text:GetFont()
 newLFG_Alert.Text:SetFont(fontPath, 22, fontFlags)
-newLFG_Alert.Text:SetText("|cffffff00[ 신규 신청 ]|r\n\n파티창을 확인하세요!")
+newLFG_Alert.Text:SetText("[ 신규 신청 ]\n\n|cffffff00파티창을 확인하세요!|r")
+
 
 ------------------------------
 -- 동작
@@ -114,4 +115,4 @@ end)
 
 armedAt = GetTime() + 2 -- 시작 대기 시간 설정
 
-ns.NewLFG = NewLFG
+dodo.NewLFG = NewLFG
