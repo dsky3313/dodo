@@ -12,6 +12,15 @@ function IconLib:Create(name, parent, config)
     local frame = CreateFrame(frameType, name, parent or UIParent, template)
     local size = config and config.iconsize or {40, 40}
 
+    local fontColorTable = {
+    white = {1, 1, 1},
+    yellow = {1, 0.82, 0},
+    red = {1, 0.2, 0.2},
+    green = {0.1, 1, 0.1},
+    orange = {1, 0.5, 0},
+    gray = {0.5, 0.5, 0.5},
+    }
+
     -- 아이콘 크기
     frame:SetSize(size[1], size[2])
     frame.icon = frame:CreateTexture(nil, "BACKGROUND")
@@ -40,10 +49,8 @@ function IconLib:Create(name, parent, config)
     frame.cooldown:SetDrawSwipe(true)
     frame.cooldown:SetSwipeColor(0, 0, 0, 0.8)
 
-    -- 아이콘 이름
-    frame.Name = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-
-    -- 아이콘 스택?
+    -- 아이콘 글꼴
+    frame.Name = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     frame.Count = frame:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
     frame.Count:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
 
@@ -66,6 +73,8 @@ function IconLib:Create(name, parent, config)
         if not data then return end
 
         local isKnown, isOnCooldown = true, false
+        local fontColor = (type(data.fontcolor) == "string" and fontColorTable[data.fontcolor])
+                      or data.fontcolor or fontColorTable.white
 
         if data.type == "spell" then
             isKnown = C_SpellBook.IsSpellInSpellBook(data.id) or C_SpellBook.IsSpellKnown(data.id)
@@ -74,49 +83,33 @@ function IconLib:Create(name, parent, config)
                 self.cooldown:SetCooldown(cd.startTime, cd.duration)
                 isOnCooldown = true
             else self.cooldown:Clear() end
-
         elseif data.type == "item" then
             local count = C_Item.GetItemCount(data.id)
             self.Count:SetText(count > 1 and count or "")
             isKnown = (count > 0) or (C_ToyBox and C_ToyBox.GetToyInfo(data.id))
-
             local start, duration = C_Item.GetItemCooldown(data.id)
             if start and start > 0 and duration > 0 then
                 self.cooldown:SetCooldown(start, duration)
                 isOnCooldown = true
             else self.cooldown:Clear() end
+        end
 
-        elseif data.type == "macro" then
-            isKnown = true
-            self.Count:SetText("")
-            self.cooldown:Clear()
+        -- 색상 적용 (배우지 않았으면 회색, 아니면 지정된 색상)
+        if not isKnown then
+            self.Name:SetTextColor(unpack(fontColorTable.gray))
+        else
+            self.Name:SetTextColor(unpack(fontColor))
         end
 
         self.icon:SetDesaturated(not isKnown or isOnCooldown)
     end
 
-    -- 툴팁
-    frame:EnableMouse(true)
-    frame:SetScript("OnEnter", function(self)
-        local data = self.iconData
-        if not data then return end
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        if data.type == "spell" then
-            GameTooltip:SetSpellByID(data.id)
-        elseif data.type == "item" then
-            GameTooltip:SetItemByID(data.id)
-        elseif data.type == "macro" then
-            GameTooltip:AddLine(data.label or "매크로", 1, 1, 1)
-            if data.macrotext then GameTooltip:AddLine(data.macrotext, 0.7, 0.7, 0.7, true) end
-        end
-        GameTooltip:Show()
-    end)
-    frame:SetScript("OnLeave", function() GameTooltip:Hide() end)
-
-    -- 테이블 적용
+    -- 테이블 적용 (ApplyConfig)
     function frame:ApplyConfig(data)
         if InCombatLockdown() and data.isAction then return end
         self.iconData = data
+
+        -- 속성 초기화 및 재설정 (생략)
         if data.isAction then
             self:SetAttribute("type", nil)
             self:SetAttribute("spell", nil)
@@ -131,8 +124,6 @@ function IconLib:Create(name, parent, config)
             end
             local info = C_Spell.GetSpellInfo(data.id)
             self.icon:SetTexture(data.icon or (info and info.iconID) or 132311)
-            self:UpdateStatus()
-
         elseif data.type == "item" then
             if data.isAction then
                 self:SetAttribute("type", "item")
@@ -140,23 +131,21 @@ function IconLib:Create(name, parent, config)
             end
             local icon = C_Item.GetItemIconByID(data.id)
             if icon then self.icon:SetTexture(data.icon or icon) end
-
             local item = Item:CreateFromItemID(data.id)
             item:ContinueOnItemLoad(function()
                 if not data.icon then self.icon:SetTexture(item:GetItemIcon()) end
                 if not data.label then self.Name:SetText(item:GetItemName()) end
                 self:UpdateStatus()
             end)
-
         elseif data.type == "macro" then
-            if data.isAction then
+            if data.isAction then 
                 self:SetAttribute("type", "macro")
                 self:SetAttribute("macrotext", data.macrotext)
             end
             self.icon:SetTexture(data.icon or 134400)
-            self:UpdateStatus()
         end
 
+        -- 위치, 폰트, Strata 설정
         if data.iconposition then
             local p = data.iconposition
             local rel = (type(p[2]) == "string" and _G[p[2]]) or UIParent
@@ -165,32 +154,31 @@ function IconLib:Create(name, parent, config)
         end
 
         if data.label then self.Name:SetText(data.label) end
-        local font, size, outline = self.Name:GetFont()
-        self.Name:SetFont(font, data.fontsize or size, data.outline and "OUTLINE" or nil)
-
+        local font, fSize = self.Name:GetFont()
+        self.Name:SetFont(font, data.fontsize or fSize, data.outline and "OUTLINE" or nil)
+        
+        -- 폰트 위치 설정
         self.Name:ClearAllPoints()
         if data.fontposition then
             local fp = data.fontposition
-            local fRel = (type(fp[2]) == "string" and _G[fp[2]]) or self.borderFrame or self
+            local fRel = (fp[2] == "self" and self) or (type(fp[2]) == "string" and _G[fp[2]]) or self
             self.Name:SetPoint(fp[1], fRel, fp[3] or fp[1], fp[4] or 0, fp[5] or 0)
         else
             self.Name:SetPoint("TOP", self, "BOTTOM", 0, -2)
         end
 
+        -- 쿨다운 숫자 크기
         if data.cooldownSize then
             for _, region in ipairs({self.cooldown:GetRegions()}) do
                 if region:GetObjectType() == "FontString" then
-                    local font, _, outline = region:GetFont()
-                    region:SetFont(font, data.cooldownSize, "OUTLINE")
+                    local f, _, o = region:GetFont()
+                    region:SetFont(f, data.cooldownSize, "OUTLINE")
                 end
             end
         end
 
-        if data.framestrata then
-            self:SetFrameStrata(data.framestrata)
-        else
-            self:SetFrameStrata("HIGH")
-        end
+        self:SetFrameStrata(data.framestrata or "HIGH")
+        self:UpdateStatus()
     end
 
     frame:SetScript("OnEvent", frame.UpdateStatus)
@@ -209,6 +197,7 @@ local BobberConfig = {
     label = "낚시찌",
     fontsize = 12,
     fontposition = {"BOTTOMRIGHT", "self", "BOTTOMLEFT", -2, 2},
+    fontcolor = "yellow",
     cooldownSize = 12,
     outline = false,
     framestrata = "HIGH",

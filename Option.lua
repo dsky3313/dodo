@@ -44,7 +44,7 @@ function dodoCreateOptions()
     Checkbox(OptionCategory, "useBrowseGroup", "파티 탐색하기 버튼", "파티원일 경우에도 '파티 탐색하기' 버튼을 표시합니다.", true, dodo.browseGroupsButton)
     Checkbox(OptionCategory, "useKeyRoll", "쐐기돌 굴림 알림", "쐐기 완료 후, 파티원의 돌목록과 돌변경 알림을 띄웁니다.", true, dodo.KeyRoll)
     -- Checkbox(OptionCategory, "useMyKey", "쐐기 던전명 복사", "파티 생성창에서 파티원의 쐐기돌 이름을 복사할 수 있습니다.", true, dodo.Mykey)
-    -- Checkbox(OptionCategory, "usePartyClass", "클래스 현황", "파티원의 유틸 현황을 확인할 수 있습니다.", true, dodo.PartyClass)
+    Checkbox(OptionCategory, "usePartyClass", "클래스 현황", "파티원의 유틸 현황을 확인할 수 있습니다.", true, dodo.PartyClass)
     local settingParentNewLFG, _, initParentNewLFG = CheckBoxDropDown(OptionCategory, "useNewLFG", "soundID", "파티신청 알림", "새로운 파티신청 시 알림", newLFG_AlertSoundTable, true, newLFG_AlertSoundTable[2].value, dodo.NewLFG)
     local settingChildNewLFG, initChildNewLFG = Checkbox(OptionCategory, "useNewLFGLeader", "파티원 기능 활성화", "파티장원일 경우에도 활성화합니다. ", false, dodo.NewLFG)
     if settingParentNewLFG and settingChildNewLFG then

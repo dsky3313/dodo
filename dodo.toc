@@ -25,11 +25,9 @@ FrameScale.lua
 InsDifficulty.lua
 KeyRoll.lua
 NewLFG.lua
+PartyClass.lua
 QuickBobber.lua
-
-#PartyClass.lua
-
-#Teleport.lua
+Teleport.lua
 
 Slash.lua
 Option.lua

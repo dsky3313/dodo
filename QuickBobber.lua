@@ -21,6 +21,7 @@ local BobberConfig = {
     label = "낚시찌",
     fontsize = 12,
     fontposition = {"BOTTOMRIGHT", "self", "BOTTOMLEFT", -2, 2},
+    fontcolor = "yellow",
     cooldownSize = 12,
     outline = false,
     framestrata = "HIGH",
@@ -34,8 +35,10 @@ BobberButton:Hide()
 
 local function quickBobber()
     local isEnabled = (dodoDB and dodoDB.useQuickBobber ~= false)
+    local isKnown = C_SpellBook.IsSpellKnown(131474)
+    local isUIOpen = (ProfessionsBookFrame and ProfessionsBookFrame:IsShown())
 
-    if isEnabled and not isIns() and (ProfessionsBookFrame and ProfessionsBookFrame:IsShown()) then
+    if isKnown and isEnabled and not isIns() and isUIOpen then
 
         BobberButton:RegisterEvent("BAG_UPDATE_DELAYED")
         BobberButton:RegisterEvent("BAG_UPDATE_COOLDOWN")
