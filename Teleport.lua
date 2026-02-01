@@ -241,8 +241,34 @@ end
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("SPELL_UPDATE_COOLDOWN")
 eventFrame:RegisterEvent("BAG_UPDATE_DELAYED")
-eventFrame:SetScript("OnEvent", UpdateUIStatus)
+eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED") 
+eventFrame:SetScript("OnEvent", function(self, event)
+    if event == "PLAYER_REGEN_ENABLED" then
+        -- 전투가 끝났을 때 게임 메뉴가 여전히 열려 있다면 프레임을 보여줌
+        if GameMenuFrame:IsShown() and not TeleportFrame:IsShown() then
+            TeleportFrame:Show()
+        end
+    else
+        UpdateUIStatus()
+    end
+end)
 
 TeleportFrame:SetScript("OnShow", UpdateUIStatus)
-GameMenuFrame:HookScript("OnShow", function() TeleportFrame:Show() end)
-GameMenuFrame:HookScript("OnHide", function() TeleportFrame:Hide() end)
+-- [핵심 수정] 전투 중 Show/Hide 직접 호출 방지
+GameMenuFrame:HookScript("OnShow", function() 
+    if InCombatLockdown() then
+        -- 전투 중이면 에러 방지를 위해 아무것도 하지 않음 (전투 종료 이벤트가 처리함)
+        return 
+    end
+    TeleportFrame:Show() 
+end)
+
+GameMenuFrame:HookScript("OnHide", function() 
+    if InCombatLockdown() then
+        -- 전투 중에는 Hide도 차단될 수 있으므로, 전투 종료 후 숨겨지도록 예약하거나 무시
+        -- 보통 메뉴를 닫는 건 문제가 덜하지만, 안전을 위해 체크합니다.
+        TeleportFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+        return 
+    end
+    TeleportFrame:Hide() 
+end)

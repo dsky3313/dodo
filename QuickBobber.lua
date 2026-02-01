@@ -34,6 +34,11 @@ local BobberButton = Lib:Create("quickBobber", UIParent, BobberConfig)
 BobberButton:Hide()
 
 local function quickBobber()
+    if InCombatLockdown() then
+        BobberButton:RegisterEvent("PLAYER_REGEN_ENABLED")
+        return
+    end
+
     local isEnabled = (dodoDB and dodoDB.useQuickBobber ~= false)
     local isKnown = C_SpellBook.IsSpellKnown(131474)
     local isUIOpen = (ProfessionsBookFrame and ProfessionsBookFrame:IsShown())
@@ -51,6 +56,14 @@ local function quickBobber()
         BobberButton:Hide()
     end
 end
+
+BobberButton:SetScript("OnEvent", function(self, event)
+    if event == "PLAYER_REGEN_ENABLED" then
+        quickBobber()
+    else
+        if self.UpdateStatus then self:UpdateStatus() end
+    end
+end)
 
 ------------------------------
 -- 이벤트

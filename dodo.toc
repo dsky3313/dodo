@@ -8,13 +8,14 @@
 
 # 2020.11.23 제작
 
-UI/dodoUI.xml
+UI/Option.xml
+UI/Option.lua
+
 UI/Icon.lua
-UI/Checkbox.lua
-UI/DropDown.lua
-UI/Slider.lua
-UI/CheckboxDropdown.lua
-UI/CheckboxSlider.lua
+#UI/DropDown.lua
+#UI/Slider.lua
+#UI/CheckboxDropdown.lua
+#UI/CheckboxSlider.lua
 
 BrowseGroup.lua
 CameraTilt.lua
