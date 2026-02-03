@@ -39,9 +39,9 @@
                 </Texture>
             </Layer>
             <Layer level="OVERLAY">
-                <FontString parentKey="Stacks" inherits="NumberFontNormal" justifyH="CENTER">
+                <FontString parentKey="Stacks" inherits="NumberFontNormal" justifyH="RIGHT">
                     <Anchors>
-                        <Anchor point="CENTER" x="0" y="0"/>
+                        <Anchor point="RIGHT" x="-5" y="0"/>
                     </Anchors>
                 </FontString>
             </Layer>

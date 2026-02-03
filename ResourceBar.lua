@@ -5,8 +5,16 @@ local addonName, dodo = ...;
 dodoDB = dodoDB or {}
 
 local barConfigs = {
-    { name = "ResourceBar1", width = 276, height = 12, y = -180, level = 3000, template = "ResourceBar1Template" },
-    { name = "ResourceBar2", width = 270, height = 10, y = 0,    level = 2999, template = "ResourceBar2Template" }
+    { name = "ResourceBar1", width = 276, height = 12, y = -10, level = 3000, template = "ResourceBar1Template" },
+    { name = "ResourceBar2", width = 270, height = 10, y = -5, level = 2999, template = "ResourceBar2Template" }
+}
+
+local ClassConfig = {
+    ["WARRIOR"] = {
+        [1] = { spellName = "투신", barMode = "Cooldown", duration = 20 },
+        [2] = { spellName = "소용돌이", barMode = "Stack", maxStack = 4 },
+        [3] = { spellName = "고통 감내", barMode = "Stack", maxStack = 100 },
+    },
 }
 
 local ResourceBar2Mixin = {}
@@ -16,11 +24,6 @@ function ResourceBar2Mixin:SetViewerItem(viewerItem)
 end
 
 function ResourceBar2Mixin:Update()
-    if self.viewerItem == nil then
-        self:Hide()
-        return
-    end
-
     local unit = self.viewerItem.auraDataUnit
     local auraInstanceID = self.viewerItem.auraInstanceID
 
@@ -37,8 +40,6 @@ function ResourceBar2Mixin:Update()
         self.Stacks:SetText(count)
 
         self:Show()
-    else
-        self:Hide()
     end
 end
 
@@ -55,7 +56,7 @@ bar1Frame:SetFrameLevel(barConfigs[1].level)
 local bar2Frame = CreateFrame("StatusBar", "ResourceBar2", UIParent, barConfigs[2].template)
 Mixin(bar2Frame, ResourceBar2Mixin) 
 bar2Frame:SetSize(barConfigs[2].width, barConfigs[2].height)
-bar2Frame:SetPoint("TOP", bar1Frame, "BOTTOM", 0, 0)
+bar2Frame:SetPoint("TOP", bar1Frame, "BOTTOM", 0, barConfigs[2].y)
 bar2Frame:SetFrameLevel(barConfigs[2].level)
 
 Mixin(bar2Frame, ResourceBar2Mixin)
@@ -100,11 +101,16 @@ function ResourceBar2UpdaterMixin:OnLoad()
 end
 
 function ResourceBar2UpdaterMixin:UpdateFromItem(item)
+    local _, englishClass = UnitClass("player")
+    local spec = C_SpecializationInfo.GetSpecialization()
+    local config = ClassConfig[englishClass] and ClassConfig[englishClass][spec]
+    if not config or not config.spellName then return end
+
     if not item or not item.cooldownID then return end
     local cdInfo = C_CooldownViewer.GetCooldownViewerCooldownInfo(item.cooldownID)
     if not cdInfo or not cdInfo.spellID then return end
 
-    if C_Spell.GetSpellName(cdInfo.spellID) == "고통 감내" then
+    if C_Spell.GetSpellName(cdInfo.spellID) == config.spellName then
         if self.bar2Frame and self.bar2Frame.SetViewerItem then
             self.bar2Frame:SetViewerItem(item)
             self.bar2Frame:Update()
