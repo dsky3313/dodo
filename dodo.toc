@@ -10,12 +10,8 @@
 
 UI/Option.xml
 UI/Option.lua
-
 UI/Icon.lua
-#UI/DropDown.lua
-#UI/Slider.lua
-#UI/CheckboxDropdown.lua
-#UI/CheckboxSlider.lua
+UI/ResourceBar.xml
 
 BrowseGroup.lua
 CameraTilt.lua
@@ -33,7 +29,8 @@ Teleport.lua
 Slash.lua
 Option.lua
 
-#Resource.lua
+ResourceBar.lua
+
 #Resource2.lua
 #SkyRiding.lua
 #MyKey.lua

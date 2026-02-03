@@ -1,13 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Ui xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.blizzard.com/wow/ui/" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 ..\FrameXML\UI.xsd">
-	<Texture name="ResourceBarTemplate" virtual="true" atlas="RaidFrame-Hp-Fill">
-		<Color r="0.3" g="0.3" b="0.3"/>
-	</Texture>
-    <FontString parentKey="Stacks" inherits="NumberFontNormal">
-        <Anchors>
-            <Anchor point="TOPLEFT" x="5" y="-5" />
-        </Anchors>
-    </FontString>
-	<Script file="ResourceBar.lua"/>
-</Ui>   
+    <StatusBar name="ResourceBar1Template" virtual="true">
+        <Size x="276" y="12"/>
+        <BarTexture atlas="UI-HUD-CoolDownManager-Bar" setAllPoints="true"/>
+        <Layers>
+            <Layer level="BACKGROUND">
+                <Texture parentKey="BarBG" atlas="UI-HUD-CoolDownManager-Bar-BG">
+                    <Anchors>
+                        <Anchor point="TOPLEFT" x="-2" y="2"/>
+                        <Anchor point="BOTTOMRIGHT" x="4" y="-7"/>
+                    </Anchors>
+                </Texture>
+            </Layer>
+            <Layer level="OVERLAY">
+                <FontString parentKey="Stacks" inherits="NumberFontNormal" justifyH="CENTER">
+                    <Anchors>
+                        <Anchor point="CENTER" x="0" y="0"/>
+                    </Anchors>
+                </FontString>
+            </Layer>
+        </Layers>
+    </StatusBar>
+    
+    <StatusBar name="ResourceBar2Template" virtual="true">
+        <Size x="270" y="10"/>
+        <BarTexture atlas="UI-HUD-CoolDownManager-Bar" setAllPoints="true"/>
+        <Frames>
+            <Cooldown parentKey="Cooldown" />
+        </Frames>
+        <Layers>
+            <Layer level="BACKGROUND">
+                <Texture parentKey="BarBG" atlas="UI-HUD-CoolDownManager-Bar-BG">
+                    <Anchors>
+                        <Anchor point="TOPLEFT" x="-2" y="2"/>
+                        <Anchor point="BOTTOMRIGHT" x="4" y="-7"/>
+                    </Anchors>
+                </Texture>
+            </Layer>
+            <Layer level="OVERLAY">
+                <FontString parentKey="Stacks" inherits="NumberFontNormal" justifyH="CENTER">
+                    <Anchors>
+                        <Anchor point="CENTER" x="0" y="0"/>
+                    </Anchors>
+                </FontString>
+            </Layer>
+        </Layers>
+    </StatusBar>
+
+    <Frame name="ResourceBar2Updater" />
+</Ui>

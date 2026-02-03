@@ -136,13 +136,19 @@ end
 -- 전투준비 + 채팅 메시지 출력 (공격대/파티 자동 감지)
 ------------------------------
 SlashCmdList.RCSLASH = function()
-  DoReadyCheck()  -- 전투 준비창 띄우기
-  local channel = IsInRaid() and "RAID" or "PARTY"
-  SendChatMessage("특성 / 도핑 확인", channel)  -- 상황에 맞는 채널로 메시지 전송
-end
-SLASH_RCSLASH1 = "/ㅈㅈ"
-SLASH_RCSLASH2 = "/ww"
+  local isLeader = UnitIsGroupLeader("player")
+  local inRaid = IsInRaid()
+  local inParty = IsInGroup()
+  local channel = inRaid and "RAID" or "PARTY"
 
+  if isLeader then
+      DoReadyCheck()
+      C_ChatInfo.SendChatMessage("특성 / 도핑 확인", channel)
+  elseif inParty then
+      C_ChatInfo.SendChatMessage("파티장 주세요", channel)
+  end
+end
+SLASH_RCSLASH1 = "/11"
 
 ------------------------------
 -- 파탈
