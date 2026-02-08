@@ -3,15 +3,21 @@
 ## Version: 12.0.0
 ## Author: dodo
 ## Notes: dodo QoL
-## IconTexture: Interface\ICONS\Trade_engineering
+## IconTexture: Interface\AddOns\dodo\Media\Texture\Logo
 ## SavedVariables: dodoDB
 
 # 2020.11.23 제작
 
-UI/Option.xml
-UI/Option.lua
+Libs\LibStub\LibStub.lua
+Libs\AceLocale-3.0\AceLocale-3.0.xml
+
+Locales\enUS.lua
+Locales\koKR.lua
+
+UI/OptionUI.xml
+UI/OptionUI.lua
 UI/Icon.lua
-UI/ResourceBar.xml
+#UI/ResourceBar.xml
 
 BrowseGroup.lua
 CameraTilt.lua
@@ -29,7 +35,7 @@ Teleport.lua
 Slash.lua
 Option.lua
 
-ResourceBar.lua
+#ResourceBar.lua
 
 #Resource2.lua
 #SkyRiding.lua

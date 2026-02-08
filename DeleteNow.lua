@@ -1,6 +1,6 @@
-------------------------------
+-- ==============================
 -- 테이블
-------------------------------
+-- ==============================
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
@@ -9,11 +9,10 @@ local function isIns() -- 인스확인
     return (difficultyID == 8 or instanceType == "raid") -- 1 일반 / 8 쐐기 / raid 레이드
 end
 
-------------------------------
+-- ==============================
 -- 디스플레이
-------------------------------
--- 아이템 링크
-local DeleteItemLink = StaticPopup1:CreateFontString(nil, "OVERLAY", "GameFontNormalMed1")
+-- ==============================
+local DeleteItemLink = StaticPopup1:CreateFontString(nil, "OVERLAY", "GameFontNormalMed1") -- 아이템 링크
 DeleteItemLink:SetPoint("CENTER", StaticPopup1, "CENTER", 0, 10)
 DeleteItemLink:Hide()
 
@@ -28,9 +27,9 @@ do
     cachedDeleteWord = select(2, strsplit('"', rawText)) or "삭제"
 end
 
-------------------------------
+-- ==============================
 -- 동작
-------------------------------
+-- ==============================
 local function DeleteNow()
     if isIns() then return end
 
@@ -68,9 +67,9 @@ local function DeleteNow()
     GameTooltip:Show()
 end
 
-------------------------------
+-- ==============================
 -- 이벤트
-------------------------------
+-- ==============================
 local initDeleteNow = CreateFrame("Frame")
 initDeleteNow:RegisterEvent("PLAYER_ENTERING_WORLD")
 initDeleteNow:RegisterEvent("DELETE_ITEM_CONFIRM")

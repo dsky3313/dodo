@@ -13,7 +13,7 @@ local ClassConfig = {
     ["WARRIOR"] = {
         [1] = { spellName = "투신", barMode = "Cooldown", duration = 20 },
         [2] = { spellName = "소용돌이", barMode = "Stack", maxStack = 4 },
-        [3] = { spellName = "고통 감내", barMode = "Stack", maxStack = 100 },
+        [3] = { spellName = "고통 감내", barMode = "Stack", maxStack = 100, color = { r = 1.0, g = 0.588, b = 0.196 } },
     },
 }
 
@@ -24,6 +24,15 @@ function ResourceBar2Mixin:SetViewerItem(viewerItem)
 end
 
 function ResourceBar2Mixin:Update()
+    self:SetMinMaxValues(0, 100)
+    self:SetStatusBarColor(1.0, 0.588, 0.196)
+
+    if not self.viewerItem or not self.viewerItem.auraInstanceID then
+        if self.countStack then self.countStack:SetText("0") end
+        self:SetValue(0, Enum.StatusBarInterpolation.ExponentialEaseOut)
+        return
+    end
+
     local unit = self.viewerItem.auraDataUnit
     local auraInstanceID = self.viewerItem.auraInstanceID
 
@@ -36,8 +45,10 @@ function ResourceBar2Mixin:Update()
             self.Cooldown:Hide()
         end
 
-        local count = C_UnitAuras.GetAuraApplicationDisplayCount(unit, auraInstanceID)
-        self.Stacks:SetText(count)
+        local count = C_UnitAuras.GetAuraApplicationDisplayCount(unit, auraInstanceID) or 0
+        self.countStack:SetText(count)
+
+        self:SetValue(count, Enum.StatusBarInterpolation.ExponentialEaseOut)
 
         self:Show()
     end
@@ -74,11 +85,15 @@ local function UpdateBar1()
     if max and max > 0 then
         bar1Frame:SetMinMaxValues(0, max)
         bar1Frame:SetValue(current, Enum.StatusBarInterpolation.ExponentialEaseOut) -- 부드러운 애니메이션
-        if bar1Frame.Stacks then bar1Frame.Stacks:SetText(tostring(current)) end
+        if bar1Frame.countPower then bar1Frame.countPower:SetText(tostring(current)) end
     end
 
     local color = PowerBarColor[powerToken] or PowerBarColor[powerType] or {r=1, g=1, b=1} -- 자원 색상
     bar1Frame:SetStatusBarColor(color.r, color.g, color.b)
+
+    if bar2Frame and bar2Frame.Update then
+        bar2Frame:Update()
+    end
 end
 C_Timer.NewTicker(0.1, UpdateBar1)
 
@@ -126,8 +141,7 @@ function ResourceBar2UpdaterMixin:HookViewerItem(item)
     self:UpdateFromItem(item)
 end
 
--- 최종 실행
-if ResourceBar2Updater then
-    Mixin(ResourceBar2Updater, ResourceBar2UpdaterMixin)
-    ResourceBar2Updater:OnLoad()
-end
+
+local updater = CreateFrame("Frame", "ResourceBar2Updater", UIParent)
+Mixin(updater, ResourceBar2UpdaterMixin)
+updater:OnLoad()

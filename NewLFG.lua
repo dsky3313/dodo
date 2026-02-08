@@ -1,8 +1,9 @@
-------------------------------
+-- ==============================
 -- 테이블
-------------------------------
+-- ==============================
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
+local L = LibStub("AceLocale-3.0"):GetLocale(addonName)
 
 local function isIns() -- 인스확인
     local _, instanceType, difficultyID = GetInstanceInfo()
@@ -25,9 +26,9 @@ local armedAt = 0
 local lastApps = 0
 local lastTrig = 0
 
-------------------------------
+-- ==============================
 -- 디스플레이
-------------------------------
+-- ==============================
 local newLFG_Alert = CreateFrame("Frame", "NewLFG_AlertFrame", UIParent)
 newLFG_Alert:SetSize(400, 50)
 newLFG_Alert:SetPoint("TOP", 50, -150)
@@ -37,17 +38,17 @@ newLFG_Alert.Text = newLFG_Alert:CreateFontString(nil, "OVERLAY", "GameFontNorma
 newLFG_Alert.Text:SetPoint("CENTER")
 local fontPath, _, fontFlags = newLFG_Alert.Text:GetFont()
 newLFG_Alert.Text:SetFont(fontPath, 22, fontFlags)
-newLFG_Alert.Text:SetText("[ 신규 신청 ]\n\n|cffffff00파티창을 확인하세요!|r")
+newLFG_Alert.Text:SetText(L["[ 신규 신청 ]\n\n|cffffff00파티창을 확인하세요!|r"])
 
 
-------------------------------
+-- ==============================
 -- 동작
-------------------------------
+-- ==============================
 function NewLFG()
     if isIns() or InCombatLockdown() then return end
 
     local isLeader = UnitIsGroupLeader("player") == true
-    local useMemberAlert = dodoDB.useNewLFGLeade
+    local useMemberAlert = dodoDB.useNewLFGLeader
 
     if not useMemberAlert and not isLeader then
         return
@@ -68,9 +69,9 @@ function NewLFG()
     PlaySound(tonumber(soundID), "Master")
 end
 
-------------------------------
+-- ==============================
 -- 이벤트
-------------------------------
+-- ==============================
 local initNewLFG = CreateFrame("Frame")
 initNewLFG:RegisterEvent("PLAYER_ENTERING_WORLD")
 initNewLFG:RegisterEvent("LFG_LIST_APPLICANT_LIST_UPDATED")

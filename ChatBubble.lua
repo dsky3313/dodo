@@ -1,6 +1,6 @@
-------------------------------
+-- ==============================
 -- 테이블
-------------------------------
+-- ==============================
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
@@ -13,9 +13,9 @@ chatbubbleFontTable = {
     { label = "K_PAGETEXT", value = "Fonts\\K_PAGETEXT.TTF" },
 }
 
-------------------------------
+-- ==============================
 -- 동작
-------------------------------
+-- ==============================
 local function ChatBubble()
     local fontPath = dodoDB.chatbubbleFontPath or "Fonts\\2002.TTF"
     local fontSize = dodoDB.chatbubbleFontSize or 10
@@ -26,9 +26,9 @@ local function ChatBubble()
     end
 end
 
-------------------------------
+-- ==============================
 -- 이벤트
-------------------------------
+-- ==============================
 local initChatBubble = CreateFrame("Frame")
 initChatBubble:RegisterEvent("PLAYER_LOGIN")
 initChatBubble:SetScript("OnEvent", function(self, event)

@@ -1,6 +1,6 @@
-------------------------------
+-- ==============================
 -- 테이블
-------------------------------
+-- ==============================
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
@@ -11,11 +11,10 @@ end
 
 local AHF = Enum.AuctionHouseFilter.CurrentExpansionOnly
 
-------------------------------
+-- ==============================
 -- 동작
-------------------------------
--- 경매장 필터
-local function checkAuctionFilter()
+-- ==============================
+local function checkAuctionFilter() -- 경매장 필터
     if isIns() then return end
 
     local isEnabled = (dodoDB.useAuctionFilter ~= false) -- 기본값 true
@@ -26,8 +25,7 @@ local function checkAuctionFilter()
     AuctionFrame:UpdateClearFiltersButton()
 end
 
--- 주문제작 필터
-local function checkCraftFilter()
+local function checkCraftFilter() -- 주문제작 필터
     if isIns() then return end
 
     local isEnabled = (dodoDB.useCraftFilter ~= false) -- 기본값 true
@@ -39,15 +37,14 @@ local function checkCraftFilter()
     dropdown:ValidateResetState()
 end
 
--- 통합 실행 함수 (외부 공유용)
-function dodo.expFilter()
+function dodo.expFilter() -- 통합 실행 함수 (외부 공유용)
     checkAuctionFilter()
     checkCraftFilter()
 end
 
-------------------------------
+-- ==============================
 -- 이벤트
-------------------------------
+-- ==============================
 local initFilterFrame = CreateFrame("Frame")
 initFilterFrame:RegisterEvent("ADDON_LOADED")
 initFilterFrame:RegisterEvent("PLAYER_ENTERING_WORLD")

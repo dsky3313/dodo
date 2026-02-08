@@ -1,7 +1,9 @@
-------------------------------
+-- ==============================
 -- 테이블
-------------------------------
+-- ==============================
 local addonName, dodo = ...
+dodoDB = dodoDB or {}
+local L = LibStub("AceLocale-3.0"):GetLocale(addonName)
 
 local function isIns() -- 인스확인
     local _, instanceType, difficultyID = GetInstanceInfo()
@@ -10,18 +12,18 @@ end
 
 difficultyTable = {
     dungeon = {
-        {label="일반", value="1"},
-        {label="영웅", value="2"},
-        {label="신화", value="23"}
+        {label=L["일반"], value="1"},
+        {label=L["영웅"], value="2"},
+        {label=L["신화"], value="23"}
     },
     raid = {
-        {label="일반", value="14"},
-        {label="영웅", value="15"},
-        {label="신화", value="16"}
+        {label=L["일반"], value="14"},
+        {label=L["영웅"], value="15"},
+        {label=L["신화"], value="16"}
     },
     legacy = {
-        {label="10인", value="3"},
-        {label="25인", value="4"}
+        {label=L["10인"], value="3"},
+        {label=L["25인"], value="4"}
     },
 }
 
@@ -39,9 +41,9 @@ local NORMAL_COLOR, SELECTED_COLOR = {1, 0.82, 0}, {1, 1, 1}
 local btn_select = "UI-Frame-DastardlyDuos-Bar-Frame-gold"
 local btn_highlight = "glues-characterSelect-nameBG"
 
-------------------------------
+-- ==============================
 -- 디스플레이
-------------------------------
+-- ==============================
 local difficultyFrame = CreateFrame("Frame", "DifficultySelector", UIParent, "DefaultPanelBaseTemplate")
 difficultyFrame:SetSize(230, 124)
 difficultyFrame:SetPoint("TOPLEFT", 5, -5)
@@ -49,7 +51,7 @@ difficultyFrame:EnableMouse(true)
 
 difficultyFrame.NineSlice.Text = difficultyFrame.NineSlice:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 difficultyFrame.NineSlice.Text:SetPoint("TOP", 0, -5)
-difficultyFrame.NineSlice.Text:SetText("인스턴스 난이도 설정")
+difficultyFrame.NineSlice.Text:SetText(L["인스턴스 난이도 설정"])
 
 difficultyFrame.Background = CreateFrame("Frame", nil, difficultyFrame, "FlatPanelBackgroundTemplate")
 difficultyFrame.Background:SetFrameLevel(difficultyFrame:GetFrameLevel() - 1)
@@ -103,13 +105,13 @@ local function CreateDifficultyButton(parentRow, category, index, data)
     return btn
 end
 
-local row1 = CreateCategoryRow(difficultyFrame, -25, "던전")
+local row1 = CreateCategoryRow(difficultyFrame, -25, L["던전"])
 for i, data in ipairs(difficultyTable.dungeon) do CreateDifficultyButton(row1, "dungeon", i, data) end
 
-local row2 = CreateCategoryRow(difficultyFrame, -55, "공격대")
+local row2 = CreateCategoryRow(difficultyFrame, -55, L["공격대"])
 for i, data in ipairs(difficultyTable.raid) do CreateDifficultyButton(row2, "raid", i, data) end
 
-local row3 = CreateCategoryRow(difficultyFrame, -85, "낭만")
+local row3 = CreateCategoryRow(difficultyFrame, -85, L["낭만"])
 for i, data in ipairs(difficultyTable.legacy) do CreateDifficultyButton(row3, "legacy", i, data) end
 
 local resetBtn = CreateFrame("Button", nil, difficultyFrame.NineSlice, "SquareIconButtonTemplate")
@@ -118,9 +120,9 @@ resetBtn:SetPoint("TOPRIGHT", difficultyFrame, "TOPRIGHT", 4, 4)
 resetBtn.Icon:SetAtlas("UI-RefreshButton")
 resetBtn:SetFrameLevel(difficultyFrame.NineSlice:GetFrameLevel() + 10)
 
-------------------------------
+-- ==============================
 -- 동작
-------------------------------
+-- ==============================
 local function checkPermission()
     if isIns() then return false end
     return (not IsInGroup() and not IsInRaid()) or UnitIsGroupLeader("player")
@@ -189,7 +191,7 @@ end
 resetBtn:SetScript("OnClick", function()
     if checkPermission() then
         ResetInstances()
-        local msg = "인스턴스 초기화 완료!"
+        local msg = L["인스턴스 초기화 완료!"]
         if IsInGroup() or IsInRaid() then
             C_ChatInfo.SendChatMessage(msg, "PARTY")
         else
@@ -199,9 +201,9 @@ resetBtn:SetScript("OnClick", function()
     end
 end)
 
-------------------------------
+-- ==============================
 -- 이벤트
-------------------------------
+-- ==============================
 local initInsDifficulty = CreateFrame("Frame")
 initInsDifficulty:RegisterEvent("ADDON_LOADED")
 initInsDifficulty:RegisterEvent("PLAYER_ENTERING_WORLD")

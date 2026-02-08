@@ -1,12 +1,12 @@
-------------------------------
+-- ==============================
 -- 테이블
-------------------------------
+-- ==============================
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-------------------------------
+-- ==============================
 -- 동작
-------------------------------
+-- ==============================
 local function CameraTilt()
     local base = dodoDB.cameraBase or 0.55
     local baseDown = dodoDB.cameraDown or 0.55
@@ -19,9 +19,9 @@ local function CameraTilt()
     SetCVar("test_cameraDynamicPitchBaseFovPadFlying", baseFlying)
 end
 
-------------------------------
+-- ==============================
 -- 이벤트
-------------------------------
+-- ==============================
 local initCamera = CreateFrame("Frame")
 initCamera:RegisterEvent("PLAYER_LOGIN")
 initCamera:SetScript("OnEvent", function(self, event)

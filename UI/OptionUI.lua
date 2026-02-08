@@ -2,6 +2,7 @@
 -- 테이블
 ------------------------------
 local addonName, dodo = ...
+local L = LibStub("AceLocale-3.0"):GetLocale("dodo")
 
 local Formatters = {
     ["Percent"] = function(v) return ("%d%%"):format(math.floor((v or 0) * 100 + 0.5)) end,

@@ -14,7 +14,7 @@
                 </Texture>
             </Layer>
             <Layer level="OVERLAY">
-                <FontString parentKey="Stacks" inherits="NumberFontNormal" justifyH="CENTER">
+                <FontString parentKey="countPower" inherits="NumberFontNormal" justifyH="CENTER">
                     <Anchors>
                         <Anchor point="CENTER" x="0" y="0"/>
                     </Anchors>
@@ -24,7 +24,7 @@
     </StatusBar>
     
     <StatusBar name="ResourceBar2Template" virtual="true">
-        <Size x="270" y="10"/>
+        <Size x="270" y="8"/>
         <BarTexture atlas="UI-HUD-CoolDownManager-Bar" setAllPoints="true"/>
         <Frames>
             <Cooldown parentKey="Cooldown" />
@@ -39,7 +39,7 @@
                 </Texture>
             </Layer>
             <Layer level="OVERLAY">
-                <FontString parentKey="Stacks" inherits="NumberFontNormal" justifyH="RIGHT">
+                <FontString parentKey="countStack" inherits="NumberFontNormal" justifyH="RIGHT">
                     <Anchors>
                         <Anchor point="RIGHT" x="-5" y="0"/>
                     </Anchors>

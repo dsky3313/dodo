@@ -97,6 +97,7 @@ function dodoCreateOptions()
             return settingParentDeleteNow:GetValue()
         end)
     end
+    Checkbox(OptionCategory, "useTeleport", "던전 텔레포트 버튼", "게임메뉴 옆에 텔레포트 버튼을 표시합니다.", true, dodo.ESCTeleportFrame)
 
     local FrameScaleHeader = CreateSettingsListSectionHeaderInitializer("프레임 크기조절")
     dodoOptionLayout:AddInitializer(FrameScaleHeader)

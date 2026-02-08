@@ -1,6 +1,6 @@
-------------------------------
+-- ==============================
 -- 테이블
-------------------------------
+-- ==============================
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 local Lib = dodo.IconLib
@@ -27,9 +27,9 @@ local BobberConfig = {
     framestrata = "HIGH",
 }
 
-------------------------------
+-- ==============================
 -- 디스플레이
-------------------------------
+-- ==============================
 local BobberButton = Lib:Create("quickBobber", UIParent, BobberConfig)
 BobberButton:Hide()
 
@@ -65,9 +65,9 @@ BobberButton:SetScript("OnEvent", function(self, event)
     end
 end)
 
-------------------------------
+-- ==============================
 -- 이벤트
-------------------------------
+-- ==============================
 local initQuickBobber = CreateFrame("Frame")
 initQuickBobber:RegisterEvent("ADDON_LOADED")
 initQuickBobber:RegisterEvent("PLAYER_ENTERING_WORLD")

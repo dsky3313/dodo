@@ -1,9 +1,10 @@
-------------------------------
+-- ==============================
 -- 테이블
-------------------------------
+-- ==============================
 local addonName, dodo = ...
 local IconLib = {}
 dodo.IconLib = IconLib
+local L = LibStub("AceLocale-3.0"):GetLocale(addonName)
 
 local fontColorTable = {
     white  = {1, 1, 1},
@@ -14,9 +15,9 @@ local fontColorTable = {
     gray   = {0.5, 0.5, 0.5},
 }
 
-------------------------------
+-- ==============================
 -- 동작
-------------------------------
+-- ==============================
 function IconLib:Create(name, parent, config)
     local isAction = config and config.isAction or false
     local template = isAction and "SecureActionButtonTemplate" or nil
@@ -73,7 +74,7 @@ function IconLib:Create(name, parent, config)
         if data.type == "spell" then GameTooltip:SetSpellByID(data.id)
         elseif data.type == "item" then GameTooltip:SetItemByID(data.id)
         elseif data.type == "macro" then
-            GameTooltip:AddLine(data.label or "매크로", 1, 1, 1)
+            GameTooltip:AddLine(L[data.label] or "매크로", 1, 1, 1)
             if data.macrotext then GameTooltip:AddLine(data.macrotext, 0.7, 0.7, 0.7, true) end
         end
         GameTooltip:Show()
@@ -93,7 +94,6 @@ function IconLib:Create(name, parent, config)
         if data.type == "spell" then
             isKnown = C_SpellBook.IsSpellInSpellBook(data.id) or C_SpellBook.IsSpellKnown(data.id)
             local cd = C_Spell.GetSpellCooldown(data.id)
-            -- [해결] cd 내부의 비밀 값을 직접 비교(>, if)하지 않고 함수에 통째로 넘김
             if cd and cd.startTime then
                 self.cooldown:SetCooldown(cd.startTime, cd.duration or 0)
             else 
@@ -116,7 +116,6 @@ function IconLib:Create(name, parent, config)
             self.Count:SetText(""); self.cooldown:Clear()
         end
 
-        -- [변경] 쿨타임 색상 변경 제거: 오직 습득 여부(isKnown)로만 색 결정
         self.Name:SetTextColor(unpack(not isKnown and fontColorTable.gray or color))
         self.icon:SetDesaturated(not isKnown)
     end

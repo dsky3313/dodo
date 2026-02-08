@@ -1,8 +1,9 @@
-------------------------------
+-- ==============================
 -- 테이블
-------------------------------
+-- ==============================
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
+local L = LibStub("AceLocale-3.0"):GetLocale(addonName)
 
 local function isIns() -- 인스확인
     local _, instanceType, difficultyID = GetInstanceInfo()
@@ -12,12 +13,12 @@ end
 local initialized = false
 local LFGListFrame
 
-------------------------------
+-- ==============================
 -- 디스플레이
-------------------------------
+-- ==============================
 local browseGroupsBtn = CreateFrame("Button", "browseGroupsBtn", UIParent, "UIPanelButtonTemplate")
 browseGroupsBtn:SetSize(144, 22)
-browseGroupsBtn:SetText("파티 탐색하기")
+browseGroupsBtn:SetText(L["파티 탐색하기"])
 browseGroupsBtn:Hide()
 
 local function anchorBrowseGroupBtn()
@@ -28,7 +29,7 @@ end
 
 local returnGroupsBtn = CreateFrame("Button", "returnGroupsBtn", UIParent, "UIPanelButtonTemplate")
 returnGroupsBtn:SetSize(144, 22)
-returnGroupsBtn:SetText("파티로 돌아가기")
+returnGroupsBtn:SetText(L["파티로 돌아가기"])
 returnGroupsBtn:Hide()
 
 local function anchorReturnGroupsBtn()
@@ -37,9 +38,9 @@ local function anchorReturnGroupsBtn()
     returnGroupsBtn:SetPoint("TOP", LFGListFrame, "BOTTOM", -100, 26)
 end
 
-------------------------------
+-- ==============================
 -- 동작
-------------------------------
+-- ==============================
 local function updateBtn()
     local isEnabled = (dodoDB.useBrowseGroup ~= false) -- 기본값 true
 
@@ -110,9 +111,9 @@ local function initBtn()
     updateBtn()
 end
 
-------------------------------
+-- ==============================
 -- 이벤트
-------------------------------
+-- ==============================
 local initBrowseGroupBtn = CreateFrame("Frame")
 initBrowseGroupBtn:RegisterEvent("ADDON_LOADED")
 initBrowseGroupBtn:RegisterEvent("GROUP_ROSTER_UPDATE")

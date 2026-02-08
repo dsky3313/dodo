@@ -1,8 +1,9 @@
-------------------------------
+-- ==============================
 -- 테이블
-------------------------------
+-- ==============================
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
+local L = LibStub("AceLocale-3.0"):GetLocale(addonName)
 
 local function isIns() -- 인스확인
     local _, instanceType, difficultyID = GetInstanceInfo()
@@ -38,9 +39,9 @@ local UtilTable = {
 
 local activeIDs = {}
 
-------------------------------
+-- ==============================
 -- 디스플레이
-------------------------------
+-- ==============================
 local partyClassFrame = CreateFrame("Frame", "PartyClassFrame", UIParent, "DefaultPanelBaseTemplate")
 partyClassFrame:SetSize(542, 214)
 partyClassFrame:SetPoint("TOPLEFT", PVEFrame, "BOTTOMLEFT", 20, 2)
@@ -48,7 +49,7 @@ partyClassFrame:SetFrameStrata("MEDIUM")
 
 partyClassFrame.NineSlice.Text = partyClassFrame.NineSlice:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 partyClassFrame.NineSlice.Text:SetPoint("TOPRIGHT", partyClassFrame, "TOPRIGHT", -80, -5)
-partyClassFrame.NineSlice.Text:SetText("파티 클래스 현황")
+partyClassFrame.NineSlice.Text:SetText(L["파티 클래스 현황"])
 
 partyClassFrame.Background = partyClassFrame:CreateTexture(nil, "BACKGROUND")
 partyClassFrame.Background:SetAtlas("collections-background-tile")
@@ -110,9 +111,10 @@ local function CreateIcon()
         end
     end
 end
-------------------------------
+
+-- ==============================
 -- 동작
-------------------------------
+-- ==============================
 function PartyClass()
     if isIns() then
         partyClassFrame:Hide()
@@ -158,9 +160,9 @@ function PartyClass()
     end
 end
 
-------------------------------
+-- ==============================
 -- 이벤트
-------------------------------
+-- ==============================
 local initPartyClass = CreateFrame("Frame")
 initPartyClass:RegisterEvent("ADDON_LOADED")
 initPartyClass:RegisterEvent("PLAYER_ENTERING_WORLD")
