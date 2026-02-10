@@ -4,6 +4,10 @@
 local addonName, ns = ...
 dodoDB = dodoDB or {}
 
+local function isIns() -- 인스확인
+    local _, instanceType, difficultyID = GetInstanceInfo()
+    return (difficultyID == 8 or instanceType == "raid") -- 1 일반 / 8 쐐기 / raid 레이드
+end
 
 local isEnabled = (dodoDB and dodoDB.use123 ~= false) -- DB
 

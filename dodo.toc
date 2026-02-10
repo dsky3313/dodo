@@ -39,5 +39,3 @@ ResourceBar.lua
 
 #SkyRiding.lua
 #MyKey.lua
-#StatusBarOverlay.xml
-#StatusBarController.lua

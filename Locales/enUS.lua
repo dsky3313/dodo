@@ -35,6 +35,7 @@ L["파티 클래스 현황"] = "Party Class Status"
 L["낚시찌"] = "Fishing Bobber"
 
 -- ResourceBar.lua
+L["응축되는 물"] = "Coalescing Water"
 L["투신"] = "Avatar"
 L["소용돌이 연마"] = "Whirlwind"
 L["고통 감내"] = "Ignore Pain"
