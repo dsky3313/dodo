@@ -29,25 +29,15 @@ local ClassConfig = {
     },
 }
 
+---@diagnostic disable: param-type-mismatch
 ---@diagnostic disable: redundant-parameter
----@diagnostic disable-next-line: param-type-mismatch
 
--- ==============================
--- 
--- ==============================
-
--- 현재 특성 버프 목록 저장
 local currentSpecBuffs = {}
+
 local function UpdateCurrentSpecConfig()
     local _, englishClass = UnitClass("player")
     local spec = C_SpecializationInfo.GetSpecialization()
     currentSpecBuffs = (ClassConfig[englishClass] and ClassConfig[englishClass][spec]) or {}
-
-    -- 디버깅용
-    -- print(string.format("[ResourceBar2] 특성 변경: %s - 추적 버프: %d개", englishClass, #currentSpecBuffs))
-    -- for i, buff in ipairs(currentSpecBuffs) do
-    --     print(string.format("  [%d] %s", i, buff.spellName))
-    -- end
 end
 
 -- ==============================
@@ -103,7 +93,6 @@ function ResourceBar2Mixin:Update()
         local auraData = C_UnitAuras.GetAuraDataByAuraInstanceID(unit, auraInstanceID)
         if auraData then
             if self.buffConfig and self.buffConfig.barMode == "duration" then
-                -- Duration 모드: OnUpdate 설정
                 if not self._hasDurationUpdate then
                     self:SetScript("OnUpdate", function(self, elapsed)
                         if not self.viewerItem or not self.viewerItem.auraInstanceID then
@@ -121,7 +110,6 @@ function ResourceBar2Mixin:Update()
                                 local remaining = durObj:GetRemainingDuration()
                                 self:SetValue(remaining, Enum.StatusBarInterpolation.ExponentialEaseOut)
 
-                                -- 텍스트 업데이트
                                 if self.countStack then
                                     self.countStack:SetFormattedText("%d", remaining)
                                 end
@@ -131,7 +119,6 @@ function ResourceBar2Mixin:Update()
                     self._hasDurationUpdate = true
                 end
             else
-                -- Stack 모드: 스택 수 사용
                 if self._hasDurationUpdate then
                     self:SetScript("OnUpdate", nil)
                     self._hasDurationUpdate = false
@@ -146,8 +133,6 @@ function ResourceBar2Mixin:Update()
         end
     end
 end
-
-
 
 -- ==============================
 -- 디스플레이
@@ -164,24 +149,33 @@ bar2Frame:SetPoint("TOP", bar1Frame, "BOTTOM", 0, barConfigs[2].y)
 bar2Frame:SetFrameLevel(barConfigs[2].level)
 
 -- ==============================
--- 바1
+-- ResourceBar1
 -- ==============================
 local curve = C_CurveUtil.CreateCurve()
 curve:SetType(Enum.LuaCurveType.Linear)
 curve:AddPoint(0, 0)
 curve:AddPoint(1, 100)
 
+local cachedPowerType = nil
+
 local function UpdateBar1()
     if not bar1Frame then return end
 
     local powerType, powerToken = UnitPowerType("player")
+
+    if powerType ~= cachedPowerType then
+        cachedPowerType = powerType
+        local color = PowerBarColor[powerToken] or PowerBarColor[powerType] or {r=1, g=1, b=1}
+        bar1Frame:SetStatusBarColor(color.r, color.g, color.b)
+    end
+
     local current = UnitPower("player", powerType)
     local max = UnitPowerMax("player", powerType)
 
     if max and max > 0 then
         bar1Frame:SetMinMaxValues(0, max)
         bar1Frame:SetValue(current, Enum.StatusBarInterpolation.ExponentialEaseOut)
-        
+
         if bar1Frame.countPower then
             if powerType == 0 then
                 local percentage = UnitPowerPercent("player", powerType, false, curve)
@@ -192,17 +186,12 @@ local function UpdateBar1()
         end
     end
 
-    local color = PowerBarColor[powerToken] or PowerBarColor[powerType] or {r=1, g=1, b=1}
-    bar1Frame:SetStatusBarColor(color.r, color.g, color.b)
-
     if bar2Frame and bar2Frame.Update then
         bar2Frame:Update()
     end
 end
 
 C_Timer.NewTicker(0.1, UpdateBar1)
-
--- 바2
 
 -- ==============================
 -- ResourceBar2 CDM 연동
@@ -217,9 +206,7 @@ function ResourceBar2UpdaterMixin:OnLoad()
     eventFrame:SetScript("OnEvent", function(self, event)
         if event == "PLAYER_SPECIALIZATION_CHANGED" then
             UpdateCurrentSpecConfig()
-            if bar2Frame and bar2Frame.Update then
-                bar2Frame:Update()
-            end
+            bar2Frame:Update()
         end
     end)
 
@@ -246,12 +233,10 @@ function ResourceBar2UpdaterMixin:UpdateFromItem(item)
 
     local spellName = C_Spell.GetSpellName(cdInfo.spellID)
 
-    -- ✅ 현재 특성의 모든 버프 순회
     for _, buffConfig in ipairs(currentSpecBuffs) do
         if spellName == buffConfig.spellName then
             if self.bar2Frame and self.bar2Frame.SetViewerItem then
                 self.bar2Frame:SetViewerItem(item)
-                -- ✅ 추가: 매칭된 버프 설정을 바에 저장
                 self.bar2Frame:SetBuffConfig(buffConfig)
                 self.bar2Frame:Update()
             end
@@ -261,15 +246,16 @@ function ResourceBar2UpdaterMixin:UpdateFromItem(item)
 end
 
 function ResourceBar2UpdaterMixin:HookViewerItem(item)
-    if not item.__CDMBAHooked then
+    if not item.cdmHooked then
         hooksecurefunc(item, 'RefreshData', function()
             self:UpdateFromItem(item)
         end)
-        item.__CDMBAHooked = true
+        item.cdmHooked = true
     end
     self:UpdateFromItem(item)
 end
 
+-- ✅ 원래 코드: 단순 호출
 local updater = CreateFrame("Frame", "ResourceBar2Updater", UIParent)
 Mixin(updater, ResourceBar2UpdaterMixin)
 updater:OnLoad()
