@@ -29,7 +29,7 @@ local expTable = {
     { category = "SL", name = L["어둠땅"], iconID = 3847780 },
     { category = "DF", name = L["용군단"], iconID = 4661645 },
     { category = "TWW", name = L["내부전쟁"], iconID = 5901551 },
-    { category = "MN", name = L["한밤"], iconID = 5901552 },
+    { category = "MN", name = L["한밤"], iconID = 7294993 },
     { category = "ETC", name = L["기타"], iconID = 132311 },
 }
 
@@ -140,6 +140,16 @@ local teleportTable = {
     { id = 1237215, type = "spell", category = "TWW", name = L["알다니"], isSeason = true },
     { id = 1226482, type = "spell", category = "TWW", name = L["언더마인"] },
     { id = 1239155, type = "spell", category = "TWW", name = L["마괴종"] },
+
+        -- MN
+    { id = 221966, type = "item", category = "MN", name = L["기공"] },
+    { id = 1254559, type = "spell", category = "MN", name = L["동굴"] },
+    { id = 1254555, type = "spell", category = "MN", name = L["샤론"] },
+    { id = 1254551, type = "spell", category = "MN", name = L["삼두정"] },
+    { id = 1254572, type = "spell", category = "MN", name = L["정원"] },
+    { id = 1254563, type = "spell", category = "MN", name = L["제나스"] },
+    { id = 1254400, type = "spell", category = "MN", name = L["첨탑"] },
+    { id = 1254557, type = "spell", category = "MN", name = L["하늘탑"] },
 
     -- ETC
     { id = 1233637, type = "macro", iconID = 7252953, category = "ETC", name = L["하우징"] },

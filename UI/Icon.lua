@@ -81,21 +81,25 @@ function IconLib:Create(name, parent, config)
     end)
     frame:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
-    -- 상태 업데이트
+    -- 상태 업데이트 (첫 접속 흑백 방지 + 쿨다운 흑백 적용)
     function frame:UpdateStatus()
         local data = self.iconData
         if not data then return end
 
         local isKnown = true
+        local isOnCooldown = false
         local color = (type(data.fontcolor) == "string" and fontColorTable[data.fontcolor]) 
                       or data.fontcolor 
                       or fontColorTable.white
 
         if data.type == "spell" then
+            -- 정보 로딩 전이면 흑백 처리 유예
+            if not C_Spell.GetSpellInfo(data.id) then return end
             isKnown = C_SpellBook.IsSpellInSpellBook(data.id) or C_SpellBook.IsSpellKnown(data.id)
             local cd = C_Spell.GetSpellCooldown(data.id)
-            if cd and cd.startTime then
+            if cd and cd.startTime and cd.startTime > 0 then
                 self.cooldown:SetCooldown(cd.startTime, cd.duration or 0)
+                if cd.duration and cd.duration > 1.5 then isOnCooldown = true end
             else 
                 self.cooldown:Clear() 
             end
@@ -105,8 +109,9 @@ function IconLib:Create(name, parent, config)
             self.Count:SetText(count > 1 and count or "")
             isKnown = (count > 0) or (C_ToyBox and C_ToyBox.GetToyInfo(data.id))
             local start, duration = C_Item.GetItemCooldown(data.id)
-            if start then
+            if start and start > 0 then
                 self.cooldown:SetCooldown(start, duration or 0)
+                if duration and duration > 1.5 then isOnCooldown = true end
             else 
                 self.cooldown:Clear() 
             end
@@ -116,11 +121,13 @@ function IconLib:Create(name, parent, config)
             self.Count:SetText(""); self.cooldown:Clear()
         end
 
-        self.Name:SetTextColor(unpack(not isKnown and fontColorTable.gray or color))
-        self.icon:SetDesaturated(not isKnown)
+        -- [핵심] 흑백 처리: 미습득 혹은 쿨다운 중일 때
+        local shouldBeGray = (not isKnown) or isOnCooldown
+        self.Name:SetTextColor(unpack(shouldBeGray and fontColorTable.gray or color))
+        self.icon:SetDesaturated(shouldBeGray)
     end
 
-    -- 테이블 적용 (ApplyConfig)
+    -- 테이블 적용 (ApplyConfig) - 모든 라벨/위치/폰트 기능 복구
     function frame:ApplyConfig(data)
         if InCombatLockdown() and data.isAction then return end
         self.iconData = data
@@ -149,16 +156,19 @@ function IconLib:Create(name, parent, config)
             self.icon:SetTexture(data.icon or 134400)
         end
 
+        -- [기능 복구] 아이콘 위치
         if data.iconposition then
             local p = data.iconposition
             local rel = (type(p[2]) == "string" and _G[p[2]]) or UIParent
             self:ClearAllPoints(); self:SetPoint(p[1], rel, p[3], p[4], p[5])
         end
 
+        -- [기능 복구] 라벨 텍스트 및 폰트 설정
         if data.label then self.Name:SetText(data.label) end
         local font, fSize = self.Name:GetFont()
         self.Name:SetFont(font, data.fontsize or fSize, data.outline and "OUTLINE" or nil)
         
+        -- [기능 복구] 라벨 위치
         self.Name:ClearAllPoints()
         if data.fontposition then
             local fp = data.fontposition
@@ -168,6 +178,7 @@ function IconLib:Create(name, parent, config)
             self.Name:SetPoint("TOP", self, "BOTTOM", 0, -2)
         end
 
+        -- [기능 복구] 쿨다운 숫자 크기
         if data.cooldownSize then
             for _, region in ipairs({self.cooldown:GetRegions()}) do
                 if region:GetObjectType() == "FontString" then
@@ -181,6 +192,12 @@ function IconLib:Create(name, parent, config)
         self:UpdateStatus()
     end
 
-    frame:SetScript("OnEvent", frame.UpdateStatus)
+    -- 실시간 감지를 위한 이벤트 등록
+    frame:RegisterEvent("SPELL_UPDATE_COOLDOWN")
+    frame:RegisterEvent("BAG_UPDATE_DELAYED")
+    frame:RegisterEvent("SPELLS_CHANGED")
+    frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    frame:SetScript("OnEvent", function(self) self:UpdateStatus() end)
+
     return frame
 end

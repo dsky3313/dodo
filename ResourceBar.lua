@@ -33,15 +33,23 @@ local ClassConfig = {
 ---@diagnostic disable: redundant-parameter
 
 local currentSpecBuffs = {}
+local cachedPowerType = nil
 
+-- 공용 함수: 현재 특성의 버프 설정 업데이트
 local function UpdateCurrentSpecConfig()
     local _, englishClass = UnitClass("player")
     local spec = C_SpecializationInfo.GetSpecialization()
     currentSpecBuffs = (ClassConfig[englishClass] and ClassConfig[englishClass][spec]) or {}
 end
 
+-- 마나 퍼센트 계산용
+local curve = C_CurveUtil.CreateCurve()
+curve:SetType(Enum.LuaCurveType.Linear)
+curve:AddPoint(0, 0)
+curve:AddPoint(1, 100)
+
 -- ==============================
--- ResourceBar2 로직
+-- ResourceBar2 Mixin 정의 (버프 바 기능)
 -- ==============================
 local ResourceBar2Mixin = {}
 
@@ -135,85 +143,31 @@ function ResourceBar2Mixin:Update()
 end
 
 -- ==============================
--- 디스플레이
--- ==============================
-local bar1Frame = CreateFrame("StatusBar", "ResourceBar1", UIParent, barConfigs[1].template)
-bar1Frame:SetSize(barConfigs[1].width, barConfigs[1].height)
-bar1Frame:SetPoint("CENTER", UIParent, "CENTER", 0, barConfigs[1].y)
-bar1Frame:SetFrameLevel(barConfigs[1].level)
-
-local bar2Frame = CreateFrame("StatusBar", "ResourceBar2", UIParent, barConfigs[2].template)
-Mixin(bar2Frame, ResourceBar2Mixin)
-bar2Frame:SetSize(barConfigs[2].width, barConfigs[2].height)
-bar2Frame:SetPoint("TOP", bar1Frame, "BOTTOM", 0, barConfigs[2].y)
-bar2Frame:SetFrameLevel(barConfigs[2].level)
-
--- ==============================
--- ResourceBar1
--- ==============================
-local curve = C_CurveUtil.CreateCurve()
-curve:SetType(Enum.LuaCurveType.Linear)
-curve:AddPoint(0, 0)
-curve:AddPoint(1, 100)
-
-local cachedPowerType = nil
-
-local function UpdateBar1()
-    if not bar1Frame then return end
-
-    local powerType, powerToken = UnitPowerType("player")
-
-    if powerType ~= cachedPowerType then
-        cachedPowerType = powerType
-        local color = PowerBarColor[powerToken] or PowerBarColor[powerType] or {r=1, g=1, b=1}
-        bar1Frame:SetStatusBarColor(color.r, color.g, color.b)
-    end
-
-    local current = UnitPower("player", powerType)
-    local max = UnitPowerMax("player", powerType)
-
-    if max and max > 0 then
-        bar1Frame:SetMinMaxValues(0, max)
-        bar1Frame:SetValue(current, Enum.StatusBarInterpolation.ExponentialEaseOut)
-
-        if bar1Frame.countPower then
-            if powerType == 0 then
-                local percentage = UnitPowerPercent("player", powerType, false, curve)
-                bar1Frame.countPower:SetFormattedText("%d", percentage)
-            else
-                bar1Frame.countPower:SetText(current)
-            end
-        end
-    end
-
-    if bar2Frame and bar2Frame.Update then
-        bar2Frame:Update()
-    end
-end
-
-C_Timer.NewTicker(0.1, UpdateBar1)
-
--- ==============================
--- ResourceBar2 CDM 연동
+-- ResourceBar2 Mixin
 -- ==============================
 local ResourceBar2UpdaterMixin = {}
 
 function ResourceBar2UpdaterMixin:OnLoad()
     self.bar2Frame = _G["ResourceBar2"]
 
+    -- 특성 변경 이벤트 등록
     local eventFrame = CreateFrame("Frame")
     eventFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
     eventFrame:SetScript("OnEvent", function(self, event)
         if event == "PLAYER_SPECIALIZATION_CHANGED" then
             UpdateCurrentSpecConfig()
-            bar2Frame:Update()
+            if self.bar2Frame then
+                self.bar2Frame:Update()
+            end
         end
     end)
 
+    -- CDM 훅
     local hook = function(_, item) self:HookViewerItem(item) end
     hooksecurefunc(BuffBarCooldownViewer, 'OnAcquireItemFrame', hook)
     hooksecurefunc(BuffIconCooldownViewer, 'OnAcquireItemFrame', hook)
 
+    -- CDM 아이템 훅
     for _, viewer in ipairs({BuffBarCooldownViewer, BuffIconCooldownViewer}) do
         for _, itemFrame in ipairs(viewer:GetItemFrames()) do
             if itemFrame.cooldownID then
@@ -255,7 +209,70 @@ function ResourceBar2UpdaterMixin:HookViewerItem(item)
     self:UpdateFromItem(item)
 end
 
--- ✅ 원래 코드: 단순 호출
+-- ==============================
+-- 디스플레이
+-- ==============================
+local bar1Frame = CreateFrame("StatusBar", "ResourceBar1", UIParent, barConfigs[1].template)
+bar1Frame:SetSize(barConfigs[1].width, barConfigs[1].height)
+bar1Frame:SetPoint("CENTER", UIParent, "CENTER", 0, barConfigs[1].y)
+bar1Frame:SetFrameLevel(barConfigs[1].level)
+
+local bar2Frame = CreateFrame("StatusBar", "ResourceBar2", UIParent, barConfigs[2].template)
+Mixin(bar2Frame, ResourceBar2Mixin)  -- ✅ Mixin 적용 (ResourceBar2Mixin을 정의한 후에만 가능)
+bar2Frame:SetSize(barConfigs[2].width, barConfigs[2].height)
+bar2Frame:SetPoint("TOP", bar1Frame, "BOTTOM", 0, barConfigs[2].y)
+bar2Frame:SetFrameLevel(barConfigs[2].level)
+
+-- ==============================
+-- ResourceBar1
+-- ==============================
+local function UpdateBar1()
+    if not bar1Frame then return end
+
+    local powerType, powerToken = UnitPowerType("player")
+
+    if powerType ~= cachedPowerType then
+        cachedPowerType = powerType
+        local color = PowerBarColor[powerToken] or PowerBarColor[powerType] or {r=1, g=1, b=1}
+        bar1Frame:SetStatusBarColor(color.r, color.g, color.b)
+    end
+
+    local current = UnitPower("player", powerType)
+    local max = UnitPowerMax("player", powerType)
+
+    if max and max > 0 then
+        bar1Frame:SetMinMaxValues(0, max)
+        bar1Frame:SetValue(current, Enum.StatusBarInterpolation.ExponentialEaseOut)
+
+        if bar1Frame.countPower then
+            if powerType == 0 then
+                local percentage = UnitPowerPercent("player", powerType, false, curve)
+                bar1Frame.countPower:SetFormattedText("%d%%", percentage)
+            else
+                bar1Frame.countPower:SetText(current)
+            end
+        end
+    end
+
+    if bar2Frame and bar2Frame.Update then
+        bar2Frame:Update()
+    end
+end
+
+C_Timer.NewTicker(0.1, UpdateBar1)
+
+-- ==============================
+-- 이벤트
+-- ==============================
 local updater = CreateFrame("Frame", "ResourceBar2Updater", UIParent)
 Mixin(updater, ResourceBar2UpdaterMixin)
-updater:OnLoad()
+
+local initResourcebar = CreateFrame("Frame")
+initResourcebar:RegisterEvent("PLAYER_LOGIN")
+initResourcebar:SetScript("OnEvent", function(self, event)
+    if event == "PLAYER_LOGIN" then
+        print("[ResourceBar] PLAYER_LOGIN 발생, ResourceBar2 초기화")
+        updater:OnLoad()
+        self:UnregisterEvent("PLAYER_LOGIN")
+    end
+end)
