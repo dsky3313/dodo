@@ -274,22 +274,21 @@ C_Timer.NewTicker(0.1, UpdateBar1)
 -- ==============================
 -- 설정 관련
 -- ==============================
-local resourceBarEnabled = {
-    bar1 = true,   -- ResourceBar1 활성화 여부
-    bar2 = true,   -- ResourceBar2 활성화 여부
-}
-
--- 리소스바 표시/숨기기 함수
-function dodo.ResourceBarToggle(barNum, enabled)
-    local frame = (barNum == 1) and bar1Frame or bar2Frame
-    if frame then
-        if enabled then
-            frame:Show()
-        else
-            frame:Hide()
-        end
+function dodo.ResourceBar1()
+    -- dodoDB값이 nil이면 true, false면 false가 됨 (기본값 true 응용)
+    local isEnabled = (dodoDB.useResourceBar1 ~= false)
+    
+    if bar1Frame then
+        if isEnabled then bar1Frame:Show() else bar1Frame:Hide() end
     end
-    resourceBarEnabled["bar" .. barNum] = enabled
+end
+
+function dodo.ResourceBar2()
+    local isEnabled = (dodoDB.useResourceBar2 ~= false)
+    
+    if bar2Frame then
+        if isEnabled then bar2Frame:Show() else bar2Frame:Hide() end
+    end
 end
 
 -- ==============================
@@ -302,7 +301,19 @@ local initResourcebar = CreateFrame("Frame")
 initResourcebar:RegisterEvent("PLAYER_LOGIN")
 initResourcebar:SetScript("OnEvent", function(self, event)
     if event == "PLAYER_LOGIN" then
+        -- 1. 리소스바 업데이트 로직 로드 (기존 코드)
         updater:OnLoad()
+
+        -- 2. [통합 초기화] DB 설정값에 따라 바 표시 여부 결정
+        -- 내부에서 (dodoDB.값 ~= false) 로직이 작동하여 기본값을 true로 잡습니다.
+        if type(dodo.ResourceBar1) == "function" then
+            dodo.ResourceBar1()
+        end
+        if type(dodo.ResourceBar2) == "function" then
+            dodo.ResourceBar2()
+        end
+
+        -- 3. 이벤트 해제
         self:UnregisterEvent("PLAYER_LOGIN")
     end
 end)

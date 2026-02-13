@@ -67,12 +67,8 @@ function dodoCreateOptions()
     local layoutCombat = SettingsPanel:GetLayout(subCategoryCombat)
         -- 자원바
         layoutCombat:AddInitializer(CreateSettingsListSectionHeaderInitializer("자원바 표시"))
-        Checkbox(subCategoryCombat, "useResourceBar1", "플레이어 자원바", "플레이어 마나/분노 표시 바를 활성화합니다.", true, function(enabled)
-            dodo.ResourceBarToggle(1, enabled)
-        end)
-        Checkbox(subCategoryCombat, "useResourceBar2", "버프 추적 바", "특성에 따른 버프 추적 바를 활성화합니다.", true, function(enabled)
-            dodo.ResourceBarToggle(2, enabled)
-        end)
+        Checkbox(subCategoryCombat, "useResourceBar1", "플레이어 자원바", "플레이어 마나/분노 표시 바를 활성화합니다.", true, dodo.ResourceBar1)
+        Checkbox(subCategoryCombat, "useResourceBar2", "버프 추적 바", "특성에 따른 버프 추적 바를 활성화합니다.", true, dodo.ResourceBar2)
 
     -- 파티
     local layoutParty = SettingsPanel:GetLayout(subCategoryParty)
