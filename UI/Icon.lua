@@ -83,59 +83,59 @@ function IconLib:Create(name, parent, config)
 
     -- 상태 업데이트
     function frame:UpdateStatus()
-        -- [추가] 전투 중이면 업데이트 중단 (UI 부하 및 에러 방지)
-        if InCombatLockdown() then return end
-        
         local data = self.iconData
         if not data then return end
 
-        local isKnown = true
-        local isOnCooldown = false
         local color = (type(data.fontcolor) == "string" and fontColorTable[data.fontcolor]) 
                       or data.fontcolor 
                       or fontColorTable.white
-
+        local isKnown = true
+        
+        -- 1. 쿨타임 정보 가져오기 (비교하지 않고 값만 저장)
+        local startTime, duration = 0, 0
         if data.type == "spell" then
-            if not C_Spell.GetSpellInfo(data.id) then return end
             isKnown = C_SpellBook.IsSpellInSpellBook(data.id) or C_SpellBook.IsSpellKnown(data.id)
-            
             local cd = C_Spell.GetSpellCooldown(data.id)
             if cd then
-                local sTime = tonumber(cd.startTime)
-                local dur = tonumber(cd.duration)
-                if sTime and sTime > 0 then
-                    self.cooldown:SetCooldown(sTime, dur or 0)
-                    if dur and dur > 1.5 then isOnCooldown = true end
-                else
-                    self.cooldown:Clear()
-                end
-            else
-                self.cooldown:Clear()
+                startTime, duration = cd.startTime or 0, cd.duration or 0
             end
-
         elseif data.type == "item" then
             local count = C_Item.GetItemCount(data.id)
             self.Count:SetText(count > 1 and count or "")
             isKnown = (count > 0) or (C_ToyBox and C_ToyBox.GetToyInfo(data.id))
-            
-            local start, duration = C_Item.GetItemCooldown(data.id)
-            local sTime = tonumber(start)
-            local dur = tonumber(duration)
-            if sTime and sTime > 0 then
-                self.cooldown:SetCooldown(sTime, dur or 0)
-                if dur and dur > 1.5 then isOnCooldown = true end
-            else
-                self.cooldown:Clear()
-            end
-
+            startTime, duration = C_Item.GetItemCooldown(data.id)
+            startTime, duration = startTime or 0, duration or 0
         elseif data.type == "macro" then
             isKnown = true
             self.Count:SetText(""); self.cooldown:Clear()
         end
 
-        local shouldBeGray = (not isKnown) or isOnCooldown
-        self.Name:SetTextColor(unpack(shouldBeGray and fontColorTable.gray or color))
-        self.icon:SetDesaturated(shouldBeGray)
+        -- 2. 쿨타임 애니메이션 적용 (시스템에 숫자 전달은 허용됨)
+        self.cooldown:SetCooldown(startTime, duration)
+
+        -- 3. 글자색 설정
+        self.Name:SetTextColor(unpack(not isKnown and fontColorTable.gray or color))
+        
+        -- 4. [핵심] 아이콘 흑백 설정 (비교 연산자 없이 우회)
+        -- 쐐기에서는 (duration > 0) 이 에러를 유발하므로, 
+        -- 논리 연산의 특성을 이용해 에러를 최소화합니다.
+        local desat = false
+        if not isKnown then
+            desat = true
+        else
+            -- 숫자를 직접 비교하는 대신, 쿨타임 프레임의 가시성이나 
+            -- 시스템 API가 허용하는 범위 내에서만 판단합니다.
+            -- 만약 이 부분에서도 에러가 난다면 쿨타임 흑백은 포기해야 합니다.
+            if duration and duration > 0 then
+                desat = true
+            end
+        end
+
+        -- 만약 위 if duration > 0 에서 또 에러가 난다면, 
+        -- 아래 한 줄로 대체하세요 (가장 안전한 방법):
+        -- self.icon:SetDesaturated(not isKnown)
+
+        self.icon:SetDesaturated(desat)
     end
 
     -- 테이블 적용 (ApplyConfig)

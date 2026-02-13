@@ -1,5 +1,5 @@
 -- ==============================
--- 테이블
+-- 테이블 및 설정
 -- ==============================
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
@@ -16,21 +16,16 @@ local actionbarConfig = {
     }
 }
 
--- 캐싱
 local _G = _G
 local C_ActionBar = _G.C_ActionBar
 local C_Spell = _G.C_Spell
 
 -- ==============================
--- 디스플레이
+-- 디스플레이 및 보조 함수
 -- ==============================
 local actionbar = CreateFrame("Frame")
 actionbar.RegisteredButtons = {}
 
--- ==============================
--- 동작
--- ==============================
--- 거리 체크
 local function GetIsInRange(action)
     if not action then return true end
     if C_ActionBar and C_ActionBar.IsActionInRange then
@@ -40,13 +35,15 @@ local function GetIsInRange(action)
     return true
 end
 
--- 쿨타임 우회
+-- 쿨타임 우회용 곡선
 local DesaturationCurve = C_CurveUtil.CreateCurve()
 DesaturationCurve:SetType(Enum.LuaCurveType.Step)
 DesaturationCurve:AddPoint(0, 0)
 DesaturationCurve:AddPoint(0.001, 1)
 
--- 행동단축바
+-- ==============================
+-- 메인 동작: 행동단축바 업데이트
+-- ==============================
 local function UpdateActionButton(self)
     if not actionbarConfig.Enabled or not self.icon then return end
 
@@ -56,7 +53,9 @@ local function UpdateActionButton(self)
 
     local isUsable, notEnoughMana
     local inRange = true
+    local desaturationValue = 0 -- 최종 적용할 흑백 수치 (0 or 1)
 
+    -- [1] 상태 체크
     if action then
         isUsable, notEnoughMana = C_ActionBar.IsUsableAction(action)
         inRange = GetIsInRange(action)
@@ -64,19 +63,23 @@ local function UpdateActionButton(self)
         isUsable, notEnoughMana = C_Spell.IsSpellUsable(spellID)
     end
 
+    -- [2] 색상 적용 (Vertex Color)
     if not inRange then
         icon:SetVertexColor(actionbarConfig.Colors.Range.r, actionbarConfig.Colors.Range.g, actionbarConfig.Colors.Range.b)
     elseif notEnoughMana then
         icon:SetVertexColor(actionbarConfig.Colors.Mana.r, actionbarConfig.Colors.Mana.g, actionbarConfig.Colors.Mana.b)
+        -- 🌟 고통 감내 등 노란색 아이콘의 녹색 변색 방지를 위해 자원 부족 시 흑백화 강제
+        desaturationValue = 1
     else
         icon:SetVertexColor(actionbarConfig.Colors.Normal.r, actionbarConfig.Colors.Normal.g, actionbarConfig.Colors.Normal.b)
     end
 
+    -- [3] 사용 불가(DesaturateUnusable) 시 흑백 처리
     if actionbarConfig.DesaturateUnusable and isUsable ~= nil and not (isUsable or notEnoughMana) then
-        icon:SetDesaturation(1)
-        return
+        desaturationValue = 1
     end
 
+    -- [4] 쿨타임 체크 (보안 에러 방지 로직)
     local duration
     local isOnGCD = false
 
@@ -90,17 +93,21 @@ local function UpdateActionButton(self)
         duration = C_Spell.GetSpellCooldownDuration(spellID)
     end
 
-    if duration then
-        if isOnGCD then
-            icon:SetDesaturation(0)
-        elseif duration:HasSecretValues() then
-            icon:SetDesaturation(duration:EvaluateRemainingDuration(DesaturationCurve))
+    if duration and not isOnGCD then
+        if duration:HasSecretValues() then
+            -- 🌟 보안 숫자를 직접 비교(>0)하지 않고 커브 결과값(0 or 1)을 사용
+            local cdDesat = duration:EvaluateRemainingDuration(DesaturationCurve)
+            -- 기존 desaturationValue가 1(자원부족 등)이면 유지, 아니면 커브값 적용
+            desaturationValue = (desaturationValue == 1) and 1 or cdDesat
         else
-            icon:SetDesaturation(duration:GetRemainingDuration() > 0 and 1 or 0)
+            if duration:GetRemainingDuration() > 0 then
+                desaturationValue = 1
+            end
         end
-    else
-        icon:SetDesaturation(0)
     end
+
+    -- [5] 최종 흑백 적용
+    icon:SetDesaturation(desaturationValue)
 end
 
 -- 펫 행동단축바
@@ -109,15 +116,22 @@ local function UpdatePetActionButton(self)
     local index = self.index or self.id
     if not (index and GetPetActionInfo(index)) then return end
 
-    if actionbarConfig.DesaturateUnusable and not GetPetActionSlotUsable(index) then
-        self.icon:SetDesaturation(1)
-        return
-    end
-
+    local isUsable = GetPetActionSlotUsable(index)
     local _, duration, enable = GetPetActionCooldown(index)
-    self.icon:SetDesaturation((enable and duration and duration > actionbarConfig.GCD) and 1 or 0)
+    
+    local desat = 0
+    if actionbarConfig.DesaturateUnusable and not isUsable then
+        desat = 1
+    elseif enable and duration and duration > actionbarConfig.GCD then
+        desat = 1
+    end
+    
+    self.icon:SetDesaturation(desat)
 end
 
+-- ==============================
+-- 후킹 및 이벤트
+-- ==============================
 local function HookButton(button, isPet)
     if not button or actionbar.RegisteredButtons[button] then return end
     actionbar.RegisteredButtons[button] = true
@@ -140,17 +154,10 @@ end
 actionbar:SetScript("OnEvent", function(self, event)
     if event == "PLAYER_LOGIN" then
         local bars = {
-        "ActionButton",
-        "MultiBarBottomLeftButton",
-        "MultiBarBottomRightButton",
-        "MultiBarLeftButton",
-        "MultiBarRightButton",
-        "MultiBar5Button",
-        "MultiBar6Button",
-        "MultiBar7Button",
-        "StanceButton",
-        "ExtraActionButton"
-    }
+            "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton",
+            "MultiBarLeftButton", "MultiBarRightButton", "MultiBar5Button",
+            "MultiBar6Button", "MultiBar7Button", "StanceButton", "ExtraActionButton"
+        }
         for _, bar in ipairs(bars) do for i = 1, 12 do HookButton(_G[bar..i]) end end
         for i = 1, 10 do HookButton(_G["PetActionButton"..i], true) end
         if SpellFlyout then
