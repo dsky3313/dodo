@@ -23,6 +23,7 @@ Actionbar.lua
 BrowseGroup.lua
 CameraTilt.lua
 ChatBubble.lua
+Cvar.lua
 DeleteNow.lua
 ExpFilter.lua
 FrameScale.lua
