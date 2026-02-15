@@ -8,36 +8,28 @@
 
 # 2020.11.23 제작
 
-Libs\LibStub\LibStub.lua
-Libs\AceLocale-3.0\AceLocale-3.0.xml
-
-Locales\enUS.lua
-Locales\koKR.lua
-
 UI/OptionUI.xml
 UI/OptionUI.lua
 UI/Icon.lua
 UI/ResourceBar.xml
 
-Actionbar.lua
-BrowseGroup.lua
-CameraTilt.lua
-ChatBubble.lua
-Cvar.lua
-DeleteNow.lua
-ExpFilter.lua
-FrameScale.lua
-InsDifficulty.lua
-KeyRoll.lua
-NewLFG.lua
-PartyClass.lua
-QuickBobber.lua
-Teleport.lua
+Module\Audio.lua
+Module\BrowseGroup.lua
+Module\CameraTilt.lua
+Module\ChatBubble.lua
+Module\Cvar.lua
+Module\DeleteNow.lua
+Module\ExpFilter.lua
+Module\FrameOption.lua
+Module\InsDifficulty.lua
+Module\Minimap.lua
+Module\NewLFG.lua   
+Module\PartyClass.lua
+Module\QuickBobber.lua
+Module\ResourceBar.lua
+Module\Slash.lua
+Module\Teleport.lua
 
-Slash.lua
+#Module\
+
 Option.lua
-
-ResourceBar.lua
-
-#SkyRiding.lua
-#MyKey.lua

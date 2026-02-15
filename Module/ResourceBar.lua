@@ -3,7 +3,6 @@
 -- ==============================
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
-local L = LibStub("AceLocale-3.0"):GetLocale(addonName)
 ---@diagnostic disable: redundant-parameter, param-type-mismatch
 
 local barConfigs = {
@@ -19,18 +18,18 @@ local ClassConfig = {
         [3] = { { barMode = "rune" } },
     },
     ["DEMONHUNTER"] = {
-        [2] = { { spellName = L["영혼 파편"], barMode = "stack", maxStack = 6 } }
+        [2] = { { spellName = "영혼 파편", barMode = "stack", maxStack = 6 } }
     },
     ["DRUID"] = {
-        [3] = { { spellName = L["무쇠가죽"], barMode = "duration", duration = 7 } }
+        [3] = { { spellName = "무쇠가죽", barMode = "duration", duration = 7 } }
     },
     ["SHAMAN"] = {
-        [3] = { { spellName = L["응축되는 물"], barMode = "stack", maxStack = 2 } }
+        [3] = { { spellName = "응축되는 물", barMode = "stack", maxStack = 2 } }
     },
     ["WARRIOR"] = {
-        [1] = { { spellName = L["투신"], barMode = "duration", duration = 20 } },
-        [2] = { { spellName = L["소용돌이 연마"], barMode = "stack", maxStack = 4 } },
-        [3] = { { spellName = L["고통 감내"], barMode = "stack", maxStack = 100 } },
+        [1] = { { spellName = "투신", barMode = "duration", duration = 20 } },
+        [2] = { { spellName = "소용돌이 연마", barMode = "stack", maxStack = 4 } },
+        [3] = { { spellName = "고통 감내", barMode = "stack", maxStack = 100 } },
     },
 }
 

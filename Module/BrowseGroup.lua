@@ -1,9 +1,9 @@
 -- ==============================
 -- 테이블
 -- ==============================
+---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
-local L = LibStub("AceLocale-3.0"):GetLocale(addonName)
 
 local function isIns() -- 인스확인
     local _, instanceType, difficultyID = GetInstanceInfo()
@@ -18,18 +18,18 @@ local LFGListFrame
 -- ==============================
 local browseGroupsBtn = CreateFrame("Button", "browseGroupsBtn", UIParent, "UIPanelButtonTemplate")
 browseGroupsBtn:SetSize(144, 22)
-browseGroupsBtn:SetText(L["파티 탐색하기"])
+browseGroupsBtn:SetText("파티 탐색하기")
 browseGroupsBtn:Hide()
 
 local function anchorBrowseGroupBtn()
-    browseGroupsBtn:SetParent(LFGListFrame)
-    browseGroupsBtn:ClearAllPoints()
-    browseGroupsBtn:SetPoint("TOP", LFGListFrame, "BOTTOM", -100, 26)
+browseGroupsBtn:SetParent(LFGListFrame)
+browseGroupsBtn:ClearAllPoints()
+browseGroupsBtn:SetPoint("TOP", LFGListFrame, "BOTTOM", -100, 26)
 end
 
 local returnGroupsBtn = CreateFrame("Button", "returnGroupsBtn", UIParent, "UIPanelButtonTemplate")
 returnGroupsBtn:SetSize(144, 22)
-returnGroupsBtn:SetText(L["파티로 돌아가기"])
+returnGroupsBtn:SetText("파티로 돌아가기")
 returnGroupsBtn:Hide()
 
 local function anchorReturnGroupsBtn()

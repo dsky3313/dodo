@@ -1,9 +1,9 @@
 -- ==============================
--- 테이블 /run dodoDB = nil; ReloadUI()
+-- 테이블
 -- ==============================
+---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
-local L = LibStub("AceLocale-3.0"):GetLocale(addonName)
 
 -- ==============================
 -- 동작
@@ -11,7 +11,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale(addonName)
 -- 편집 모드
 local function editMode()
     if InCombatLockdown() then
-        print(L["전투 중에는 열 수 없습니다."])
+        print("전투 중에는 열 수 없습니다.")
         return
     end
 
@@ -29,11 +29,12 @@ end
 
 
 -- 쿨다운 매니저
+local _G = _G
 local CooldownViewerSettings = _G.CooldownViewerSettings
 
 local function cdm()
     if InCombatLockdown() then
-        print(L["전투 중에는 열 수 없습니다."])
+        print("전투 중에는 열 수 없습니다.")
         return
     end
 

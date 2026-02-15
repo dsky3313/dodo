@@ -1,6 +1,7 @@
 -- ==============================
 -- 테이블 /run dodoDB = nil; ReloadUI()
 -- ==============================
+---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
@@ -11,9 +12,11 @@ Settings.RegisterAddOnCategory(mainCategory)
 -- 하위
 local subCategoryGeneral = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "일반")
 local subCategoryInterface = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "인터페이스")
+local subCategorySound = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "음성")
 local subCategoryActionbar = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "행동 단축바")
 local subCategoryCombat = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "전투")
 local subCategoryParty = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "파티")
+local subCategorySettingProfile = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "설정 & 프로필")
 
 ------------------------------
 -- 설정 생성 함수
@@ -59,6 +62,11 @@ function dodoCreateOptions()
         Slider(subCategoryInterface, "frameScale_gmf", "게임 메뉴", "게임 메뉴 크기를 조절합니다.", 0.5, 1.5, 0.1, 0.9, "Percent", dodo.FrameScale)
         Slider(subCategoryInterface, "frameScale_mmbbb", "가방버튼", "가방버튼 크기를 조절합니다.", 0.5, 1.5, 0.1, 0.7, "Percent", dodo.FrameScale)
         Slider(subCategoryInterface, "frameScale_th", "말머리", "말머리 크기를 조절합니다.", 0.5, 1.5, 0.1, 0.8, "Percent", dodo.FrameScale)
+
+    -- 음성
+    local layoutSound = SettingsPanel:GetLayout(subCategorySound)
+        -- 출력 장치 동기화
+        Checkbox(subCategorySound, "useAudioSync", "출력장치 동기화", "출력장치 동기화.", true, dodo.audioSync)
 
     -- 행동 단축바
     local layoutActionbar = SettingsPanel:GetLayout(subCategoryActionbar)
@@ -109,6 +117,9 @@ function dodoCreateOptions()
             if initChildInsDifficulty2 then initChildInsDifficulty2:SetParentInitializer(initParentInsDifficulty, ParentActive) end
             if initChildInsDifficulty3 then initChildInsDifficulty3:SetParentInitializer(initParentInsDifficulty, ParentActive) end
         end
+
+    -- 설정 & 프로필
+    local layoutSettingProfile = SettingsPanel:GetLayout(subCategorySettingProfile)
 
     dodoOptionsCreated = true
 end

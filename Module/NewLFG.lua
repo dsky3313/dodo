@@ -1,9 +1,9 @@
 -- ==============================
 -- 테이블
 -- ==============================
+---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
-local L = LibStub("AceLocale-3.0"):GetLocale(addonName)
 
 local function isIns() -- 인스확인
     local _, instanceType, difficultyID = GetInstanceInfo()
@@ -38,7 +38,7 @@ newLFG_Alert.Text = newLFG_Alert:CreateFontString(nil, "OVERLAY", "GameFontNorma
 newLFG_Alert.Text:SetPoint("CENTER")
 local fontPath, _, fontFlags = newLFG_Alert.Text:GetFont()
 newLFG_Alert.Text:SetFont(fontPath, 22, fontFlags)
-newLFG_Alert.Text:SetText(L["[ 신규 신청 ]\n\n|cffffff00파티창을 확인하세요!|r"])
+newLFG_Alert.Text:SetText("[ 신규 신청 ]\n\n|cffffff00파티창을 확인하세요!|r")
 
 
 -- ==============================

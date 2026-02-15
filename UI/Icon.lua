@@ -1,10 +1,10 @@
 -- ==============================
 -- 테이블
 -- ==============================
+---@diagnostic disable: undefined-field
 local addonName, dodo = ...
 local IconLib = {}
 dodo.IconLib = IconLib
-local L = LibStub("AceLocale-3.0"):GetLocale(addonName)
 
 local fontColorTable = {
     white  = {1, 1, 1},
@@ -74,7 +74,7 @@ function IconLib:Create(name, parent, config)
         if data.type == "spell" then GameTooltip:SetSpellByID(data.id)
         elseif data.type == "item" then GameTooltip:SetItemByID(data.id)
         elseif data.type == "macro" then
-            GameTooltip:AddLine(L[data.label] or "매크로", 1, 1, 1)
+            GameTooltip:AddLine(data.label or "매크로", 1, 1, 1)
             if data.macrotext then GameTooltip:AddLine(data.macrotext, 0.7, 0.7, 0.7, true) end
         end
         GameTooltip:Show()
@@ -86,11 +86,11 @@ function IconLib:Create(name, parent, config)
         local data = self.iconData
         if not data then return end
 
-        local color = (type(data.fontcolor) == "string" and fontColorTable[data.fontcolor]) 
-                      or data.fontcolor 
+        local color = (type(data.fontcolor) == "string" and fontColorTable[data.fontcolor])
+                      or data.fontcolor
                       or fontColorTable.white
         local isKnown = true
-        
+
         -- 1. 쿨타임 정보 가져오기 (비교하지 않고 값만 저장)
         local startTime, duration = 0, 0
         if data.type == "spell" then
@@ -115,7 +115,7 @@ function IconLib:Create(name, parent, config)
 
         -- 3. 글자색 설정
         self.Name:SetTextColor(unpack(not isKnown and fontColorTable.gray or color))
-        
+
         -- 4. [핵심] 아이콘 흑백 설정 (비교 연산자 없이 우회)
         -- 쐐기에서는 (duration > 0) 이 에러를 유발하므로, 
         -- 논리 연산의 특성을 이용해 에러를 최소화합니다.
@@ -176,7 +176,7 @@ function IconLib:Create(name, parent, config)
         if data.label then self.Name:SetText(data.label) end
         local font, fSize = self.Name:GetFont()
         self.Name:SetFont(font, data.fontsize or fSize, data.outline and "OUTLINE" or nil)
-        
+
         self.Name:ClearAllPoints()
         if data.fontposition then
             local fp = data.fontposition
@@ -205,7 +205,7 @@ function IconLib:Create(name, parent, config)
     frame:RegisterEvent("PLAYER_ENTERING_WORLD")
     -- [추가] 전투 종료 후 상태를 최신화하기 위해 이벤트 추가
     frame:RegisterEvent("PLAYER_REGEN_ENABLED")
-    
+
     frame:SetScript("OnEvent", function(self) self:UpdateStatus() end)
 
     return frame
