@@ -13,7 +13,7 @@ UI/OptionUI.lua
 UI/Icon.lua
 UI/ResourceBar.xml
 
-Module\Actionbar.lua
+#Module\ActionBar.lua
 Module\Audio.lua
 Module\Camera.lua
 Module\ChatBubble.lua

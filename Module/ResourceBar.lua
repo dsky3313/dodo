@@ -1,19 +1,19 @@
 -- ==============================
--- 테이블 및 설정
+-- 테이블
 -- ==============================
------------- 룬 업데이트 관련 코드 최적화할것
+------------ 룬 업데이트 관련 코드 최적화할 것
+---@diagnostic disable: lowercase-global, undefined-field
+---@diagnostic disable: redundant-parameter, param-type-mismatch
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
----@diagnostic disable: redundant-parameter, param-type-mismatch
 
 local barConfigs = {
     { name = "ResourceBar1", width = 276, height = 10, y = -220, level = 3000, template = "ResourceBar1Template" },
     { name = "ResourceBar2", width = 276, height = 7, y = -4, level = 3001, template = "ResourceBar2Template" }
 }
 
--- 테이블 구조 통일 (모두 배열 형태)
 local ClassConfig = {
-    ["DEATHKNIGHT"] = { -- barMode = "cooldown" > 스킬쿨 확인 추가
+    ["DEATHKNIGHT"] = {
         [1] = { { barMode = "rune" } },
         [2] = { { barMode = "rune" } },
         [3] = { { barMode = "rune" } },
@@ -34,13 +34,20 @@ local ClassConfig = {
     },
 }
 
--- 색상 테이블 (띄어쓰기 한 칸 적용)
 local SpecColors = {
     ["DEATHKNIGHT"] = { [1] = { r = 1, g = 0, b = 0 }, [2] = { r = 0, g = 0.8, b = 1 }, [3] = { r = 0.3, g = 0.9, b = 0.3 } },
     ["DEMONHUNTER"] = { [2] = { r = 0.86, g = 0.59, b = 0.98 } },
     ["DRUID"] = { [3] = { r = 1, g = 0.49, b = 0.04 } },
     ["SHAMAN"] = { [3] = { r = 0, g = 0.82, b = 1 } },
     ["WARRIOR"] = { [1] = { r = 1, g = 0.588, b = 0.196 }, [2] = { r = 0, g = 0.82, b = 1 }, [3] = { r = 1, g = 0.588, b = 0.196 } },
+}
+
+-- ✅ 캐시: 이전 값 저장
+local cache = {
+    powerType = nil,
+    powerValue = nil,
+    inCombat = false,
+    updateTicker = nil,
 }
 
 local currentSpecBuffs = {}
@@ -116,7 +123,7 @@ function ResourceBar2Mixin:UpdateRuneSystem()
             rb:SetMinMaxValues(0, duration)
             rb:SetScript("OnUpdate", function(f)
                 local elapsed = GetTime() - start
-                f:SetValue(math.min(elapsed, duration)) -- 룬은 기본 SetValue 사용
+                f:SetValue(math.min(elapsed, duration))
             end)
         end
     end
@@ -174,34 +181,70 @@ function ResourceBar2Mixin:Update()
 end
 
 -- ==============================
--- ResourceBar1 & 캐시 로직
+-- ResourceBar1 & 캐시 로직 (최적화)
 -- ==============================
 local bar1Frame = CreateFrame("StatusBar", "ResourceBar1", UIParent, barConfigs[1].template)
 bar1Frame:SetSize(barConfigs[1].width, barConfigs[1].height)
 bar1Frame:SetPoint("CENTER", UIParent, "CENTER", 0, barConfigs[1].y)
 
+-- ✅ 1단계: UpdateBar1 함수 정의 (먼저 정의해야 함!)
 local function UpdateBar1()
     if not bar1Frame then return end
     local pType, pToken = UnitPowerType("player")
 
+    -- 색상 변경만 감지
     if pType ~= cachedPowerType then
         cachedPowerType = pType
         local c = PowerBarColor[pToken] or PowerBarColor[pType] or { r = 1, g = 1, b = 1 }
         bar1Frame:SetStatusBarColor(c.r, c.g, c.b)
     end
 
-    local current, max = UnitPower("player", pType), UnitPowerMax("player", pType)
+    local current = UnitPower("player", pType)
+    local max = UnitPowerMax("player", pType)
+
     if max and max > 0 then
         bar1Frame:SetMinMaxValues(0, max)
         bar1Frame:SetValue(current, Enum.StatusBarInterpolation.ExponentialEaseOut)
         if bar1Frame.countPower then
-            if pType == 0 then bar1Frame.countPower:SetFormattedText("%d", UnitPowerPercent("player", 0, false, curve))
-            else bar1Frame.countPower:SetText(current) end
+            if pType == 0 then 
+                bar1Frame.countPower:SetFormattedText("%d%%", UnitPowerPercent("player", 0, false, curve))
+            else 
+                bar1Frame.countPower:SetText(current) 
+            end
         end
     end
-    if _G["ResourceBar2"] and _G["ResourceBar2"].Update then _G["ResourceBar2"]:Update() end
+    
+    if _G["ResourceBar2"] and _G["ResourceBar2"].Update then 
+        _G["ResourceBar2"]:Update() 
+    end
 end
-C_Timer.NewTicker(0.1, UpdateBar1)
+
+-- ✅ 2단계: UpdateTicker 변수 선언
+local updateTicker = nil
+
+-- ✅ 3단계: OnCombatChange 함수 정의 (UpdateBar1을 호출)
+local function OnCombatChange(inCombat)
+    if updateTicker then
+        updateTicker:Cancel()
+    end
+    
+    -- 전투중: 0.1초, 비전투: 0.5초
+    local interval = inCombat and 0.1 or 0.5
+    updateTicker = C_Timer.NewTicker(interval, function()
+        UpdateBar1()
+    end)
+end
+
+-- ✅ 4단계: 전투 이벤트 등록
+local combatFrame = CreateFrame("Frame")
+combatFrame:RegisterEvent("PLAYER_REGEN_DISABLED")  -- 전투 시작
+combatFrame:RegisterEvent("PLAYER_REGEN_ENABLED")   -- 전투 종료
+combatFrame:SetScript("OnEvent", function(self, event)
+    OnCombatChange(event == "PLAYER_REGEN_DISABLED")
+end)
+
+-- ✅ 5단계: 초기 틱 시작 (비전투 0.5초)
+OnCombatChange(false)
 
 -- ==============================
 -- ResourceBar2Updater
@@ -241,6 +284,16 @@ function ResourceBar2UpdaterMixin:HookViewerItem(item)
         item.cdmHooked = true
     end
     self:UpdateFromItem(item)
+end
+
+-- ==============================
+-- 설정 관련
+-- ==============================
+function dodo.ResourceBarToggle(barNum, enabled)
+    local frame = (barNum == 1) and bar1Frame or _G["ResourceBar2"]
+    if frame then
+        if enabled then frame:Show() else frame:Hide() end
+    end
 end
 
 -- ==============================

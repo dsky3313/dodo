@@ -73,7 +73,9 @@ function dodoCreateOptions()
         Checkbox(subCategorySound, "useAudioSync", "출력장치 동기화", "출력장치 동기화.", false, dodo.audioSync)
 
     -- 행동 단축바
-    local layoutActionbar = SettingsPanel:GetLayout(subCategoryActionbar)
+    -- local layoutActionbar = SettingsPanel:GetLayout(subCategoryActionbar)
+    --     layoutActionbar:AddInitializer(CreateSettingsListSectionHeaderInitializer("행동 단축바 간격"))
+    --     Slider(subCategoryActionbar, "actionBarPadding", "버튼 간격", "간격을 조절합니다.", 0, 10, 1, 2, "Integer", dodo.UpdateBarPadding)
 
     -- 전투
     local layoutCombat = SettingsPanel:GetLayout(subCategoryCombat)
