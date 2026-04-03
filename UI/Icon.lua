@@ -1,15 +1,10 @@
 -- ==============================
 -- 테이블
 -- ==============================
----@diagnostic disable: undefined-field
+---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 local IconLib = {}
 dodo.IconLib = IconLib
-
-local function isIns()
-    local _, instanceType = GetInstanceInfo()
-    return IsInInstance() or (instanceType ~= "none")
-end
 
 local fontColorTable = {
     white  = {1, 1, 1},
@@ -19,6 +14,24 @@ local fontColorTable = {
     orange = {1, 0.5, 0},
     gray   = {0.5, 0.5, 0.5},
 }
+
+local CreateFrame = CreateFrame
+local GetInstanceInfo = GetInstanceInfo
+local InCombatLockdown = InCombatLockdown
+local IsInInstance = IsInInstance
+local ipairs = ipairs
+local math_max = math.max
+local tostring = tostring
+local type = type
+local unpack = unpack
+local C_Item = C_Item
+local C_Spell = C_Spell
+local C_SpellBook = C_SpellBook
+local C_ToyBox = C_ToyBox
+local GameTooltip = GameTooltip
+local Item = Item
+local UIParent = UIParent
+local _G = _G
 
 -- ==============================
 -- 동작
@@ -37,7 +50,7 @@ function IconLib:Create(name, parent, config)
 
     function frame:RescaleIcon()
         local width = self:GetWidth()
-        local margin = math.max(2, width * 0.07)
+        local margin = math_max(2, width * 0.07)
         self.icon:ClearAllPoints()
         self.icon:SetPoint("TOPLEFT", self, "TOPLEFT", margin, -margin)
         self.icon:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -margin, margin)
@@ -88,9 +101,6 @@ function IconLib:Create(name, parent, config)
 
     -- 상태 업데이트
     function frame:UpdateStatus()
-        if isIns() then
-            if self.cooldown then self.cooldown:Clear() end return
-        end
 
         local data = self.iconData
         if not data then return end
@@ -108,8 +118,8 @@ function IconLib:Create(name, parent, config)
             end
         elseif data.type == "item" then
             local count = C_Item.GetItemCount(data.id)
-            self.Count:SetText(count > 1 and count or "")
-            isKnown = (count > 0) or (C_ToyBox and C_ToyBox.GetToyInfo(data.id))
+            self.Count:SetText(count > 1 and tostring(count) or "")
+            isKnown = (count > 0) or (C_ToyBox and C_ToyBox.GetToyInfo(data.id) ~= nil)
             startTime, duration = C_Item.GetItemCooldown(data.id)
             startTime, duration = startTime or 0, duration or 0
         elseif data.type == "macro" then
@@ -159,7 +169,9 @@ function IconLib:Create(name, parent, config)
 
         if data.label then self.Name:SetText(data.label) end
         local font, fSize = self.Name:GetFont()
-        self.Name:SetFont(font, data.fontsize or fSize, data.outline and "OUTLINE" or nil)
+        if font then
+            self.Name:SetFont(font, data.fontsize or fSize, data.outline and "OUTLINE" or "")
+        end
 
         self.Name:ClearAllPoints()
         if data.fontposition then
@@ -180,7 +192,7 @@ function IconLib:Create(name, parent, config)
         end
 
         self:SetFrameStrata(data.framestrata or "HIGH")
-        if not isIns() then self:UpdateStatus() end
+        self:UpdateStatus()
     end
     return frame
 end

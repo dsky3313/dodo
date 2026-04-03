@@ -1,9 +1,20 @@
 -- ==============================
 -- 테이블 /run dodoDB = nil; ReloadUI()
 -- ==============================
----@diagnostic disable: lowercase-global, undefined-field
+---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 
+local CreateFrame = CreateFrame
+local InCombatLockdown = InCombatLockdown
+local type = type
+local ReloadUI = ReloadUI
+local Settings = Settings
+local SettingsPanel = SettingsPanel
+local SlashCmdList = SlashCmdList
+
+-- ==============================
+-- 디스플레이
+-- ==============================
 -- 메인
 local mainCategory = Settings.RegisterVerticalLayoutCategory("dodo")
 Settings.RegisterAddOnCategory(mainCategory)
@@ -17,119 +28,164 @@ local subCategoryCombat = Settings.RegisterVerticalLayoutSubcategory(mainCategor
 local subCategoryParty = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "파티")
 local subCategorySettingProfile = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "설정 & 프로필")
 
-------------------------------
--- 설정 생성 함수
-------------------------------
+-- 설정 생성
 function dodoCreateOptions()
     if dodoOptionsCreated then return end
 
+    -- 메인
+    local layoutMain = SettingsPanel:GetLayout(mainCategory)
+    -- 이름표
+    layoutMain:AddInitializer(CreateSettingsListSectionHeaderInitializer("이름표"))
+    Checkbox(mainCategory, "useNameplateFriendly", "아군 이름표 자동 설정", "아군 이름표에 클래스 색상을 적용하고 이름만 표시합니다.", true,
+        dodo.nameplateFriendly)
+
+
     -- 일반
     local layoutGeneral = SettingsPanel:GetLayout(subCategoryGeneral)
-        -- 카메라
-        layoutGeneral:AddInitializer(CreateSettingsListSectionHeaderInitializer("카메라 시점"))
-        Slider(subCategoryGeneral, "cameraBase", "기본 시점", "기본시점 각도를 조절합니다.\n\n|cffaaffaa기본 : 1.0|r", 0.3, 1.0, 0.05, 1, "Decimal2", dodo.CameraTilt)
-        Slider(subCategoryGeneral, "cameraDown", "탑다운 뷰", "수직으로 내렸을 때 각도를 조절합니다.\n\n|cffaaffaa기본 : 1.0|r", 0.3, 1.0, 0.05, 1, "Decimal2", dodo.CameraTilt)
-        Slider(subCategoryGeneral, "cameraFlying", "하늘비행 탈것 시점", "하늘비행 탈것 탑승 시 각도를 조절합니다.\n\n|cffaaffaa기본 : 1.0|r", 0.3, 1.0, 0.05, 1, "Decimal2", dodo.CameraTilt)
+    -- 카메라
+    layoutGeneral:AddInitializer(CreateSettingsListSectionHeaderInitializer("카메라 시점"))
+    Slider(subCategoryGeneral, "cameraBase", "기본 시점", "기본시점 각도를 조절합니다.\n\n|cffaaffaa기본 : 1.0|r", 0.3, 1.0, 0.05, 0.65,
+        "Decimal2", dodo.CameraTilt)
+    Slider(subCategoryGeneral, "cameraDown", "탑다운 뷰", "수직으로 내렸을 때 각도를 조절합니다.\n\n|cffaaffaa기본 : 1.0|r", 0.3, 1.0, 0.05,
+        0.65, "Decimal2", dodo.CameraTilt)
+    Slider(subCategoryGeneral, "cameraFlying", "하늘비행 탈것 시점", "하늘비행 탈것 탑승 시 각도를 조절합니다.\n\n|cffaaffaa기본 : 1.0|r", 0.3, 1.0,
+        0.05, 0.65, "Decimal2", dodo.CameraTilt)
 
     -- 인터페이스
     local layoutInterface = SettingsPanel:GetLayout(subCategoryInterface)
-        -- 글꼴 섹션
-        layoutInterface:AddInitializer(CreateSettingsListSectionHeaderInitializer("글꼴"))
-        DropDown(subCategoryInterface, "chatbubbleFontPath", "말풍선 글꼴", "말풍선에 적용할 글꼴를 선택하세요.", chatbubbleFontTable, chatbubbleFontTable[1].value, dodo.ChatBubble)
-        Slider(subCategoryInterface, "chatbubbleFontSize", "말풍선 글꼴 크기", "말풍선 글꼴 크기를 변경합니다.", 8, 14, 1, 10, "Integer", dodo.ChatBubble)
-        -- 편의기능 섹션
-        layoutInterface:AddInitializer(CreateSettingsListSectionHeaderInitializer("편의기능"))
-        Checkbox(subCategoryInterface, "useAuctionFilter", "경매장 필터", "경매장에서 '현행 확장팩 전용'을 자동 활성화합니다.", true, dodo.expFilter)
-        Checkbox(subCategoryInterface, "useCraftFilter", "주문제작 필터", "주문제작에서 '현행 확장팩 전용'을 자동 활성화합니다.", true, dodo.expFilter)
-        Checkbox(subCategoryInterface, "useQuickBobber", "낚시찌 장난감", "낚시버튼 옆에 낚시찌 장난감 버튼을 배치합니다.", true, dodo.quickBobber)
-        local settingParentDeleteNow, initParentDeleteNow = Checkbox(subCategoryInterface, "deleteNowAutoFill", "\"지금파괴\" 자동기입", "아이템 파괴 확인 메시지를 자동으로 입력합니다.", true, dodo.DeleteNow)
-        local settingChildDeleteNow, initChildDeleteNow = Checkbox(subCategoryInterface, "deleteNowHideEditbox", "아이템 파괴 간소화", "확인 메시지를 없애고 확인버튼만 남깁니다.", true, dodo.DeleteNow)
-        if settingParentDeleteNow and settingChildDeleteNow then
-            settingParentDeleteNow:SetValueChangedCallback(function(_, value)
-                if value == false then
-                    settingChildDeleteNow:SetValue(false) -- 부모가 꺼지면 자식도 끔
-                end
-            end)
-            initChildDeleteNow:SetParentInitializer(initParentDeleteNow, function()
-                return settingParentDeleteNow:GetValue()
-            end)
-        end
-        Checkbox(subCategoryInterface, "useTeleport", "던전 텔레포트 버튼", "게임메뉴 옆에 텔레포트 버튼을 표시합니다.", true, dodo.ESCTeleportFrame)
+    -- 유닛프레임
+    layoutInterface:AddInitializer(CreateSettingsListSectionHeaderInitializer("플레이어 프레임"))
+    Checkbox(subCategoryInterface, "useBiggerHealthBar", "큰 체력바", "체력바 크기를 키우고 자원바를 숨깁니다.\n\n|cffaaffaaUI를 재시작합니다.|r", true, function() ReloadUI() end)
+    Checkbox(subCategoryInterface, "useClassColorHealth", "직업 색상 체력바", "체력바를 직업 색상으로 표시합니다.\n\n|cffaaffaaUI를 재시작합니다.|r", true, function() ReloadUI() end)
+    Checkbox(subCategoryInterface, "useHideHitIndicator", "피해 수치 숨기기", "초상화 위에 표시되는 피해/회복 수치를 숨깁니다.\n\n|cffaaffaaUI를 재시작합니다.|r", true, function() ReloadUI() end)
 
-        -- 프레임 크기
-        layoutInterface:AddInitializer(CreateSettingsListSectionHeaderInitializer("프레임 크기"))
-        Slider(subCategoryInterface, "frameScale_gmf", "게임 메뉴", "게임 메뉴 크기를 조절합니다.", 0.5, 1.5, 0.1, 0.9, "Percent", dodo.FrameScale)
-        Slider(subCategoryInterface, "frameScale_mmbbb", "가방버튼", "가방버튼 크기를 조절합니다.", 0.5, 1.5, 0.1, 0.7, "Percent", dodo.FrameScale)
-        Slider(subCategoryInterface, "frameScale_th", "말머리", "말머리 크기를 조절합니다.", 0.5, 1.5, 0.1, 0.8, "Percent", dodo.FrameScale)
+    -- 글꼴 섹션
+    layoutInterface:AddInitializer(CreateSettingsListSectionHeaderInitializer("글꼴"))
+    DropDown(subCategoryInterface, "chatbubbleFontPath", "말풍선 글꼴", "말풍선에 적용할 글꼴를 선택하세요.", chatbubbleFontTable, chatbubbleFontTable[1].value, dodo.ChatBubble)
+    Slider(subCategoryInterface, "chatbubbleFontSize", "말풍선 글꼴 크기", "말풍선 글꼴 크기를 변경합니다.", 8, 14, 1, 10, "Integer", dodo.ChatBubble)
+    -- 미니맵
+    layoutInterface:AddInitializer(CreateSettingsListSectionHeaderInitializer("미니맵"))
+    Checkbox(subCategoryInterface, "useResetMinimapZoom", "미니맵 줌 리셋", "미니맵 줌 리셋", true, dodo.useResetMinimapZoom)
+    Checkbox(subCategoryInterface, "useFPSFrame", "FPS, 핑 표시", "FPS, 핑 표시\n\n|cffaaffaaUI를 재시작합니다.|r", true, function() ReloadUI() end)
+    -- 프레임 크기
+    layoutInterface:AddInitializer(CreateSettingsListSectionHeaderInitializer("프레임 크기"))
+    Slider(subCategoryInterface, "frameScale_gmf", "게임 메뉴", "게임 메뉴 크기를 조절합니다.", 0.5, 1.5, 0.1, 0.9, "Percent", dodo.FrameScale)
+    Slider(subCategoryInterface, "frameScale_mmbbb", "가방버튼", "가방버튼 크기를 조절합니다.", 0.5, 1.5, 0.1, 0.7, "Percent", dodo.FrameScale)
+    Slider(subCategoryInterface, "frameScale_th", "말머리", "말머리 크기를 조절합니다.", 0.5, 1.5, 0.1, 0.8, "Percent", dodo.FrameScale)
+    -- 편의기능 섹션
+    layoutInterface:AddInitializer(CreateSettingsListSectionHeaderInitializer("편의기능"))
+    Checkbox(subCategoryInterface, "useAuctionFilter", "경매장 필터", "경매장에서 '현행 확장팩 전용'을 자동 활성화합니다.", true, dodo.expFilter)
+    Checkbox(subCategoryInterface, "useCraftFilter", "주문제작 필터", "주문제작에서 '현행 확장팩 전용'을 자동 활성화합니다.", true, dodo.expFilter)
+    Checkbox(subCategoryInterface, "useQuickBobber", "낚시찌 장난감", "낚시버튼 옆에 낚시찌 장난감 버튼을 배치합니다.", true, dodo.quickBobber)
+    local settingParentDeleteNow, initParentDeleteNow = Checkbox(subCategoryInterface, "deleteNowAutoFill",
+        "\"지금파괴\" 자동기입", "아이템 파괴 확인 메시지를 자동으로 입력합니다.", true, dodo.DeleteNow)
+    local settingChildDeleteNow, initChildDeleteNow = Checkbox(subCategoryInterface, "deleteNowHideEditbox", "아이템 파괴 간소화",
+        "확인 메시지를 없애고 확인버튼만 남깁니다.", true, dodo.DeleteNow)
+    if settingParentDeleteNow and settingChildDeleteNow then
+        settingParentDeleteNow:SetValueChangedCallback(function(_, value)
+            if value == false then
+                settingChildDeleteNow:SetValue(false) -- 부모가 꺼지면 자식도 끔
+            end
+        end)
+        initChildDeleteNow:SetParentInitializer(initParentDeleteNow, function()
+            return settingParentDeleteNow:GetValue()
+        end)
+    end
+    Checkbox(subCategoryInterface, "useTeleport", "던전 텔레포트 버튼", "게임메뉴 옆에 텔레포트 버튼을 표시합니다.", true, dodo.ESCTeleportFrame)
+    Checkbox(subCategoryInterface, "useWowheadLink", "와우헤드 링크", "지도, 업적프레임에 와우헤드 링크를 표시합니다.", true, dodo.WowheadLink)
 
-        -- 프레임 크기
-        layoutInterface:AddInitializer(CreateSettingsListSectionHeaderInitializer("미니맵"))
-        Checkbox(subCategoryInterface, "useResetMinimapZoom", "미니맵 줌 리셋", "미니맵 줌 리셋", true, dodo.useResetMinimapZoom)
 
     -- 음성
     local layoutSound = SettingsPanel:GetLayout(subCategorySound)
-        -- 출력 장치 동기화
-        layoutSound:AddInitializer(CreateSettingsListSectionHeaderInitializer("출력장치"))
-        Checkbox(subCategorySound, "useAudioSync", "출력장치 동기화", "출력장치 동기화.", false, dodo.audioSync)
+    -- 출력 장치 동기화
+    layoutSound:AddInitializer(CreateSettingsListSectionHeaderInitializer("출력장치"))
+    Checkbox(subCategorySound, "useAudioSync", "출력장치 동기화", "출력장치 동기화.", true, dodo.audioSync)
+    CheckBoxDropDown(subCategorySound, "useSoundEncounterStart", "useSoundEncounterStart_soundID", "전투 시작", "전투 시작 사운드를 변경합니다.", soundEncounterStartTable, true, soundEncounterStartTable[1].value, dodo.EncounterSoundStart)
+    CheckBoxDropDown(subCategorySound, "useSoundEncounterVictory", "useSoundEncounterVictory_soundID", "전투 승리",
+        "전투 승리 사운드를 변경합니다.", soundEncounterVictoryTable, true, soundEncounterVictoryTable[1].value,
+        dodo.EncounterSoundVictory)
 
     -- 행동 단축바
-    -- local layoutActionbar = SettingsPanel:GetLayout(subCategoryActionbar)
-    --     layoutActionbar:AddInitializer(CreateSettingsListSectionHeaderInitializer("행동 단축바 간격"))
-    --     Slider(subCategoryActionbar, "actionBarPadding", "버튼 간격", "간격을 조절합니다.", 0, 10, 1, 2, "Integer", dodo.UpdateBarPadding)
+    local layoutActionbar = SettingsPanel:GetLayout(subCategoryActionbar)
+    layoutActionbar:AddInitializer(CreateSettingsListSectionHeaderInitializer("색상"))
+    Checkbox(subCategoryActionbar, "useActionbarColor", "색상 변경", "사거리(빨강), 자원부족(파랑), 사용불가·쿨타임(흑백)", true, dodo.ActionbarApplyColor)
 
+    layoutActionbar:AddInitializer(CreateSettingsListSectionHeaderInitializer("텍스트"))
+    Checkbox(subCategoryActionbar, "useActionbarHideHotkeys", "단축키 숨기기", "액션바 버튼의 단축키 텍스트를 숨깁니다.", true, dodo.ActionbarApplyText)
+    Checkbox(subCategoryActionbar, "useActionbarHideMacroNames", "매크로 이름 숨기기", "액션바 버튼의 매크로 이름을 숨깁니다.", false, dodo.ActionbarApplyText)
+
+    layoutActionbar:AddInitializer(CreateSettingsListSectionHeaderInitializer("레이아웃"))
+    Slider(subCategoryActionbar, "actionbarPadding", "버튼 간격", "액션바 버튼 사이의 간격을 조절합니다.", -5, 10, 1, 0, "Integer", dodo.ActionbarApplyPadding)
+
+    layoutActionbar:AddInitializer(CreateSettingsListSectionHeaderInitializer("오버레이"))
+    Checkbox(subCategoryActionbar, "useActionbarCDM", "버프 쿨다운 오버레이", "버프 쿨다운 오버레이를 표시합니다.", true, dodo.ActionbarApplyCDM)
+    Checkbox(subCategoryActionbar, "useActionbarInterrupt", "인터럽트 오버레이", "인터럽트 오버레이를 표시합니다.", true, dodo.ActionbarApplyInterrupt)
     -- 전투
     local layoutCombat = SettingsPanel:GetLayout(subCategoryCombat)
-        -- 자원바
-        layoutCombat:AddInitializer(CreateSettingsListSectionHeaderInitializer("자원바 표시"))
-        Checkbox(subCategoryCombat, "useResourceBar1", "플레이어 자원바", "플레이어 마나/분노 표시 바를 활성화합니다.", true, dodo.ResourceBar1)
-        Checkbox(subCategoryCombat, "useResourceBar2", "버프 추적 바", "특성에 따른 버프 추적 바를 활성화합니다.", true, dodo.ResourceBar2)
+    -- 자원바
+    layoutCombat:AddInitializer(CreateSettingsListSectionHeaderInitializer("자원바 표시"))
+    Checkbox(subCategoryCombat, "useResourceBar1", "플레이어 자원바", "플레이어 마나/분노 표시 바를 활성화합니다.", true, dodo.ResourceBar1)
+    Checkbox(subCategoryCombat, "useResourceBar2", "버프 추적 바", "특성에 따른 버프 추적 바를 활성화합니다.", true, dodo.ResourceBar2)
 
     -- 파티
     local layoutParty = SettingsPanel:GetLayout(subCategoryParty)
-        layoutParty:AddInitializer(CreateSettingsListSectionHeaderInitializer("파티"))
-        Checkbox(subCategoryParty, "useBrowseGroup", "파티 탐색하기 버튼", "파티원일 경우에도 '파티 탐색하기' 버튼을 표시합니다.", true, dodo.browseGroupsButton)
-        Checkbox(subCategoryParty, "useKeyRoll", "쐐기돌 굴림 알림", "쐐기 완료 후, 파티원의 돌목록과 돌변경 알림을 띄웁니다.", true, dodo.KeyRoll)
-        Checkbox(subCategoryParty, "usePartyClass", "클래스 현황", "파티원의 유틸 현황을 확인할 수 있습니다.", true, dodo.PartyClass)
+    layoutParty:AddInitializer(CreateSettingsListSectionHeaderInitializer("파티"))
+    Checkbox(subCategoryParty, "useBrowseGroup", "파티 탐색하기 버튼", "파티원일 경우에도 '파티 탐색하기' 버튼을 표시합니다.", true,
+        dodo.browseGroupsButton)
+    Checkbox(subCategoryParty, "useKeyRoll", "쐐기돌 굴림 알림", "쐐기 완료 후, 파티원의 돌목록과 돌변경 알림을 띄웁니다.", true, dodo.KeyRoll)
+    Checkbox(subCategoryParty, "usePartyClass", "클래스 현황", "파티원의 유틸 현황을 확인할 수 있습니다.", true, dodo.PartyClass)
 
-        local settingParentNewLFG, _, initParentNewLFG = CheckBoxDropDown(subCategoryParty, "useNewLFG", "soundID", "파티신청 알림", "새로운 파티신청 시 알림", newLFG_AlertSoundTable, true, newLFG_AlertSoundTable[2].value, dodo.NewLFG)
-        local settingChildNewLFG, initChildNewLFG = Checkbox(subCategoryParty, "useNewLFGLeader", "파티원 기능 활성화", "파티장원일 경우에도 활성화합니다. ", false, dodo.NewLFG)
-        if settingParentNewLFG and settingChildNewLFG then
-            settingParentNewLFG:SetValueChangedCallback(function(_, value)
-                if value == false then
-                    settingChildNewLFG:SetValue(false) -- 부모가 꺼지면 자식도 끔
-                end
-            end)
-            initChildNewLFG:SetParentInitializer(initParentNewLFG, function()
-                return settingParentNewLFG:GetValue()
-            end)
+    local settingParentNewLFG, _, initParentNewLFG = CheckBoxDropDown(subCategoryParty, "useNewLFG", "soundID", "파티신청 알림",
+        "새로운 파티신청 시 알림", newLFG_AlertSoundTable, true, newLFG_AlertSoundTable[2].value, dodo.NewLFG)
+    local settingChildNewLFG, initChildNewLFG = Checkbox(subCategoryParty, "useNewLFGLeader", "파티원 기능 활성화",
+        "파티장원일 경우에도 활성화합니다. ", true, dodo.NewLFG)
+    if settingParentNewLFG and settingChildNewLFG then
+        settingParentNewLFG:SetValueChangedCallback(function(_, value)
+            if value == false then
+                settingChildNewLFG:SetValue(false) -- 부모가 꺼지면 자식도 끔
+            end
+        end)
+        initChildNewLFG:SetParentInitializer(initParentNewLFG, function()
+            return settingParentNewLFG:GetValue()
+        end)
+    end
+
+    -- 인스 난이도
+    layoutParty:AddInitializer(CreateSettingsListSectionHeaderInitializer("인스턴스 난이도"))
+    local settingParentInsDifficulty, initParentInsDifficulty = Checkbox(subCategoryParty, "useInsDifficulty",
+        "인스 난이도 고정", "솔플 혹은 파티장일 시, 던전 난이도를 자동으로 변경합니다.", true, dodo.InsDifficulty)
+    local settingChildInsDifficulty1, _, initChildInsDifficulty1 = CheckBoxDropDown(subCategoryParty,
+        "useInsDifficultyDungeon", "InsDifficultyDungeon", "던전 난이도", "던전 난이도를 고정합니다.", difficultyTable.dungeon, true,
+        difficultyTable.dungeon[3].value, dodo.InsDifficulty)
+    local settingChildInsDifficulty2, _, initChildInsDifficulty2 = CheckBoxDropDown(subCategoryParty,
+        "useInsDifficultyRaid", "InsDifficultyRaid", "공격대 난이도", "공격대 난이도를 고정합니다.", difficultyTable.raid, true,
+        difficultyTable.raid[3].value, dodo.InsDifficulty)
+    local settingChildInsDifficulty3, _, initChildInsDifficulty3 = CheckBoxDropDown(subCategoryParty,
+        "useInsDifficultyLegacy", "InsDifficultyLegacy", "낭만 난이도", "낭만 난이도를 고정합니다.", difficultyTable.legacy, true,
+        difficultyTable.legacy[2].value, dodo.InsDifficulty)
+    if settingParentInsDifficulty then
+        settingParentInsDifficulty:SetValueChangedCallback(function(_, value)
+            if value == false then
+                if settingChildInsDifficulty1 then settingChildInsDifficulty1:SetValue(false) end
+                if settingChildInsDifficulty2 then settingChildInsDifficulty2:SetValue(false) end
+                if settingChildInsDifficulty3 then settingChildInsDifficulty3:SetValue(false) end
+            end
+            if type(dodo.InsDifficulty) == "function" then dodo.InsDifficulty() end
+        end)
+        local function ParentActive() return settingParentInsDifficulty:GetValue() end
+        if initChildInsDifficulty1 then
+            initChildInsDifficulty1:SetParentInitializer(initParentInsDifficulty,
+                ParentActive)
         end
-
-        -- 인스 난이도
-        layoutParty:AddInitializer(CreateSettingsListSectionHeaderInitializer("인스턴스 난이도"))
-        local settingParentInsDifficulty, initParentInsDifficulty = Checkbox(subCategoryParty, "useInsDifficulty", "인스 난이도 고정", "솔플 혹은 파티장일 시, 던전 난이도를 자동으로 변경합니다.", true, dodo.InsDifficulty)
-        local settingChildInsDifficulty1, _, initChildInsDifficulty1 = CheckBoxDropDown(subCategoryParty, "useInsDifficultyDungeon", "InsDifficultyDungeon", "던전 난이도", "던전 난이도를 고정합니다.", difficultyTable.dungeon, true, difficultyTable.dungeon[3].value, dodo.InsDifficulty)
-        local settingChildInsDifficulty2, _, initChildInsDifficulty2 = CheckBoxDropDown(subCategoryParty, "useInsDifficultyRaid", "InsDifficultyRaid", "공격대 난이도", "공격대 난이도를 고정합니다.", difficultyTable.raid, true, difficultyTable.raid[3].value, dodo.InsDifficulty)
-        local settingChildInsDifficulty3, _, initChildInsDifficulty3 = CheckBoxDropDown(subCategoryParty, "useInsDifficultyLegacy", "InsDifficultyLegacy", "낭만 난이도", "낭만 난이도를 고정합니다.", difficultyTable.legacy, true, difficultyTable.legacy[2].value, dodo.InsDifficulty)
-        if settingParentInsDifficulty then
-            settingParentInsDifficulty:SetValueChangedCallback(function(_, value)
-                if value == false then
-                    if settingChildInsDifficulty1 then settingChildInsDifficulty1:SetValue(false) end
-                    if settingChildInsDifficulty2 then settingChildInsDifficulty2:SetValue(false) end
-                    if settingChildInsDifficulty3 then settingChildInsDifficulty3:SetValue(false) end
-                end
-                if type(dodo.InsDifficulty) == "function" then dodo.InsDifficulty() end
-            end)
-            local function ParentActive() return settingParentInsDifficulty:GetValue() end
-            if initChildInsDifficulty1 then initChildInsDifficulty1:SetParentInitializer(initParentInsDifficulty, ParentActive) end
-            if initChildInsDifficulty2 then initChildInsDifficulty2:SetParentInitializer(initParentInsDifficulty, ParentActive) end
-            if initChildInsDifficulty3 then initChildInsDifficulty3:SetParentInitializer(initParentInsDifficulty, ParentActive) end
+        if initChildInsDifficulty2 then
+            initChildInsDifficulty2:SetParentInitializer(initParentInsDifficulty,
+                ParentActive)
         end
-
-    -- 설정 & 프로필
-    local layoutSettingProfile = SettingsPanel:GetLayout(subCategorySettingProfile)
-        -- 이름표
-        layoutSettingProfile:AddInitializer(CreateSettingsListSectionHeaderInitializer("이름표"))
-        Checkbox(subCategorySettingProfile, "useNameplateFriendly", "아군 이름표 자동 설정", "아군 이름표에 클래스 색상을 적용하고 이름만 표시합니다.", true, dodo.nameplateFriendly)
+        if initChildInsDifficulty3 then
+            initChildInsDifficulty3:SetParentInitializer(initParentInsDifficulty,
+                ParentActive)
+        end
+    end
 
     dodoOptionsCreated = true
 end

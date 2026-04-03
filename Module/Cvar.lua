@@ -1,9 +1,14 @@
 -- ==============================
 -- 테이블
 -- ==============================
----@diagnostic disable: lowercase-global
+---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
+
+local CreateFrame = CreateFrame
+local SetCVar = SetCVar
+local NAMEPLATE_CLASS_COLOR = "nameplateUseClassColorForFriendlyPlayerUnitNames"
+local NAMEPLATE_ONLY_NAME = "nameplateShowOnlyNameForFriendlyPlayerUnits"
 
 -- ==============================
 -- 동작
@@ -13,13 +18,11 @@ local function nameplateFriendly()
     local isEnabled = (dodoDB.useNameplateFriendly ~= false)
 
     if isEnabled then
-        SetCVar("nameplateUseClassColorForFriendlyPlayerUnitNames", 1)
-        SetCVar("nameplateShowOnlyNameForFriendlyPlayerUnits", 1)
-        -- print("|cff00ff00[dodo]|r 아군 이름표 : 활성화") -- 디버깅
+        SetCVar(NAMEPLATE_CLASS_COLOR, 1)
+        SetCVar(NAMEPLATE_ONLY_NAME, 1)
     else
-        SetCVar("nameplateUseClassColorForFriendlyPlayerUnitNames", 0)
-        SetCVar("nameplateShowOnlyNameForFriendlyPlayerUnits", 0)
-        -- print("|cff00ff00[dodo]|r 아군 이름표 : |cffff0000비활성화|r") -- 디버깅
+        SetCVar(NAMEPLATE_CLASS_COLOR, 0)
+        SetCVar(NAMEPLATE_ONLY_NAME, 0)
     end
 end
 
@@ -40,3 +43,13 @@ initNameplate:SetScript("OnEvent", function(self, event, arg1)
 end)
 
 dodo.nameplateFriendly = nameplateFriendly
+
+
+
+-- encounterWarningsEnabled 1
+-- damageMeterEnabled 1
+-- damageMeterResetOnNewInstance 1
+
+-- /console cameraDistanceMaxZoomFactor 2.6
+-- /console cameraIndirectVisibility 1
+-- /console cameraIndirectOffset 10

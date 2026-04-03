@@ -2,8 +2,16 @@
 -- 테이블
 -- ==============================
 local addonName, dodo = ...
-local type, tonumber, tostring = type, tonumber, tostring
-local math_floor, string_format = math.floor, string.format
+
+local ipairs = ipairs
+local math_floor = math.floor
+local string_format = string.format
+local tonumber = tonumber
+local tostring = tostring
+local type = type
+local MinimalSliderWithSteppersMixin = MinimalSliderWithSteppersMixin
+local Settings = Settings
+local SettingsPanel = SettingsPanel
 
 local Formatters = {
     ["Percent"] = function(v) return string_format("%d%%", math_floor((v or 0) * 100 + 0.5)) end,

@@ -1,10 +1,11 @@
 -- ==============================
 -- 테이블
 -- ==============================
----@diagnostic disable: lowercase-global
+---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
+local CreateFrame = CreateFrame
 local gmf = GameMenuFrame
 local mmbbb = MainMenuBarBackpackButton
 local thf = TalkingHeadFrame

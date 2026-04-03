@@ -1,9 +1,19 @@
 -- ==============================
 -- 테이블
 -- ==============================
----@diagnostic disable: lowercase-global
+---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
+
+local CreateFrame = CreateFrame
+local GetCVar = GetCVar
+local SetCVar = SetCVar
+local CAM_DYNAMIC_PITCH = "test_cameraDynamicPitch"
+local CAM_FOV_PAD = "test_cameraDynamicPitchBaseFovPad"
+local CAM_FOV_PAD_DOWN = "test_cameraDynamicPitchBaseFovPadDownScale"
+local CAM_FOV_PAD_FLYING = "test_cameraDynamicPitchBaseFovPadFlying"
+local CAM_KEEP_CENTERED = "CameraKeepCharacterCentered"
+local UIParent = UIParent
 
 -- ==============================
 -- 동작
@@ -11,20 +21,20 @@ dodoDB = dodoDB or {}
 local function cameraTilt()
     if not dodoDB then return end
 
-    local base = dodoDB.cameraBase or 1.00
-    local baseDown = dodoDB.cameraDown or 1.00
-    local baseFlying = dodoDB.cameraFlying or 1.00
+    local base = dodoDB.cameraBase or 0.65
+    local baseDown = dodoDB.cameraDown or 0.65
+    local baseFlying = dodoDB.cameraFlying or 0.65
 
-    if GetCVar("test_cameraDynamicPitch") ~= "1" then
+    if GetCVar(CAM_DYNAMIC_PITCH) ~= "1" then
         UIParent:UnregisterEvent("EXPERIMENTAL_CVAR_CONFIRMATION_NEEDED")
-        SetCVar("test_cameraDynamicPitch", 1)
-        SetCVar("CameraKeepCharacterCentered", 0)
+        SetCVar(CAM_DYNAMIC_PITCH, 1)
+        SetCVar(CAM_KEEP_CENTERED, 0)
     end
 
-    if GetCVar("test_cameraDynamicPitch") == "1" then
-        SetCVar("test_cameraDynamicPitchBaseFovPad", base)
-        SetCVar("test_cameraDynamicPitchBaseFovPadDownScale", baseDown)
-        SetCVar("test_cameraDynamicPitchBaseFovPadFlying", baseFlying)
+    if GetCVar(CAM_DYNAMIC_PITCH) == "1" then
+        SetCVar(CAM_FOV_PAD, base)
+        SetCVar(CAM_FOV_PAD_DOWN, baseDown)
+        SetCVar(CAM_FOV_PAD_FLYING, baseFlying)
     end
 end
 

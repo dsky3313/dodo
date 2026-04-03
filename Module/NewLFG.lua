@@ -1,24 +1,38 @@
 -- ==============================
 -- 테이블
 -- ==============================
----@diagnostic disable: lowercase-global
+---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local function isIns() -- 인스확인
+local CreateFrame = CreateFrame
+local GetInstanceInfo = GetInstanceInfo
+local GetTime = GetTime
+local InCombatLockdown = InCombatLockdown
+local PlaySound = PlaySound
+local tonumber = tonumber
+local UnitIsGroupLeader = UnitIsGroupLeader
+local C_LFGList = C_LFGList
+local C_Timer = C_Timer
+local GroupFinderFrame = GroupFinderFrame
+local GroupFinderFrameGroupButton3 = GroupFinderFrameGroupButton3
+local PVEFrame_ShowFrame = PVEFrame_ShowFrame
+local UIParent = UIParent
+
+local function isIns()
     local _, instanceType, difficultyID = GetInstanceInfo()
-    return (difficultyID == 1 or instanceType == "raid") -- 1 일반 / 8 쐐기
+    return (difficultyID == 8 or instanceType == "raid")
 end
 
 newLFG_AlertSoundTable = {
-    { label = "MurlocAggro", value = "416" },
-    { label = "AuctionWindowOpen", value = "5274" },
-    { label = "AuctionWindowClose", value = "5275" },
-    { label = "PVPFlagTaken.Mono", value = "9378" },
-    { label = "PVPFlagTakenHordeMono", value = "9379" },
+    { label = "MurlocAggro",                value = "416" },
+    { label = "AuctionWindowOpen",          value = "5274" },
+    { label = "AuctionWindowClose",         value = "5275" },
+    { label = "PVPFlagTaken.Mono",          value = "9378" },
+    { label = "PVPFlagTakenHordeMono",      value = "9379" },
     { label = "UI_QuestObjectivesComplete", value = "26905" },
-    { label = "UI_RaidBossWhisperWarning", value = "37666" },
-    { label = "RaidWarning", value = "8959" },
+    { label = "UI_RaidBossWhisperWarning",  value = "37666" },
+    { label = "RaidWarning",                value = "8959" },
 }
 
 local alertTimer
@@ -37,7 +51,7 @@ newLFG_Alert:Hide()
 newLFG_Alert.Text = newLFG_Alert:CreateFontString(nil, "OVERLAY", "GameFontNormalOutline")
 newLFG_Alert.Text:SetPoint("CENTER")
 local fontPath, _, fontFlags = newLFG_Alert.Text:GetFont()
-newLFG_Alert.Text:SetFont(fontPath, 22, fontFlags)
+newLFG_Alert.Text:SetFont(fontPath or "fonts/frizqt__.ttf", 22, fontFlags)
 newLFG_Alert.Text:SetText("[ 신규 신청 ]\n\n|cffffff00파티창을 확인하세요!|r")
 
 
@@ -66,7 +80,7 @@ function NewLFG()
     alertTimer = C_Timer.After(7, function() newLFG_Alert:Hide() end)
 
     local soundID = (dodoDB and dodoDB.soundID) or "5274"
-    PlaySound(tonumber(soundID), "Master")
+    PlaySound(tonumber(soundID) or 5274, "Master")
 end
 
 -- ==============================
@@ -77,7 +91,7 @@ initNewLFG:RegisterEvent("PLAYER_ENTERING_WORLD")
 initNewLFG:RegisterEvent("LFG_LIST_APPLICANT_LIST_UPDATED")
 initNewLFG:RegisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
 
-initNewLFG:SetScript("OnEvent", function (self, event)
+initNewLFG:SetScript("OnEvent", function(self, event)
     if event == "PLAYER_ENTERING_WORLD" then -- 지역 이동
         C_Timer.After(0.5, function()
             if isIns() then
@@ -106,7 +120,7 @@ initNewLFG:SetScript("OnEvent", function (self, event)
     end
 
     if now >= armedAt and count > lastApps then
-        if (now - lastTrig) > 1.0 then 
+        if (now - lastTrig) > 1.0 then
             NewLFG()
             lastTrig = now
         end

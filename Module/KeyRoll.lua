@@ -1,11 +1,16 @@
 -- ==============================
 -- 테이블
 -- ==============================
----@diagnostic disable: lowercase-global
+---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local SendChat = C_ChatInfo and C_ChatInfo.SendChatMessage
+local CreateFrame = CreateFrame
+local IsInGroup = IsInGroup
+local IsLoggedIn = IsLoggedIn
+local SendChatMessage = C_ChatInfo.SendChatMessage
+local C_ChatInfo = C_ChatInfo
+local C_Timer = C_Timer
 
 -- ==============================
 -- 동작

@@ -1,17 +1,10 @@
 -- ==============================
 -- 테이블
 -- ==============================
----@diagnostic disable: lowercase-global
+---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 local IconLib = dodo.IconLib
-
-local function isIns() -- 인스확인
-    local _, instanceType, difficultyID = GetInstanceInfo()
-    return (difficultyID == 1 or instanceType == "raid") -- 1 일반 / 8 쐐기 / raid 레이드
-end
-
-local teleportIcons = {}
 
 local iconConfig = {
     BUTTON_SIZE = 36,   -- 아이콘 크기
@@ -50,7 +43,7 @@ local teleportTable = {
 
     -- WoL
     { id = 48933, type = "item", category = "WoL", name = "기공" },
-    { id = 1254555, type = "spell", category = "WoL", name = "샤론" },
+    { id = 1254555, type = "spell", category = "WoL", name = "사론", isSeason = true  },
 
     -- CATA
     { id = 410080, type = "spell", category = "CATA", name = "누각" },
@@ -77,12 +70,12 @@ local teleportTable = {
     { id = 159896, type = "spell", category = "WoD", name = "선착장" },
     { id = 159895, type = "spell", category = "WoD", name = "피망치" },
     { id = 159897, type = "spell", category = "WoD", name = "아킨둔" },
-    { id = 1254557, type = "spell", category = "WoD", name = "하늘탑" },
+    { id = 159898, type = "spell", category = "WoD", name = "하늘탑", isSeason = true  },
     { id = 159902, type = "spell", category = "WoD", name = "검바탑" },
 
     -- Legion
     { id = 151652, type = "item", category = "Legion", name = "기공" },
-    { id = 1254551, type = "spell", category = "Legion", name = "삼두정" },
+    { id = 1254551, type = "spell", category = "Legion", name = "삼두정", isSeason = true  },
     { id = 393764, type = "spell", category = "Legion", name = "용맹" },
     { id = 410078, type = "spell", category = "Legion", name = "넬둥" },
     { id = 393766, type = "spell", category = "Legion", name = "별궁" },
@@ -108,12 +101,12 @@ local teleportTable = {
     { id = 354462, type = "spell", category = "SL", name = "죽상" },
     { id = 354463, type = "spell", category = "SL", name = "역병" },
     { id = 354464, type = "spell", category = "SL", name = "티르너" },
-    { id = 354465, type = "spell", category = "SL", name = "속죄", isSeason = true },
+    { id = 354465, type = "spell", category = "SL", name = "속죄"},
     { id = 354466, type = "spell", category = "SL", name = "승천" },
     { id = 354467, type = "spell", category = "SL", name = "고투" },
     { id = 354468, type = "spell", category = "SL", name = "저편" },
     { id = 354469, type = "spell", category = "SL", name = "핏빛" },
-    { id = 367416, type = "spell", category = "SL", name = "타자베쉬", isSeason = true },
+    { id = 367416, type = "spell", category = "SL", name = "타자베쉬"},
     { id = 373190, type = "spell", category = "SL", name = "나스리아" },
     { id = 373191, type = "spell", category = "SL", name = "지배" },
     { id = 373192, type = "spell", category = "SL", name = "태존매" },
@@ -122,7 +115,7 @@ local teleportTable = {
     { id = 198156, type = "item", category = "DF", name = "기공" },
     { id = 393262, type = "spell", category = "DF", name = "노쿠드" },
     { id = 393267, type = "spell", category = "DF", name = "담쟁이" },
-    { id = 393273, type = "spell", category = "DF", name = "대학" },
+    { id = 393273, type = "spell", category = "DF", name = "대학", isSeason = true  },
     { id = 393256, type = "spell", category = "DF", name = "루비" },
     { id = 393276, type = "spell", category = "DF", name = "넬타" },
     { id = 393279, type = "spell", category = "DF", name = "보관소" },
@@ -137,35 +130,53 @@ local teleportTable = {
     { id = 221966, type = "item", category = "TWW", name = "기공" },
     { id = 445269, type = "spell", category = "TWW", name = "바금" },
     { id = 445443, type = "spell", category = "TWW", name = "부화장" },
-    { id = 445414, type = "spell", category = "TWW", name = "새인호", isSeason = true },
-    { id = 445444, type = "spell", category = "TWW", name = "수도원", isSeason = true },
-    { id = 1216786, type = "spell", category = "TWW", name = "수문", isSeason = true },
+    { id = 445414, type = "spell", category = "TWW", name = "새인호"},
+    { id = 445444, type = "spell", category = "TWW", name = "수도원"},
+    { id = 1216786, type = "spell", category = "TWW", name = "수문"},
     { id = 445416, type = "spell", category = "TWW", name = "실타래" },
-    { id = 445417, type = "spell", category = "TWW", name = "아라카라", isSeason = true },
+    { id = 445417, type = "spell", category = "TWW", name = "아라카라"},
     { id = 445440, type = "spell", category = "TWW", name = "양조장" },
     { id = 445441, type = "spell", category = "TWW", name = "어불동" },
-    { id = 1237215, type = "spell", category = "TWW", name = "알다니", isSeason = true },
+    { id = 1237215, type = "spell", category = "TWW", name = "알다니"},
     { id = 1226482, type = "spell", category = "TWW", name = "언더마인" },
     { id = 1239155, type = "spell", category = "TWW", name = "마괴종" },
 
     -- MN
     { id = 221966, type = "item", category = "MN", name = "기공" },
-    { id = 1254559, type = "spell", category = "MN", name = "동굴" },
-    { id = 1254572, type = "spell", category = "MN", name = "정원" },
-    { id = 1254563, type = "spell", category = "MN", name = "제나스" },
-    { id = 1254400, type = "spell", category = "MN", name = "첨탑" },
+    { id = 1254559, type = "spell", category = "MN", name = "동굴", isSeason = true  },
+    { id = 1254572, type = "spell", category = "MN", name = "정원", isSeason = true  },
+    { id = 1254563, type = "spell", category = "MN", name = "제나스", isSeason = true  },
+    { id = 1254400, type = "spell", category = "MN", name = "첨탑", isSeason = true  },
 
     -- ETC
     { id = 1233637, type = "macro", iconID = 7252953, category = "ETC", name = "하우징" },
 }
+
+local col, row = 0, -1
+local currentCategory = ""
+local teleportIcons = {}
 
 local expLookup = {}
 for _, info in ipairs(expTable) do
     expLookup[info.category] = info
 end
 
-local currentCategory = ""
-local col, row = 0, -1
+local CreateFrame = CreateFrame
+local GetInstanceInfo = GetInstanceInfo
+local InCombatLockdown = InCombatLockdown
+local ipairs = ipairs
+local strlenutf8 = strlenutf8
+local UnitFactionGroup = UnitFactionGroup
+local unpack = unpack
+local GameMenuFrame = GameMenuFrame
+local NineSliceUtil = NineSliceUtil
+local table = table
+local UIParent = UIParent
+
+local function isIns()
+    local _, instanceType, difficultyID = GetInstanceInfo()
+    return (difficultyID == 1 or instanceType == "raid")
+end
 
 -- ==============================
 -- 디스플레이

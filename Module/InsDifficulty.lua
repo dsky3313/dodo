@@ -1,45 +1,60 @@
 -- ==============================
 -- 테이블
 -- ==============================
----@diagnostic disable: lowercase-global
+---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
+
+difficultyTable = {
+    dungeon = {
+        { label = "일반", value = "1" },
+        { label = "영웅", value = "2" },
+        { label = "신화", value = "23" }
+    },
+    raid = {
+        { label = "일반", value = "14" },
+        { label = "영웅", value = "15" },
+        { label = "신화", value = "16" }
+    },
+    legacy = {
+        { label = "10인", value = "3" },
+        { label = "25인", value = "4" }
+    },
+}
+
+local CreateFrame = CreateFrame
+local GetDungeonDifficultyID = GetDungeonDifficultyID
+local GetInstanceInfo = GetInstanceInfo
+local GetLegacyRaidDifficultyID = GetLegacyRaidDifficultyID
+local GetRaidDifficultyID = GetRaidDifficultyID
+local IsInGroup = IsInGroup
+local IsInRaid = IsInRaid
+local PlaySound = PlaySound
+local ResetInstances = ResetInstances
+local SetDungeonDifficultyID = SetDungeonDifficultyID
+local SetLegacyRaidDifficultyID = SetLegacyRaidDifficultyID
+local SetRaidDifficultyID = SetRaidDifficultyID
+local UnitIsGroupLeader = UnitIsGroupLeader
+local ipairs = ipairs
+local pairs = pairs
+local tonumber = tonumber
+local unpack = unpack
+local C_ChatInfo = C_ChatInfo
+local C_Timer = C_Timer
+local NORMAL_COLOR = { 1, 0.82, 0 }
+local SELECTED_COLOR = { 1, 1, 1 }
+local SOUNDKIT = SOUNDKIT
+local UIParent = UIParent
+local btn_highlight = "glues-characterSelect-nameBG"
+local btn_select = "UI-Frame-DastardlyDuos-Bar-Frame-gold"
+
+local currentDiff = { dungeon = 0, raid = 0, legacy = 0 }
+local buttons = { dungeon = {}, raid = {}, legacy = {} }
 
 local function isIns() -- 인스확인
     local _, instanceType, difficultyID = GetInstanceInfo()
     return (difficultyID == 8 or instanceType == "raid") -- 1 일반 / 8 쐐기 / raid 레이드
 end
-
-difficultyTable = {
-    dungeon = {
-        {label="일반", value="1"},
-        {label="영웅", value="2"},
-        {label="신화", value="23"}
-    },
-    raid = {
-        {label="일반", value="14"},
-        {label="영웅", value="15"},
-        {label="신화", value="16"}
-    },
-    legacy = {
-        {label="10인", value="3"},
-        {label="25인", value="4"}
-    },
-}
-
-local GetDungeonDifficultyID = GetDungeonDifficultyID
-local GetRaidDifficultyID = GetRaidDifficultyID
-local GetLegacyRaidDifficultyID = GetLegacyRaidDifficultyID
-local SetDungeonDifficultyID = SetDungeonDifficultyID
-local SetRaidDifficultyID = SetRaidDifficultyID
-local SetLegacyRaidDifficultyID = SetLegacyRaidDifficultyID
-local tonumber, unpack, pairs, ipairs = tonumber, unpack, pairs, ipairs
-
-local currentDiff = { dungeon = 0, raid = 0, legacy = 0 }
-local buttons = { dungeon = {}, raid = {}, legacy = {} }
-local NORMAL_COLOR, SELECTED_COLOR = {1, 0.82, 0}, {1, 1, 1}
-local btn_select = "UI-Frame-DastardlyDuos-Bar-Frame-gold"
-local btn_highlight = "glues-characterSelect-nameBG"
 
 -- ==============================
 -- 디스플레이
@@ -159,23 +174,35 @@ end
 local function OnDifficultyClick(self)
     if not checkPermission() then return end
     local val = tonumber(self.value)
-    if self.category == "dungeon" then SetDungeonDifficultyID(val)
-    elseif self.category == "raid" then SetRaidDifficultyID(val)
-    elseif self.category == "legacy" then SetLegacyRaidDifficultyID(val) end
+    if not val then return end
+
+    if self.category == "dungeon" then
+        SetDungeonDifficultyID(val)
+    elseif self.category == "raid" then
+        SetRaidDifficultyID(val)
+    elseif self.category == "legacy" then
+        SetLegacyRaidDifficultyID(val)
+    end
     PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     UpdateUIStatus(self.category, val)
 end
 
 local function InsDifficulty()
     if not checkPermission() or not dodoDB then return end
-    if dodoDB.useInsDifficultyDungeon and dodoDB.InsDifficultyDungeon then
-        SetDungeonDifficultyID(tonumber(dodoDB.InsDifficultyDungeon))
+
+    local dungeonVal = tonumber(dodoDB.InsDifficultyDungeon)
+    if dodoDB.useInsDifficultyDungeon and dungeonVal then
+        SetDungeonDifficultyID(dungeonVal)
     end
-    if dodoDB.useInsDifficultyRaid and dodoDB.InsDifficultyRaid then
-        SetRaidDifficultyID(tonumber(dodoDB.InsDifficultyRaid))
+
+    local raidVal = tonumber(dodoDB.InsDifficultyRaid)
+    if dodoDB.useInsDifficultyRaid and raidVal then
+        SetRaidDifficultyID(raidVal)
     end
-    if dodoDB.useInsDifficultyLegacy and dodoDB.InsDifficultyLegacy then
-        SetLegacyRaidDifficultyID(tonumber(dodoDB.InsDifficultyLegacy))
+
+    local legacyVal = tonumber(dodoDB.InsDifficultyLegacy)
+    if dodoDB.useInsDifficultyLegacy and legacyVal then
+        SetLegacyRaidDifficultyID(legacyVal)
     end
     UpdateUIStatus()
 end
@@ -183,8 +210,21 @@ end
 for _, group in pairs(buttons) do
     for _, btn in pairs(group) do
         btn:SetScript("OnClick", OnDifficultyClick)
-        btn:SetScript("OnEnter", function(s) if not s.isSelected then s.highlightBg:SetAtlas(btn_highlight) s.highlightBg:Show() s.text:SetTextColor(unpack(SELECTED_COLOR)) end end)
-        btn:SetScript("OnLeave", function(s) if not s.isSelected then s.highlightBg:Hide() s.text:SetTextColor(unpack(NORMAL_COLOR)) end end)
+        btn:SetScript("OnEnter",
+            function(s)
+                if not s.isSelected then
+                    s.highlightBg:SetAtlas(btn_highlight)
+                    s.highlightBg:Show()
+                    s.text:SetTextColor(unpack(SELECTED_COLOR))
+                end
+            end)
+        btn:SetScript("OnLeave",
+            function(s)
+                if not s.isSelected then
+                    s.highlightBg:Hide()
+                    s.text:SetTextColor(unpack(NORMAL_COLOR))
+                end
+            end)
     end
 end
 
@@ -212,7 +252,6 @@ initInsDifficulty:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
         dodoDB = dodoDB or {}
         UpdateUIStatus()
-
     elseif event == "PLAYER_ENTERING_WORLD" then
         C_Timer.After(0.5, function()
             if isIns() then

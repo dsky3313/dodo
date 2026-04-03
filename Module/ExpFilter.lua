@@ -1,47 +1,55 @@
 -- ==============================
--- 테이블
+-- 설정 및 상수
 -- ==============================
----@diagnostic disable: lowercase-global
+---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local function isIns() -- 인스확인
-    local _, instanceType, difficultyID = GetInstanceInfo()
-    return (difficultyID == 8 or instanceType == "raid") -- 1 일반 / 8 쐐기 / raid 레이드
-end
-
+-- ==============================
+-- 캐싱
+-- ==============================
+-- Enum cache for performance
 local AHF = Enum.AuctionHouseFilter.CurrentExpansionOnly
+
+-- Function cache references
+local GetAuctionHouseFrame = function() return AuctionHouseFrame end
+local GetCraftFrame = function() return ProfessionsCustomerOrdersFrame end
 
 -- ==============================
 -- 동작
 -- ==============================
-local function checkAuctionFilter() -- 경매장 필터
-    if not dodoDB or isIns() then return end
-
+-- 경매장 필터
+local function checkAuctionFilter()
     local isEnabled = (dodoDB.useAuctionFilter ~= false) -- 기본값 true
-    local AuctionFrame = AuctionHouseFrame and AuctionHouseFrame.SearchBar
+    local auctionFrame = GetAuctionHouseFrame()
+    local searchBar = auctionFrame and auctionFrame.SearchBar
 
-    if not AuctionFrame or not AuctionFrame.FilterButton then return end
-    AuctionFrame.FilterButton.filters[AHF] = isEnabled
-    AuctionFrame:UpdateClearFiltersButton()
+    if not searchBar or not searchBar.FilterButton then return end
+    searchBar.FilterButton.filters[AHF] = isEnabled
+    searchBar:UpdateClearFiltersButton()
 end
 
-local function checkCraftFilter() -- 주문제작 필터
-    if not dodoDB or isIns() then return end
-
+-- 주문제작 필터
+local function checkCraftFilter()
     local isEnabled = (dodoDB.useCraftFilter ~= false) -- 기본값 true
-    local craftFrame = ProfessionsCustomerOrdersFrame
-    local dropdown = craftFrame and craftFrame.BrowseOrders and craftFrame.BrowseOrders.SearchBar and craftFrame.BrowseOrders.SearchBar.FilterDropdown
+    local craftFrame = GetCraftFrame()
+    
+    if not craftFrame or not craftFrame.BrowseOrders then return end
+    
+    local searchBar = craftFrame.BrowseOrders.SearchBar
+    local dropdown = searchBar and searchBar.FilterDropdown
 
     if not dropdown or not dropdown.filters then return end
     dropdown.filters[AHF] = isEnabled
     dropdown:ValidateResetState()
 end
 
-function expFilter() -- 통합 실행 함수 (외부 공유용)
+-- 통합 실행 함수 (외부 공유용)
+function dodo.AuctionFilter()
     checkAuctionFilter()
     checkCraftFilter()
 end
+
 
 -- ==============================
 -- 이벤트
@@ -53,14 +61,9 @@ initFilterFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 initFilterFrame:SetScript("OnEvent", function(self, event, arg1)
     if event == "PLAYER_ENTERING_WORLD" then
         C_Timer.After(0.1, function()
-            if isIns() then
-                initFilterFrame:UnregisterEvent("AUCTION_HOUSE_SHOW")
-                initFilterFrame:UnregisterEvent("CRAFTINGORDERS_SHOW_CUSTOMER")
-            else
-                initFilterFrame:RegisterEvent("AUCTION_HOUSE_SHOW")
-                initFilterFrame:RegisterEvent("CRAFTINGORDERS_SHOW_CUSTOMER")
-                expFilter()
-            end
+            initFilterFrame:RegisterEvent("AUCTION_HOUSE_SHOW")
+            initFilterFrame:RegisterEvent("CRAFTINGORDERS_SHOW_CUSTOMER")
+            dodo.AuctionFilter()
         end)
     elseif event == "ADDON_LOADED" and arg1 == "Blizzard_AuctionHouseUI" then
         if AuctionHouseFrame and AuctionHouseFrame.SearchBar then
@@ -86,5 +89,3 @@ initFilterFrame:SetScript("OnEvent", function(self, event, arg1)
         checkCraftFilter()
     end
 end)
-
-dodo.expFilter = expFilter

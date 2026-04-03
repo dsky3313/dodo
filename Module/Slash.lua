@@ -1,9 +1,25 @@
 -- ==============================
 -- 테이블
 -- ==============================
----@diagnostic disable: lowercase-global, undefined-field
+---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
+
+local DoReadyCheck = DoReadyCheck
+local InCombatLockdown = InCombatLockdown
+local IsInGroup = IsInGroup
+local IsInRaid = IsInRaid
+local UnitIsGroupLeader = UnitIsGroupLeader
+local _G = _G
+local C_ChatInfo = C_ChatInfo
+local C_PartyInfo = C_PartyInfo
+local ChatEdit_SendText = ChatEdit_SendText
+local ChatFrame1EditBox = ChatFrame1EditBox
+local CooldownViewerSettings = CooldownViewerSettings
+local EditModeManagerFrame = EditModeManagerFrame
+local ReloadUI = ReloadUI
+local ShowMacroFrame = ShowMacroFrame
+local SlashCmdList = SlashCmdList
 
 -- ==============================
 -- 동작
@@ -28,10 +44,7 @@ SlashCmdList["EDITMODE"] = function()
 end
 
 
--- 쿨다운 매니저
-local _G = _G
-local CooldownViewerSettings = _G.CooldownViewerSettings
-
+-- 쿨다운매니저
 local function cdm()
     if InCombatLockdown() then
         print("전투 중에는 열 수 없습니다.")
@@ -72,7 +85,6 @@ SLASH_plater2 = "/ㅔㅔ"
 SlashCmdList["plater"] = function(x)
  pp(x)
 end
-
 
 -- 리로드
 SlashCmdList.RELOAD = ReloadUI

@@ -1,7 +1,7 @@
 -- ==============================
 -- 테이블
 -- ==============================
----@diagnostic disable: lowercase-global
+---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
@@ -13,6 +13,9 @@ chatbubbleFontTable = {
     { label = "K_DAMAGE", value = "Fonts\\K_DAMAGE.TTF" },
     { label = "K_PAGETEXT", value = "Fonts\\K_PAGETEXT.TTF" },
 }
+
+local CreateFrame = CreateFrame
+local ChatBubbleFont = ChatBubbleFont
 
 -- ==============================
 -- 동작

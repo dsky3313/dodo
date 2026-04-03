@@ -1,17 +1,32 @@
 -- ==============================
 -- 테이블
 -- ==============================
----@diagnostic disable: lowercase-global
+---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local function isIns() -- 인스확인
+local CreateFrame = CreateFrame
+local GetCursorInfo = GetCursorInfo
+local GetInstanceInfo = GetInstanceInfo
+local SetCVar = SetCVar
+local gsub = gsub
+local hooksecurefunc = hooksecurefunc
+local select = select
+local strsplit = strsplit
+local C_Timer = C_Timer
+local DELETE_GOOD_ITEM = DELETE_GOOD_ITEM
+local GameTooltip = GameTooltip
+local StaticPopup1 = StaticPopup1
+local StaticPopup1Button1 = StaticPopup1Button1
+local StaticPopup1EditBox = StaticPopup1EditBox
+local StaticPopup1Text = StaticPopup1Text
+local cachedDeleteWord = ""
+local localizedDeleteMsg = ""
+
+local function isIns()                                   -- 인스확인
     local _, instanceType, difficultyID = GetInstanceInfo()
     return (difficultyID == 8 or instanceType == "raid") -- 1 일반 / 8 쐐기 / raid 레이드
 end
-
-local localizedDeleteMsg = "" -- 안내 문구 제거
-local cachedDeleteWord = "" -- 자동 기입용 단어
 
 -- ==============================
 -- 디스플레이
@@ -76,7 +91,7 @@ initDeleteNow:RegisterEvent("PLAYER_ENTERING_WORLD")
 initDeleteNow:RegisterEvent("DELETE_ITEM_CONFIRM")
 initDeleteNow:SetScript("OnEvent", function(self, event)
     if event == "PLAYER_ENTERING_WORLD" then
-        C_Timer.After(0.1, function ()
+        C_Timer.After(0.1, function()
             if isIns() then
                 initDeleteNow:UnregisterEvent("DELETE_ITEM_CONFIRM")
             else

@@ -1,27 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Ui xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.blizzard.com/wow/ui/" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 ..\FrameXML\UI.xsd">
-    <Frame name="ActionBarOverlayTemplate" mixin="ActionBarOverlay" virtual="true">
+    <Script file="Module\ActionBar.lua"/>
+
+    <!-- ============================== -->
+    <!-- CDM Overlay Template           -->
+    <!-- ============================== -->
+    <Frame name="dodo_Actionbar2OverlayTemplate" mixin="dodo_Actionbar2OverlayMixin" virtual="true">
+        <Size x="1" y="1"/>
+        <Anchors><Anchor point="CENTER"/></Anchors>
+        <Layers>
+            <Layer level="ARTWORK">
+                <Texture parentKey="InnerGlow" atlas="UI-HUD-ActionBar-IconFrame-Mouseover" setAllPoints="true" alphaMode="BLEND" />
+                <FontString parentKey="Timer" inherits="NumberFontNormal">
+                    <Anchors><Anchor point="TOPLEFT" x="5" y="-5"/></Anchors>
+                </FontString>
+            </Layer>
+        </Layers>
+        <Scripts><OnLoad method="OnLoad"/></Scripts>
+    </Frame>
+
+    <!-- ============================== -->
+    <!-- Interrupt Overlay Template     -->
+    <!-- ============================== -->
+    <Frame name="dodoAB3OverlayTemplate" mixin="dodoAB3OverlayMixin" hidden="true" virtual="true">
+        <Layers>
+            <Layer level="ARTWORK">
+                <Texture parentKey="ProcReady" atlas="UI-HUD-ActionBar-Proc-Loop-Flipbook">
+                    <Anchors><Anchor point="CENTER"/></Anchors>
+                </Texture>
+            </Layer>
+            <Layer level="ARTWORK">
+                <Texture parentKey="ProcCooldown" atlas="UI-HUD-ActionBar-Proc-Loop-Flipbook" desaturated="true">
+                    <Anchors><Anchor point="CENTER"/></Anchors>
+                    <Color r="0.6" g="0.6" b="0.6"/>
+                </Texture>
+            </Layer>
+            <Layer level="OVERLAY">
+                <FontString parentKey="TimerReady" justifyH="LEFT" inherits="NumberFontNormal" hidden="true">
+                    <Anchors><Anchor point="TOPLEFT" x="5" y="-5"/></Anchors>
+                </FontString>
+            </Layer>
+            <Layer level="OVERLAY">
+                <FontString parentKey="TimerCooldown" justifyH="LEFT" inherits="NumberFontNormal" hidden="true">
+                    <Anchors><Anchor point="TOPLEFT" x="5" y="-5"/></Anchors>
+                    <Color r="0.6" g="0.6" b="0.6"/>
+                </FontString>
+            </Layer>
+        </Layers>
+        <Animations>
+            <AnimationGroup parentKey="ProcLoop" looping="REPEAT">
+                <FlipBook parentKey="Flip1" childKey="ProcReady"   duration="1" order="0" flipBookRows="6" flipBookColumns="5" flipBookFrames="30" flipBookFrameWidth="0" flipBookFrameHeight="0"/>
+                <FlipBook parentKey="Flip2" childKey="ProcCooldown" duration="1" order="0" flipBookRows="6" flipBookColumns="5" flipBookFrames="30" flipBookFrameWidth="0" flipBookFrameHeight="0"/>
+            </AnimationGroup>
+        </Animations>
         <Scripts>
-    <OnLoad method="OnLoad" />
-    </Scripts>
-    <Anchors>
-        <Anchor point="CENTER" />
-    </Anchors>
-    <Frames>
-        <Cooldown parentKey="Cooldown" />
-    </Frames>
-    <Layers>
-        <Layer level="ARTWORK">
-        <Texture parentKey="Glow" setAllPoints="true" alphaMode="ADD" file="UI-HUD-ActionBar-Channel-InnerGlow" />
-        </Layer>
-        <Layer level="OVERLAY">
-        <FontString parentKey="countStack" inherits="NumberFontNormal">
-            <Anchors>
-            <Anchor point="TOPLEFT" x="5" y="-5" />
-            </Anchors>
-        </FontString>
-        </Layer>
-    </Layers>
+            <OnHide method="OnHide"/>
+        </Scripts>
+    </Frame>
+
+    <!-- ============================== -->
+    <!-- Interrupt Controller           -->
+    <!-- ============================== -->
+    <Frame name="dodoAB3Controller" mixin="dodoAB3ControllerMixin">
+        <Scripts>
+            <OnLoad method="OnLoad"/>
+            <OnEvent method="OnEvent"/>
+        </Scripts>
     </Frame>
 </Ui>
