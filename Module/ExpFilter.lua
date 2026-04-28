@@ -1,5 +1,10 @@
 -- ==============================
--- 설정 및 상수
+-- Inspired
+-- ==============================
+-- Default 'Current expansion only' filter (https://wago.io/FW6qfBuIH)
+
+-- ==============================
+-- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
@@ -8,12 +13,12 @@ dodoDB = dodoDB or {}
 -- ==============================
 -- 캐싱
 -- ==============================
--- Enum cache for performance
-local AHF = Enum.AuctionHouseFilter.CurrentExpansionOnly
-
--- Function cache references
+-- 함수
 local GetAuctionHouseFrame = function() return AuctionHouseFrame end
 local GetCraftFrame = function() return ProfessionsCustomerOrdersFrame end
+
+-- 변수
+local AHF = Enum.AuctionHouseFilter.CurrentExpansionOnly
 
 -- ==============================
 -- 동작
@@ -43,13 +48,6 @@ local function checkCraftFilter()
     dropdown.filters[AHF] = isEnabled
     dropdown:ValidateResetState()
 end
-
--- 통합 실행 함수 (외부 공유용)
-function dodo.AuctionFilter()
-    checkAuctionFilter()
-    checkCraftFilter()
-end
-
 
 -- ==============================
 -- 이벤트
@@ -89,3 +87,11 @@ initFilterFrame:SetScript("OnEvent", function(self, event, arg1)
         checkCraftFilter()
     end
 end)
+
+-- ==============================
+-- 외부 노출 (Option.lua용)
+-- ==============================
+function dodo.AuctionFilter()
+    checkAuctionFilter()
+    checkCraftFilter()
+end

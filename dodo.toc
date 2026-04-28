@@ -14,15 +14,18 @@ UI/Icon.lua
 UI/ActionBar.xml
 UI/ResourceBar.xml
 
+
 Module\Audio.lua
 Module\Camera.lua
 Module\ChatBubble.lua
 Module\BloodBrez.lua
+Module\BrowseGroup.lua
 Module\CVar.lua
 Module\DeleteNow.lua
 Module\ExpFilter.lua
 Module\FrameOption.lua
 Module\InsDifficulty.lua
+Module\Item.lua
 Module\Merchant.lua
 Module\Minimap.lua
 Module\NewLFG.lua  
@@ -30,13 +33,15 @@ Module\PartyClass.lua
 Module\QuickBobber.lua
 Module\ResourceBar.lua
 Module\Slash.lua
+Module\Tooltip.lua
 Module\Teleport.lua 
 Module\WMarker.lua 
 Module\WowheadLink.lua 
 
-Module\KeyRoll.lua
+#Module\Debuff.lua
 
-#Module\BrowseGroup.lua
+#Module\KeyRoll.lua
+
 
 Option.lua
 

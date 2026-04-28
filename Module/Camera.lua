@@ -1,13 +1,26 @@
 -- ==============================
--- 테이블
+-- Inspired
+-- ==============================
+-- Camera Tilt Controls (https://www.curseforge.com/wow/addons/camera-tilt-controls)
+
+-- ==============================
+-- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
+local cameraTiltAngle = 0.55
+
+-- ==============================
+-- 캐싱
+-- ==============================
+-- 함수
 local CreateFrame = CreateFrame
 local GetCVar = GetCVar
 local SetCVar = SetCVar
+
+-- 변수
 local CAM_DYNAMIC_PITCH = "test_cameraDynamicPitch"
 local CAM_FOV_PAD = "test_cameraDynamicPitchBaseFovPad"
 local CAM_FOV_PAD_DOWN = "test_cameraDynamicPitchBaseFovPadDownScale"
@@ -21,9 +34,9 @@ local UIParent = UIParent
 local function cameraTilt()
     if not dodoDB then return end
 
-    local base = dodoDB.cameraBase or 0.65
-    local baseDown = dodoDB.cameraDown or 0.65
-    local baseFlying = dodoDB.cameraFlying or 0.65
+    local base = dodoDB.cameraBase or cameraTiltAngle
+    local baseDown = dodoDB.cameraDown or cameraTiltAngle
+    local baseFlying = dodoDB.cameraFlying or cameraTiltAngle
 
     if GetCVar(CAM_DYNAMIC_PITCH) ~= "1" then
         UIParent:UnregisterEvent("EXPERIMENTAL_CVAR_CONFIRMATION_NEEDED")
@@ -54,4 +67,7 @@ initCamera:SetScript("OnEvent", function(self, event, arg1)
     end
 end)
 
+-- ==============================
+-- 외부 노출 (Option.lua용)
+-- ==============================
 dodo.CameraTilt = cameraTilt

@@ -1,4 +1,7 @@
 .git/
 .vscode/
+.claude/
+.gemini/
+.github/
 temp/
 AGENTS.md

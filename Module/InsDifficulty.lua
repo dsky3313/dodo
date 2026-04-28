@@ -1,5 +1,11 @@
 -- ==============================
--- 테이블
+-- Inspired
+-- ==============================
+-- Clickable Set Difficulty (https://wago.io/W1-rpkkou)
+
+
+-- ==============================
+-- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
@@ -22,6 +28,10 @@ difficultyTable = {
     },
 }
 
+-- ==============================
+-- 캐싱
+-- ==============================
+-- 함수
 local CreateFrame = CreateFrame
 local GetDungeonDifficultyID = GetDungeonDifficultyID
 local GetInstanceInfo = GetInstanceInfo
@@ -39,6 +49,8 @@ local ipairs = ipairs
 local pairs = pairs
 local tonumber = tonumber
 local unpack = unpack
+
+-- 변수
 local C_ChatInfo = C_ChatInfo
 local C_Timer = C_Timer
 local NORMAL_COLOR = { 1, 0.82, 0 }
@@ -138,13 +150,15 @@ resetBtn:SetFrameLevel(difficultyFrame.NineSlice:GetFrameLevel() + 10)
 -- ==============================
 -- 동작
 -- ==============================
+local initInsDifficulty -- 전방 선언 (이벤트 등록/해제용)
+
 local function checkPermission()
     if isIns() then return false end
     return (not IsInGroup() and not IsInRaid()) or UnitIsGroupLeader("player")
 end
 
 local function UpdateUIStatus(forceCategory, forceValue)
-    local isEnabled = (dodoDB and dodoDB.useInsDifficulty ~= false)
+    local isEnabled = (dodoDB and dodoDB.useInsDifficultyFrame ~= false)
     if not isEnabled or isIns() then
         if difficultyFrame:IsShown() then difficultyFrame:Hide() end
         return
@@ -187,8 +201,30 @@ local function OnDifficultyClick(self)
     UpdateUIStatus(self.category, val)
 end
 
+-- 이벤트 등록 상태 관리: 두 기능 중 하나라도 켜있으면 이벤트 유지
+local function UpdateEventRegistration()
+    if not initInsDifficulty then return end
+    local uiOn   = (dodoDB and dodoDB.useInsDifficultyFrame ~= false)
+    local autoOn = (dodoDB and dodoDB.useInsDifficulty ~= false)
+    if (uiOn or autoOn) and not isIns() then
+        initInsDifficulty:RegisterEvent("GROUP_ROSTER_UPDATE")
+        initInsDifficulty:RegisterEvent("PARTY_LEADER_CHANGED")
+        initInsDifficulty:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
+    else
+        initInsDifficulty:UnregisterEvent("GROUP_ROSTER_UPDATE")
+        initInsDifficulty:UnregisterEvent("PARTY_LEADER_CHANGED")
+        initInsDifficulty:UnregisterEvent("PLAYER_DIFFICULTY_CHANGED")
+    end
+end
+
+-- 난이도 자동 고정 (Option.lua용)
 local function InsDifficulty()
-    if not checkPermission() or not dodoDB then return end
+    if not dodoDB then return end
+    UpdateEventRegistration()
+    if dodoDB.useInsDifficulty == false or not checkPermission() then
+        UpdateUIStatus()
+        return
+    end
 
     local dungeonVal = tonumber(dodoDB.InsDifficultyDungeon)
     if dodoDB.useInsDifficultyDungeon and dungeonVal then
@@ -204,6 +240,13 @@ local function InsDifficulty()
     if dodoDB.useInsDifficultyLegacy and legacyVal then
         SetLegacyRaidDifficultyID(legacyVal)
     end
+    UpdateUIStatus()
+end
+
+-- 설정창 표시 토글 (Option.lua용)
+local function InsDifficultyUI()
+    if not dodoDB then return end
+    UpdateEventRegistration()
     UpdateUIStatus()
 end
 
@@ -244,7 +287,7 @@ end)
 -- ==============================
 -- 이벤트
 -- ==============================
-local initInsDifficulty = CreateFrame("Frame")
+initInsDifficulty = CreateFrame("Frame")
 initInsDifficulty:RegisterEvent("ADDON_LOADED")
 initInsDifficulty:RegisterEvent("PLAYER_ENTERING_WORLD")
 
@@ -254,21 +297,16 @@ initInsDifficulty:SetScript("OnEvent", function(self, event, arg1)
         UpdateUIStatus()
     elseif event == "PLAYER_ENTERING_WORLD" then
         C_Timer.After(0.5, function()
-            if isIns() then
-                initInsDifficulty:UnregisterEvent("GROUP_ROSTER_UPDATE")
-                initInsDifficulty:UnregisterEvent("PARTY_LEADER_CHANGED")
-                initInsDifficulty:UnregisterEvent("PLAYER_DIFFICULTY_CHANGED")
-                UpdateUIStatus()
-            else
-                initInsDifficulty:RegisterEvent("GROUP_ROSTER_UPDATE")
-                initInsDifficulty:RegisterEvent("PARTY_LEADER_CHANGED")
-                initInsDifficulty:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
-                InsDifficulty()
-            end
+            UpdateEventRegistration()
+            InsDifficulty()
         end)
     else
         UpdateUIStatus()
     end
 end)
 
-dodo.InsDifficulty = InsDifficulty
+-- ==============================
+-- 외부 노출 (Option.lua용)
+-- ==============================
+dodo.InsDifficultyUI = InsDifficultyUI
+dodo.InsDifficulty   = InsDifficulty

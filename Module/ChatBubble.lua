@@ -1,9 +1,16 @@
 -- ==============================
--- 테이블
+-- Inspired
+-- ==============================
+-- adjust Chat Bubble Font (https://wago.io/AMt_WQ2Zk)
+
+-- ==============================
+-- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
+
+local chatbubbleFontSize = 10
 
 chatbubbleFontTable = {
     { label = "2002", value = "Fonts\\2002.TTF" },
@@ -14,7 +21,13 @@ chatbubbleFontTable = {
     { label = "K_PAGETEXT", value = "Fonts\\K_PAGETEXT.TTF" },
 }
 
+-- ==============================
+-- 캐싱
+-- ==============================
+-- 함수
 local CreateFrame = CreateFrame
+
+-- 변수
 local ChatBubbleFont = ChatBubbleFont
 
 -- ==============================
@@ -24,7 +37,7 @@ local function chatBubble()
     if not dodoDB then return end
 
     local fontPath = dodoDB.chatbubbleFontPath or "Fonts\\2002.TTF"
-    local fontSize = dodoDB.chatbubbleFontSize or 10
+    local fontSize = dodoDB.chatbubbleFontSize or chatbubbleFontSize
     local fontFlag = "OUTLINE"
 
     if ChatBubbleFont then ChatBubbleFont:SetFont(fontPath, fontSize, fontFlag) end

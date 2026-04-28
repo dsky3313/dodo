@@ -1,27 +1,38 @@
 -- ==============================
--- 테이블
+-- Inspired
+-- ==============================
+-- Leatrix Plus (https://www.curseforge.com/wow/addons/leatrix-plus)
+
+-- ==============================
+-- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
--- 보스전 진입 (ENCOUNTER_START)
+-- 보스전 진입
 soundEncounterStartTable = {
     { label = "돌격", value = "16971" },
 }
 
--- 보스전 승리 (ENCOUNTER_END 성공 시)
+-- 보스전 승리
 soundEncounterVictoryTable = {
     { label = "PVP 얼라이언스", value = "38352" },
     { label = "퀘스트 추가", value = "618" },
     { label = "PVP 승리", value = "34091" },
 }
 
+-- ==============================
+-- 캐싱
+-- ==============================
+-- 함수
 local CreateFrame = CreateFrame
 local PlaySound = PlaySound
 local SetCVar = SetCVar
 local Sound_GameSystem_RestartSoundSystem = Sound_GameSystem_RestartSoundSystem
 local tonumber = tonumber
+
+-- 변수
 local CinematicFrame = CinematicFrame
 local MovieFrame = MovieFrame
 
@@ -96,6 +107,9 @@ initAudioSync:SetScript("OnEvent", function(self, event, ...)
     end
 end)
 
+-- ==============================
+-- 외부 노출 (Option.lua용)
+-- ==============================
 dodo.audioSync = audioSync
 dodo.EncounterSoundStart = EncounterSoundStart
 dodo.EncounterSoundVictory = EncounterSoundVictory

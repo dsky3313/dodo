@@ -1,10 +1,19 @@
 -- ==============================
--- 테이블
+-- Inspired
+-- ==============================
+-- Leatrix Plus (https://www.curseforge.com/wow/addons/leatrix-plus)
+
+-- ==============================
+-- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
+-- ==============================
+-- 캐싱
+-- ==============================
+-- 함수
 local CreateFrame = CreateFrame
 local GetCursorInfo = GetCursorInfo
 local GetInstanceInfo = GetInstanceInfo
@@ -13,6 +22,8 @@ local gsub = gsub
 local hooksecurefunc = hooksecurefunc
 local select = select
 local strsplit = strsplit
+
+-- 변수
 local C_Timer = C_Timer
 local DELETE_GOOD_ITEM = DELETE_GOOD_ITEM
 local GameTooltip = GameTooltip
@@ -22,11 +33,6 @@ local StaticPopup1EditBox = StaticPopup1EditBox
 local StaticPopup1Text = StaticPopup1Text
 local cachedDeleteWord = ""
 local localizedDeleteMsg = ""
-
-local function isIns()                                   -- 인스확인
-    local _, instanceType, difficultyID = GetInstanceInfo()
-    return (difficultyID == 8 or instanceType == "raid") -- 1 일반 / 8 쐐기 / raid 레이드
-end
 
 -- ==============================
 -- 디스플레이
@@ -47,7 +53,7 @@ end
 -- 동작
 -- ==============================
 local function DeleteNow()
-    if not dodoDB or isIns() then return end
+    if not dodoDB then return end
 
     local _, _, itemLink = GetCursorInfo()
     if not StaticPopup1 or not StaticPopup1EditBox then return end
@@ -87,18 +93,9 @@ end
 -- 이벤트
 -- ==============================
 local initDeleteNow = CreateFrame("Frame")
-initDeleteNow:RegisterEvent("PLAYER_ENTERING_WORLD")
 initDeleteNow:RegisterEvent("DELETE_ITEM_CONFIRM")
 initDeleteNow:SetScript("OnEvent", function(self, event)
-    if event == "PLAYER_ENTERING_WORLD" then
-        C_Timer.After(0.1, function()
-            if isIns() then
-                initDeleteNow:UnregisterEvent("DELETE_ITEM_CONFIRM")
-            else
-                initDeleteNow:RegisterEvent("DELETE_ITEM_CONFIRM")
-            end
-        end)
-    elseif event == "DELETE_ITEM_CONFIRM" then
+    if event == "DELETE_ITEM_CONFIRM" then
         C_Timer.After(0.1, DeleteNow)
     end
 end)
@@ -114,4 +111,7 @@ hooksecurefunc("StaticPopup_OnHide", function(self)
     end
 end)
 
+-- ==============================
+-- 외부 노출 (Option.lua용)
+-- ==============================
 dodo.DeleteNow = DeleteNow

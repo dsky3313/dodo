@@ -1,20 +1,23 @@
+-- ==============================
+-- 설정
+-- ==============================
 ---@diagnostic disable: lowercase-global, undefined-field
 ---@diagnostic disable: redundant-parameter, param-type-mismatch
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
+-- 바 크기
 local barConfigs = {
     { name = "ResourceBar1", width = 270, height = 10, y = -220, level = 3000, template = "ResourceBar1Template" },
     { name = "ResourceBar2", width = 270, height = 7, y = -4, level = 3001, template = "ResourceBar2Template" }
 }
 
--- 요청하신 대로 소문자로 수정
 local classConfig = {
     ["DEATHKNIGHT"] = { [1] = {{barMode = "rune"}}, [2] = {{barMode = "rune"}}, [3] = {{barMode = "rune"}} },
     ["DEMONHUNTER"] = { [2] = {{spellName = "영혼 파편", barMode = "stack", maxStack = 6}} },
     ["DRUID"] = { [3] = {{spellName = "무쇠가죽", barMode = "duration", duration = 7}} },
     ["MONK"] = { [1] = {{barMode = "stagger"}} },
-    ["SHAMAN"] = { [3] = {{spellName = "응축되는 물", barMode = "stack", maxStack = 2}} },
+    ["SHAMAN"] = { [3] = {{spellName = "굽이치는 물결", barMode = "stack", maxStack = 3}} },
     ["WARRIOR"] = { 
         [1] = {{spellName = "투신", barMode = "duration", duration = 20}}, 
         [2] = {{spellName = "소용돌이 연마", barMode = "stack", maxStack = 4}, {spellName = "격노", barMode = "duration", duration = 4}}, 
@@ -31,6 +34,9 @@ local specColors = {
     ["WARRIOR"] = { [1] = {r=1, g=0.588, b=0.196}, [2] = {r=0, g=0.82, b=1}, [3] = {r=1, g=0.588, b=0.196} },
 }
 
+-- ==============================
+-- 캐싱
+-- ==============================
 local currentSpecBuffs = {}
 local cachedPowerType = nil
 local runeIndexes = { 1, 2, 3, 4, 5, 6 }
@@ -41,11 +47,10 @@ local function UpdateCurrentSpecConfig()
     local _, englishClass = UnitClass("player")
     local spec = C_SpecializationInfo.GetSpecialization()
     
-    -- 기본값으로 해당 직업/특성의 전체 테이블을 가져옴
     local baseConfig = (classConfig[englishClass] and classConfig[englishClass][spec]) or {}
     currentSpecBuffs = baseConfig
 
-    -- ✅ 전사 분노(2) 특성일 때만 조건부로 필터링
+    -- 전사 분노 조건부 필터링
     if englishClass == "WARRIOR" and spec == 2 then
         -- 소용돌이 연마(ID: 12950)를 배웠는지 확인
         if C_SpellBook.IsSpellKnown(12950) then
@@ -144,15 +149,18 @@ local function OnUpdateRuneBar(rb)
 end
 
 function ResourceBar2Mixin:UpdateRuneSystem()
+    -- ✅ bar2Frame 크기 강제 설정
+    self:SetSize(barConfigs[2].width, barConfigs[2].height)
+    
     if not self.runebars then
         self.runebars = {}
-        local spacing = 2
-        local barWidth = barConfigs[2].width  -- 270
-        local runeWidth = (barWidth - (spacing * 5)) / 6
+        local spacing = 0
+        local barWidth = barConfigs[2].width - 2  -- 270
+        local runeWidth = barWidth / 6  -- = 45px * 6 = 270px 정확
         for i = 1, 6 do
             local rb = CreateFrame("StatusBar", nil, self, "ResourceBar2Template")
             rb:SetSize(runeWidth, self:GetHeight())
-            rb:SetPoint("LEFT", self, "LEFT", (i - 1) * (runeWidth + spacing), 0)
+            rb:SetPoint("LEFT", self, "LEFT", (i - 1) * runeWidth, 0)
             self.runebars[i] = rb
         end
     end
@@ -201,7 +209,7 @@ function ResourceBar2Mixin:UpdateStaggerSystem()
     end
     if self.countStack then
         if stagger == 0 then self.countStack:SetText("0")
-        else self.countStack:SetFormattedText("%.1f만", stagger / 10000) end
+        else self.countStack:SetFormattedText("%.0f", pct) end
     end
 end
 

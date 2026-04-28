@@ -1,10 +1,19 @@
 -- ==============================
--- 테이블
+-- Inspired
+-- ==============================
+-- Leatrix Plus (https://www.curseforge.com/wow/addons/leatrix-plus)
+
+-- ==============================
+-- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
+-- ==============================
+-- 캐싱
+-- ==============================
+-- 함수
 local CanGuildBankRepair = CanGuildBankRepair
 local CanMerchantRepair = CanMerchantRepair
 local CreateFrame = CreateFrame
@@ -13,6 +22,8 @@ local GetGuildBankWithdrawMoney = GetGuildBankWithdrawMoney
 local GetMoney = GetMoney
 local GetRepairAllCost = GetRepairAllCost
 local RepairAllItems = RepairAllItems
+
+-- 변수
 local C_CurrencyInfo = C_CurrencyInfo
 
 local PREFIX = "[|cff00ff00dodo|r]"
@@ -22,6 +33,7 @@ local PREFIX = "[|cff00ff00dodo|r]"
 -- ==============================
 -- 자동 수리
 local function autoRepair()
+    if not (dodoDB and dodoDB.useAutoRepair ~= false) then return end
     if not CanMerchantRepair() then return end
 
     local repairCost = GetRepairAllCost()
@@ -45,6 +57,7 @@ end
 
 -- 잡템  판매
 local function sellJunk()
+    if not (dodoDB and dodoDB.useSellJunk ~= false) then return end
     if not C_MerchantFrame.IsSellAllJunkEnabled() then return end
     C_MerchantFrame.SellAllJunkItems()
 end
@@ -59,3 +72,9 @@ initMerchant:SetScript("OnEvent", function(self, event)
     autoRepair()
     sellJunk()
 end)
+
+-- ==============================
+-- 외부 노출 (Option.lua용)
+-- ==============================
+dodo.AutoRepair = function() end -- 설정업데이트는 다음 MERCHANT_SHOW 시 적용
+dodo.SellJunk   = function() end

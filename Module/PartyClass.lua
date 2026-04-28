@@ -1,6 +1,11 @@
-------------------------------
--- 테이블
-------------------------------
+-- ==============================
+-- Inspired
+-- ==============================
+-- 
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 ---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
@@ -33,6 +38,10 @@ local UtilTable = {
     { iconID = 136243, name = "시너지", key = "buff", type = "util" },
 }
 
+-- ==============================
+-- 캐싱
+-- ==============================
+-- 함수
 local CreateFrame = CreateFrame
 local GetInstanceInfo = GetInstanceInfo
 local GetNumGroupMembers = GetNumGroupMembers
@@ -40,24 +49,28 @@ local IsInRaid = IsInRaid
 local UnitClass = UnitClass
 local ipairs = ipairs
 local wipe = wipe
+
+-- 변수
 local C_Timer = C_Timer
 local PVEFrame = PVEFrame
 local UIParent = UIParent
-local table = table
 
 local function isIns()                                   -- 인스확인
     local _, instanceType, difficultyID = GetInstanceInfo()
     return (difficultyID == 8 or instanceType == "raid") -- 1 일반 / 8 쐐기 / raid 레이드
 end
-local activeIDs = {}
 
-------------------------------
--- 디스플레이
-------------------------------
+local activeIDs = {}
+local iconsCreated = false
+
+-- ==============================
+-- 디스플레이 (프레임)
+-- ==============================
 local partyClassFrame = CreateFrame("Frame", "PartyClassFrame", UIParent, "DefaultPanelBaseTemplate")
 partyClassFrame:SetSize(542, 214)
 partyClassFrame:SetPoint("TOPLEFT", PVEFrame, "BOTTOMLEFT", 20, 2)
 partyClassFrame:SetFrameStrata("MEDIUM")
+partyClassFrame:Hide()
 
 partyClassFrame.NineSlice.Text = partyClassFrame.NineSlice:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 partyClassFrame.NineSlice.Text:SetPoint("TOPRIGHT", partyClassFrame, "TOPRIGHT", -80, -5)
@@ -69,21 +82,21 @@ partyClassFrame.Background:SetPoint("TOPLEFT", 6, -2)
 partyClassFrame.Background:SetPoint("BOTTOMRIGHT", -2, 2)
 
 partyClassFrame.ClassIcons = {}
-partyClassFrame:Hide()
 
-local function CreateIcon()
+-- 아이콘 동적 생성 함수
+local function CreateIconsIfNeeded()
+    if iconsCreated then return end
+    
     local iconSize = 30
     local xGap, maxRow = 270, 4
     local startX, startY = 20, -38
 
     for i, data in ipairs(UtilTable) do
         local col, row = math.floor((i - 1) / maxRow), (i - 1) % maxRow
-
-        -- 유틸
         local utilName = "PartyUtilIcon_" .. data.key
         local partyUtilityIcon = IconLib:Create(utilName, partyClassFrame, { iconsize = { iconSize, iconSize } })
-        partyUtilityIcon:SetPoint("TOPLEFT", partyClassFrame, "TOPLEFT", startX + (col * xGap),
-            startY - (row * (iconSize + 12)))
+        
+        partyUtilityIcon:SetPoint("TOPLEFT", partyClassFrame, "TOPLEFT", startX + (col * xGap), startY - (row * (iconSize + 12)))
         partyUtilityIcon:ApplyConfig({
             type = "macro",
             icon = data.iconID,
@@ -93,15 +106,14 @@ local function CreateIcon()
             useTooltip = false,
         })
 
-        -- 직업
         local count = 0
         for _, classInfo in ipairs(ClassTable) do
             local actualSpellID = (data.type == "dispell" and classInfo.dispell[data.key]) or
-            (data.type ~= "dispell" and classInfo[data.key])
+                                 (data.type ~= "dispell" and classInfo[data.key])
             if actualSpellID then
                 local classIconName = "PartyClassIcon_" .. data.key .. "_" .. classInfo.id
-                local partyClassIcon = IconLib:Create(classIconName, partyUtilityIcon,
-                    { iconsize = { iconSize, iconSize } })
+                local partyClassIcon = IconLib:Create(classIconName, partyUtilityIcon, { iconsize = { iconSize, iconSize } })
+                
                 partyClassIcon:SetPoint("LEFT", partyUtilityIcon, "RIGHT", 10 + (count * (iconSize + 5)), 0)
                 partyClassIcon:ApplyConfig({
                     type = "spell",
@@ -121,96 +133,103 @@ local function CreateIcon()
             end
         end
     end
+    iconsCreated = true
 end
 
-------------------------------
+-- ==============================
 -- 동작
-------------------------------
-function PartyClass()
-    if isIns() then
-        partyClassFrame:Hide()
-        return
-    end
-
-    local isEnabled = dodoDB.usePartyClass ~= false -- 기본값 true
-    local pveShown = PVEFrame and PVEFrame:IsShown()
-
-    if not (isEnabled and pveShown) then
-        partyClassFrame:Hide()
-        return
-    end
-
-    partyClassFrame:Show()
+-- ==============================
+local function UpdateUI()
+    if not partyClassFrame:IsShown() then return end
+    
     wipe(activeIDs)
-
-    -- 자신
+    -- 플레이어 본인
     local _, _, pID = UnitClass("player")
     if pID then activeIDs[pID] = true end
 
-    -- 파티
+    -- 파티원
     local numMembers = GetNumGroupMembers()
     if numMembers > 0 then
+        local inRaid = IsInRaid()
         for i = 1, numMembers do
-            local unit = IsInRaid() and "raid" .. i or "party" .. i
+            local unit = inRaid and "raid" .. i or "party" .. i
             local _, _, cID = UnitClass(unit)
             if cID then activeIDs[cID] = true end
         end
     end
 
-    -- 아이콘 색상, 투명도 업데이트
+    -- 모든 아이콘 상태 업데이트
     for _, b in ipairs(partyClassFrame.ClassIcons) do
-        if activeIDs[b.classID] then
-            b.icon:SetDesaturated(false)
-            b.icon:SetAlpha(1)
-            b.text:SetTextColor(1, 1, 1)
-            b.border:SetVertexColor(1, 1, 1, 1)
-        else
-            b.icon:SetDesaturated(true)
-            b.icon:SetAlpha(0.5)
-            b.text:SetTextColor(0.5, 0.5, 0.5)
-            b.border:SetVertexColor(0.5, 0.5, 0.5, 0.5)
-        end
+        local isActive = activeIDs[b.classID]
+        b.icon:SetDesaturated(not isActive)
+        b.icon:SetAlpha(isActive and 1 or 0.5)
+        b.text:SetTextColor(isActive and 1 or 0.5, isActive and 1 or 0.5, isActive and 1 or 0.5)
+        b.border:SetVertexColor(isActive and 1 or 0.5, isActive and 1 or 0.5, isActive and 1 or 0.5, isActive and 1 or 0.5)
     end
 end
 
-------------------------------
+-- 최종 호출 함수 (가시성 판단 및 업데이트)
+local function PartyClass()
+    if isIns() then
+        partyClassFrame:Hide()
+        return
+    end
+
+    local isEnabled = (dodoDB and dodoDB.usePartyClass ~= false)
+    local pveShown = PVEFrame and PVEFrame:IsShown()
+
+    if isEnabled and pveShown then
+        CreateIconsIfNeeded() -- 필요할 때만 아이콘 생성
+        partyClassFrame:Show()
+        UpdateUI()
+    else
+        partyClassFrame:Hide()
+    end
+end
+
+-- ==============================
 -- 이벤트
-------------------------------
+-- ==============================
 local initPartyClass = CreateFrame("Frame")
+
+local function UpdateEventRegistration()
+    if not initPartyClass then return end
+    
+    local isEnabled = (dodoDB and dodoDB.usePartyClass ~= false)
+    local inInstance = isIns()
+
+    -- 기능이 켜져 있고 인스턴스가 아닐 때만 이벤트 등록
+    if isEnabled and not inInstance then
+        partyClassFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+    else
+        partyClassFrame:UnregisterEvent("GROUP_ROSTER_UPDATE")
+    end
+    PartyClass() -- 상태에 따른 즉시 업데이트
+end
+
+-- 파티원 변경 시 UI 업데이트
+partyClassFrame:SetScript("OnEvent", function(self, event)
+    if event == "GROUP_ROSTER_UPDATE" then
+        UpdateUI()
+    end
+end)
+
+-- 초기화 및 지역 이동 감지
 initPartyClass:RegisterEvent("ADDON_LOADED")
 initPartyClass:RegisterEvent("PLAYER_ENTERING_WORLD")
--- GROUP_ROSTER_UPDATE는 프레임에 직접 등록하여 관리
-
 initPartyClass:SetScript("OnEvent", function(self, event, arg1)
     if event == "PLAYER_ENTERING_WORLD" then
-        C_Timer.After(0.5, function()
-            if isIns() then
-                partyClassFrame:UnregisterEvent("GROUP_ROSTER_UPDATE")
-                partyClassFrame:Hide()
-            else
-                -- 인스턴스가 아닐 때만 파티 업데이트 이벤트 등록
-                partyClassFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
-                if #partyClassFrame.ClassIcons == 0 then CreateIcon() end
-                PartyClass()
-            end
-        end)
+        C_Timer.After(0.5, UpdateEventRegistration)
     elseif event == "ADDON_LOADED" and arg1 == addonName then
         if PVEFrame then
             PVEFrame:HookScript("OnShow", PartyClass)
             PVEFrame:HookScript("OnHide", PartyClass)
         end
-        if #partyClassFrame.ClassIcons == 0 then CreateIcon() end
+        -- 아이콘 생성은 여기서 하지 않고 첫 표시 시점으로 미룸(로드 최적화)
     end
 end)
 
--- 파티원 변경 이벤트 전용 스크립트
-partyClassFrame:SetScript("OnEvent", function(self, event)
-    if event == "GROUP_ROSTER_UPDATE" then
-        -- 파티 상태이거나 PVE 창이 열려 있을 때만 업데이트 실행
-        if not isIns() and (GetNumGroupMembers() > 0 or (PVEFrame and PVEFrame:IsShown())) then
-            PartyClass()
-        end
-    end
-end)
-
-dodo.PartyClass = PartyClass
+-- ==============================
+-- 외부 노출 (Option.lua용)
+-- ==============================
+dodo.PartyClass = UpdateEventRegistration

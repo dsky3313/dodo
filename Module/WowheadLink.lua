@@ -1,19 +1,30 @@
 -- ==============================
--- 테이블
+-- Inspired
+-- ==============================
+-- Leatrix Plus (https://www.curseforge.com/wow/addons/leatrix-plus)
+
+-- ==============================
+-- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
+-- ==============================
+-- 캐싱
+-- ==============================
+-- 함수
 local CreateFrame = CreateFrame
 local GetInstanceInfo = GetInstanceInfo
 local hooksecurefunc = hooksecurefunc
+
+-- 변수
 local _G = _G
 local COMMENT_SUFFIX = "#english-comments"
 local SHOW_COMMENTS = true
 local WOWHEAD_BASE = "https://wowhead.com/ko/"
 
-local function isIns()                                   -- 인스확인
+local function isIns() -- 인스확인
     local _, instanceType, difficultyID = GetInstanceInfo()
     return (difficultyID == 8 or instanceType == "raid") -- 1 일반 / 8 쐐기
 end

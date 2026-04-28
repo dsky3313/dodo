@@ -10,6 +10,17 @@ local SetCVar = SetCVar
 local NAMEPLATE_CLASS_COLOR = "nameplateUseClassColorForFriendlyPlayerUnitNames"
 local NAMEPLATE_ONLY_NAME = "nameplateShowOnlyNameForFriendlyPlayerUnits"
 
+
+
+
+
+
+
+
+
+
+
+
 -- ==============================
 -- 동작
 -- ==============================

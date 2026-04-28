@@ -120,7 +120,7 @@ SlashCmdList.RCSLASH = function()
 
   if isLeader then
       DoReadyCheck()
-      C_ChatInfo.SendChatMessage("특성 / 도핑 확인", channel)
+      C_ChatInfo.SendChatMessage("특성 / 도핑 / 버프리필 / 펫 확인", channel)
   elseif inParty then
       C_ChatInfo.SendChatMessage("파티장 주세요", channel)
   end
