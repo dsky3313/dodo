@@ -12,8 +12,8 @@ UI/OptionUI.xml
 UI/OptionUI.lua
 UI/Icon.lua
 UI/ActionBar.xml
+UI/Debuff.xml
 UI/ResourceBar.xml
-
 
 Module\Audio.lua
 Module\Camera.lua

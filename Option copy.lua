@@ -161,19 +161,6 @@ function dodoCreateOptions()
     Checkbox(subCategoryCombat, "useResourceBar1", "플레이어 자원바", "플레이어 마나/분노 표시 바를 활성화합니다.", true, dodo.ResourceBar1)
     Checkbox(subCategoryCombat, "useResourceBar2", "버프 추적 바", "특성에 따른 버프 추적 바를 활성화합니다.", true, dodo.ResourceBar2)
 
-    layoutCombat:AddInitializer(CreateSettingsListSectionHeaderInitializer("디버프"))
-    local settingParentClickthrough, initParentClickthrough = Checkbox(subCategoryCombat, "debuffClickthrough", "클릭스루 (클릭 무시)", "디버프 아이콘 클릭을 무시하여 뒤에 있는 대상을 클릭할 수 있게 합니다.", false, dodoUpdateDebuffOption)
-    local settingChildTooltip, initChildTooltip = Checkbox(subCategoryCombat, "debuffClickthroughTooltip", "클릭스루 시 툴팁 표시", "클릭스루 상태에서도 마우스를 올렸을 때 툴팁을 표시합니다.", true, dodoUpdateDebuffOption)
-    if settingParentClickthrough and settingChildTooltip then
-        initChildTooltip:SetParentInitializer(initParentClickthrough, function()
-            return settingParentClickthrough:GetValue()
-        end)
-    end
-    Slider(subCategoryCombat, "debuffSize", "아이콘 크기", "디버프 아이콘의 크기를 조절합니다.\n\n|cffaaffaa추천 : 56|r", 30, 80, 2, 56, "Integer", dodoUpdateDebuffOption)
-    Slider(subCategoryCombat, "debuffMax", "최대 표시 개수", "최대로 표시할 디버프 개수를 설정합니다.\n|cffff0000(개수 변경은 /reload 필요)|r", 1, 10, 1, 6, "Integer", dodoUpdateDebuffOption)
-    Slider(subCategoryCombat, "debuffX", "가로 위치 (X)", "화면 중앙을 기준으로 가로 위치를 조절합니다.", -1000, 1000, 10, 350, "Integer", dodoUpdateDebuffOption)
-    Slider(subCategoryCombat, "debuffY", "세로 위치 (Y)", "화면 중앙을 기준으로 세로 위치를 조절합니다.", -1000, 1000, 10, 0, "Integer", dodoUpdateDebuffOption)
-
     -- [ 행동 단축바 ]
     local layoutActionbar = SettingsPanel:GetLayout(subCategoryActionbar)
     layoutActionbar:AddInitializer(CreateSettingsListSectionHeaderInitializer("색상"))

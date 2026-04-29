@@ -8,6 +8,7 @@
 -- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, undefined-field, undefined-global
+local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
 local configs = {
@@ -26,7 +27,7 @@ local configs = {
     dispel_size    = 20, -- 해제 아이콘
     dispel_x       = 1,
     dispel_y       = 1,
-    clickthrough   = false, -- 클릭 무시 (true시 뒤에 있는 NPC 클릭 가능)
+    clickthrough   = true, -- 클릭 무시 (true시 뒤에 있는 NPC 클릭 가능)
 };
 
 local Options_Default = {
@@ -217,12 +218,16 @@ local function create_debuff_frames(parent)
             GameTooltip:Hide();
         end);
 
-        -- 마우스 설정 (초기)
         if configs.clickthrough then
-            frame:EnableMouse(true);
-            if frame.SetMouseClickEnabled then frame:SetMouseClickEnabled(false) end
+            frame:EnableMouse(false);
+            if frame.SetMouseClickEnabled then
+                frame:SetMouseClickEnabled(false);
+            end
+            -- 클릭스루 상태에서도 툴팁을 보고 싶다면 아래 값을 true로 변경
+            frame:SetMouseMotionEnabled(true);
         else
             frame:EnableMouse(true);
+            frame:SetMouseMotionEnabled(true);
         end
         frame:Hide();
     end
@@ -377,33 +382,28 @@ local function save_position()
     local scale = main_frame:GetEffectiveScale();
     local ux, uy = UIParent:GetCenter();
     local us = UIParent:GetEffectiveScale();
-    local px = (x * scale - ux * us) / us;
-    local py = (y * scale - uy * us) / us;
-    dodoDB.Debuff.xpoint = px;
-    dodoDB.Debuff.ypoint = py;
-    dodoDB.debuffX = px;
-    dodoDB.debuffY = py;
+    dodoDB.Debuff.xpoint = (x * scale - ux * us) / us;
+    dodoDB.Debuff.ypoint = (y * scale - uy * us) / us;
+    dodoDB.dodo_debuffX = dodoDB.Debuff.xpoint;
+    dodoDB.dodo_debuffY = dodoDB.Debuff.ypoint;
 end
 
 local function load_position()
-    local targetX = dodoDB.debuffX or (dodoDB.Debuff and dodoDB.Debuff.xpoint) or 350;
-    local targetY = dodoDB.debuffY or (dodoDB.Debuff and dodoDB.Debuff.ypoint) or 0;
-    main_frame:ClearAllPoints()
+    local targetX = dodoDB.dodo_debuffX or (dodoDB.Debuff and dodoDB.Debuff.xpoint) or 350;
+    local targetY = dodoDB.dodo_debuffY or (dodoDB.Debuff and dodoDB.Debuff.ypoint) or 0;
     main_frame:SetPoint("CENTER", UIParent, "CENTER", targetX, targetY);
 end
 
 -- ==============================
 -- 설정 업데이트 (설정창용)
 -- ==============================
-function dodoUpdateDebuffOption()
+function dodo.UpdateDebuffOption()
     if not main_frame or not debuff_frame then return end
 
-    configs.size = dodoDB.debuffSize or 56
-    configs.max_debuffs = dodoDB.debuffMax or 6
-    configs.cool_size = math.max(configs.size - 6, 10)
-
-    if dodoDB.debuffClickthrough ~= nil then
-        configs.clickthrough = dodoDB.debuffClickthrough
+    configs.size = dodoDB.dodo_debuffSize or 56
+    configs.max_debuffs = dodoDB.dodo_debuffMax or 6
+    if dodoDB.dodo_debuffClickthrough ~= nil then
+        configs.clickthrough = dodoDB.dodo_debuffClickthrough
     else
         configs.clickthrough = true
     end
@@ -416,36 +416,22 @@ function dodoUpdateDebuffOption()
     local private_w = (icon_w + configs.gap) * configs.max_private
 
     debuff_frame:SetSize(debuff_w, icon_h)
-    if private_frame then
-        private_frame:SetSize(private_w, icon_h)
-    end
+    private_frame:SetSize(private_w, icon_h)
 
     for idx, frame in pairs(debuff_frame.frames) do
         frame:SetSize(icon_w, icon_h)
         if frame.border then frame.border:SetSize(icon_w, icon_h) end
-        if frame.cooldown then frame.cooldown:SetSize(configs.cool_size, configs.cool_size) end
-        
-        frame:ClearAllPoints()
-        if idx == 1 then
-            frame:SetPoint("RIGHT", debuff_frame, "RIGHT", 0, 0)
-        else
+        if idx > 1 then
+            frame:ClearAllPoints()
             frame:SetPoint("RIGHT", debuff_frame.frames[idx - 1], "LEFT", -configs.gap, 0)
         end
-        
         if configs.clickthrough then
-            -- 클릭은 막되 EnableMouse(true)로 툴팁(OnEnter)은 작동 유지
-            frame:EnableMouse(true);
+            frame:EnableMouse(false)
             if frame.SetMouseClickEnabled then frame:SetMouseClickEnabled(false) end
-            -- 툴팁 표시 옵션이 꺼져 있을 때만 마우스 모션도 비활성화
-            if dodoDB.debuffClickthroughTooltip == false then
-                if frame.SetMouseMotionEnabled then frame:SetMouseMotionEnabled(false) end
-            else
-                if frame.SetMouseMotionEnabled then frame:SetMouseMotionEnabled(true) end
-            end
+            frame:SetMouseMotionEnabled(false)
         else
-            frame:EnableMouse(true);
-            if frame.SetMouseClickEnabled then frame:SetMouseClickEnabled(true) end
-            if frame.SetMouseMotionEnabled then frame:SetMouseMotionEnabled(true) end
+            frame:EnableMouse(true)
+            frame:SetMouseMotionEnabled(true)
         end
     end
     update_auras()
@@ -484,13 +470,13 @@ local function init_frames()
     end
 
     -- 초기 설정 불러오기
-    configs.size = dodoDB.debuffSize or configs.size
-    configs.max_debuffs = dodoDB.debuffMax or configs.max_debuffs
-    if dodoDB.debuffClickthrough ~= nil then
-        configs.clickthrough = dodoDB.debuffClickthrough
+    configs.size = dodoDB.dodo_debuffSize or configs.size
+    configs.max_debuffs = dodoDB.dodo_debuffMax or configs.max_debuffs
+    if dodoDB.dodo_debuffClickthrough ~= nil then
+        configs.clickthrough = dodoDB.dodo_debuffClickthrough
     end
 
-    main_frame:SetFrameStrata("MEDIUM");
+    main_frame:SetFrameStrata("LOW");
     main_frame:SetSize(1, 1);
     load_position();
     main_frame:Show();

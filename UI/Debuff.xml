@@ -1,0 +1,53 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
+..\Blizzard_SharedXML\UI.xsd">
+	<Frame name="dodo_DebuffFrameTemplate" virtual="true" enableMouse="false" frameStrata="MEDIUM" frameLevel="1000">
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture name="$parentIcon" parentKey="icon" setAllPoints="true"/>
+			</Layer>
+			<Layer level="ARTWORK" textureSubLevel="7">
+				<Texture name="$parentBorder" parentKey="border" file="Interface\Addons\dodo\Media\Texture\AuraBorder.tga">
+					<Anchors>
+						<Anchor point="CENTER" relativeKey="$parent.icon"/>
+					</Anchors>
+				</Texture>
+			</Layer>
+			<Layer level="OVERLAY">
+				<FontString name="$parentCount" parentKey="count" justifyH="RIGHT"/>
+				<Texture name="$parentDispelMagic" parentKey="dispelMagic" hidden="true" atlas="RaidFrame-Icon-DebuffMagic">
+					<Size x="14" y="14"/>
+					<Anchors><Anchor point="TOPRIGHT" x="1" y="1"/></Anchors>
+				</Texture>
+				<Texture name="$parentDispelCurse" parentKey="dispelCurse" hidden="true" atlas="RaidFrame-Icon-DebuffCurse">
+					<Size x="14" y="14"/>
+					<Anchors><Anchor point="TOPRIGHT" x="1" y="1"/></Anchors>
+				</Texture>
+				<Texture name="$parentDispelDisease" parentKey="dispelDisease" hidden="true" atlas="RaidFrame-Icon-DebuffDisease">
+					<Size x="14" y="14"/>
+					<Anchors><Anchor point="TOPRIGHT" x="1" y="1"/></Anchors>
+				</Texture>
+				<Texture name="$parentDispelPoison" parentKey="dispelPoison" hidden="true" atlas="RaidFrame-Icon-DebuffPoison">
+					<Size x="14" y="14"/>
+					<Anchors><Anchor point="TOPRIGHT" x="1" y="1"/></Anchors>
+				</Texture>
+				<Texture name="$parentDispelBleed" parentKey="dispelBleed" hidden="true" atlas="RaidFrame-Icon-DebuffBleed">
+					<Size x="14" y="14"/>
+					<Anchors><Anchor point="TOPRIGHT" x="1" y="1"/></Anchors>
+				</Texture>
+			</Layer>
+		</Layers>
+		<Frames>
+			<Cooldown name="$parentCooldown" parentKey="cooldown" inherits="CooldownFrameTemplate" reverse="true" drawEdge="false" hidden="true" enableMouse="false" frameLevel="1000">
+				<Anchors>
+					<Anchor point="CENTER">
+						<Offset>
+							<AbsDimension x="0" y="-1"/>
+						</Offset>
+					</Anchor>
+				</Anchors>
+			</Cooldown>
+		</Frames>
+	</Frame>
+	<Frame name="dodo_PrivateAuraAnchorTemplate" mixin="dodo_PrivateAuraAnchorMixin" virtual="true"/>
+	<Script file="..\Module\Debuff.lua"/>
+</Ui>
