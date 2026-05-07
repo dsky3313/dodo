@@ -55,9 +55,14 @@ local C_Timer = C_Timer
 local PVEFrame = PVEFrame
 local UIParent = UIParent
 
-local function isIns()                                   -- 인스확인
-    local _, instanceType, difficultyID = GetInstanceInfo()
-    return (difficultyID == 8 or instanceType == "raid") -- 1 일반 / 8 쐐기 / raid 레이드
+local function SetColorFromTable(obj, r, g, b, a, isVertex)
+    if obj then
+        if isVertex then
+            obj:SetVertexColor(r, g, b, a or 1)
+        else
+            obj:SetTextColor(r, g, b, a or 1)
+        end
+    end
 end
 
 local activeIDs = {}
@@ -161,20 +166,17 @@ local function UpdateUI()
     -- 모든 아이콘 상태 업데이트
     for _, b in ipairs(partyClassFrame.ClassIcons) do
         local isActive = activeIDs[b.classID]
+        local val = isActive and 1 or 0.5
+        
         b.icon:SetDesaturated(not isActive)
-        b.icon:SetAlpha(isActive and 1 or 0.5)
-        b.text:SetTextColor(isActive and 1 or 0.5, isActive and 1 or 0.5, isActive and 1 or 0.5)
-        b.border:SetVertexColor(isActive and 1 or 0.5, isActive and 1 or 0.5, isActive and 1 or 0.5, isActive and 1 or 0.5)
+        b.icon:SetAlpha(val)
+        SetColorFromTable(b.Name, val, val, val)
+        SetColorFromTable(b.normalTexture, val, val, val, val, true)
     end
 end
 
 -- 최종 호출 함수 (가시성 판단 및 업데이트)
 local function PartyClass()
-    if isIns() then
-        partyClassFrame:Hide()
-        return
-    end
-
     local isEnabled = (dodoDB and dodoDB.usePartyClass ~= false)
     local pveShown = PVEFrame and PVEFrame:IsShown()
 
@@ -196,10 +198,9 @@ local function UpdateEventRegistration()
     if not initPartyClass then return end
     
     local isEnabled = (dodoDB and dodoDB.usePartyClass ~= false)
-    local inInstance = isIns()
 
-    -- 기능이 켜져 있고 인스턴스가 아닐 때만 이벤트 등록
-    if isEnabled and not inInstance then
+    -- 기능이 켜져 있을 때만 이벤트 등록
+    if isEnabled then
         partyClassFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
     else
         partyClassFrame:UnregisterEvent("GROUP_ROSTER_UPDATE")

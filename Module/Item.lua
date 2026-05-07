@@ -70,13 +70,11 @@ local fexOriginalHeight = nil;
 local inspectUnit = nil;
 
 local MAX_GEMS = 4;
-local OUTLINE_FONT = "Fonts\\FRIZQT__.TTF";
+local OUTLINE_FONT = "Fonts\\2002.TTF";
 
 -- ============================================================
 -- 함수
 -- ============================================================
-
-
 local ENCHANT_PATTERNS = { "^마법부여: (.+)", "^Enchanted: (.+)" }
 local function get_enchant_name(unit, slotID)
     local data = C_TooltipInfo.GetInventoryItem(unit, slotID);
@@ -116,35 +114,52 @@ end
 local function get_gem_data(unit, slotID)
     local link = GetInventoryItemLink(unit, slotID);
     if not link then return nil end
-    
-    local gems = {};
-    -- 1. 이미 장착된 보석 확인
+
+    local itemID = tonumber(match(link, "item:(%d+)"));
+    if itemID and not C_Item.IsItemDataCachedByID(itemID) then
+        C_Item.RequestLoadItemDataByID(itemID);
+        return nil;
+    end
+
+    local gemLinks = {};
     for i = 1, MAX_GEMS do
         local _, gemLink = C_Item.GetItemGem(link, i);
-        if gemLink and gemLink ~= "" then
-            local itemID = tonumber(match(gemLink, "item:(%d+)"));
-            local gemIcon = itemID and C_Item.GetItemIconByID(itemID);
-            if not gemIcon and itemID then
-                _, _, _, _, gemIcon = GetItemInfoInstant(itemID);
-            end
-            table_insert(gems, { filled = true, texture = gemIcon or 134400 });
-        end
+        gemLinks[i] = gemLink;
     end
-    
-    -- 2. 빈 소켓 확인 (툴팁 텍스트 이용 - 훨씬 정확함)
+
+    local emptyCount = 0;
     local tooltipData = C_TooltipInfo.GetInventoryItem(unit, slotID);
     if tooltipData and tooltipData.lines then
         for _, line in ipairs(tooltipData.lines) do
             local text = line.leftText;
-            if text then
-                -- Blizzard 글로벌 스트링 및 한국어/영어 공용 패턴 확인
-                if text:find("보석 홈") or text:find("Socket") or text:find(EMPTY_SOCKET_PRISMATIC or "") then
-                    table_insert(gems, { filled = false });
-                end
+            if text and text:match(EMPTY_SOCKET_PRISMATIC or "") then
+                emptyCount = emptyCount + 1;
             end
         end
     end
-    
+
+    local hasAny = emptyCount > 0;
+    for i = 1, MAX_GEMS do
+        if gemLinks[i] then hasAny = true end
+    end
+    if not hasAny then return nil end
+
+    local gems = {};
+    for i = 1, MAX_GEMS do
+        if gemLinks[i] then
+            local gID = tonumber(match(gemLinks[i], "item:(%d+)"));
+            if gID and not C_Item.IsItemDataCachedByID(gID) then
+                C_Item.RequestLoadItemDataByID(gID);
+                return nil;
+            end
+            local gemIcon = gID and select(5, GetItemInfoInstant(gID)) or 134400;
+            table_insert(gems, { filled = true, texture = gemIcon });
+        end
+    end
+    for _ = 1, emptyCount do
+        table_insert(gems, { filled = false });
+    end
+
     return #gems > 0 and gems or nil;
 end
 
@@ -360,7 +375,6 @@ local function apply_wide_layout()
     if not PaperDollFrame or not PaperDollFrame:IsShown() then return end
 
     if not dodoDB.useEnhancedCharFrame then
-        reset_layout();
         return;
     end
 
@@ -371,7 +385,7 @@ local function apply_wide_layout()
     CharacterFrameInset:SetPoint("BOTTOMRIGHT", CharacterFrame, "BOTTOMLEFT", configs.wide_width - 206, 4);
 
     if CharacterMainHandSlot then
-        CharacterMainHandSlot:SetPoint("BOTTOMLEFT", PaperDollItemsFrame, "BOTTOMLEFT", 145, 14);
+        CharacterMainHandSlot:SetPoint("BOTTOMLEFT", PaperDollItemsFrame, "BOTTOMLEFT", 185, 14);
     end
     if CharacterSecondaryHandSlot then
         CharacterSecondaryHandSlot:SetPoint("BOTTOMLEFT", CharacterMainHandSlot, "BOTTOMRIGHT", 5, 0);
@@ -460,34 +474,22 @@ local isPendingUpdate = false;
 
 local function try_update_slots()
     local allReady = true;
-    for _, info in ipairs(SLOT_LIST) do
-        local link = GetInventoryItemLink("player", info.slotID);
+    for slot = 1, 19 do
+        local link = GetInventoryItemLink("player", slot);
         if link then
             local itemID = tonumber(match(link, "item:(%d+)"));
             if itemID and not C_Item.IsItemDataCachedByID(itemID) then
                 allReady = false;
                 break;
             end
-            
-            -- Fex 스타일: 링크를 직접 파싱하여 보석 ID 추출 및 캐시 확인
-            -- item:itemID:enchantID:gemID1:gemID2:gemID3:gemID4
-            local _, _, g1, g2, g3, g4 = match(link, "item:(%d*):(%d*):(%d*):(%d*):(%d*):(%d*)");
-            for _, gStr in ipairs({g1, g2, g3, g4}) do
-                local gID = tonumber(gStr);
-                if gID and gID > 0 and not C_Item.IsItemDataCachedByID(gID) then
-                    allReady = false;
-                    break;
-                end
-            end
         end
-        if not allReady then break end
     end
 
     if allReady then
         isPendingUpdate = false;
         update_slots("player", fexSlotData);
     else
-        C_Timer.After(0.1, try_update_slots);
+        C_Timer.After(0.05, try_update_slots);
     end
 end
 
@@ -520,7 +522,9 @@ function dodo.EnhancedCharFrame(value)
     if value then
         apply_wide_layout();
     else
-        reset_layout();
+        if CharacterFrame and CharacterFrame.Collapse then
+            CharacterFrame:Collapse();
+        end
     end
     request_update_slots();
     if InspectFrame and InspectFrame:IsShown() then
@@ -541,7 +545,13 @@ local function on_event(self, event, ...)
         C_Timer.After(0.5, function()
             hide_character_backgrounds();
             build_slots("Character", fexSlotData);
-            request_update_slots();
+            if not isPendingUpdate then
+                isPendingUpdate = true;
+                C_Timer.After(0.2, function()
+                    isPendingUpdate = false;
+                    try_update_slots();
+                end);
+            end
         end);
         
         if C_AddOns.IsAddOnLoaded("Blizzard_InspectUI") then
@@ -551,22 +561,28 @@ local function on_event(self, event, ...)
         for slot = 1, 19 do
             local link = GetInventoryItemLink("player", slot);
             if link then
-                local itemID = tonumber(match(link, "item:(%d+)"));
+                GetItemInfo(link);
+                local itemID = GetInventoryItemID("player", slot);
                 if itemID then
                     C_Item.RequestLoadItemDataByID(itemID);
                 end
-                
-                -- Fex 스타일: 링크 파싱으로 보석 데이터 로드 요청 (GetItemGem보다 빠름)
                 local _, _, g1, g2, g3, g4 = match(link, "item:(%d*):(%d*):(%d*):(%d*):(%d*):(%d*)");
                 for _, gStr in ipairs({g1, g2, g3, g4}) do
                     local gID = tonumber(gStr);
                     if gID and gID > 0 then
+                        GetItemInfo(gID);
                         C_Item.RequestLoadItemDataByID(gID);
                     end
                 end
             end
         end
-        request_update_slots();
+        if not isPendingUpdate then
+            isPendingUpdate = true;
+            C_Timer.After(0.2, function()
+                isPendingUpdate = false;
+                try_update_slots();
+            end);
+        end
     elseif event == "ADDON_LOADED" then
         local addon = ...;
         if addon == "Blizzard_InspectUI" then
@@ -618,12 +634,44 @@ end);
 CharacterFrame:HookScript("OnShow", function()
     hide_character_backgrounds();
     apply_wide_layout();
-    update_slots("player", fexSlotData);
+
+    -- 장비창 열 때마다 아이템/보석 데이터 새로 요청 후 재시도
+    for slot = 1, 19 do
+        local link = GetInventoryItemLink("player", slot);
+        if link then
+            GetItemInfo(link);
+            local itemID = GetInventoryItemID("player", slot);
+            if itemID then
+                C_Item.RequestLoadItemDataByID(itemID);
+            end
+            local _, _, g1, g2, g3, g4 = match(link, "item:(%d*):(%d*):(%d*):(%d*):(%d*):(%d*)");
+            for _, gStr in ipairs({g1, g2, g3, g4}) do
+                local gID = tonumber(gStr);
+                if gID and gID > 0 then
+                    GetItemInfo(gID);
+                    C_Item.RequestLoadItemDataByID(gID);
+                end
+            end
+        end
+    end
+    if not isPendingUpdate then
+        isPendingUpdate = true;
+        C_Timer.After(0.2, function()
+            isPendingUpdate = false;
+            try_update_slots();
+        end);
+    end
 end);
 
 hooksecurefunc(CharacterFrame, "Expand", apply_wide_layout);
 hooksecurefunc(CharacterFrame, "UpdateSize", apply_wide_layout);
-hooksecurefunc(CharacterFrame, "Collapse", reset_layout);
+
+hooksecurefunc(CharacterFrame, "Collapse", function()
+    CharacterFrame:SetWidth(configs.normal_width);
+    if fexOriginalHeight then
+        CharacterFrame:SetHeight(fexOriginalHeight);
+    end
+end);
 
 for i = 1, NUM_CONTAINER_FRAMES do
     local cf = _G["ContainerFrame" .. i];

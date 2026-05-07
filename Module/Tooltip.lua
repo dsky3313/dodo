@@ -45,25 +45,29 @@ RegisterType("TraitEntry", "TraitEntryID")
 RegisterType("TraitDefinition", "TraitDefinitionID")
 RegisterType("Vignette", "VignetteID")
 RegisterType("AreaPoi", "AreaPoiID")
-RegisterType("AreaPOI", "AreaPoiID")
+
 RegisterType("Toy", "ItemID")
 
 -- ==============================
 -- 캐싱 (Upvalues)
 -- ==============================
 local _G = _G
-local format, select, tonumber, type = string.format, select, tonumber, type
+local format, select, tonumber, type, tostring = string.format, select, tonumber, type, tostring
 local GameTooltip = GameTooltip
 local UnitClass = UnitClass
 local UnitExists = UnitExists
 local UnitGUID = UnitGUID
 local UnitIsPlayer = UnitIsPlayer
 local UnitReaction = UnitReaction
-local GetItemInfo = (C_Item and C_Item.GetItemInfo) or _G.GetItemInfo
-local GetSpellInfo = (C_Spell and C_Spell.GetSpellInfo) or _G.GetSpellInfo
+local UnitTokenFromGUID = UnitTokenFromGUID
+local IsMounted = IsMounted
+local GetItemInfo = (C_Item and C_Item.GetItemInfo)
+local GetSpellInfo = (C_Spell and C_Spell.GetSpellInfo)
 local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 local FACTION_BAR_COLORS = FACTION_BAR_COLORS
 local TooltipDataProcessor = TooltipDataProcessor
+local C_UnitAuras = C_UnitAuras
+local C_MountJournal = C_MountJournal
 
 -- 안전성 검사
 local function isSecret(v)
@@ -82,7 +86,7 @@ local function AddIDLine(self, label, id)
         self:AddLine(" ")
         needSpacer = false
     end
-    self:AddDoubleLine("|cffffd200" .. label .. "|r", "|cffffffff" .. id .. "|r")
+    self:AddDoubleLine(format("|cffffd200%s|r", label), format("|cffffffff%s|r", id))
 end
 
 local function AddExpansionLine(self, expID)
@@ -100,33 +104,53 @@ local function ResetBorderColor(tooltip)
     tooltip.NineSlice:SetBorderColor(1, 1, 1, 1)
 end
 
+local function GetNameLine(tooltip)
+    local nameLine = tooltip.TextLeft1 or tooltip.nameLine
+    if not nameLine then
+        nameLine = _G[tooltip:GetName() .. "TextLeft1"]
+        tooltip.nameLine = nameLine
+    end
+    return nameLine
+end
+
+
 -- 이름 라인에서 색상을 훔쳐오는 함수 (Foolproof)
-local function MatchBorderToNameColor(self)
+local function MatchBorderToNameColor(self, r, g, b)
     if dodoDB.useTooltipColor == false then return end
-    local nameLine = _G[self:GetName() .. "TextLeft1"]
-    if nameLine then
-        local r, g, b = nameLine:GetTextColor()
-        if r and g and b then
-            ApplyBorderColor(self, r, g, b)
+    if not r then
+        local nameLine = self.TextLeft1 or self.nameLine
+        if not nameLine then
+            nameLine = _G[self:GetName() .. "TextLeft1"]
+            self.nameLine = nameLine
         end
+        if nameLine then
+            r, g, b = nameLine:GetTextColor()
+        end
+    end
+    if r and g and b then
+        ApplyBorderColor(self, r, g, b)
     end
 end
 
 local function GetMountInfo(unit)
     if not unit or not UnitIsPlayer(unit) then return end
-    local auras = C_UnitAuras and C_UnitAuras.GetUnitAuras(unit, "HELPFUL")
-    if not auras then return end
-    for i = 1, #auras do
-        local aura = auras[i]
+    if unit == "player" and not IsMounted() then return end
+    
+    local foundName, foundIcon
+    AuraUtil.ForEachAura(unit, "HELPFUL", nil, function(aura)
         local spellID = aura and aura.spellId
         if spellID and not isSecret(spellID) then
             local mountID = C_MountJournal.GetMountFromSpell(spellID)
             if mountID then
                 local name, _, icon = C_MountJournal.GetMountInfoByID(mountID)
-                if name and name ~= "" then return name, icon end
+                if name and name ~= "" then
+                    foundName, foundIcon = name, icon
+                    return true -- 순회 중단
+                end
             end
         end
-    end
+    end, true)
+    return foundName, foundIcon
 end
 
 -- ==============================
@@ -136,24 +160,30 @@ local function OnUnitTooltip(self, data)
     if dodoDB.useTooltip == false then return end
     if not data or isSecret(data) then return end
     
-    -- self:GetUnit() 대신 data.guid를 사용하여 보안 오류 방지
     local guid = data.guid
     if not guid or isSecret(guid) then return end
     
-    -- GUID를 통해 유닛(플레이어, NPC 등)을 안전하게 식별
     local unit = UnitTokenFromGUID(guid)
+    -- GUID로 유닛을 찾지 못한 경우 mouseover를 fallback으로 사용
+    if not unit and UnitGUID("mouseover") == guid then
+        unit = "mouseover"
+    end
+    
     if not unit or not UnitExists(unit) or isSecret(unit) then return end
 
     needSpacer = true
-    local nameLine = _G[self:GetName() .. "TextLeft1"]
+    local nameLine = GetNameLine(self)
     if not nameLine then return end
 
+
+    local r, g, b
     if UnitIsPlayer(unit) then
         local _, class = UnitClass(unit)
         if class and dodoDB.useTooltipColor ~= false then
             local color = RAID_CLASS_COLORS[class]
             if color then
-                nameLine:SetTextColor(color.r, color.g, color.b)
+                r, g, b = color.r, color.g, color.b
+                nameLine:SetTextColor(r, g, b)
             end
         end
         if dodoDB.useTooltipMount ~= false then
@@ -168,17 +198,16 @@ local function OnUnitTooltip(self, data)
         if reaction and dodoDB.useTooltipColor ~= false then
             local color = FACTION_BAR_COLORS[reaction]
             if color then
-                nameLine:SetTextColor(color.r, color.g, color.b)
+                r, g, b = color.r, color.g, color.b
+                nameLine:SetTextColor(r, g, b)
             end
         end
-        if guid then
-            local npcID = tonumber(guid:match("-(%d+)-%x+$"))
-            if npcID then AddIDLine(self, "NPC ID", npcID) end
-        end
+        local npcID = tonumber(guid:match("-(%d+)-%x+$"))
+        if npcID then AddIDLine(self, "NPC ID", npcID) end
     end
     
-    -- 이름 색상이 결정된 후 테두리에 적용
-    MatchBorderToNameColor(self)
+    -- 이미 결정된 색상이 있으면 직접 전달하여 중복 조회를 방지
+    MatchBorderToNameColor(self, r, g, b)
 end
 
 local function OnItemTooltip(self, data)
@@ -194,7 +223,7 @@ local function OnItemTooltip(self, data)
 
     local _, _, _, _, _, _, _, _, _, icon, _, _, _, _, expacID = GetItemInfo(itemID)
     if icon then
-        local nameLine = _G[self:GetName() .. "TextLeft1"]
+        local nameLine = GetNameLine(self)
         local text = nameLine and nameLine:GetText()
         if text and not isSecret(text) and not text:find("|T") then
             nameLine:SetText(format("|T%d:18:18:0:0|t %s", icon, text))
@@ -215,7 +244,7 @@ local function OnSpellTooltip(self, data)
 
     local spellInfo = GetSpellInfo(spellID)
     if spellInfo and spellInfo.iconID then
-        local nameLine = _G[self:GetName() .. "TextLeft1"]
+        local nameLine = GetNameLine(self)
         local text = nameLine and nameLine:GetText()
         if text and not isSecret(text) and not text:find("|T") then
             nameLine:SetText(format("|T%d:18:18:0:0|t %s", spellInfo.iconID, text))
@@ -284,4 +313,7 @@ end
 
 local group = CreateFrame("Frame")
 group:RegisterEvent("PLAYER_LOGIN")
-group:SetScript("OnEvent", Initialize)
+group:SetScript("OnEvent", function(self)
+    Initialize()
+    self:UnregisterEvent("PLAYER_LOGIN")
+end)

@@ -15,12 +15,18 @@ local cameraTiltAngle = 0.55
 -- ==============================
 -- 캐싱
 -- ==============================
--- 함수
-local CreateFrame = CreateFrame
 local GetCVar = GetCVar
 local SetCVar = SetCVar
+local tostring = tostring
 
--- 변수
+local function SafeSetCVar(cvar, value)
+    local cur = GetCVar(cvar)
+    local newVal = tostring(value)
+    if cur ~= newVal then
+        SetCVar(cvar, newVal)
+    end
+end
+
 local CAM_DYNAMIC_PITCH = "test_cameraDynamicPitch"
 local CAM_FOV_PAD = "test_cameraDynamicPitchBaseFovPad"
 local CAM_FOV_PAD_DOWN = "test_cameraDynamicPitchBaseFovPadDownScale"
@@ -32,42 +38,39 @@ local UIParent = UIParent
 -- 동작
 -- ==============================
 local function cameraTilt()
-    if not dodoDB then return end
-
     local base = dodoDB.cameraBase or cameraTiltAngle
     local baseDown = dodoDB.cameraDown or cameraTiltAngle
     local baseFlying = dodoDB.cameraFlying or cameraTiltAngle
 
     if GetCVar(CAM_DYNAMIC_PITCH) ~= "1" then
         UIParent:UnregisterEvent("EXPERIMENTAL_CVAR_CONFIRMATION_NEEDED")
-        SetCVar(CAM_DYNAMIC_PITCH, 1)
-        SetCVar(CAM_KEEP_CENTERED, 0)
+        SafeSetCVar(CAM_DYNAMIC_PITCH, 1)
+        SafeSetCVar(CAM_KEEP_CENTERED, 0)
     end
 
     if GetCVar(CAM_DYNAMIC_PITCH) == "1" then
-        SetCVar(CAM_FOV_PAD, base)
-        SetCVar(CAM_FOV_PAD_DOWN, baseDown)
-        SetCVar(CAM_FOV_PAD_FLYING, baseFlying)
+        SafeSetCVar(CAM_FOV_PAD, base)
+        SafeSetCVar(CAM_FOV_PAD_DOWN, baseDown)
+        SafeSetCVar(CAM_FOV_PAD_FLYING, baseFlying)
     end
 end
 
 -- ==============================
--- 이벤트
+-- 초기화 및 등록
 -- ==============================
 local initCamera = CreateFrame("Frame")
 initCamera:RegisterEvent("ADDON_LOADED")
 initCamera:SetScript("OnEvent", function(self, event, arg1)
-    if arg1 == addonName then
+    if event == "ADDON_LOADED" and arg1 == addonName then
         dodoDB = dodoDB or {}
         self:RegisterEvent("PLAYER_LOGIN")
+        self:UnregisterEvent("ADDON_LOADED")
     elseif event == "PLAYER_LOGIN" then
-        if cameraTilt then cameraTilt() end
+        cameraTilt()
         self:UnregisterAllEvents()
         self:SetScript("OnEvent", nil)
     end
 end)
 
--- ==============================
 -- 외부 노출 (Option.lua용)
--- ==============================
 dodo.CameraTilt = cameraTilt

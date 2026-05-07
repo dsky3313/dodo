@@ -54,7 +54,7 @@ function dodoCreateOptions()
     -- [ 인터페이스 ]
     local layoutInterface = SettingsPanel:GetLayout(subCategoryInterface)
     layoutInterface:AddInitializer(CreateSettingsListSectionHeaderInitializer("말풍선"))
-    DropDown(subCategoryInterface, "chatbubbleFontPath", "말풍선 글꼴", "말풍선에 적용할 글꼴를 선택하세요.", chatbubbleFontTable, chatbubbleFontTable[1].value, dodo.ChatBubble)
+    DropDown(subCategoryInterface, "chatbubbleFontPath", "말풍선 글꼴", "말풍선에 적용할 글꼴를 선택하세요.", dodo.chatbubbleFontTable, dodo.chatbubbleFontTable[1].value, dodo.ChatBubble)
     Slider(subCategoryInterface, "chatbubbleFontSize", "말풍선 글꼴 크기", "말풍선 글꼴 크기를 변경합니다.", 8, 14, 1, 10, "Integer", dodo.ChatBubble)
 
     layoutInterface:AddInitializer(CreateSettingsListSectionHeaderInitializer("미니맵"))
@@ -103,8 +103,8 @@ function dodoCreateOptions()
 
     -- 효과음
     layoutSound:AddInitializer(CreateSettingsListSectionHeaderInitializer("효과음"))
-    CheckBoxDropDown(subCategorySound, "useSoundEncounterStart", "useSoundEncounterStart_soundID", "보스전 시작", "전투 시작 사운드를 변경합니다.", soundEncounterStartTable, true, soundEncounterStartTable[1].value, dodo.EncounterSoundStart)
-    CheckBoxDropDown(subCategorySound, "useSoundEncounterVictory", "useSoundEncounterVictory_soundID", "보스전 승리", "전투 승리 사운드를 변경합니다.", soundEncounterVictoryTable, true, soundEncounterVictoryTable[1].value, dodo.EncounterSoundVictory)
+    CheckBoxDropDown(subCategorySound, "useSoundEncounterStart", "useSoundEncounterStart_soundID", "보스전 시작", "전투 시작 사운드를 변경합니다.", dodo.soundEncounterStartTable, true, dodo.soundEncounterStartTable[1].value, dodo.EncounterSoundStart)
+    CheckBoxDropDown(subCategorySound, "useSoundEncounterVictory", "useSoundEncounterVictory_soundID", "보스전 승리", "전투 승리 사운드를 변경합니다.", dodo.soundEncounterVictoryTable, true, dodo.soundEncounterVictoryTable[1].value, dodo.EncounterSoundVictory)
 
 
 
@@ -117,7 +117,7 @@ function dodoCreateOptions()
     Checkbox(subCategoryParty, "usePartyClass", "클래스 현황", "파티원의 유틸 현황을 확인할 수 있습니다.", true, dodo.PartyClass)
 
     local settingParentNewLFG, _, initParentNewLFG = CheckBoxDropDown(subCategoryParty, "useNewLFG", "soundID", "파티신청 알림",
-    "새로운 파티신청 시 알림", newLFG_AlertSoundTable, true, newLFG_AlertSoundTable[2].value, dodo.NewLFG)
+    "새로운 파티신청 시 알림", dodo.newLFG_AlertSoundTable, true, dodo.newLFG_AlertSoundTable[2].value, dodo.NewLFG)
     local settingChildNewLFG, initChildNewLFG = Checkbox(subCategoryParty, "useNewLFGLeader", "파티원 기능 활성화",
     "파티장원일 경우에도 활성화합니다. ", true, dodo.NewLFG)
     if settingParentNewLFG and settingChildNewLFG then
@@ -134,9 +134,9 @@ function dodoCreateOptions()
     layoutParty:AddInitializer(CreateSettingsListSectionHeaderInitializer("인스턴스 난이도"))
     Checkbox(subCategoryParty, "useInsDifficultyFrame", "난이도 설정창", "인스턴스 밖에서 난이도 설정창을 표시합니다.", true, dodo.InsDifficultyUI)
     local settingParentInsDifficulty, initParentInsDifficulty = Checkbox(subCategoryParty, "useInsDifficulty", "인스 난이도 고정", "솔플 혹은 파티장일 시, 던전 난이도를 자동으로 변경합니다.", true, dodo.InsDifficulty)
-    local settingChildInsDifficulty1, _, initChildInsDifficulty1 = CheckBoxDropDown(subCategoryParty, "useInsDifficultyDungeon", "InsDifficultyDungeon", "던전 난이도", "던전 난이도를 고정합니다.", difficultyTable.dungeon, true, difficultyTable.dungeon[3].value, dodo.InsDifficulty)
-    local settingChildInsDifficulty2, _, initChildInsDifficulty2 = CheckBoxDropDown(subCategoryParty, "useInsDifficultyRaid", "InsDifficultyRaid", "공격대 난이도", "공격대 난이도를 고정합니다.", difficultyTable.raid, true, difficultyTable.raid[3].value, dodo.InsDifficulty)
-    local settingChildInsDifficulty3, _, initChildInsDifficulty3 = CheckBoxDropDown(subCategoryParty, "useInsDifficultyLegacy", "InsDifficultyLegacy", "낭만 난이도", "낭만 난이도를 고정합니다.", difficultyTable.legacy, true, difficultyTable.legacy[2].value, dodo.InsDifficulty)
+    local settingChildInsDifficulty1, _, initChildInsDifficulty1 = CheckBoxDropDown(subCategoryParty, "useInsDifficultyDungeon", "InsDifficultyDungeon", "던전 난이도", "던전 난이도를 고정합니다.", dodo.difficultyTable.dungeon, true, dodo.difficultyTable.dungeon[3].value, dodo.InsDifficulty)
+    local settingChildInsDifficulty2, _, initChildInsDifficulty2 = CheckBoxDropDown(subCategoryParty, "useInsDifficultyRaid", "InsDifficultyRaid", "공격대 난이도", "공격대 난이도를 고정합니다.", dodo.difficultyTable.raid, true, dodo.difficultyTable.raid[3].value, dodo.InsDifficulty)
+    local settingChildInsDifficulty3, _, initChildInsDifficulty3 = CheckBoxDropDown(subCategoryParty, "useInsDifficultyLegacy", "InsDifficultyLegacy", "낭만 난이도", "낭만 난이도를 고정합니다.", dodo.difficultyTable.legacy, true, dodo.difficultyTable.legacy[2].value, dodo.InsDifficulty)
     if settingParentInsDifficulty then
         settingParentInsDifficulty:SetValueChangedCallback(function(_, value)
             if value == false then
@@ -160,6 +160,11 @@ function dodoCreateOptions()
     layoutCombat:AddInitializer(CreateSettingsListSectionHeaderInitializer("자원바 표시"))
     Checkbox(subCategoryCombat, "useResourceBar1", "플레이어 자원바", "플레이어 마나/분노 표시 바를 활성화합니다.", true, dodo.ResourceBar1)
     Checkbox(subCategoryCombat, "useResourceBar2", "버프 추적 바", "특성에 따른 버프 추적 바를 활성화합니다.", true, dodo.ResourceBar2)
+
+    layoutCombat:AddInitializer(CreateSettingsListSectionHeaderInitializer("피해량 측정기 (미터기)"))
+    Checkbox(subCategoryCombat, "dmgMeterSyncSize", "창 크기 동기화", "보조 창들의 크기를 메인 창과 동일하게 맞춥니다.", true, dodo.SyncDamageMeterSize)
+    Checkbox(subCategoryCombat, "dmgMeterSnap", "창 붙이기", "보조 창을 메인 창 상단에 붙입니다.", true, dodo.SyncDamageMeterSize)
+    Checkbox(subCategoryCombat, "dmgMeterResetButton", "초기화 버튼 생성", "미터기 상단에 데이터 초기화(Reset) 버튼을 생성합니다.", true, dodo.UpdateDamageMeterResetButtons)
 
     layoutCombat:AddInitializer(CreateSettingsListSectionHeaderInitializer("디버프"))
     local settingParentClickthrough, initParentClickthrough = Checkbox(subCategoryCombat, "debuffClickthrough", "클릭스루 (클릭 무시)", "디버프 아이콘 클릭을 무시하여 뒤에 있는 대상을 클릭할 수 있게 합니다.", false, dodoUpdateDebuffOption)
@@ -194,18 +199,23 @@ function dodoCreateOptions()
 end
 
 -- ==============================
--- 이벤트
+-- 이벤트 및 지연 로딩 (Lazy Load)
 -- ==============================
 local initOptionFrame = CreateFrame("Frame")
 initOptionFrame:RegisterEvent("ADDON_LOADED")
 initOptionFrame:SetScript("OnEvent", function(self, event, arg1)
     if arg1 == addonName then
         dodoDB = dodoDB or {}
-        self:RegisterEvent("PLAYER_LOGIN")
-    elseif event == "PLAYER_LOGIN" then
-        if dodoCreateOptions then dodoCreateOptions() end
+        -- 리로드 스파이크 방지: 로딩 화면(PLAYER_LOGIN)에서 무거운 설정창 UI를 만들지 않습니다.
     end
 end)
+
+-- 설정창을 열 때 최초 1회만 옵션 UI를 생성합니다. (로딩 스파이크 제거의 핵심)
+if SettingsPanel then
+    SettingsPanel:HookScript("OnShow", function()
+        if dodoCreateOptions then dodoCreateOptions() end
+    end)
+end
 
 -- ==============================
 -- 명령어
@@ -217,6 +227,8 @@ SlashCmdList["dodo"] = function()
         print("|cffff0000dodo: 전투 중에는 설정창을 열 수 없습니다.|r")
         return
     end
+    -- 명령어로 열 때도 옵션 UI가 생성되어 있는지 확인
+    if dodoCreateOptions then dodoCreateOptions() end
     Settings.OpenToCategory(mainCategory:GetID())
 end
 

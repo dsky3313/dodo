@@ -10,7 +10,7 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-newLFG_AlertSoundTable = {
+dodo.newLFG_AlertSoundTable = {
     { label = "MurlocAggro", value = "416" },
     { label = "AuctionWindowOpen", value = "5274" },
     { label = "AuctionWindowClose", value = "5275" },
@@ -34,6 +34,7 @@ local PlaySound = PlaySound
 local PlaySoundFile = PlaySoundFile
 local tonumber = tonumber
 local UnitIsGroupLeader = UnitIsGroupLeader
+local GetNumApplicants = C_LFGList.GetNumApplicants
 
 -- 변수
 local C_LFGList = C_LFGList
@@ -82,9 +83,14 @@ function NewLFG()
         if GroupFinderFrameGroupButton3 then GroupFinderFrameGroupButton3:Click() end
     end
 
-    newLFG_Alert:Show()
+    if not newLFG_Alert:IsShown() then
+        newLFG_Alert:Show()
+    end
+    
     if alertTimer then alertTimer:Cancel() end
-    alertTimer = C_Timer.After(7, function() newLFG_Alert:Hide() end)
+    alertTimer = C_Timer.After(7, function() 
+        if newLFG_Alert:IsShown() then newLFG_Alert:Hide() end 
+    end)
 
     local soundID = (dodoDB and dodoDB.soundID) or "5274"
     local sID = tonumber(soundID) or 5274
@@ -114,8 +120,7 @@ local function UpdateNewLFGRegistration()
         initNewLFG:RegisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
         
         -- 현재 상태 초기화
-        local apps = C_LFGList.GetApplicants()
-        lastApps = (apps and #apps) or 0
+        lastApps = GetNumApplicants() or 0
         armedAt = GetTime() + 1.5
     else
         initNewLFG:UnregisterEvent("LFG_LIST_APPLICANT_LIST_UPDATED")
@@ -126,8 +131,7 @@ end
 
 initNewLFG:SetScript("OnEvent", function(self, event)
     local now = GetTime()
-    local apps = C_LFGList.GetApplicants()
-    local count = (apps and #apps) or 0
+    local count = GetNumApplicants() or 0
 
     if event == "LFG_LIST_ACTIVE_ENTRY_UPDATE" then
         lastApps = count

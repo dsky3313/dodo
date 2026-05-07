@@ -12,20 +12,24 @@ UI/OptionUI.xml
 UI/OptionUI.lua
 UI/Icon.lua
 UI/ActionBar.xml
-UI/Debuff.xml
+#UI/Debuff.xml
 UI/ResourceBar.xml
 
 Module\Audio.lua
-Module\Camera.lua
-Module\ChatBubble.lua
 Module\BloodBrez.lua
 Module\BrowseGroup.lua
-Module\CVar.lua
+Module\Camera.lua
+Module\ChatBubble.lua
+#Module\CVar.lua
+Module\DamageMeter.lua
 Module\DeleteNow.lua
 Module\ExpFilter.lua
+Module\Friends.lua
 Module\FrameOption.lua
 Module\InsDifficulty.lua
-Module\Item.lua
+
+#Module\Item.lua
+
 Module\Merchant.lua
 Module\Minimap.lua
 Module\NewLFG.lua  
@@ -38,12 +42,4 @@ Module\Teleport.lua
 Module\WMarker.lua 
 Module\WowheadLink.lua 
 
-#Module\Debuff.lua
-
-#Module\KeyRoll.lua
-
-
 Option.lua
-
-#Mykey.lua
-#Module\

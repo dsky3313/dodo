@@ -13,20 +13,46 @@ dodoDB = dodoDB or {}
 -- ==============================
 -- 캐싱
 -- ==============================
--- 함수
 local CreateFrame = CreateFrame
 local GetInstanceInfo = GetInstanceInfo
 local hooksecurefunc = hooksecurefunc
+local IsControlKeyDown = IsControlKeyDown
+local IsMetaKeyDown = IsMetaKeyDown
+local PlaySound = PlaySound
+local C_Timer = C_Timer
 
--- 변수
 local _G = _G
+local SOUNDKIT = SOUNDKIT
+local UIParent = UIParent
+local GameTooltip = GameTooltip
+local GameTooltip_Hide = GameTooltip_Hide
+
 local COMMENT_SUFFIX = "#english-comments"
 local SHOW_COMMENTS = true
 local WOWHEAD_BASE = "https://wowhead.com/ko/"
+local L_TOOLTIP_TEXT = "|cffaaffaa와우헤드 링크|r\n클릭하여 전체 선택 (Ctrl+C 복사)"
+local L_COPY_DONE = "|cff00ff00복사 완료!|r"
 
-local function isIns() -- 인스확인
+-- 인스턴스 상태 캐싱 (쐐기/레이드 성능 최적화용)
+local isInsideRestrictedInstance = false
+local function UpdateInstanceStatus()
     local _, instanceType, difficultyID = GetInstanceInfo()
-    return (difficultyID == 8 or instanceType == "raid") -- 1 일반 / 8 쐐기
+    -- 8: 쐐기, raid: 레이드
+    isInsideRestrictedInstance = (difficultyID == 8 or instanceType == "raid")
+end
+
+-- ==============================
+-- 유틸리티
+-- ==============================
+local function SetWowheadLink(editbox, idType, id)
+    if not editbox then return end
+    local url = WOWHEAD_BASE .. idType .. "=" .. id
+    if SHOW_COMMENTS then url = url .. COMMENT_SUFFIX end
+    
+    editbox.lastURL = url
+    editbox:SetText(url)
+    editbox:SetCursorPosition(0)
+    editbox:Show()
 end
 
 -- ==============================
@@ -52,34 +78,57 @@ local function CreateDirectEditBox(parent, name)
         })
     end
 
-    linkEditbox:SetScript("OnTextChanged", function(self)
-        self:SetCursorPosition(0)
-    end)
+    -- 복사 확인 피드백 설정 (아이콘 + 문구)
+    local feedbackFrame = CreateFrame("Frame", nil, linkEditbox)
+    feedbackFrame:SetAllPoints()
+    feedbackFrame:SetAlpha(0)
 
+    local checkIcon = feedbackFrame:CreateTexture(nil, "OVERLAY")
+    checkIcon:SetPoint("CENTER", feedbackFrame, "CENTER", 0, 0)
+    checkIcon:SetSize(24, 24)
+    checkIcon:SetAtlas("UI-QuestTracker-Tracker-Check")
+
+    local copyText = feedbackFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    copyText:SetPoint("TOP", checkIcon, "BOTTOM", 0, -2)
+    copyText:SetText(L_COPY_DONE)
+
+    local ag = feedbackFrame:CreateAnimationGroup()
+    local fadeOut = ag:CreateAnimation("Alpha")
+    fadeOut:SetFromAlpha(1)
+    fadeOut:SetToAlpha(0)
+    fadeOut:SetDuration(0.3)
+    fadeOut:SetStartDelay(1.5)
+    ag:SetScript("OnFinished", function() feedbackFrame:SetAlpha(0) end)
+    linkEditbox.feedbackAg = ag
+    linkEditbox.feedbackFrame = feedbackFrame
+
+    linkEditbox:SetScript("OnTextChanged", function(self) self:SetCursorPosition(0) end)
     linkEditbox:SetScript("OnMouseUp", function(self)
         self:SetFocus()
         self:HighlightText()
     end)
-
-    linkEditbox:SetScript("OnEditFocusGained", function(self)
-        self:HighlightText()
-    end)
-
-    -- 텍스트 수정 방지
+    linkEditbox:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
     linkEditbox:SetScript("OnChar", function(self)
         if self.lastURL then
             self:SetText(self.lastURL)
             self:HighlightText()
         end
     end)
-
     linkEditbox:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetText("|cffaaffaa와우헤드 링크|r\n클릭하여 전체 선택 (Ctrl+C 복사)", 1, 1, 1)
+        GameTooltip:SetText(L_TOOLTIP_TEXT, 1, 1, 1)
         GameTooltip:Show()
     end)
-
     linkEditbox:SetScript("OnLeave", GameTooltip_Hide)
+
+    linkEditbox:HookScript("OnKeyDown", function(self, key)
+        if key == "C" and (IsControlKeyDown() or IsMetaKeyDown()) then
+            PlaySound(SOUNDKIT.TELL_MESSAGE)
+            self.feedbackFrame:SetAlpha(1)
+            self.feedbackAg:Stop()
+            self.feedbackAg:Play()
+        end
+    end)
 
     return linkEditbox
 end
@@ -91,26 +140,24 @@ end
 local mapEditbox
 local lastMapQuestID
 local function UpdateMapLink()
+    -- 쐐기/레이드 시 즉시 종료 (최우선 순위 체크)
+    if isInsideRestrictedInstance then
+        if mapEditbox then mapEditbox:Hide() end
+        return
+    end
+
     local questID = QuestMapFrame_GetDetailQuestID()
     local isEnabled = (dodoDB.useWowheadLink ~= false)
 
-    -- 이전과 같은 퀘스트면 업데이트 건너뜀
     if questID == lastMapQuestID and mapEditbox and mapEditbox:IsShown() then return end
     lastMapQuestID = questID
 
-    if isEnabled and not isIns() and questID and questID ~= 0 and QuestMapFrame.DetailsFrame:IsShown() then
+    if isEnabled and questID and questID ~= 0 and QuestMapFrame.DetailsFrame:IsShown() then
         if not mapEditbox then
             mapEditbox = CreateDirectEditBox(WorldMapFrame, "WowhadMapEditbox")
             mapEditbox:SetPoint("TOPRIGHT", WorldMapFrame, "BOTTOMRIGHT", -2, -2)
         end
-
-        local url = WOWHEAD_BASE .. "quest=" .. questID
-        if SHOW_COMMENTS then url = url .. COMMENT_SUFFIX end
-
-        mapEditbox.lastURL = url
-        mapEditbox:SetText(url)
-        mapEditbox:SetCursorPosition(0)
-        mapEditbox:Show()
+        SetWowheadLink(mapEditbox, "quest", questID)
     elseif mapEditbox then
         mapEditbox:Hide()
     end
@@ -127,21 +174,20 @@ EventUtil.ContinueOnAddOnLoaded("Blizzard_AchievementUI", function()
 
     local lastAchiID
     local function UpdateAchiLink(self, achievementID)
-        local isEnabled = (dodoDB.useWowheadLink ~= false)
-        local shouldShowLink = isEnabled and not isIns() and achievementID and achievementID ~= 0
+        -- 쐐기/레이드 시 즉시 종료
+        if isInsideRestrictedInstance then
+            achievementEditbox:Hide()
+            return
+        end
 
-        -- 이전과 같은 업적면 업데이트 건너뜀
+        local isEnabled = (dodoDB.useWowheadLink ~= false)
+        local shouldShowLink = isEnabled and achievementID and achievementID ~= 0
+
         if shouldShowLink and achievementID == lastAchiID and achievementEditbox:IsShown() then return end
         lastAchiID = achievementID
 
         if shouldShowLink then
-            local url = WOWHEAD_BASE .. "achievement=" .. achievementID
-            if SHOW_COMMENTS then url = url .. COMMENT_SUFFIX end
-
-            achievementEditbox.lastURL = url
-            achievementEditbox:SetText(url)
-            achievementEditbox:SetCursorPosition(0)
-            achievementEditbox:Show()
+            SetWowheadLink(achievementEditbox, "achievement", achievementID)
         else
             achievementEditbox:Hide()
         end
@@ -150,8 +196,7 @@ EventUtil.ContinueOnAddOnLoaded("Blizzard_AchievementUI", function()
     hooksecurefunc(AchievementTemplateMixin, "DisplayObjectives", UpdateAchiLink)
 
     hooksecurefunc(AchievementTemplateMixin, "OnClick", function(self)
-        -- 토글 애니메이션 등을 고려하여 아주 짧은 대기 후 상태 확인
-        C_Timer.After(0.05, function()
+        C_Timer.After(0.1, function()
             if not AchievementFrame:IsShown() or self.collapsed then
                 achievementEditbox:Hide()
                 lastAchiID = nil
@@ -168,4 +213,11 @@ EventUtil.ContinueOnAddOnLoaded("Blizzard_AchievementUI", function()
         achievementEditbox:Hide()
         lastAchiID = nil
     end)
+end)
+
+-- 초기화 및 이벤트
+local frame = CreateFrame("Frame")
+frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+frame:SetScript("OnEvent", function(self, event)
+    UpdateInstanceStatus()
 end)

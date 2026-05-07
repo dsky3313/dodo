@@ -10,10 +10,7 @@ local addonName, dodo = ...
 dodoDB = dodoDB or {}
 local Lib = dodo.IconLib
 
-local function isIns()
-    local _, instanceType = GetInstanceInfo()
-    return IsInInstance() or (instanceType ~= "none")
-end
+-- 아이콘 라이브러리 활용
 
 local BobberConfig = {
     isAction = true,
@@ -49,8 +46,8 @@ local function quickBobber()
     -- [수정] 프레임 존재 여부 안전하게 확인
     local isUIOpen = (ProfessionsBookFrame and ProfessionsBookFrame:IsShown())
 
-    -- [핵심] 인스턴스가 아닐 때만 작동하도록 강화
-    if isKnown and isEnabled and not isIns() and isUIOpen then
+    -- [핵심] 낚시 숙련도가 있고 활성화 상태일 때 작동
+    if isKnown and isEnabled and isUIOpen then
         -- Icon.lua에서 개별 이벤트를 지웠으므로 여기서 직접 관리
         BobberButton:RegisterEvent("BAG_UPDATE_DELAYED")
         BobberButton:RegisterEvent("BAG_UPDATE_COOLDOWN")
@@ -60,7 +57,7 @@ local function quickBobber()
         BobberButton:ApplyConfig(BobberConfig)
         BobberButton:Show()
     else
-        -- 인스턴스 안이거나 창이 닫히면 모든 이벤트 해제 및 숨김
+        -- 창이 닫히면 모든 이벤트 해제 및 숨김
         BobberButton:UnregisterAllEvents()
         BobberButton:Hide()
     end

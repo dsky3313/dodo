@@ -1,7 +1,9 @@
 .git/
-.vscode/
+.agents/
 .claude/
-.gemini/
+.vscode/
 .github/
 temp/
 AGENTS.md
+CLAUDE.md
+skills-lock.json

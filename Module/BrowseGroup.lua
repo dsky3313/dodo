@@ -4,11 +4,19 @@
 -- 11.2 파티 탐색하기 버튼 (BrowseGroupsButton) (https://wago.io/JaYwj48fu)
 
 -- ==============================
--- 테이블
+-- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, undefined-field
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
+
+-- ==============================
+-- 캐싱
+-- ==============================
+local CreateFrame = CreateFrame
+local UnitIsGroupLeader = UnitIsGroupLeader
+local issecretvalue = issecretvalue
+local GetActiveEntryInfo = C_LFGList.GetActiveEntryInfo
 
 local initialized = false
 local LFGListFrame
@@ -31,31 +39,32 @@ returnGroupsBtn:Hide()
 -- ==============================
 local function updateBtn()
     local isEnabled = (dodoDB.useBrowseGroup ~= false)
-
-    if not LFGListFrame or not isEnabled then
-        browseGroupsBtn:Hide()
-        returnGroupsBtn:Hide()
+    if not isEnabled or not LFGListFrame then
+        if browseGroupsBtn:IsShown() then browseGroupsBtn:Hide() end
+        if returnGroupsBtn:IsShown() then returnGroupsBtn:Hide() end
         return
     end
 
-    local active = C_LFGList.GetActiveEntryInfo() ~= nil
+    local entryInfo = GetActiveEntryInfo()
+    local isEntrySecret = issecretvalue(entryInfo)
+    local active = (not isEntrySecret and entryInfo ~= nil) or isEntrySecret
     local isLeader = UnitIsGroupLeader("player")
     
     local shownApp = LFGListFrame.ApplicationViewer and LFGListFrame.ApplicationViewer:IsShown()
     local shownSearch = LFGListFrame.SearchPanel and LFGListFrame.SearchPanel:IsShown()
 
-    -- 1. [파티 탐색하기]
+    -- 파티 탐색하기
     if shownApp and (not isLeader) and active then
-        browseGroupsBtn:Show()
+        if not browseGroupsBtn:IsShown() then browseGroupsBtn:Show() end
     else
-        browseGroupsBtn:Hide()
+        if browseGroupsBtn:IsShown() then browseGroupsBtn:Hide() end
     end
 
-    -- 2. [파티로 돌아가기]
+    -- 파티로 돌아가기
     if shownSearch and active then
-        returnGroupsBtn:Show()
+        if not returnGroupsBtn:IsShown() then returnGroupsBtn:Show() end
     else
-        returnGroupsBtn:Hide()
+        if returnGroupsBtn:IsShown() then returnGroupsBtn:Hide() end
     end
 end
 
@@ -74,7 +83,6 @@ local function initBtn()
     local backBtn = LFGListFrame.SearchPanel and LFGListFrame.SearchPanel.BackButton
     if backBtn then
         local strata = backBtn:GetFrameStrata()
-        -- 레이어를 확실히 높여서 가려지지 않게 함
         browseGroupsBtn:SetFrameStrata(strata); browseGroupsBtn:SetFrameLevel(500)
         returnGroupsBtn:SetFrameStrata(strata); returnGroupsBtn:SetFrameLevel(500)
     end
@@ -83,7 +91,6 @@ local function initBtn()
     browseGroupsBtn:SetScript("OnClick", function()
         local bgb = LFGListFrame.ApplicationViewer and LFGListFrame.ApplicationViewer.BrowseGroupsButton
         if bgb then
-            -- 블리자드 버튼이 비활성화 상태가 아니라면 클릭 실행
             if bgb:IsEnabled() then
                 bgb:Click()
             end
@@ -97,7 +104,6 @@ local function initBtn()
         end)
     end)
 
-    -- Hook
     LFGListFrame.ApplicationViewer:HookScript("OnShow", updateBtn)
     LFGListFrame.SearchPanel:HookScript("OnShow", updateBtn)
     LFGListFrame:HookScript("OnHide", function()
@@ -114,13 +120,13 @@ end
 -- ==============================
 local initBrowseGroupBtn = CreateFrame("Frame")
 initBrowseGroupBtn:RegisterEvent("ADDON_LOADED")
-initBrowseGroupBtn:RegisterEvent("GROUP_ROSTER_UPDATE")
+initBrowseGroupBtn:RegisterEvent("PARTY_LEADER_CHANGED")
 initBrowseGroupBtn:RegisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
 
 initBrowseGroupBtn:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == "Blizzard_GroupFinder" then
         initBtn()
-    elseif event == "GROUP_ROSTER_UPDATE" or event == "LFG_LIST_ACTIVE_ENTRY_UPDATE" then
+    elseif event == "PARTY_LEADER_CHANGED" or event == "LFG_LIST_ACTIVE_ENTRY_UPDATE" then
         if not initialized then 
             if C_AddOns.IsAddOnLoaded("Blizzard_GroupFinder") then initBtn() end
         else 

@@ -30,18 +30,18 @@ local BL_DEBUFFS = {
 -- ==============================
 -- 캐싱
 -- ==============================
--- 함수
 local CreateFrame   = CreateFrame
 local GetTime       = GetTime
 local math_ceil     = math.ceil
 local PlaySoundFile = PlaySoundFile
+local ipairs        = ipairs
+local tostring      = tostring
+local issecretvalue = issecretvalue
+local GetSpellCharges  = C_Spell.GetSpellCharges
 
--- 변수
-local AU            = C_UnitAuras
-local BL_ICON_SPELL = 2825
-local BREZ_SPELL_ID = 20484
-local C_Spell       = C_Spell
-
+local AU               = C_UnitAuras
+local BL_ICON_SPELL    = 2825
+local BREZ_SPELL_ID    = 20484
 local blActiveUntil  = 0
 local blPhase        = "idle"   -- "idle" / "active" / "sated" / "init"
 local brezDesatCache = nil
@@ -92,14 +92,25 @@ local function UpdateBloodlust()
 
     local now = GetTime()
     if foundAura then
+        local isExpSecret = issecretvalue(foundAura.expirationTime)
         if not isSatedActive then
-            local debuffStartTime = foundAura.expirationTime - foundAura.duration
-            blActiveUntil = debuffStartTime + 40
-            isSatedActive = true
-            if now < blActiveUntil then PlaySoundFile(Settings.soundPath, "Master") end
+            if not isExpSecret then
+                local debuffStartTime = foundAura.expirationTime - foundAura.duration
+                blActiveUntil = debuffStartTime + 40
+                isSatedActive = true
+                if now < blActiveUntil then PlaySoundFile(Settings.soundPath, "Master") end
+            else
+                isSatedActive = true
+                PlaySoundFile(Settings.soundPath, "Master")
+                blActiveUntil = 0
+            end
         end
 
-        if now < blActiveUntil then
+        local remainingText = ""
+        local isShowingOverlay = false
+        
+        if not isExpSecret and blActiveUntil > 0 and now < blActiveUntil then
+            -- Active 페이즈 (처음 40초)
             if blPhase ~= "active" then
                 blPhase = "active"
                 bloodIcon.icon:SetDesaturated(false)
@@ -107,18 +118,27 @@ local function UpdateBloodlust()
                 bloodIcon.Name:SetText("")
                 bloodOverlay:Show()
             end
-            local remaining = math_ceil(blActiveUntil - now - 1)
-            bloodOverlayTimer:SetText(tostring(remaining < 0 and 0 or remaining))
+            local rem = math_ceil(blActiveUntil - now - 1)
+            remainingText = tostring(rem < 0 and 0 or rem)
+            isShowingOverlay = true
         else
+            -- Sated 페이즈 (디버프 지속시간)
             if blPhase ~= "sated" then
                 blPhase = "sated"
                 bloodOverlay:Hide()
-                bloodOverlayTimer:SetText("")
                 bloodIcon.icon:SetDesaturated(true)
                 bloodIcon.cooldown:SetCooldown(foundAura.expirationTime - foundAura.duration, foundAura.duration)
                 bloodIcon.Name:SetText("")
             end
+            remainingText = ""
+            isShowingOverlay = false
         end
+
+        if remainingText ~= bloodOverlayTimer._lastText then
+            bloodOverlayTimer:SetText(remainingText)
+            bloodOverlayTimer._lastText = remainingText
+        end
+        if isShowingOverlay then bloodOverlay:Show() else bloodOverlay:Hide() end
     else
         if blPhase ~= "idle" then
             blPhase = "idle"
@@ -134,7 +154,7 @@ local function UpdateBloodlust()
 end
 
 local function UpdateBrez()
-    local chargeInfo = C_Spell.GetSpellCharges(BREZ_SPELL_ID)
+    local chargeInfo = GetSpellCharges(BREZ_SPELL_ID)
     if not chargeInfo or (chargeInfo.currentCharges == 0 and chargeInfo.maxCharges == 0) then
         brezIcon.Count:SetText("")
         if brezDesatCache ~= false then
@@ -149,7 +169,12 @@ local function UpdateBrez()
     local start    = chargeInfo.cooldownStartTime or 0
     local duration = chargeInfo.cooldownDuration  or 0
 
-    brezIcon.Count:SetText(tostring(current))
+    local isCurrentSecret = issecretvalue(current)
+    local chargeText = tostring(current)
+    if chargeText ~= brezIcon.Count._lastText or isCurrentSecret then
+        brezIcon.Count:SetText(chargeText)
+        if not isCurrentSecret then brezIcon.Count._lastText = chargeText end
+    end
     brezIcon.Count:SetTextColor(1, 0.82, 0)
 
     if current == 0 and duration > 0 then

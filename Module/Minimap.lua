@@ -2,6 +2,7 @@
 -- Inspired
 -- ==============================
 -- Leatrix Plus (https://www.curseforge.com/wow/addons/leatrix-plus)
+-- Simple FPS Ping (https://www.curseforge.com/wow/addons/simple-fps-ping)
 
 -- ==============================
 -- 설정 및 테이블
@@ -24,6 +25,12 @@ local PlaySound = PlaySound
 -- 변수
 local C_Timer = C_Timer
 local Minimap = Minimap
+local issecretvalue = issecretvalue
+local NineSliceUtil = NineSliceUtil
+local MinimapCluster = MinimapCluster
+local _G = _G
+
+local function GetMinimapShapeSquare() return "SQUARE" end
 
 -- ==============================
 -- 사각형 미니맵
@@ -89,7 +96,7 @@ local function ApplyMinimapSquare()
     local isEnabled = (dodoDB and dodoDB.useMinimapSquare ~= false)
     if isEnabled then
         Minimap:SetMaskTexture(SQUARE_MASK)
-        _G.GetMinimapShape = function() return "SQUARE" end
+        _G.GetMinimapShape = GetMinimapShapeSquare
         if _G.MinimapBorder then _G.MinimapBorder:Hide() end
         if _G.MinimapBorderTop then _G.MinimapBorderTop:Hide() end
         if _G.MinimapNorthTag then _G.MinimapNorthTag:Hide() end
@@ -98,7 +105,7 @@ local function ApplyMinimapSquare()
 
         local hm = _G.HybridMinimap
         if hm and hm.CircleMask then hm.CircleMask:SetTexture(SQUARE_MASK) end
-        minimapBorder:Show()
+        if not minimapBorder:IsShown() then minimapBorder:Show() end
     else
         Minimap:SetMaskTexture(ROUND_MASK)
         _G.GetMinimapShape = originalGetMinimapShape
@@ -110,7 +117,7 @@ local function ApplyMinimapSquare()
 
         local hm = _G.HybridMinimap
         if hm and hm.CircleMask then hm.CircleMask:SetTexture(ROUND_MASK) end
-        minimapBorder:Hide()
+        if minimapBorder:IsShown() then minimapBorder:Hide() end
     end
 end
 
@@ -141,9 +148,12 @@ local function resetMinimapZoom()
     C_Timer.After(10, function()
         isZoomTimerRunning = false
         local _, iType, dID = GetInstanceInfo()
-        if not (dID == 8 or iType == "raid") and Minimap:GetZoom() ~= 0 then
-            Minimap:SetZoom(0)
-            PlaySound(113, "Master")
+        if not (dID == 8 or iType == "raid") then
+            local currentZoom = Minimap:GetZoom()
+            if not issecretvalue(currentZoom) and currentZoom ~= 0 then
+                Minimap:SetZoom(0)
+                PlaySound(113, "Master")
+            end
         end
     end)
 end
@@ -174,12 +184,8 @@ fpsFrame.text = border:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"
 fpsFrame.text:SetPoint("RIGHT", border, "RIGHT", -5, 0)
 fpsFrame.text:SetJustifyH("RIGHT")
 
--- 업데이트 핸들러
-local function OnUpdateHandler(self, delta)
-    elapsed = elapsed + delta
-    if elapsed < 1.0 then return end
-    elapsed = 0
-
+-- 업데이트 함수
+local function UpdateFPSText()
     local fps = GetFramerate()
     local _, _, latency = GetNetStats()
     local fpsColor = (fps >= 60) and textGreen or (fps >= 30 and textYellow or textRed)
@@ -187,20 +193,41 @@ local function OnUpdateHandler(self, delta)
 
     local currentText = format("|cff%s%.0f|r fps | |cff%s%d|r ms", fpsColor, fps, msColor, latency)
     if lastText ~= currentText then
-        self.text:SetText(currentText)
+        fpsFrame.text:SetText(currentText)
         lastText = currentText
     end
 end
+
+local fpsTicker
 
 -- 토글 함수
 local function UpdateFPSDisplay()
     local isEnabled = (dodoDB and dodoDB.useFPSFrame ~= false)
     if isEnabled then
         fpsFrame:Show()
-        fpsFrame:SetScript("OnUpdate", OnUpdateHandler)
+        
+        -- 인스턴스 여부에 따른 간격 결정 (인스턴스 내부 2초, 외부 1초)
+        local inInstance = IsInInstance()
+        local interval = inInstance and 2 or 1
+        
+        -- 기존 Ticker가 있고 간격이 다르면 취소 후 재생성
+        if fpsTicker then
+            if fpsTicker._interval ~= interval then
+                fpsTicker:Cancel()
+                fpsTicker = nil
+            end
+        end
+        
+        if not fpsTicker then
+            fpsTicker = C_Timer.NewTicker(interval, UpdateFPSText)
+            fpsTicker._interval = interval -- 현재 간격 저장
+        end
     else
         fpsFrame:Hide()
-        fpsFrame:SetScript("OnUpdate", nil)
+        if fpsTicker then
+            fpsTicker:Cancel()
+            fpsTicker = nil
+        end
     end
 end
 
@@ -233,6 +260,7 @@ initMinimap:SetScript("OnEvent", function(self, event, arg1)
         end
     elseif event == "PLAYER_ENTERING_WORLD" then
         UpdateMinimapZoomReset()
+        UpdateFPSDisplay() -- 인스턴스 상태에 따라 Ticker 간격 재조정
     elseif event == "MINIMAP_UPDATE_ZOOM" then
         resetMinimapZoom()
     end

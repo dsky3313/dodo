@@ -1,21 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Ui xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.blizzard.com/wow/ui/" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 ..\FrameXML\UI.xsd">
-	 <!-- <Script file="..\Module\Debuff.lua"/>
-    <Script file="Module\ActionBar.lua"/> -->
     <Script file="..\Module\ActionBar.lua"/>
 
     <!-- ============================== -->
     <!-- CDM Overlay Template           -->
     <!-- ============================== -->
-    <Frame name="dodo_Actionbar2OverlayTemplate" mixin="dodo_Actionbar2OverlayMixin" virtual="true">
+    <Frame name="CDMOverlayTemplate" mixin="CDMOverlayMixin" virtual="true">
         <Size x="1" y="1"/>
         <Anchors><Anchor point="CENTER"/></Anchors>
         <Layers>
-            <Layer level="ARTWORK">
+            <Layer level="OVERLAY">
                 <Texture parentKey="InnerGlow" atlas="UI-HUD-ActionBar-IconFrame-Mouseover" setAllPoints="true" alphaMode="BLEND" />
                 <FontString parentKey="Timer" inherits="NumberFontNormal">
                     <Anchors><Anchor point="TOPLEFT" x="5" y="-5"/></Anchors>
+                </FontString>
+                <FontString parentKey="Count" inherits="NumberFontNormal" justifyH="RIGHT">
+                    <Anchors><Anchor point="BOTTOMRIGHT" x="-2" y="2"/></Anchors>
                 </FontString>
             </Layer>
         </Layers>
@@ -25,7 +26,7 @@
     <!-- ============================== -->
     <!-- Interrupt Overlay Template     -->
     <!-- ============================== -->
-    <Frame name="dodoAB3OverlayTemplate" mixin="dodoAB3OverlayMixin" hidden="true" virtual="true">
+    <Frame name="InterruptOverlayTemplate" mixin="InterruptOverlayMixin" hidden="true" virtual="true">
         <Layers>
             <Layer level="ARTWORK">
                 <Texture parentKey="ProcReady" atlas="UI-HUD-ActionBar-Proc-Loop-Flipbook">

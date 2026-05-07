@@ -12,7 +12,7 @@ dodoDB = dodoDB or {}
 
 local chatbubbleFontSize = 10
 
-chatbubbleFontTable = {
+dodo.chatbubbleFontTable = {
     { label = "2002", value = "Fonts\\2002.TTF" },
     { label = "2002b", value = "Fonts\\2002b.TTF" },
     { label = "ARIALN", value = "Fonts\\ARIALN.TTF" },
@@ -26,21 +26,22 @@ chatbubbleFontTable = {
 -- ==============================
 -- 함수
 local CreateFrame = CreateFrame
-
--- 변수
 local ChatBubbleFont = ChatBubbleFont
 
 -- ==============================
 -- 동작
 -- ==============================
 local function chatBubble()
-    if not dodoDB then return end
+    if not dodoDB or not ChatBubbleFont then return end
 
     local fontPath = dodoDB.chatbubbleFontPath or "Fonts\\2002.TTF"
     local fontSize = dodoDB.chatbubbleFontSize or chatbubbleFontSize
     local fontFlag = "OUTLINE"
 
-    if ChatBubbleFont then ChatBubbleFont:SetFont(fontPath, fontSize, fontFlag) end
+    local curPath, curSize, curFlag = ChatBubbleFont:GetFont()
+    if curPath ~= fontPath or curSize ~= fontSize or curFlag ~= fontFlag then
+        ChatBubbleFont:SetFont(fontPath, fontSize, fontFlag)
+    end
 end
 
 -- ==============================

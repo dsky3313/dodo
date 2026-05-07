@@ -6,9 +6,18 @@ local addonName, dodo = ...
 local IconLib = {}
 dodo.IconLib = IconLib
 
-local function isIns()
-    local _, instanceType = GetInstanceInfo()
-    return IsInInstance() or (instanceType ~= "none")
+local function RescaleIcon(self)
+    local width = self:GetWidth()
+    local margin = math.max(2, width * 0.07)
+    self.icon:ClearAllPoints()
+    self.icon:SetPoint("TOPLEFT", self, "TOPLEFT", margin, -margin)
+    self.icon:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -margin, margin)
+end
+
+local function SetTextColorFromTable(fontString, colorTable)
+    if colorTable then
+        fontString:SetTextColor(colorTable[1] or 1, colorTable[2] or 1, colorTable[3] or 1)
+    end
 end
 
 local fontColorTable = {
@@ -35,13 +44,7 @@ function IconLib:Create(name, parent, config)
     frame.icon = frame:CreateTexture(nil, "BACKGROUND")
     frame.icon:SetTexCoord(0.1, 0.9, 0.1, 0.9)
 
-    function frame:RescaleIcon()
-        local width = self:GetWidth()
-        local margin = math.max(2, width * 0.07)
-        self.icon:ClearAllPoints()
-        self.icon:SetPoint("TOPLEFT", self, "TOPLEFT", margin, -margin)
-        self.icon:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -margin, margin)
-    end
+    frame.RescaleIcon = RescaleIcon
     frame:RescaleIcon()
 
     frame.normalTexture = frame:CreateTexture(nil, "OVERLAY", nil, 7)
@@ -81,6 +84,10 @@ function IconLib:Create(name, parent, config)
         elseif data.type == "macro" then
             GameTooltip:AddLine(data.label or "매크로", 1, 1, 1)
             if data.macrotext then GameTooltip:AddLine(data.macrotext, 0.7, 0.7, 0.7, true) end
+        elseif data.type == "housing" then
+            local canReturn = C_HousingNeighborhood and C_HousingNeighborhood.CanReturnAfterVisitingHouse()
+            local text = canReturn and _G.HOUSING_DASHBOARD_RETURN or _G.HOUSING_DASHBOARD_TELEPORT_TO_PLOT
+            GameTooltip:AddLine(text, 1, 1, 1)
         end
         GameTooltip:Show()
     end)
@@ -88,10 +95,6 @@ function IconLib:Create(name, parent, config)
 
     -- 상태 업데이트
     function frame:UpdateStatus()
-        if isIns() then
-            if self.cooldown then self.cooldown:Clear() end return
-        end
-
         local data = self.iconData
         if not data then return end
 
@@ -115,10 +118,56 @@ function IconLib:Create(name, parent, config)
         elseif data.type == "macro" then
             isKnown = true
             self.Count:SetText(""); self.cooldown:Clear()
+        elseif data.type == "housing" then
+            isKnown = true
+            self.Count:SetText("")
+            local canReturn = C_HousingNeighborhood and C_HousingNeighborhood.CanReturnAfterVisitingHouse()
+            
+            if not InCombatLockdown() then
+                if canReturn then
+                    self:SetAttribute("type", "returnhome")
+                    self:SetAttribute("house-neighborhood-guid", nil)
+                    self:SetAttribute("house-guid", nil)
+                    self:SetAttribute("house-plot-id", nil)
+                else
+                    self:SetAttribute("type", "teleporthome")
+                    local houses = dodo.houseData
+                    local houseInfo
+                    if houses and #houses > 0 then
+                        -- TeleportMenu와 동일하게 팩션에 따른 하우징 인덱스 선택
+                        if #houses == 1 or UnitFactionGroup("player") == "Alliance" then
+                            houseInfo = houses[1]
+                        else
+                            houseInfo = houses[2] or houses[1]
+                        end
+                        
+                        if houseInfo then
+                            self:SetAttribute("house-neighborhood-guid", houseInfo.neighborhoodGUID)
+                            self:SetAttribute("house-guid", houseInfo.houseGUID)
+                            self:SetAttribute("house-plot-id", houseInfo.plotID)
+                        end
+                    end
+                end
+            end
+
+            if canReturn then
+                self.icon:SetAtlas("dashboard-panel-homestone-teleport-out-button")
+            else
+                local spellTexture = C_Spell and C_Spell.GetSpellTexture(1263273)
+                self.icon:SetTexture(spellTexture or data.icon or 134400)
+            end
+
+            local cdInfo = C_Housing and C_Housing.GetVisitCooldownInfo and C_Housing.GetVisitCooldownInfo()
+            if cdInfo and cdInfo.isEnabled and not canReturn then
+                startTime, duration = cdInfo.startTime, cdInfo.duration
+            else
+                startTime, duration = 0, 0
+            end
         end
 
         self.cooldown:SetCooldown(startTime, duration) -- 쿨타임
-        self.Name:SetTextColor(unpack(not isKnown and fontColorTable.gray or color)) -- 글자색
+        local finalColor = not isKnown and fontColorTable.gray or color
+        SetTextColorFromTable(self.Name, finalColor) -- 글자색
         self.icon:SetDesaturated(not isKnown) -- 흑백
     end
 
@@ -130,6 +179,9 @@ function IconLib:Create(name, parent, config)
         if data.isAction then
             self:SetAttribute("type", nil); self:SetAttribute("spell", nil)
             self:SetAttribute("item", nil); self:SetAttribute("macrotext", nil)
+            self:SetAttribute("house-neighborhood-guid", nil)
+            self:SetAttribute("house-guid", nil)
+            self:SetAttribute("house-plot-id", nil)
         end
 
         if data.type == "spell" then
@@ -149,6 +201,8 @@ function IconLib:Create(name, parent, config)
         elseif data.type == "macro" then
             if data.isAction then self:SetAttribute("type", "macro"); self:SetAttribute("macrotext", data.macrotext) end
             self.icon:SetTexture(data.icon or 134400)
+        elseif data.type == "housing" then
+            -- 상태와 아이콘은 UpdateStatus에서 동적으로 처리합니다.
         end
 
         if data.iconposition then
@@ -180,7 +234,7 @@ function IconLib:Create(name, parent, config)
         end
 
         self:SetFrameStrata(data.framestrata or "HIGH")
-        if not isIns() then self:UpdateStatus() end
+        self:UpdateStatus()
     end
     return frame
 end

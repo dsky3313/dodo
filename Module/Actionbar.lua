@@ -12,6 +12,11 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
+local CDMMapping = {
+    [386634] = 12294, -- 집행자의 정밀함  - 필사의 일격 (무전)
+    [12950] = 190411, 6343 -- 소용돌이 연마  - 소용돌이 (분전)
+}
+
 local config = {
     colors = {
         range  = { r = 0.9, g = 0.1, b = 0.1 },
@@ -51,6 +56,8 @@ local Interrupts = {
     [351338] = true, -- Quell                (기원사)
 }
 
+
+
 local IntEvents = {
     'ACTIONBAR_SLOT_CHANGED',
     'PLAYER_TARGET_CHANGED',
@@ -73,7 +80,6 @@ local IntUnitEvents = {
 -- ==============================
 -- 캐싱
 -- ==============================
--- 함수
 local CreateColor = CreateColor
 local CreateFrame = CreateFrame
 local GetActionInfo = GetActionInfo
@@ -82,13 +88,16 @@ local InCombatLockdown = InCombatLockdown
 local ipairs = ipairs
 local pairs = pairs
 local rawget = rawget
+local issecretvalue = issecretvalue
 local UnitCastingDuration = UnitCastingDuration
 local UnitCastingInfo = UnitCastingInfo
 local UnitChannelDuration = UnitChannelDuration
 local UnitChannelInfo = UnitChannelInfo
 local UnitExists = UnitExists
+local table_insert = table.insert
+local string_format = string.format
+local math_ceil = math.ceil
 
--- 변수
 local ActionBarButtonEventsFrame = ActionBarButtonEventsFrame
 local ActionBarButtonRangeCheckFrame = ActionBarButtonRangeCheckFrame
 local AnchorUtil = AnchorUtil
@@ -140,18 +149,19 @@ timerColorCurve:AddPoint(10.0, CreateColor(1, 1,   1,   1))
 -- 디스플레이
 -- ==============================
 -- CDM Overlay Mixin
-dodo_Actionbar2OverlayMixin = {}
+CDMOverlayMixin = {}
 
-function dodo_Actionbar2OverlayMixin:OnLoad()
+function CDMOverlayMixin:OnLoad()
     local parent = self:GetParent()
     self:SetSize(parent:GetSize())
     self:SetFrameLevel(parent:GetFrameLevel() + 1)
     self.InnerGlow:SetVertexColor(0, 1, 0, 1)
     self.Timer:SetTextColor(0, 1, 0)
+    self.Count:SetTextColor(1, 1, 0)
     self:Hide()
 end
 
-function dodo_Actionbar2OverlayMixin:StartTicker()
+function CDMOverlayMixin:StartTicker()
     if self._ticker then self._ticker:Cancel() end
     local interval = inCombat and 0.1 or 1.0
     self._ticker = C_Timer.NewTicker(interval, function()
@@ -164,8 +174,15 @@ function dodo_Actionbar2OverlayMixin:StartTicker()
         end
         local durObj = C_UnitAuras.GetAuraDuration(auraDataUnit, auraInstanceID)
         if durObj then
-            self.Timer:SetFormattedText("%d", durObj:GetRemainingDuration())
-            self.Timer:Show()
+            local remaining = durObj:GetRemainingDuration()
+            local isSecret = issecretvalue(remaining)
+            if isSecret or (remaining ~= self._lastRemaining) then
+                self.Timer:SetFormattedText("%.0f", remaining)
+                self.Timer:Show()
+                if not isSecret then
+                    self._lastRemaining = remaining
+                end
+            end
         else
             self:StopTicker()
         end
@@ -173,22 +190,31 @@ function dodo_Actionbar2OverlayMixin:StartTicker()
     activeOverlays[self] = true
 end
 
-function dodo_Actionbar2OverlayMixin:StopTicker()
+function CDMOverlayMixin:StopTicker()
     if self._ticker then
         self._ticker:Cancel(); self._ticker = nil
     end
     activeOverlays[self] = nil
     self.Timer:Hide()
+    self.Count:Hide()
     self.InnerGlow:Hide()
     self:Hide()
 end
 
-function dodo_Actionbar2OverlayMixin:Update()
+function CDMOverlayMixin:Update()
     local isEnabled = (dodoDB and dodoDB.useActionbarCDM ~= false)
     if not isEnabled then self:StopTicker(); return end
 
     local hasAura = self.viewerItem and rawget(self.viewerItem, "auraInstanceID") ~= nil
     if hasAura then
+        local item = self.viewerItem
+        local auraInstanceID = rawget(item, "auraInstanceID")
+        local auraDataUnit   = rawget(item, "auraDataUnit")
+        
+        local count = C_UnitAuras.GetAuraApplicationDisplayCount(auraDataUnit, auraInstanceID)
+        self.Count:SetText(count)
+        self.Count:Show()
+
         self.InnerGlow:Show()
         self:Show()
         self:StartTicker()
@@ -198,33 +224,39 @@ function dodo_Actionbar2OverlayMixin:Update()
 end
 
 -- Interrupt Overlay Mixin
-dodoAB3OverlayMixin = {}
+InterruptOverlayMixin = {}
 
-function dodoAB3OverlayMixin:OnHide()
+function InterruptOverlayMixin:OnHide()
     self:StopAnim()
     self:StopTimer()
 end
 
-function dodoAB3OverlayMixin:OnUpdate(elapsed)
+function InterruptOverlayMixin:OnUpdate(elapsed)
     self.timerElapsed = (self.timerElapsed or 0) + elapsed
     if self.timerElapsed < 0.1 then return end
     self.timerElapsed = 0
     if self.duration then
-        local timeText = string.format("%0.1f", self.duration:GetRemainingDuration())
-        local color    = self.duration:EvaluateRemainingDuration(timerColorCurve)
-        self.TimerReady:SetText(timeText)
-        self.TimerReady:SetTextColor(color:GetRGB())
-        self.TimerCooldown:SetText(timeText)
+        local remaining = self.duration:GetRemainingDuration()
+        local isSecret = issecretvalue(remaining)
+        if isSecret or (remaining ~= self._lastRemaining) then
+            local color = self.duration:EvaluateRemainingDuration(timerColorCurve)
+            self.TimerReady:SetFormattedText("%.1f", remaining)
+            self.TimerCooldown:SetFormattedText("%.1f", remaining)
+            self.TimerReady:SetTextColor(color:GetRGB())
+            if not isSecret then
+                self._lastRemaining = remaining
+            end
+        end
     else
         self:StopTimer()
     end
 end
 
-function dodoAB3OverlayMixin:StopAnim()
+function InterruptOverlayMixin:StopAnim()
     if self.ProcLoop:IsPlaying() then self.ProcLoop:Stop() end
 end
 
-function dodoAB3OverlayMixin:StartTimer(duration)
+function InterruptOverlayMixin:StartTimer(duration)
     self.duration = duration
     self.timerElapsed = 0.1
     self.TimerReady:Show()
@@ -232,7 +264,7 @@ function dodoAB3OverlayMixin:StartTimer(duration)
     self:SetScript('OnUpdate', self.OnUpdate)
 end
 
-function dodoAB3OverlayMixin:StopTimer()
+function InterruptOverlayMixin:StopTimer()
     self.duration = nil
     self.timerElapsed = 0
     self.TimerReady:Hide()
@@ -240,7 +272,7 @@ function dodoAB3OverlayMixin:StopTimer()
     self:SetScript('OnUpdate', nil)
 end
 
-function dodoAB3OverlayMixin:Update(active, notInterruptible, duration, readyVal, cooldownVal)
+function InterruptOverlayMixin:Update(active, notInterruptible, duration, readyVal, cooldownVal)
     local isEnabled = (dodoDB and dodoDB.useActionbarInterrupt ~= false)
     if not isEnabled then self:Hide(); return end
 
@@ -258,7 +290,7 @@ function dodoAB3OverlayMixin:Update(active, notInterruptible, duration, readyVal
     end
 end
 
-function dodoAB3OverlayMixin:Attach(actionButton)
+function InterruptOverlayMixin:Attach(actionButton)
     self:SetParent(actionButton)
     self.button = actionButton
     self:ClearAllPoints()
@@ -284,7 +316,7 @@ function dodoAB3ControllerMixin:OnLoad()
 end
 
 function dodoAB3ControllerMixin:Initialize()
-    self.overlayPool = CreateFramePool('Frame', nil, 'dodoAB3OverlayTemplate')
+    self.overlayPool = CreateFramePool('Frame', nil, 'InterruptOverlayTemplate')
     FrameUtil.RegisterFrameForEvents(self, IntEvents)
     for _, event in ipairs(IntUnitEvents) do
         self:RegisterUnitEvent(event, 'focus', 'target')
@@ -372,21 +404,25 @@ end
 -- ==============================
 -- 동작
 -- ==============================
+local keyCache = {}
 local function GetShortenedKey(text)
     local RANGE_INDICATOR = "●"
     if not text or text == "" or text == RANGE_INDICATOR then return text end
-    text = text:upper()
-    for _, rule in ipairs(config.replaceText) do text = text:gsub(rule[1], rule[2]) end
-    return text
+    if keyCache[text] then return keyCache[text] end
+    local result = text:upper()
+    for _, rule in ipairs(config.replaceText) do result = result:gsub(rule[1], rule[2]) end
+    keyCache[text] = result
+    return result
 end
 
 local function UpdateButtonText(btn)
     if not btn.HotKey then return end
-    local RANGE_INDICATOR = "●"
-    local text = btn.HotKey:GetText()
-
+    
     local hideHotkeys = (dodoDB and dodoDB.useActionbarHideHotkeys ~= false)
     local hideMacroNames = (dodoDB and dodoDB.useActionbarHideMacroNames == true)
+    
+    local RANGE_INDICATOR = "●"
+    local text = btn.HotKey:GetText()
 
     if hideHotkeys then
         btn.HotKey:SetAlpha(text == RANGE_INDICATOR and 1 or 0)
@@ -453,7 +489,7 @@ local function UpdatePadding(frame)
 
     local pad = (dodoDB and dodoDB.actionbarPadding) or 0
     local numRows = frame.numRows or 1
-    local stride  = math.ceil(#frame.shownButtonContainers / numRows)
+    local stride  = math_ceil(#frame.shownButtonContainers / numRows)
     local xMult   = frame.addButtonsToRight and 1 or -1
     local yMult   = frame.addButtonsToTop and 1 or -1
     local anchor  = frame.addButtonsToTop
@@ -468,7 +504,8 @@ local function UpdatePadding(frame)
 end
 
 local function BuildButtonCache()
-    dodo.buttonCache = {}
+    dodo.buttonCache = dodo.buttonCache or {}
+    wipe(dodo.buttonCache)
     local groups = {
         "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton",
         "MultiBarRightButton", "MultiBarLeftButton", "MultiBar5Button", "MultiBar6Button", "MultiBar7Button",
@@ -484,7 +521,7 @@ local function BuildButtonCache()
                     local spellName = C_Spell.GetSpellName(baseSpellID)
                     if spellName then
                         dodo.buttonCache[spellName] = dodo.buttonCache[spellName] or {}
-                        table.insert(dodo.buttonCache[spellName], btn)
+                        table_insert(dodo.buttonCache[spellName], btn)
                     end
                 end
             end
@@ -499,7 +536,11 @@ local function UpdateCDMFromItem(item)
     local cdInfo = C_CooldownViewer.GetCooldownViewerCooldownInfo(item.cooldownID)
     if not cdInfo or not cdInfo.spellID then return end
     local baseSpellID = C_Spell.GetBaseSpell(cdInfo.spellID)
-    local spellName = C_Spell.GetSpellName(baseSpellID)
+    
+    -- 매핑 확인 (버프 ID -> 대상 스펠 ID)
+    local targetSpellID = CDMMapping[baseSpellID] or baseSpellID
+    local spellName = C_Spell.GetSpellName(targetSpellID)
+
     local buttons = spellName and dodo.buttonCache and dodo.buttonCache[spellName]
     if buttons then
         for _, btn in ipairs(buttons) do
@@ -520,22 +561,29 @@ local function HookViewerItem(item)
     UpdateCDMFromItem(item)
 end
 
+local isCachePending = false
 local function BuildSpecialButtonCache()
-    if InCombatLockdown() then return end
-    local cdmBars = { "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton", "MultiBar7Button" }
-    for _, group in ipairs(cdmBars) do
-        for i = 1, 12 do
-            local btn = _G[group .. i]
-            if btn and btn.action then
-                if not btn.cdmOverlay then
-                    btn.cdmOverlay = CreateFrame("Frame", nil, btn, "dodo_Actionbar2OverlayTemplate")
+    if InCombatLockdown() or isCachePending then return end
+    isCachePending = true
+    C_Timer.After(0.1, function()
+        isCachePending = false
+        if InCombatLockdown() then return end
+        
+        local cdmBars = { "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton", "MultiBar7Button" }
+        for _, group in ipairs(cdmBars) do
+            for i = 1, 12 do
+                local btn = _G[group .. i]
+                if btn and btn.action then
+                    if not btn.cdmOverlay then
+                        btn.cdmOverlay = CreateFrame("Frame", nil, btn, "CDMOverlayTemplate")
+                    end
+                    btn.cdmOverlay:ClearAllPoints()
+                    btn.cdmOverlay:SetAllPoints(btn)
                 end
-                btn.cdmOverlay:ClearAllPoints()
-                btn.cdmOverlay:SetAllPoints(btn)
             end
         end
-    end
-    BuildButtonCache()
+        BuildButtonCache()
+    end)
 end
 
 -- ==============================
@@ -581,6 +629,7 @@ f:SetScript("OnEvent", function(self, event, ...)
             end
         end
 
+        -- 쿨다운이 적용된 버튼에만 반응 (전체 순회 없이 영향받은 버튼만 처리)
         hooksecurefunc("ActionButton_ApplyCooldown", function(cd)
             local btn = cd:GetParent()
             if btn and registeredButtons[btn] then
@@ -613,7 +662,11 @@ f:SetScript("OnEvent", function(self, event, ...)
         end)
 
     elseif event == "ACTIONBAR_SLOT_CHANGED" then
-        BuildSpecialButtonCache()
+        local slot = ...
+        -- CDM 버튼 슬롯(1~72)에 해당할 때만 캐시 재빌드 (불필요한 재빌드 방지)
+        if not slot or slot <= 72 then
+            BuildSpecialButtonCache()
+        end
 
     elseif event == "ACTION_RANGE_CHECK_UPDATE" then
         local slot = ...

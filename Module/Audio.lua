@@ -11,12 +11,12 @@ local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
 -- 보스전 진입
-soundEncounterStartTable = {
+dodo.soundEncounterStartTable = {
     { label = "돌격", value = "16971" },
 }
 
 -- 보스전 승리
-soundEncounterVictoryTable = {
+dodo.soundEncounterVictoryTable = {
     { label = "PVP 얼라이언스", value = "38352" },
     { label = "퀘스트 추가", value = "618" },
     { label = "PVP 승리", value = "34091" },
@@ -28,6 +28,7 @@ soundEncounterVictoryTable = {
 -- 함수
 local CreateFrame = CreateFrame
 local PlaySound = PlaySound
+local GetCVar = GetCVar
 local SetCVar = SetCVar
 local Sound_GameSystem_RestartSoundSystem = Sound_GameSystem_RestartSoundSystem
 local tonumber = tonumber
@@ -40,13 +41,13 @@ local MovieFrame = MovieFrame
 -- 동작
 -- ==============================
 local function audioSync()
-    if not dodoDB then return end
-    local isEnabled = (dodoDB.useAudioSync ~= false)
+    if not dodoDB or dodoDB.useAudioSync == false then return end
+    
     local cinemaShown = CinematicFrame and CinematicFrame:IsShown()
     local movieShown = MovieFrame and MovieFrame:IsShown()
 
     if not cinemaShown and not movieShown then
-        if isEnabled then
+        if GetCVar("Sound_OutputDriverIndex") ~= "0" then
             SetCVar("Sound_OutputDriverIndex", "0")
             Sound_GameSystem_RestartSoundSystem()
         end
@@ -72,15 +73,19 @@ local function EncounterSound(event, ...)
     if not dodoDB then return end
 
     if event == "ENCOUNTER_START" then
-        local isEnabled = (dodoDB.useSoundEncounterStart ~= false)
-        SetCVar("Sound_EnableMusic", 0)
-        if isEnabled then EncounterSoundStart() end
+        if GetCVar("Sound_EnableMusic") ~= "0" then
+            SetCVar("Sound_EnableMusic", 0)
+        end
+        if dodoDB.useSoundEncounterStart ~= false then 
+            EncounterSoundStart() 
+        end
     elseif event == "ENCOUNTER_END" then
-        SetCVar("Sound_EnableMusic", 1)
+        if GetCVar("Sound_EnableMusic") ~= "1" then
+            SetCVar("Sound_EnableMusic", 1)
+        end
         local _, _, _, _, success = ...
-        if success == 1 then
-            local isEnabled = (dodoDB.useSoundEncounterVictory ~= false)
-            if isEnabled then EncounterSoundVictory() end
+        if success == 1 and dodoDB.useSoundEncounterVictory ~= false then
+            EncounterSoundVictory()
         end
     end
 end

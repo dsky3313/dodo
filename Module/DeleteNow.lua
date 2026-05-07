@@ -2,6 +2,7 @@
 -- Inspired
 -- ==============================
 -- Leatrix Plus (https://www.curseforge.com/wow/addons/leatrix-plus)
+-- EnhanceQoL
 
 -- ==============================
 -- 설정 및 테이블
@@ -13,105 +14,123 @@ dodoDB = dodoDB or {}
 -- ==============================
 -- 캐싱
 -- ==============================
--- 함수
 local CreateFrame = CreateFrame
 local GetCursorInfo = GetCursorInfo
-local GetInstanceInfo = GetInstanceInfo
 local SetCVar = SetCVar
+local GetCVar = GetCVar
 local gsub = gsub
 local hooksecurefunc = hooksecurefunc
 local select = select
 local strsplit = strsplit
-
--- 변수
-local C_Timer = C_Timer
-local DELETE_GOOD_ITEM = DELETE_GOOD_ITEM
 local GameTooltip = GameTooltip
-local StaticPopup1 = StaticPopup1
-local StaticPopup1Button1 = StaticPopup1Button1
-local StaticPopup1EditBox = StaticPopup1EditBox
-local StaticPopup1Text = StaticPopup1Text
-local cachedDeleteWord = ""
+
 local localizedDeleteMsg = ""
+local originalAlwaysCompare = nil
 
 -- ==============================
 -- 디스플레이
 -- ==============================
-local DeleteItemLink = StaticPopup1:CreateFontString(nil, "OVERLAY", "GameFontNormalMed1") -- 아이템 링크
-DeleteItemLink:SetPoint("CENTER", StaticPopup1, "CENTER", 0, 10)
+local DeleteItemLink = UIParent:CreateFontString(nil, "OVERLAY", "GameFontNormalMed1")
 DeleteItemLink:Hide()
 
 do
+    local DELETE_GOOD_ITEM = _G.DELETE_GOOD_ITEM
     local _, secondPart = strsplit("@", gsub(DELETE_GOOD_ITEM, "[\r\n]", "@"), 2)
     localizedDeleteMsg = gsub(secondPart or "", "%%s", "")
     localizedDeleteMsg = gsub(localizedDeleteMsg, "@", "")
-    local rawText = gsub(DELETE_GOOD_ITEM, "[\r\n]", "")
-    cachedDeleteWord = select(2, strsplit('"', rawText)) or "삭제"
 end
 
 -- ==============================
 -- 동작
 -- ==============================
-local function DeleteNow()
+local function OnPopupShow(self)
     if not dodoDB then return end
+    if dodoDB.deleteNowHideEditbox == false and dodoDB.deleteNowAutoFill == false then return end
 
-    local _, _, itemLink = GetCursorInfo()
-    if not StaticPopup1 or not StaticPopup1EditBox then return end
-    if not itemLink then return end
-    SetCVar("alwaysCompareItems", 0)
-    DeleteItemLink:Hide()
-    DeleteItemLink:SetText("")
+    if self.which == "DELETE_GOOD_ITEM" or self.which == "DELETE_GOOD_QUEST_ITEM" or self.which == "DELETE_ITEM" then
+        local _, _, itemLink = GetCursorInfo()
 
-    if dodoDB.deleteNowHideEditbox then
-        StaticPopup1EditBox:Hide()
-        StaticPopup1Button1:Enable()
-        DeleteItemLink:SetText(itemLink) -- 입력창 숨김 + 아이템링크 표시
-        DeleteItemLink:Show()
-        -- print("|cff00ff00[dodo]|r 아이템파괴 + 아이템링크 표시") -- 디버깅
+        local editBox = self.editBox or _G[self:GetName() and (self:GetName().."EditBox")]
+        local button1 = self.button1 or _G[self:GetName() and (self:GetName().."Button1")]
+        local textObj = self.text or _G[self:GetName() and (self:GetName().."Text")]
 
-        local currentText = StaticPopup1Text:GetText() or ""
-        if localizedDeleteMsg ~= "" then
-            StaticPopup1Text:SetText((gsub(currentText, localizedDeleteMsg, "")))
+        if not editBox or not button1 or not textObj then return end
+
+        local currentText = textObj:GetText() or ""
+        local dynamicWord = select(2, strsplit('"', currentText)) or _G.DELETE_ITEM_CONFIRM_STRING or "삭제"
+
+        if dodoDB.deleteNowHideEditbox then
+            editBox:Hide()
+            button1:Enable()
+
+            DeleteItemLink:SetParent(self)
+            DeleteItemLink:ClearAllPoints()
+            DeleteItemLink:SetPoint("CENTER", self, "CENTER", 0, 10)
+            if itemLink then
+                DeleteItemLink:SetText(itemLink)
+            else
+                DeleteItemLink:SetText("")
+            end
+            DeleteItemLink:Show()
+
+            if localizedDeleteMsg ~= "" then
+                textObj:SetText((gsub(currentText, localizedDeleteMsg, "")))
+            end
+        elseif dodoDB.deleteNowAutoFill then
+            editBox:Show()
+            editBox:SetText(dynamicWord)
+            editBox:SetFocus()
+            button1:Enable()
         end
-    elseif dodoDB.deleteNowAutoFill then
-        StaticPopup1EditBox:Show()
-        StaticPopup1EditBox:SetText(cachedDeleteWord) -- 자동 입력
-        StaticPopup1EditBox:SetFocus()
-        StaticPopup1Button1:Enable()
-        -- print("|cff00ff00[dodo]|r 아이템파괴 자동입력") -- 디버깅
-    else
-        return
-    end
 
-    GameTooltip:SetOwner(StaticPopup1, "ANCHOR_NONE")
-    GameTooltip:SetPoint("TOP", StaticPopup1, "BOTTOM", 0, -5)
-    GameTooltip:SetHyperlink(itemLink)
-    GameTooltip:Show()
+        if itemLink then
+            GameTooltip:SetOwner(self, "ANCHOR_NONE")
+            GameTooltip:SetPoint("TOP", self, "BOTTOM", 0, -5)
+            GameTooltip:SetHyperlink(itemLink)
+            GameTooltip:Show()
+
+            if originalAlwaysCompare == nil then
+                originalAlwaysCompare = GetCVar("alwaysCompareItems")
+            end
+            SetCVar("alwaysCompareItems", "0")
+
+            self._eqolDeleteNowActive = true
+        end
+    end
+end
+
+local function OnPopupHide(self)
+    if self._eqolDeleteNowActive then
+        self._eqolDeleteNowActive = nil
+        if originalAlwaysCompare then
+            SetCVar("alwaysCompareItems", originalAlwaysCompare)
+            originalAlwaysCompare = nil
+        end
+        if GameTooltip:GetOwner() == self then
+            GameTooltip:Hide()
+        end
+        DeleteItemLink:SetText("")
+        DeleteItemLink:Hide()
+    end
 end
 
 -- ==============================
--- 이벤트
+-- 초기화
 -- ==============================
-local initDeleteNow = CreateFrame("Frame")
-initDeleteNow:RegisterEvent("DELETE_ITEM_CONFIRM")
-initDeleteNow:SetScript("OnEvent", function(self, event)
-    if event == "DELETE_ITEM_CONFIRM" then
-        C_Timer.After(0.1, DeleteNow)
+hooksecurefunc("StaticPopup_Show", function(which)
+    if which == "DELETE_GOOD_ITEM" or which == "DELETE_GOOD_QUEST_ITEM" or which == "DELETE_ITEM" then
+        local dialog = StaticPopup_Visible(which)
+        if dialog then
+            OnPopupShow(dialog)
+        end
     end
 end)
 
 hooksecurefunc("StaticPopup_OnHide", function(self)
-    if self == StaticPopup1 then
-        if GameTooltip then GameTooltip:Hide() end
-        if DeleteItemLink then
-            DeleteItemLink:SetText("")
-            DeleteItemLink:Hide()
-        end
-        SetCVar("alwaysCompareItems", 1)
-    end
+    OnPopupHide(self)
 end)
 
 -- ==============================
 -- 외부 노출 (Option.lua용)
 -- ==============================
-dodo.DeleteNow = DeleteNow
+dodo.DeleteNow = function() end -- 옵션창 콜백용 더미 함수

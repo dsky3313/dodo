@@ -2,6 +2,7 @@
 -- Inspired
 -- ==============================
 -- M+ Dungeon Teleports [Retail] (https://www.curseforge.com/wow/addons/dungeonports)
+-- Teleport Menu (https://www.curseforge.com/wow/addons/teleport-me-nu)
 
 -- ==============================
 -- 테이블
@@ -147,14 +148,16 @@ local teleportTable = {
     { id = 1239155, type = "spell", category = "TWW", name = "마괴종" },
 
     -- MN
-    { id = 221966, type = "item", category = "MN", name = "기공" },
+    { id = 248485, type = "item", category = "MN", name = "기공" },
     { id = 1254559, type = "spell", category = "MN", name = "동굴", isSeason = true  },
     { id = 1254572, type = "spell", category = "MN", name = "정원", isSeason = true  },
     { id = 1254563, type = "spell", category = "MN", name = "제나스", isSeason = true  },
     { id = 1254400, type = "spell", category = "MN", name = "첨탑", isSeason = true  },
 
     -- ETC
-    { id = 1233637, type = "macro", iconID = 7252953, category = "ETC", name = "하우징" },
+    { id = 1263273, type = "housing", category = "ETC", name = "하우징" },
+    { id = 243056, type = "item", category = "ETC", name = "도르노갈" },
+    { id = 253629, type = "item", category = "ETC", name = "여관" },
 }
 
 local col, row = 0, -1
@@ -178,9 +181,14 @@ local NineSliceUtil = NineSliceUtil
 local table = table
 local UIParent = UIParent
 
-local function isIns()
-    local _, instanceType, difficultyID = GetInstanceInfo()
-    return (difficultyID == 1 or instanceType == "raid")
+local function SetColorFromTable(obj, colorTable, isVertex)
+    if obj and colorTable then
+        if isVertex then
+            obj:SetVertexColor(colorTable[1] or 1, colorTable[2] or 1, colorTable[3] or 1)
+        else
+            obj:SetTextColor(colorTable[1] or 1, colorTable[2] or 1, colorTable[3] or 1)
+        end
+    end
 end
 
 -- ==============================
@@ -321,21 +329,20 @@ for i, data in ipairs(teleportTable) do
 end
 
 local function UpdateUIStatus()
-    if InCombatLockdown() or isIns() then return end
+    if InCombatLockdown() then return end
 
     for _, icon in ipairs(teleportIcons) do
         if icon.UpdateStatus then icon:UpdateStatus() end
 
         if icon.seasonColor then
-            icon.Name:SetTextColor(unpack(icon.seasonColor))
-            icon.normalTexture:SetVertexColor(unpack(icon.seasonColor))
+            SetColorFromTable(icon.Name, icon.seasonColor)
+            SetColorFromTable(icon.normalTexture, icon.seasonColor, true)
         end
     end
 end
 
 local function ESCTeleportFrame()
     if InCombatLockdown() then return end
-    if isIns() then TeleportFrame:Hide() return end
     local isEnabled = (dodoDB and dodoDB.useTeleport ~= false)
 
     if isEnabled and GameMenuFrame:IsShown() then
@@ -352,6 +359,8 @@ end
 -- ==============================
 -- 이벤트
 -- ==============================
+TeleportFrame:SetScript("OnShow", UpdateUIStatus)
+
 local initTeleportFrame = CreateFrame("Frame")
 initTeleportFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 
@@ -361,23 +370,28 @@ local function ToggleEvents(enable)
         initTeleportFrame:RegisterEvent("BAG_UPDATE_DELAYED")
         initTeleportFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
         initTeleportFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+        initTeleportFrame:RegisterEvent("PLAYER_HOUSE_LIST_UPDATED")
+        initTeleportFrame:RegisterEvent("HOUSE_PLOT_ENTERED")
+        initTeleportFrame:RegisterEvent("HOUSE_PLOT_EXITED")
     else
         initTeleportFrame:UnregisterEvent("SPELL_UPDATE_COOLDOWN")
         initTeleportFrame:UnregisterEvent("BAG_UPDATE_DELAYED")
         initTeleportFrame:UnregisterEvent("PLAYER_REGEN_ENABLED")
         initTeleportFrame:UnregisterEvent("PLAYER_REGEN_DISABLED")
+        initTeleportFrame:UnregisterEvent("PLAYER_HOUSE_LIST_UPDATED")
+        initTeleportFrame:UnregisterEvent("HOUSE_PLOT_ENTERED")
+        initTeleportFrame:UnregisterEvent("HOUSE_PLOT_EXITED")
     end
 end
 
-initTeleportFrame:SetScript("OnEvent", function(self, event)
+initTeleportFrame:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_ENTERING_WORLD" then
-        if isIns() then
-            ToggleEvents(false)
-            if TeleportFrame:IsShown() then TeleportFrame:Hide() end
-        else
-            ToggleEvents(true)
-            UpdateUIStatus()
+        if C_Housing and C_Housing.GetPlayerOwnedHouses then
+            initTeleportFrame:RegisterEvent("PLAYER_HOUSE_LIST_UPDATED")
+            C_Housing.GetPlayerOwnedHouses()
         end
+        ToggleEvents(true)
+        UpdateUIStatus()
         return
     end
 
@@ -385,6 +399,14 @@ initTeleportFrame:SetScript("OnEvent", function(self, event)
         ESCTeleportFrame()
     elseif event == "PLAYER_REGEN_DISABLED" then
         TeleportFrame:Hide()
+    elseif event == "PLAYER_HOUSE_LIST_UPDATED" then
+        local housingInfo = ...
+        if housingInfo then
+            dodo.houseData = housingInfo
+            if TeleportFrame:IsShown() and not InCombatLockdown() then
+                UpdateUIStatus()
+            end
+        end
     else
         if TeleportFrame:IsShown() and not InCombatLockdown() then
             UpdateUIStatus()
