@@ -6,7 +6,7 @@
 -- ==============================
 -- 설정 및 테이블
 -- ==============================
----@diagnostic disable: lowercase-global, undefined-field, undefined-global
+---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
@@ -81,9 +81,7 @@ end
 
 local function FormatLevel(level)
     if not level or level <= 0 then return nil end
-    local color = GetQuestDifficultyColor(level)
-    if not color then return tostring(level) end
-    return WrapColor(tostring(level), color.r, color.g, color.b)
+    return WrapColor(tostring(level), 1, 0.82, 0)
 end
 
 local function CleanRealm(realm)

@@ -6,7 +6,7 @@
 -- ==============================
 -- 설정 및 테이블
 -- ==============================
----@diagnostic disable: lowercase-global, undefined-field, undefined-global
+---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 local IconLib = dodo.IconLib
@@ -29,13 +29,13 @@ local ClassTable = {
 }
 
 local UtilTable = {
-    { iconID = 132108, name = "독해제", key = "poison", type = "dispell" },
-    { iconID = 136066, name = "마법해제", key = "magic", type = "dispell" },
-    { iconID = 136140, name = "저주해제", key = "curse", type = "dispell" },
-    { iconID = 132100, name = "질병해제", key = "disease", type = "dispell" },
-    { iconID = 136012, name = "블러드", key = "bl", type = "util" },
-    { iconID = 136080, name = "전부", key = "br", type = "util" },
-    { iconID = 136243, name = "시너지", key = "buff", type = "util" },
+    { iconID = 132108, name = "|cffffd100독해제|r", key = "poison", type = "dispell" },
+    { iconID = 136066, name = "|cffffd100마법해제|r", key = "magic", type = "dispell" },
+    { iconID = 136140, name = "|cffffd100저주해제|r", key = "curse", type = "dispell" },
+    { iconID = 132100, name = "|cffffd100질병해제|r", key = "disease", type = "dispell" },
+    { iconID = 136012, name = "|cffffd100블러드|r", key = "bl", type = "util" },
+    { iconID = 136080, name = "|cffffd100전부|r", key = "br", type = "util" },
+    { iconID = 136243, name = "|cffffd100시너지|r", key = "buff", type = "util" },
 }
 
 -- ==============================

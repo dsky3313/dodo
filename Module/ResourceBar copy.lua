@@ -118,7 +118,7 @@ bar1Frame:SetSize(barConfigs[1].width, barConfigs[1].height)
 bar1Frame:SetPoint("CENTER", UIParent, "CENTER", 0, barConfigs[1].y)
 
 local function UpdateBar1()
-    if not bar1Frame or not bar1Frame:IsShown() then return end
+    if not bar1Frame then return end
     local pType, pToken = UnitPowerType("player")
     if pType ~= cachedPowerType then
         cachedPowerType = pType
@@ -266,7 +266,6 @@ function ResourceBar2Mixin:UpdateRuneSystem()
 end
 
 function ResourceBar2Mixin:UpdateStaggerSystem()
-    if not self:IsShown() then return end
     if self.runebars then for _, rb in ipairs(self.runebars) do rb:Hide() end end
     if self.countStack then self.countStack:Show() end
 
@@ -322,7 +321,6 @@ function ResourceBar2Mixin:UpdateStaggerSystem()
 end
 
 function ResourceBar2Mixin:Update()
-    if not self:IsShown() then return end
     if self.buffConfig and self.buffConfig.barMode == "rune" then
         self:UpdateRuneSystem(); self:Show(); return
     end
@@ -445,28 +443,11 @@ bar2Frame:SetPoint("TOP", bar1Frame, "BOTTOM", 0, barConfigs[2].y)
 bar2Frame:SetScript("OnEvent", function(self) if self.UpdateRuneSystem then self:UpdateRuneSystem() end end)
 
 local updater = CreateFrame("Frame"); Mixin(updater, ResourceBar2UpdaterMixin)
--- 실시간 설정 반영 함수
-function dodo.UpdateResourceBarVisibility()
-    if dodoDB.useResourceBar1 ~= false then
-        bar1Frame:Show()
-        UpdateBar1()
-    else
-        bar1Frame:Hide()
-    end
-
-    if dodoDB.useResourceBar2 ~= false then
-        bar2Frame:Show()
-        UpdateCurrentSpecConfig()
-    else
-        bar2Frame:Hide()
-        if staggerTicker then staggerTicker:Cancel(); staggerTicker = nil end
-    end
-end
-
 local init = CreateFrame("Frame"); init:RegisterEvent("PLAYER_LOGIN")
 init:SetScript("OnEvent", function(self)
     updater:OnLoad()
-    dodo.UpdateResourceBarVisibility()
+    if dodoDB.useResourceBar1 ~= false then bar1Frame:Show() else bar1Frame:Hide() end
+    if dodoDB.useResourceBar2 ~= false then bar2Frame:Show() else bar2Frame:Hide() end
     self:UnregisterEvent("PLAYER_LOGIN")
 end)
 

@@ -92,7 +92,8 @@ function dodoCreateOptions()
     Checkbox(subCategoryInterface, "useTeleport", "던전 텔레포트 버튼", "게임메뉴 옆에 텔레포트 버튼을 표시합니다.", true, dodo.ESCTeleportFrame)
     Checkbox(subCategoryInterface, "useWowheadLink", "와우헤드 링크", "지도, 업적프레임에 와우헤드 링크를 표시합니다.", true, dodo.WowheadLink)
     Checkbox(subCategoryInterface, "useItemLevel", "아이템 레벨 표시", "장비창 및 가방 아이템에 아이템 레벨을 표시합니다.", true, dodo.ItemLevelDisplay)
-    Checkbox(subCategoryInterface, "useEnhancedCharFrame", "향상된 장비창", "장비창에 마법부여, 보석 정보를 표시하고 창 크기를 넓힙니다.", true, dodo.EnhancedCharFrame)
+    Checkbox(subCategoryInterface, "useFriends", "친구창+", "직업 색상, 레벨, 메모 추가", true, dodo.UpdateFriends)
+    Checkbox(subCategoryInterface, "useEnhancedCharFrame", "장비창+", "장비창에 마법부여, 보석 정보를 표시하고 창 크기를 넓힙니다.", true, dodo.EnhancedCharFrame)
 
 
     -- [ 음성 ]
@@ -158,8 +159,8 @@ function dodoCreateOptions()
     Checkbox(subCategoryCombat, "useBloodBrez", "블러드 & 전투부활 추적", "블러드, 전투부활 추적기를 활성화합니다.", true, dodo.BloodBrez)
 
     layoutCombat:AddInitializer(CreateSettingsListSectionHeaderInitializer("자원바 표시"))
-    Checkbox(subCategoryCombat, "useResourceBar1", "플레이어 자원바", "플레이어 마나/분노 표시 바를 활성화합니다.", true, dodo.ResourceBar1)
-    Checkbox(subCategoryCombat, "useResourceBar2", "버프 추적 바", "특성에 따른 버프 추적 바를 활성화합니다.", true, dodo.ResourceBar2)
+    Checkbox(subCategoryCombat, "useResourceBar1", "플레이어 자원바", "플레이어 마나/분노 표시 바를 활성화합니다.", true, dodo.UpdateResourceBarVisibility)
+    Checkbox(subCategoryCombat, "useResourceBar2", "버프 추적 바", "특성에 따른 버프 추적 바를 활성화합니다.", true, dodo.UpdateResourceBarVisibility)
 
     layoutCombat:AddInitializer(CreateSettingsListSectionHeaderInitializer("피해량 측정기 (미터기)"))
     Checkbox(subCategoryCombat, "dmgMeterSyncSize", "창 크기 동기화", "보조 창들의 크기를 메인 창과 동일하게 맞춥니다.", true, dodo.SyncDamageMeterSize)

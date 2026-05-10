@@ -6,7 +6,7 @@
 -- ==============================
 -- 설정 및 테이블
 -- ==============================
----@diagnostic disable: lowercase-global, undefined-field, undefined-global
+---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
@@ -32,6 +32,7 @@ local GetCVar = GetCVar
 local SetCVar = SetCVar
 local Sound_GameSystem_RestartSoundSystem = Sound_GameSystem_RestartSoundSystem
 local tonumber = tonumber
+local GetTime = GetTime
 
 -- 변수
 local CinematicFrame = CinematicFrame
@@ -40,16 +41,28 @@ local MovieFrame = MovieFrame
 -- ==============================
 -- 동작
 -- ==============================
-local function audioSync()
-    if not dodoDB or dodoDB.useAudioSync == false then return end
+local lastSync = 0
+local function audioSync(isManual)
+    -- 옵션이 꺼져있거나, 방금 체크를 해제한 경우 리턴
+    if (isManual == false) or (isManual == nil and (not dodoDB or dodoDB.useAudioSync == false)) then 
+        return 
+    end
     
+    -- 자동 동기화(이벤트) 시 5초 이내 재실행 방지
+    local now = GetTime()
+    if isManual ~= true and now - lastSync < 5 then return end
+    lastSync = now
+
     local cinemaShown = CinematicFrame and CinematicFrame:IsShown()
     local movieShown = MovieFrame and MovieFrame:IsShown()
 
     if not cinemaShown and not movieShown then
-        if GetCVar("Sound_OutputDriverIndex") ~= "0" then
-            SetCVar("Sound_OutputDriverIndex", "0")
-            Sound_GameSystem_RestartSoundSystem()
+        -- 현재 설정이 이미 '0'이더라도 다시 설정하고 재시작해야 OS의 오디오 변경사항을 감지함
+        SetCVar("Sound_OutputDriverIndex", "0")
+        Sound_GameSystem_RestartSoundSystem()
+        
+        if isManual == true then
+            UIErrorsFrame:AddMessage("|cffaaffaa[dodo]|r 오디오 동기화 완료", 1.0, 1.0, 1.0, 5.0)
         end
     end
 end
@@ -105,7 +118,8 @@ initAudioSync:SetScript("OnEvent", function(self, event, ...)
         dodoDB = dodoDB or {}
         self:UnregisterEvent("ADDON_LOADED")
         self:RegisterEvent("VOICE_CHAT_OUTPUT_DEVICES_UPDATED")
-    elseif event == "VOICE_CHAT_OUTPUT_DEVICES_UPDATED" then
+        self:RegisterEvent("PLAYER_ENTERING_WORLD")
+    elseif event == "VOICE_CHAT_OUTPUT_DEVICES_UPDATED" or event == "PLAYER_ENTERING_WORLD" then
         audioSync()
     elseif event == "ENCOUNTER_START" or event == "ENCOUNTER_END" then
         EncounterSound(event, ...)

@@ -1,3 +1,5 @@
+---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
+
 local CreateFrame  = CreateFrame
 local CURSOR_LABEL = "Cursor"
 local format       = format
