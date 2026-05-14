@@ -9,7 +9,7 @@
                 <Texture parentKey="BarBG" atlas="UI-HUD-CoolDownManager-Bar-BG">
                     <Anchors>
                         <Anchor point="TOPLEFT" x="-2" y="2"/>
-                        <Anchor point="BOTTOMRIGHT" x="4" y="-7"/>
+                        <Anchor point="BOTTOMRIGHT" x="6" y="-7"/>
                     </Anchors>
                 </Texture>
             </Layer>
@@ -34,7 +34,7 @@
                 <Texture parentKey="BarBG" atlas="UI-HUD-CoolDownManager-Bar-BG">
                     <Anchors>
                         <Anchor point="TOPLEFT" x="-2" y="2"/>
-                        <Anchor point="BOTTOMRIGHT" x="4" y="-7"/>
+                        <Anchor point="BOTTOMRIGHT" x="6" y="-7"/>
                     </Anchors>
                 </Texture>
             </Layer>

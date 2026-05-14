@@ -14,14 +14,14 @@ local barConfigs = {
 local classConfig = {
     ["DEATHKNIGHT"] = { [1] = {{barMode = "rune"}}, [2] = {{barMode = "rune"}}, [3] = {{barMode = "rune"}} },
     ["DEMONHUNTER"] = { [2] = {{spellID = 203981, barMode = "stack", maxStack = 6}} }, -- 악탱 영혼파편
-    ["DRUID"] = { [3] = {{spellID = 192081, barMode = "duration", duration = 7}} }, -- 수드 무쇠가죽
+    ["DRUID"] = { [3] = {{spellID = 192081, barMode = "ironfur"}} }, -- 수드 무쇠가죽 (특수 트래킹)
     ["MONK"] = { [1] = {{barMode = "stagger"}} }, -- 양조 시간차
     ["SHAMAN"] = { [3] = {{spellID = 51564, barMode = "stack", maxStack = 3}} }, -- 복술 굽이치는물결
     ["WARRIOR"] = {
-        [1] = {{spellID = 107574, barMode = "duration", duration = 20}}, -- 무전 투신
+        [1] = {{spellID = 167105, barMode = "duration"}}, -- 무전 거강
         [2] = {
             {spellID = 12950,  barMode = "stack",    maxStack = 4, requiredSpell = 12950},  -- 분전 소용돌이연마
-            {spellID = 184361, barMode = "duration", duration = 4,  excludedSpell = 12950},  -- 분전 격노
+            {spellID = 184361, barMode = "duration", excludedSpell = 12950},  -- 분전 격노
         },
         [3] = {{spellID = 190456, barMode = "stack", maxStack = 100}} -- 전탱 고통감내
     },
@@ -30,7 +30,7 @@ local classConfig = {
 local specColors = {
     ["DEATHKNIGHT"] = { [1] = {r=1, g=0, b=0}, [2] = {r=0, g=0.8, b=1}, [3] = {r=0.3, g=0.9, b=0.3} },
     ["DEMONHUNTER"] = { [2] = {r=0.86, g=0.59, b=0.98} },
-    ["DRUID"] = { [3] = {r=1, g=0.49, b=0.04} },
+    ["DRUID"] = { [3] = {r=0, g=0.82, b=1} },
     ["MONK"] = { [1] = {r=0, g=1, b=0.59} },
     ["SHAMAN"] = { [3] = {r=0, g=0.82, b=1} },
     ["WARRIOR"] = { [1] = {r=1, g=0.588, b=0.196}, [2] = {r=0, g=0.82, b=1}, [3] = {r=1, g=0.588, b=0.196} },
@@ -45,8 +45,18 @@ local cachedSpecColor = { r = 1, g = 1, b = 1 }
 local bar2Frame
 local runeIndexes = { 1, 2, 3, 4, 5, 6 }
 local staggerTicker = nil
-local curve = C_CurveUtil.CreateCurve()
-curve:SetType(Enum.LuaCurveType.Linear); curve:AddPoint(0, 0); curve:AddPoint(1, 100)
+local ironfurExpiries = {}
+local ironfurDurations = {}
+local goeExpiry = 0
+local ironfurBaseDuration = 7
+local hasGoeTalent = false
+
+local function RefreshIronfurTalents()
+    -- 우르속의 인내력 (393611): 지속시간 +2초
+    ironfurBaseDuration = C_SpellBook.IsSpellKnown(393611) and 9 or 7
+    -- 엘룬의 수호자 (155578): 짓이기기가 다음 무쇠가죽/광재 지속시간 +3초
+    hasGoeTalent = C_SpellBook.IsSpellKnown(155578)
+end
 
 local function RuneSortComparator(a, b)
     local aS, _, aR = GetRuneCooldown(a)
@@ -91,6 +101,9 @@ local function UpdateCurrentSpecConfig()
 
         -- 전문화 변경 시 항상 기존 stagger 폴링 중단
         if staggerTicker then staggerTicker:Cancel(); staggerTicker = nil end
+        
+        -- 무쇠가죽 특성 정보 갱신
+        RefreshIronfurTalents()
 
         if englishClass == "DEATHKNIGHT" then
             bar2:SetBuffConfig({ barMode = "rune" })
@@ -150,28 +163,120 @@ combatFrame:SetScript("OnEvent", function(_, event) OnCombatChange(event == "PLA
 OnCombatChange(false)
 
 -- ==============================
--- Bar2 버프트래킹
+-- Bar2 버프트래킹 Mixin
 -- ==============================
 local ResourceBar2Mixin = {}
 
 function ResourceBar2Mixin:SetViewerItem(viewerItem) self.viewerItem = viewerItem end
 function ResourceBar2Mixin:SetBuffConfig(buffConfig) self.buffConfig = buffConfig end
 
+function ResourceBar2Mixin:UpdateIronfurTicks(stackCount, longestIdx, fillPct, barWidth, barHeight)
+    if not self.ironfurTicks then self.ironfurTicks = {} end
+    local now = GetTime()
+
+    for i = 1, stackCount do
+        local tick = self.ironfurTicks[i]
+        if not tick then
+            tick = self:CreateTexture(nil, "OVERLAY")
+            tick:SetAtlas("cast-empowered-pipflare")
+            self.ironfurTicks[i] = tick
+        end
+
+        local pct
+        if i == longestIdx then
+            pct = fillPct
+        else
+            pct = math.max(0, math.min(1, (ironfurExpiries[i] - now) / ironfurDurations[i]))
+        end
+
+        tick:SetSize(barHeight * 0.6, barHeight * 1.6)
+        tick:ClearAllPoints()
+        tick:SetPoint("CENTER", self, "LEFT", pct * barWidth, 0)
+        tick:Show()
+    end
+
+    for i = stackCount + 1, #self.ironfurTicks do
+        self.ironfurTicks[i]:Hide()
+    end
+end
+
+local function UpdateIronfurSystem(f)
+    local now = GetTime()
+    while #ironfurExpiries > 0 and ironfurExpiries[1] <= now do
+        table.remove(ironfurExpiries, 1)
+        table.remove(ironfurDurations, 1)
+    end
+
+    local stackCount = #ironfurExpiries
+    if stackCount == 0 then
+        f:SetValue(0)
+        if f.countStack then f.countStack:SetText("0") end
+        if f.ironfurTicks then for _, t in ipairs(f.ironfurTicks) do t:Hide() end end
+        f:SetScript("OnUpdate", nil)
+        f._hasIronfurUpdate = false
+        return
+    end
+
+    local longestIdx = 1
+    local maxRem = 0
+    for i = 1, stackCount do
+        local rem = ironfurExpiries[i] - now
+        if rem > maxRem then
+            maxRem = rem
+            longestIdx = i
+        end
+    end
+
+    local fillPct = math.max(0, maxRem / ironfurDurations[longestIdx])
+    f:SetValue(fillPct, Enum.StatusBarInterpolation.Immediate)
+    if f.countStack then f.countStack:SetText(stackCount) end
+
+    f:UpdateIronfurTicks(stackCount, longestIdx, fillPct, f:GetWidth(), f:GetHeight())
+end
+
+function ResourceBar2Mixin:OnEvent(event, ...)
+    if event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_SPECIALIZATION_CHANGED" or event == "PLAYER_TALENT_UPDATE" then
+        UpdateCurrentSpecConfig()
+        RefreshIronfurTalents()
+    elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
+        local unit, _, spellID = ...
+        if spellID == 192081 then -- 무쇠가죽
+            local now = GetTime()
+            local bonus = (hasGoeTalent and now < goeExpiry) and 3 or 0
+            if bonus > 0 then goeExpiry = 0 end 
+            local duration = ironfurBaseDuration + bonus
+            local n = #ironfurExpiries + 1
+            ironfurExpiries[n] = now + duration
+            ironfurDurations[n] = duration
+            if not self._hasIronfurUpdate and self.buffConfig and self.buffConfig.barMode == "ironfur" then
+                self:SetScript("OnUpdate", UpdateIronfurSystem)
+                self._hasIronfurUpdate = true
+            end
+        elseif spellID == 33917 then -- 짓이기기
+            if hasGoeTalent then
+                goeExpiry = GetTime() + 15
+            end
+        end
+    end
+end
+
 function ResourceBar2Mixin:GetSpecColor()
     return cachedSpecColor
 end
 
 local function Bar2DurationOnUpdate(f)
-    local durObj = C_UnitAuras.GetAuraDuration(f._durationUnit, f._durationAuraID)
-    if not durObj then
-        -- 아우라 만료 또는 사라짐 → OnUpdate 스스로 해제
-        f:SetScript("OnUpdate", nil)
-        f._hasDurationUpdate = false
-        return
+    local item = f.viewerItem
+    if not item then return end
+    
+    local auraDataUnit = rawget(item, "auraDataUnit")
+    local auraInstanceID = rawget(item, "auraInstanceID")
+    if not auraDataUnit or not auraInstanceID then return end
+
+    local durObj = C_UnitAuras.GetAuraDuration(auraDataUnit, auraInstanceID)
+    if durObj and f.countStack then
+        local rem = durObj:GetRemainingDuration()
+        f.countStack:SetFormattedText("%.0f", rem)
     end
-    local rem = durObj:GetRemainingDuration()
-    f:SetValue(rem, Enum.StatusBarInterpolation.ExponentialEaseOut)
-    if f.countStack then f.countStack:SetFormattedText("%.0f", rem) end
 end
 
 function ResourceBar2Mixin:UpdateStackTicks(maxStack)
@@ -360,14 +465,23 @@ function ResourceBar2Mixin:Update()
     local auraData = C_UnitAuras.GetAuraDataByAuraInstanceID(unit, auraID)
     if auraData then
         if self.buffConfig and self.buffConfig.barMode == "duration" then
-            self._durationUnit  = unit
-            self._durationAuraID = auraID
-            if not self._hasDurationUpdate then
-                self:SetScript("OnUpdate", Bar2DurationOnUpdate)
-                self._hasDurationUpdate = true
+            local durObj = C_UnitAuras.GetAuraDuration(unit, auraID)
+            if durObj then
+                self:SetTimerDuration(durObj, Enum.StatusBarInterpolation.ExponentialEaseOut, Enum.StatusBarTimerDirection.RemainingTime)
+                if not self._hasDurationUpdate then
+                    self:SetScript("OnUpdate", Bar2DurationOnUpdate)
+                    self._hasDurationUpdate = true
+                end
+            end
+        elseif self.buffConfig and self.buffConfig.barMode == "ironfur" then
+            self:SetMinMaxValues(0, 1)
+            if not self._hasIronfurUpdate then
+                self:SetScript("OnUpdate", UpdateIronfurSystem)
+                self._hasIronfurUpdate = true
             end
         else
             if self._hasDurationUpdate then self:SetScript("OnUpdate", nil); self._hasDurationUpdate = false end
+            if self._hasIronfurUpdate then self:SetScript("OnUpdate", nil); self._hasIronfurUpdate = false end
             local countBar = auraData.applications or 0
             if self.countStack then self.countStack:SetText(countBar) end
             self:SetValue(countBar, Enum.StatusBarInterpolation.ExponentialEaseOut)
@@ -442,7 +556,22 @@ bar2Frame = CreateFrame("StatusBar", "ResourceBar2", UIParent, barConfigs[2].tem
 Mixin(bar2Frame, ResourceBar2Mixin)
 bar2Frame:SetSize(barConfigs[2].width, barConfigs[2].height)
 bar2Frame:SetPoint("TOP", bar1Frame, "BOTTOM", 0, barConfigs[2].y)
-bar2Frame:SetScript("OnEvent", function(self) if self.UpdateRuneSystem then self:UpdateRuneSystem() end end)
+
+-- 이벤트 등록
+bar2Frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+bar2Frame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+bar2Frame:RegisterEvent("PLAYER_TALENT_UPDATE")
+bar2Frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+
+bar2Frame:SetScript("OnEvent", function(self, event, ...)
+    -- Mixin된 OnEvent 호출
+    self:OnEvent(event, ...)
+    
+    -- 룬 시스템 특수 처리
+    if event == "RUNE_POWER_UPDATE" and self.UpdateRuneSystem then
+        self:UpdateRuneSystem()
+    end
+end)
 
 local updater = CreateFrame("Frame"); Mixin(updater, ResourceBar2UpdaterMixin)
 -- 실시간 설정 반영 함수

@@ -14,14 +14,14 @@ local barConfigs = {
 local classConfig = {
     ["DEATHKNIGHT"] = { [1] = {{barMode = "rune"}}, [2] = {{barMode = "rune"}}, [3] = {{barMode = "rune"}} },
     ["DEMONHUNTER"] = { [2] = {{spellID = 203981, barMode = "stack", maxStack = 6}} }, -- 악탱 영혼파편
-    ["DRUID"] = { [3] = {{spellID = 192081, barMode = "duration", duration = 7}} }, -- 수드 무쇠가죽
+    ["DRUID"] = { [3] = {{spellID = 192081, barMode = "duration"}} }, -- 수드 무쇠가죽
     ["MONK"] = { [1] = {{barMode = "stagger"}} }, -- 양조 시간차
     ["SHAMAN"] = { [3] = {{spellID = 51564, barMode = "stack", maxStack = 3}} }, -- 복술 굽이치는물결
     ["WARRIOR"] = {
-        [1] = {{spellID = 107574, barMode = "duration", duration = 20}}, -- 무전 투신
+        [1] = {{spellID = 167105, barMode = "duration"}}, -- 무전 거강
         [2] = {
             {spellID = 12950,  barMode = "stack",    maxStack = 4, requiredSpell = 12950},  -- 분전 소용돌이연마
-            {spellID = 184361, barMode = "duration", duration = 4,  excludedSpell = 12950},  -- 분전 격노
+            {spellID = 184361, barMode = "duration", excludedSpell = 12950},  -- 분전 격노
         },
         [3] = {{spellID = 190456, barMode = "stack", maxStack = 100}} -- 전탱 고통감내
     },
@@ -161,17 +161,20 @@ function ResourceBar2Mixin:GetSpecColor()
     return cachedSpecColor
 end
 
+-- 타이머 텍스트 업데이트용 (SetTimerDuration은 바만 업데이트하므로 텍스트는 필요시 별도 처리)
 local function Bar2DurationOnUpdate(f)
-    local durObj = C_UnitAuras.GetAuraDuration(f._durationUnit, f._durationAuraID)
-    if not durObj then
-        -- 아우라 만료 또는 사라짐 → OnUpdate 스스로 해제
-        f:SetScript("OnUpdate", nil)
-        f._hasDurationUpdate = false
-        return
+    local item = f.viewerItem
+    if not item then return end
+    
+    local auraDataUnit = rawget(item, "auraDataUnit")
+    local auraInstanceID = rawget(item, "auraInstanceID")
+    if not auraDataUnit or not auraInstanceID then return end
+
+    local durObj = C_UnitAuras.GetAuraDuration(auraDataUnit, auraInstanceID)
+    if durObj and f.countStack then
+        local rem = durObj:GetRemainingDuration()
+        f.countStack:SetFormattedText("%.0f", rem)
     end
-    local rem = durObj:GetRemainingDuration()
-    f:SetValue(rem, Enum.StatusBarInterpolation.ExponentialEaseOut)
-    if f.countStack then f.countStack:SetFormattedText("%.0f", rem) end
 end
 
 function ResourceBar2Mixin:UpdateStackTicks(maxStack)
@@ -360,11 +363,13 @@ function ResourceBar2Mixin:Update()
     local auraData = C_UnitAuras.GetAuraDataByAuraInstanceID(unit, auraID)
     if auraData then
         if self.buffConfig and self.buffConfig.barMode == "duration" then
-            self._durationUnit  = unit
-            self._durationAuraID = auraID
-            if not self._hasDurationUpdate then
-                self:SetScript("OnUpdate", Bar2DurationOnUpdate)
-                self._hasDurationUpdate = true
+            local durObj = C_UnitAuras.GetAuraDuration(unit, auraID)
+            if durObj then
+                self:SetTimerDuration(durObj, Enum.StatusBarInterpolation.ExponentialEaseOut, Enum.StatusBarTimerDirection.RemainingTime)
+                if not self._hasDurationUpdate then
+                    self:SetScript("OnUpdate", Bar2DurationOnUpdate)
+                    self._hasDurationUpdate = true
+                end
             end
         else
             if self._hasDurationUpdate then self:SetScript("OnUpdate", nil); self._hasDurationUpdate = false end
