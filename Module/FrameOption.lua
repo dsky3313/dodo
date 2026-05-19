@@ -8,7 +8,8 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-dodoDB = dodoDB or {}
+local module = {}
+dodo:RegisterModule("FrameOption", module)
 
 local FrameScaleOption = {
     gameMenuFrame = 0.9,
@@ -31,7 +32,7 @@ local thf = TalkingHeadFrame
 -- 동작
 -- ==============================
 local function FrameScale()
-    local db = dodoDB or {}
+    local db = dodo.DB or {}
 
     local gmfScale = db.frameScale_gmf or FrameScaleOption.gameMenuFrame
     local mmbbbScale = db.frameScale_mmbbb or FrameScaleOption.bagButton
@@ -46,20 +47,16 @@ end
 -- ==============================
 -- 이벤트
 -- ==============================
-local initFrameScale = CreateFrame("Frame")
-initFrameScale:RegisterEvent("ADDON_LOADED")
-initFrameScale:SetScript("OnEvent", function(self, event, arg1)
-    if arg1 == addonName then
-        dodoDB = dodoDB or {}
-        self:RegisterEvent("PLAYER_LOGIN")
-    elseif event == "PLAYER_LOGIN" then
-        if FrameScale then FrameScale() end
-        self:UnregisterAllEvents()
-        self:SetScript("OnEvent", nil)
-    end
-end)
+function module:OnEnable()
+    if FrameScale then FrameScale() end
+end
 
 -- ==============================
--- 외부 노출 (Option.lua용)
+-- 설정
 -- ==============================
-dodo.FrameScale = FrameScale
+function module:CreateOptions()
+    dodo.UI.Header(dodo.subCategoryInterface, "프레임 크기")
+    dodo.UI.Slider(dodo.subCategoryInterface, "frameScale_gmf", "게임 메뉴", "게임 메뉴 크기를 조절합니다.\n\n|cffaaffaa추천 : 0.9", 0.5, 1.5, 0.1, 1, "Percent", FrameScale)
+    dodo.UI.Slider(dodo.subCategoryInterface, "frameScale_mmbbb", "가방버튼", "가방버튼 크기를 조절합니다.\n\n|cffaaffaa추천 : 0.7", 0.5, 1.5, 0.1, 1, "Percent", FrameScale)
+    dodo.UI.Slider(dodo.subCategoryInterface, "frameScale_th", "말머리", "말머리 크기를 조절합니다.\n\n|cffaaffaa추천 : 0.8", 0.5, 1.5, 0.1, 1, "Percent", FrameScale)
+end

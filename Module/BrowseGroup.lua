@@ -8,7 +8,8 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-dodoDB = dodoDB or {}
+local module = {}
+dodo:RegisterModule("BrowseGroup", module)
 
 -- ==============================
 -- 캐싱
@@ -38,7 +39,7 @@ returnGroupsBtn:Hide()
 -- 동작
 -- ==============================
 local function updateBtn()
-    local isEnabled = (dodoDB.useBrowseGroup ~= false)
+    local isEnabled = (dodo.DB.useBrowseGroup ~= false)
     if not isEnabled or not LFGListFrame then
         if browseGroupsBtn:IsShown() then browseGroupsBtn:Hide() end
         if returnGroupsBtn:IsShown() then returnGroupsBtn:Hide() end
@@ -118,25 +119,35 @@ end
 -- ==============================
 -- 이벤트
 -- ==============================
-local initBrowseGroupBtn = CreateFrame("Frame")
-initBrowseGroupBtn:RegisterEvent("ADDON_LOADED")
-initBrowseGroupBtn:RegisterEvent("PARTY_LEADER_CHANGED")
-initBrowseGroupBtn:RegisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
+-- ==============================
+-- 초기화 & 옵션 UI
+-- ==============================
+function module:OnEnable()
+    local initBrowseGroupBtn = CreateFrame("Frame")
+    initBrowseGroupBtn:RegisterEvent("ADDON_LOADED")
+    initBrowseGroupBtn:RegisterEvent("PARTY_LEADER_CHANGED")
+    initBrowseGroupBtn:RegisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
 
-initBrowseGroupBtn:SetScript("OnEvent", function(self, event, arg1)
-    if event == "ADDON_LOADED" and arg1 == "Blizzard_GroupFinder" then
-        initBtn()
-    elseif event == "PARTY_LEADER_CHANGED" or event == "LFG_LIST_ACTIVE_ENTRY_UPDATE" then
-        if not initialized then 
-            if C_AddOns.IsAddOnLoaded("Blizzard_GroupFinder") then initBtn() end
-        else 
-            updateBtn() 
+    initBrowseGroupBtn:SetScript("OnEvent", function(self, event, arg1)
+        if event == "ADDON_LOADED" and arg1 == "Blizzard_GroupFinder" then
+            initBtn()
+        elseif event == "PARTY_LEADER_CHANGED" or event == "LFG_LIST_ACTIVE_ENTRY_UPDATE" then
+            if not initialized then 
+                if C_AddOns.IsAddOnLoaded("Blizzard_GroupFinder") then initBtn() end
+            else 
+                updateBtn() 
+            end
         end
-    end
-end)
+    end)
 
-if C_AddOns and C_AddOns.IsAddOnLoaded("Blizzard_GroupFinder") then
-    initBtn()
+    if C_AddOns and C_AddOns.IsAddOnLoaded("Blizzard_GroupFinder") then
+        initBtn()
+    end
 end
 
-dodo.BrowseGroup = updateBtn
+-- ==============================
+-- 설정
+-- ==============================
+function module:CreateOptions()
+    dodo.UI.Checkbox(dodo.subCategoryParty, "useBrowseGroup", "파티 탐색하기 버튼", "파티원일 경우에도 '파티 탐색하기' 버튼을 표시합니다.", false, updateBtn)
+end

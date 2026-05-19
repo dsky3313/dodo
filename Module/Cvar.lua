@@ -3,7 +3,6 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-dodoDB = dodoDB or {}
 
 local CreateFrame = CreateFrame
 local SetCVar = SetCVar
@@ -14,8 +13,8 @@ local NAMEPLATE_ONLY_NAME = "nameplateShowOnlyNameForFriendlyPlayerUnits"
 -- 동작
 -- ==============================
 local function nameplateFriendly()
-    if not dodoDB then return end
-    local isEnabled = (dodoDB.useNameplateFriendly ~= false)
+    if not dodo.DB then return end
+    local isEnabled = (dodo.DB.useNameplateFriendly ~= false)
 
     if isEnabled then
         SetCVar(NAMEPLATE_CLASS_COLOR, 1)
@@ -27,24 +26,39 @@ local function nameplateFriendly()
 end
 
 -- ==============================
--- 이벤트
+-- 모듈 & 이벤트
 -- ==============================
-local initNameplate = CreateFrame("Frame")
-initNameplate:RegisterEvent("ADDON_LOADED")
-initNameplate:SetScript("OnEvent", function(self, event, arg1)
-    if arg1 == addonName then
-        dodoDB = dodoDB or {}
-        self:RegisterEvent("PLAYER_ENTERING_WORLD")
-    elseif event == "PLAYER_ENTERING_WORLD" then
-        if nameplateFriendly then nameplateFriendly() end
-        self:UnregisterAllEvents()
-        self:SetScript("OnEvent", nil)
-    end
-end)
+local module = {}
+dodo:RegisterModule("CVar", module)
 
-dodo.nameplateFriendly = nameplateFriendly
+function module:OnEnable()
+    nameplateFriendly()
+end
 
+-- ==============================
+-- 설정
+-- ==============================
+function module:CreateOptions()
+    if not dodo.mainCategory then return end
+    if self.optionsCreated then return end
 
+    local Settings = Settings
+    local SettingsPanel = SettingsPanel
+
+    local mainCategory = dodo.mainCategory
+    local layoutMain = SettingsPanel:GetLayout(mainCategory)
+
+    layoutMain:AddInitializer(CreateSettingsListSectionHeaderInitializer("이름표"))
+    dodo.UI.Checkbox(mainCategory, "useNameplateFriendly", "아군 이름표 자동 설정", "아군 이름표에 클래스 색상을 적용하고 이름만 표시합니다.", false, nameplateFriendly)
+
+    self.optionsCreated = true
+end
+
+if SettingsPanel then
+    SettingsPanel:HookScript("OnShow", function()
+        module:CreateOptions()
+    end)
+end
 
 -- encounterWarningsEnabled 1
 -- damageMeterEnabled 1

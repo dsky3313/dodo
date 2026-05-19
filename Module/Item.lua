@@ -9,7 +9,6 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-dodoDB = dodoDB or {}
 
 -- API 로컬 캐싱
 local _G = _G
@@ -184,7 +183,7 @@ local function update_slots(unit, slotData)
             local hasGems = (gems ~= nil);
 
             -- 배경 그라데이션 및 마법부여
-            if dodoDB.useEnhancedCharFrame and data.tex then
+            if dodo.DB and dodo.DB.useEnhancedCharFrame and data.tex then
                 local r, g, b = 1, 1, 1;
 
                 if data.isEnchantSlot then
@@ -220,7 +219,7 @@ local function update_slots(unit, slotData)
             end
 
             -- 아이템 레벨
-            if dodoDB.useItemLevel then
+            if dodo.DB and dodo.DB.useItemLevel then
                 local itemLoc = ItemLocation:CreateFromEquipmentSlot(data.slotID);
                 if unit == "player" and itemLoc and C_Item.DoesItemExist(itemLoc) then
                     local ilvl = C_Item.GetCurrentItemLevel(itemLoc);
@@ -247,7 +246,7 @@ local function update_slots(unit, slotData)
             end
 
             -- 보석 아이콘 표시
-            if dodoDB.useEnhancedCharFrame then
+            if dodo.DB and dodo.DB.useEnhancedCharFrame then
                 for i = 1, MAX_GEMS do
                     if gems and gems[i] then
                         data.gemBgs[i]:Show();
@@ -374,7 +373,7 @@ end
 local function apply_wide_layout()
     if not PaperDollFrame or not PaperDollFrame:IsShown() then return end
 
-    if not dodoDB.useEnhancedCharFrame then
+    if not dodo.DB or not dodo.DB.useEnhancedCharFrame then
         return;
     end
 
@@ -433,7 +432,7 @@ local function update_bag_slot(button)
     end
 
     local ilvlFS = bagSlotCache[button].ilvlFS;
-    if not dodoDB.useItemLevel then
+    if not dodo.DB or not dodo.DB.useItemLevel then
         ilvlFS:Hide();
         return;
     end

@@ -4,6 +4,6 @@
 .vscode/
 .github/
 temp/
-AGENTS.md
+Agents.md
 CLAUDE.md
 skills-lock.json

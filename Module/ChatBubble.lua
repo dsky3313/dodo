@@ -8,7 +8,8 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-dodoDB = dodoDB or {}
+local module = {}
+dodo:RegisterModule("ChatBubble", module)
 
 local chatbubbleFontSize = 10
 
@@ -32,10 +33,10 @@ local ChatBubbleFont = ChatBubbleFont
 -- 동작
 -- ==============================
 local function chatBubble()
-    if not dodoDB or not ChatBubbleFont then return end
+    if not dodo.DB or not ChatBubbleFont then return end
 
-    local fontPath = dodoDB.chatbubbleFontPath or "Fonts\\2002.TTF"
-    local fontSize = dodoDB.chatbubbleFontSize or chatbubbleFontSize
+    local fontPath = dodo.DB.chatbubbleFontPath or "Fonts\\2002.TTF"
+    local fontSize = dodo.DB.chatbubbleFontSize or chatbubbleFontSize
     local fontFlag = "OUTLINE"
 
     local curPath, curSize, curFlag = ChatBubbleFont:GetFont()
@@ -47,17 +48,15 @@ end
 -- ==============================
 -- 이벤트
 -- ==============================
-local initChatBubble = CreateFrame("Frame")
-initChatBubble:RegisterEvent("ADDON_LOADED")
-initChatBubble:SetScript("OnEvent", function(self, event, arg1)
-    if arg1 == addonName then
-        dodoDB = dodoDB or {}
-        self:RegisterEvent("PLAYER_LOGIN")
-    elseif event == "PLAYER_LOGIN" then
-        if chatBubble then chatBubble() end
-        self:UnregisterAllEvents()
-        self:SetScript("OnEvent", nil)
-    end
-end)
+function module:OnEnable()
+    if chatBubble then chatBubble() end
+end
 
-dodo.ChatBubble = chatBubble
+-- ==============================
+-- 설정
+-- ==============================
+function module:CreateOptions()
+    dodo.UI.Header(dodo.subCategoryInterface, "말풍선")
+    dodo.UI.DropDown(dodo.subCategoryInterface, "chatbubbleFontPath", "말풍선 글꼴", "말풍선에 적용할 글꼴를 선택하세요.", dodo.chatbubbleFontTable, dodo.chatbubbleFontTable[1].value, chatBubble)
+    dodo.UI.Slider(dodo.subCategoryInterface, "chatbubbleFontSize", "말풍선 글꼴 크기", "말풍선 글꼴 크기를 변경합니다.", 8, 14, 1, 1, "Integer", chatBubble)
+end

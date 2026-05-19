@@ -3,13 +3,18 @@
 ..\FrameXML\UI.xsd">
     <StatusBar name="ResourceBar1Template" virtual="true">
         <Size x="276" y="12"/>
-        <BarTexture atlas="UI-HUD-CoolDownManager-Bar" setAllPoints="true"/>
+        <BarTexture atlas="UI-HUD-CoolDownManager-Bar">
+            <Anchors>
+                <Anchor point="TOPLEFT" x="0" y="0"/>
+                <Anchor point="BOTTOMRIGHT" x="-6" y="0"/>
+            </Anchors>
+        </BarTexture>
         <Layers>
             <Layer level="BACKGROUND">
                 <Texture parentKey="BarBG" atlas="UI-HUD-CoolDownManager-Bar-BG">
                     <Anchors>
                         <Anchor point="TOPLEFT" x="-2" y="2"/>
-                        <Anchor point="BOTTOMRIGHT" x="6" y="-7"/>
+                        <Anchor point="BOTTOMRIGHT" x="4" y="-7"/>
                     </Anchors>
                 </Texture>
             </Layer>
@@ -25,7 +30,12 @@
     
     <StatusBar name="ResourceBar2Template" virtual="true">
         <Size x="270" y="8"/>
-        <BarTexture atlas="UI-HUD-CoolDownManager-Bar" setAllPoints="true"/>
+        <BarTexture atlas="UI-HUD-CoolDownManager-Bar">
+            <Anchors>
+                <Anchor point="TOPLEFT" x="0" y="0"/>
+                <Anchor point="BOTTOMRIGHT" x="-6" y="0"/>
+            </Anchors>
+        </BarTexture>
         <Frames>
             <Cooldown parentKey="Cooldown" />
         </Frames>
@@ -34,7 +44,7 @@
                 <Texture parentKey="BarBG" atlas="UI-HUD-CoolDownManager-Bar-BG">
                     <Anchors>
                         <Anchor point="TOPLEFT" x="-2" y="2"/>
-                        <Anchor point="BOTTOMRIGHT" x="6" y="-7"/>
+                        <Anchor point="BOTTOMRIGHT" x="4" y="-7"/>
                     </Anchors>
                 </Texture>
             </Layer>

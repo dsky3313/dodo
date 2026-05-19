@@ -1,7 +1,9 @@
 -- ==============================
 -- 테이블
 -- ==============================
+---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
+dodo.UI = dodo.UI or {}
 
 local ipairs = ipairs
 local math_floor = math.floor
@@ -21,11 +23,21 @@ local Formatters = {
 }
 
 -- ==============================
+-- 헤더
+-- ==============================
+function dodo.UI.Header(category, text)
+    local layout = SettingsPanel:GetLayout(category)
+    if layout then
+        layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(text))
+    end
+end
+
+-- ==============================
 -- 체크박스
 -- ==============================
-function Checkbox(category, varName, label, tooltip, default, func)
+function dodo.UI.Checkbox(category, varName, label, tooltip, default, func)
     local varID = "dodo_" .. varName
-    local setting = Settings.GetSetting(varID) or Settings.RegisterAddOnSetting(category, varID, varName, dodoDB, Settings.VarType.Boolean, label, default)
+    local setting = Settings.GetSetting(varID) or Settings.RegisterAddOnSetting(category, varID, varName, dodo.DB, Settings.VarType.Boolean, label, default)
     local initializer = Settings.CreateControlInitializer("dodoCheckboxTemplate", setting, nil, tooltip)
 
     setting:SetValueChangedCallback(function(_, value)
@@ -41,9 +53,9 @@ end
 -- ==============================
 -- 드롭다운
 -- ==============================
-function DropDown(category, varName, label, tooltip, options, default, func)
+function dodo.UI.DropDown(category, varName, label, tooltip, options, default, func)
     local varID = "dodo_" .. varName
-    local setting = Settings.GetSetting(varID) or Settings.RegisterAddOnSetting(category, varID, varName, dodoDB, Settings.VarType.String, label, default or options[1].value)
+    local setting = Settings.GetSetting(varID) or Settings.RegisterAddOnSetting(category, varID, varName, dodo.DB, Settings.VarType.String, label, default or options[1].value)
 
     local function GetOptions()
         local container = Settings.CreateControlTextContainer()
@@ -65,9 +77,9 @@ end
 -- ==============================
 -- 슬라이더
 -- ==============================
-function Slider(category, varName, label, tooltip, min, max, step, default, formatType, func)
+function dodo.UI.Slider(category, varName, label, tooltip, min, max, step, default, formatType, func)
     local varID = "dodo_" .. varName
-    local setting = Settings.GetSetting(varID) or Settings.RegisterAddOnSetting(category, varID, varName, dodoDB, Settings.VarType.Number, label, default or min or 0)
+    local setting = Settings.GetSetting(varID) or Settings.RegisterAddOnSetting(category, varID, varName, dodo.DB, Settings.VarType.Number, label, default or min or 0)
     local sliderOptions = Settings.CreateSliderOptions(min, max, step)
     sliderOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, Formatters[formatType] or Formatters["Decimal1"])
     local initializer = Settings.CreateControlInitializer("dodoSliderTemplate", setting, sliderOptions, tooltip)
@@ -85,12 +97,12 @@ end
 -- ==============================
 -- 체크박스 드롭다운
 -- ==============================
-function CheckBoxDropDown(category, varNameCB, varNameDD, label, tooltip, options, defaultCB, defaultDD, func)
+function dodo.UI.CheckBoxDropDown(category, varNameCB, varNameDD, label, tooltip, options, defaultCB, defaultDD, func)
     local varID_CB = "dodo_" .. varNameCB
     local varID_DD = "dodo_" .. varNameDD
-    local cbSetting = Settings.GetSetting(varID_CB) or Settings.RegisterAddOnSetting(category, varID_CB, varNameCB, dodoDB, Settings.VarType.Boolean, label, defaultCB or false)
+    local cbSetting = Settings.GetSetting(varID_CB) or Settings.RegisterAddOnSetting(category, varID_CB, varNameCB, dodo.DB, Settings.VarType.Boolean, label, defaultCB or false)
     local fallbackValue = (options and options[1]) and options[1].value or ""
-    local ddSetting = Settings.GetSetting(varID_DD) or Settings.RegisterAddOnSetting(category, varID_DD, varNameDD, dodoDB, Settings.VarType.String, label, defaultDD or fallbackValue)
+    local ddSetting = Settings.GetSetting(varID_DD) or Settings.RegisterAddOnSetting(category, varID_DD, varNameDD, dodo.DB, Settings.VarType.String, label, defaultDD or fallbackValue)
 
     local function GetOptions()
         local container = Settings.CreateControlTextContainer()
@@ -119,11 +131,11 @@ end
 -- ==============================
 -- 체크박스 슬라이더
 -- ==============================
-function CheckboxSlider(category, varNameCB, varNameSlider, label, tooltip, min, max, step, defaultCB, defaultSlider, formatType, func)
+function dodo.UI.CheckboxSlider(category, varNameCB, varNameSlider, label, tooltip, min, max, step, defaultCB, defaultSlider, formatType, func)
     local varID_CB = "dodo_" .. varNameCB
     local varID_Slider = "dodo_" .. varNameSlider
-    local cbSetting = Settings.GetSetting(varID_CB) or Settings.RegisterAddOnSetting(category, varID_CB, varNameCB, dodoDB, Settings.VarType.Boolean, label, defaultCB or false)
-    local sliderSetting = Settings.GetSetting(varID_Slider) or Settings.RegisterAddOnSetting(category, varID_Slider, varNameSlider, dodoDB, Settings.VarType.Number, label, tonumber(defaultSlider) or min)
+    local cbSetting = Settings.GetSetting(varID_CB) or Settings.RegisterAddOnSetting(category, varID_CB, varNameCB, dodo.DB, Settings.VarType.Boolean, label, defaultCB or false)
+    local sliderSetting = Settings.GetSetting(varID_Slider) or Settings.RegisterAddOnSetting(category, varID_Slider, varNameSlider, dodo.DB, Settings.VarType.Number, label, tonumber(defaultSlider) or min)
     local sliderOptions = Settings.CreateSliderOptions(min, max, step)
     sliderOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, Formatters[formatType] or Formatters["Percent"])
     local data = { name = label, tooltip = tooltip, cbSetting = cbSetting, sliderSetting = sliderSetting, sliderOptions = sliderOptions, }

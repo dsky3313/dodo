@@ -8,9 +8,17 @@
 
 # 2020.11.23 제작
 
+Libs\LibEditMode\LibStub\LibStub.lua
+Libs\LibEditMode\embed.xml
+Libs\oUF\oUF.xml
+
 UI/OptionUI.xml
 UI/OptionUI.lua
 UI/Icon.lua
+
+Core/Engine.lua
+Core/Modules.lua
+
 UI/ActionBar.xml
 UI/Debuff.xml
 UI/ResourceBar.xml
@@ -19,10 +27,12 @@ Module\Audio.lua
 Module\BloodBrez.lua
 Module\BrowseGroup.lua
 Module\Camera.lua
+Module\ChatFrame.lua
 Module\ChatBubble.lua
-#Module\CVar.lua
+Module\CVar.lua
 Module\DamageMeter.lua
 Module\Debuff.lua
+Module\Editmode.lua
 Module\DeleteNow.lua
 Module\ExpFilter.lua
 Module\Friends.lua
@@ -39,6 +49,7 @@ Module\QuickBobber.lua
 Module\ResourceBar.lua
 Module\Slash.lua
 Module\Tooltip.lua
+Module\Unitframe.lua
 Module\Teleport.lua 
 Module\WMarker.lua 
 Module\WowheadLink.lua 

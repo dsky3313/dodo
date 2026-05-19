@@ -5,12 +5,14 @@
 -- Teleport Menu (https://www.curseforge.com/wow/addons/teleport-me-nu)
 
 -- ==============================
--- 테이블
+-- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-dodoDB = dodoDB or {}
-local IconLib = dodo.IconLib
+local module = {}
+dodo:RegisterModule("Teleport", module)
+
+local LibIcon = dodo.LibIcon
 
 local iconConfig = {
     BUTTON_SIZE = 36,   -- 아이콘 크기
@@ -160,6 +162,23 @@ local teleportTable = {
     { id = 253629, type = "item", category = "ETC", name = "여관" },
 }
 
+-- ==============================
+-- 캐싱
+-- ==============================
+-- abc 가나다 순으로 정렬
+local CreateFrame = CreateFrame
+local GameMenuFrame = GameMenuFrame
+local GetInstanceInfo = GetInstanceInfo
+local InCombatLockdown = InCombatLockdown
+local ipairs = ipairs
+local math_abs = math.abs
+local NineSliceUtil = NineSliceUtil
+local strlenutf8 = strlenutf8
+local table_insert = table.insert
+local UIParent = UIParent
+local UnitFactionGroup = UnitFactionGroup
+local unpack = unpack
+
 local col, row = 0, -1
 local currentCategory = ""
 local teleportIcons = {}
@@ -169,24 +188,12 @@ for _, info in ipairs(expTable) do
     expLookup[info.category] = info
 end
 
-local CreateFrame = CreateFrame
-local GetInstanceInfo = GetInstanceInfo
-local InCombatLockdown = InCombatLockdown
-local ipairs = ipairs
-local strlenutf8 = strlenutf8
-local UnitFactionGroup = UnitFactionGroup
-local unpack = unpack
-local GameMenuFrame = GameMenuFrame
-local NineSliceUtil = NineSliceUtil
-local table = table
-local UIParent = UIParent
-
-local function SetColorFromTable(obj, colorTable, isVertex)
-    if obj and colorTable then
-        if isVertex then
-            obj:SetVertexColor(colorTable[1] or 1, colorTable[2] or 1, colorTable[3] or 1)
+local function set_color_from_table(obj, color_table, is_vertex)
+    if obj and color_table then
+        if is_vertex then
+            obj:SetVertexColor(color_table[1] or 1, color_table[2] or 1, color_table[3] or 1)
         else
-            obj:SetTextColor(colorTable[1] or 1, colorTable[2] or 1, colorTable[3] or 1)
+            obj:SetTextColor(color_table[1] or 1, color_table[2] or 1, color_table[3] or 1)
         end
     end
 end
@@ -196,7 +203,7 @@ end
 -- ==============================
 -- 동적 높이 계산
 local rowCount = #expTable
-local frameHeight = math.abs(iconConfig.START_Y) + (rowCount * iconConfig.ROW_HEIGHT) + 10
+local frameHeight = math_abs(iconConfig.START_Y) + (rowCount * iconConfig.ROW_HEIGHT) + 10
 
 -- 프레임 크기 적용
 local TeleportFrame = CreateFrame("Frame", "TeleportFrame", UIParent, "BackdropTemplate")
@@ -220,7 +227,7 @@ local playerFaction = UnitFactionGroup("player")
 
 -- 시즌 아이콘
 local seasonBtnStartX = iconConfig.BUTTON_START_X + ((iconConfig.BUTTON_SIZE + iconConfig.BUTTON_SPACING) * 6)
-local iconSeasonTitle = IconLib:Create("TeleSeasonTitle", TeleportFrame, {iconsize = {iconConfig.BUTTON_SIZE, iconConfig.BUTTON_SIZE}})
+local iconSeasonTitle = LibIcon:Create("TeleSeasonTitle", TeleportFrame, {iconsize = {iconConfig.BUTTON_SIZE, iconConfig.BUTTON_SIZE}})
 iconSeasonTitle:SetPoint("TOPLEFT", TeleportFrame, "TOPLEFT", seasonBtnStartX, iconConfig.START_Y)
 iconSeasonTitle:ApplyConfig({
     type = "macro",
@@ -257,7 +264,7 @@ for i, data in ipairs(teleportTable) do
                 useTooltip = false,
             }
 
-            local icnoEXP = IconLib:Create("tpEXP" .. data.category, TeleportFrame, iconEXPConfig)
+            local icnoEXP = LibIcon:Create("tpEXP" .. data.category, TeleportFrame, iconEXPConfig)
             icnoEXP:SetPoint("TOPLEFT", TeleportFrame, "TOPLEFT", iconConfig.ICON_X, iconConfig.START_Y - (row * iconConfig.ROW_HEIGHT))
             icnoEXP:ApplyConfig(iconEXPConfig)
             icnoEXP.icon:SetTexture(expinfo and expinfo.iconID or 132311)
@@ -281,14 +288,14 @@ for i, data in ipairs(teleportTable) do
             framestrata = "HIGH",
         }
 
-        local iconTP = IconLib:Create("tpBtn" .. i, TeleportFrame, iconTPConfig)
+        local iconTP = LibIcon:Create("tpBtn" .. i, TeleportFrame, iconTPConfig)
         iconTP:SetPoint("TOPLEFT", TeleportFrame, "TOPLEFT", iconConfig.BUTTON_START_X + (col * (iconConfig.BUTTON_SIZE + iconConfig.BUTTON_SPACING)), iconConfig.START_Y - (row * iconConfig.ROW_HEIGHT))
         iconTP:ApplyConfig(iconTPConfig)
 
         local btnFont, _, btnOutline = iconTP.Name:GetFont()
         iconTP.Name:SetFont(btnFont, (strlenutf8(data.name) >= 4) and 10 or 11, btnOutline)
 
-        table.insert(teleportIcons, iconTP)
+        table_insert(teleportIcons, iconTP)
 
         -- 시즌 아이콘
         if data.isSeason then
@@ -307,15 +314,15 @@ for i, data in ipairs(teleportTable) do
                 framestrata = "HIGH",
             }
 
-            local iconSeason = IconLib:Create("seasonBtn" .. i, TeleportFrame, iconSeasonConfig)
+            local iconSeason = LibIcon:Create("seasonBtn" .. i, TeleportFrame, iconSeasonConfig)
             iconSeason:SetPoint("TOPLEFT", TeleportFrame, "TOPLEFT", seasonBtnStartX + (seasonCol * (iconConfig.BUTTON_SIZE + iconConfig.BUTTON_SPACING) + 50), iconConfig.START_Y - (seasonRow * iconConfig.ROW_HEIGHT))
             iconSeason:ApplyConfig(iconSeasonConfig)
 
-            local btnFont, _, btnOutline = iconSeason.Name:GetFont()
-            iconSeason.Name:SetFont(btnFont, (strlenutf8(data.name) >= 4) and 10 or 11, btnOutline)
+            local sbtnFont, _, sbtnOutline = iconSeason.Name:GetFont()
+            iconSeason.Name:SetFont(sbtnFont, (strlenutf8(data.name) >= 4) and 10 or 11, sbtnOutline)
 
             iconSeason.seasonColor = { 0.1, 1, 0.1 }
-            table.insert(teleportIcons, iconSeason)
+            table_insert(teleportIcons, iconSeason)
 
             seasonCol = seasonCol + 1
             if seasonCol >= 4 then
@@ -328,22 +335,26 @@ for i, data in ipairs(teleportTable) do
     end
 end
 
-local function UpdateUIStatus()
+-- ==============================
+-- 동작 (상태 갱신)
+-- ==============================
+local function update_ui_status()
     if InCombatLockdown() then return end
 
-    for _, icon in ipairs(teleportIcons) do
+    for i = 1, #teleportIcons do
+        local icon = teleportIcons[i]
         if icon.UpdateStatus then icon:UpdateStatus() end
 
         if icon.seasonColor then
-            SetColorFromTable(icon.Name, icon.seasonColor)
-            SetColorFromTable(icon.normalTexture, icon.seasonColor, true)
+            set_color_from_table(icon.Name, icon.seasonColor)
+            set_color_from_table(icon.normalTexture, icon.seasonColor, true)
         end
     end
 end
 
-local function ESCTeleportFrame()
+local function esc_teleport_frame()
     if InCombatLockdown() then return end
-    local isEnabled = (dodoDB and dodoDB.useTeleport ~= false)
+    local isEnabled = (dodo.DB and dodo.DB.enableTeleportModule ~= false)
 
     if isEnabled and GameMenuFrame:IsShown() then
         if not TeleportFrame:IsShown() then
@@ -357,65 +368,95 @@ local function ESCTeleportFrame()
 end
 
 -- ==============================
--- 이벤트
+-- 초기화
 -- ==============================
-TeleportFrame:SetScript("OnShow", UpdateUIStatus)
-
-local initTeleportFrame = CreateFrame("Frame")
-initTeleportFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-
-local function ToggleEvents(enable)
-    if enable then
-        initTeleportFrame:RegisterEvent("SPELL_UPDATE_COOLDOWN")
-        initTeleportFrame:RegisterEvent("BAG_UPDATE_DELAYED")
-        initTeleportFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-        initTeleportFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
-        initTeleportFrame:RegisterEvent("PLAYER_HOUSE_LIST_UPDATED")
-        initTeleportFrame:RegisterEvent("HOUSE_PLOT_ENTERED")
-        initTeleportFrame:RegisterEvent("HOUSE_PLOT_EXITED")
-    else
-        initTeleportFrame:UnregisterEvent("SPELL_UPDATE_COOLDOWN")
-        initTeleportFrame:UnregisterEvent("BAG_UPDATE_DELAYED")
-        initTeleportFrame:UnregisterEvent("PLAYER_REGEN_ENABLED")
-        initTeleportFrame:UnregisterEvent("PLAYER_REGEN_DISABLED")
-        initTeleportFrame:UnregisterEvent("PLAYER_HOUSE_LIST_UPDATED")
-        initTeleportFrame:UnregisterEvent("HOUSE_PLOT_ENTERED")
-        initTeleportFrame:UnregisterEvent("HOUSE_PLOT_EXITED")
+local function initialize()
+    if dodo.DB and dodo.DB.enableTeleportModule == nil then
+        dodo.DB.enableTeleportModule = false
     end
 end
 
-initTeleportFrame:SetScript("OnEvent", function(self, event, ...)
-    if event == "PLAYER_ENTERING_WORLD" then
-        if C_Housing and C_Housing.GetPlayerOwnedHouses then
+-- ==============================
+-- 모듈 생명주기
+-- ==============================
+local menuHooked = false
+function module:OnEnable()
+    initialize()
+
+    TeleportFrame:SetScript("OnShow", update_ui_status)
+
+    local initTeleportFrame = CreateFrame("Frame")
+    initTeleportFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+
+    local function toggle_events(enable)
+        if enable then
+            initTeleportFrame:RegisterEvent("SPELL_UPDATE_COOLDOWN")
+            initTeleportFrame:RegisterEvent("BAG_UPDATE_DELAYED")
+            initTeleportFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+            initTeleportFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
             initTeleportFrame:RegisterEvent("PLAYER_HOUSE_LIST_UPDATED")
-            C_Housing.GetPlayerOwnedHouses()
+            initTeleportFrame:RegisterEvent("HOUSE_PLOT_ENTERED")
+            initTeleportFrame:RegisterEvent("HOUSE_PLOT_EXITED")
+        else
+            initTeleportFrame:UnregisterEvent("SPELL_UPDATE_COOLDOWN")
+            initTeleportFrame:UnregisterEvent("BAG_UPDATE_DELAYED")
+            initTeleportFrame:UnregisterEvent("PLAYER_REGEN_ENABLED")
+            initTeleportFrame:UnregisterEvent("PLAYER_REGEN_DISABLED")
+            initTeleportFrame:UnregisterEvent("PLAYER_HOUSE_LIST_UPDATED")
+            initTeleportFrame:UnregisterEvent("HOUSE_PLOT_ENTERED")
+            initTeleportFrame:UnregisterEvent("HOUSE_PLOT_EXITED")
         end
-        ToggleEvents(true)
-        UpdateUIStatus()
-        return
     end
 
-    if event == "PLAYER_REGEN_ENABLED" then
-        ESCTeleportFrame()
-    elseif event == "PLAYER_REGEN_DISABLED" then
-        TeleportFrame:Hide()
-    elseif event == "PLAYER_HOUSE_LIST_UPDATED" then
-        local housingInfo = ...
-        if housingInfo then
-            dodo.houseData = housingInfo
+    initTeleportFrame:SetScript("OnEvent", function(self, event, ...)
+        if event == "PLAYER_ENTERING_WORLD" then
+            if C_Housing and C_Housing.GetPlayerOwnedHouses then
+                initTeleportFrame:RegisterEvent("PLAYER_HOUSE_LIST_UPDATED")
+                C_Housing.GetPlayerOwnedHouses()
+            end
+            toggle_events(true)
+            update_ui_status()
+            return
+        end
+
+        if event == "PLAYER_REGEN_ENABLED" then
+            esc_teleport_frame()
+        elseif event == "PLAYER_REGEN_DISABLED" then
+            TeleportFrame:Hide()
+        elseif event == "PLAYER_HOUSE_LIST_UPDATED" then
+            local housingInfo = ...
+            if housingInfo then
+                dodo.houseData = housingInfo
+                if TeleportFrame:IsShown() and not InCombatLockdown() then
+                    update_ui_status()
+                end
+            end
+        else
             if TeleportFrame:IsShown() and not InCombatLockdown() then
-                UpdateUIStatus()
+                update_ui_status()
             end
         end
-    else
-        if TeleportFrame:IsShown() and not InCombatLockdown() then
-            UpdateUIStatus()
-        end
+    end)
+
+    if GameMenuFrame and not menuHooked then
+        GameMenuFrame:HookScript("OnShow", esc_teleport_frame)
+        GameMenuFrame:HookScript("OnHide", esc_teleport_frame)
+        menuHooked = true
     end
-end)
 
--- 메뉴 후킹
-GameMenuFrame:HookScript("OnShow", ESCTeleportFrame)
-GameMenuFrame:HookScript("OnHide", ESCTeleportFrame)
-
-dodo.ESCTeleportFrame = ESCTeleportFrame
+    -- dodoEditModePanel 내부에 세부 설정 주입
+    if dodo.RegisterEditModeSetting then
+        dodo.RegisterEditModeSetting("인터페이스", {
+            {
+                name = "던전 텔레포트 메뉴",
+                get = function() return dodo.DB and dodo.DB.enableTeleportModule or false end,
+                set = function(checked)
+                    if dodo.DB then 
+                        dodo.DB.enableTeleportModule = checked 
+                    end
+                    esc_teleport_frame()
+                end
+            }
+        })
+    end
+end

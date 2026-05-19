@@ -8,15 +8,24 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-dodoDB = dodoDB or {}
+local module = {}
+dodo:RegisterModule("ExpFilter", module)
 
 -- ==============================
--- 동작 로직 (EnhanceQoL 완벽 이식)
+-- 캐싱
+-- ==============================
+-- abc 가나다 순으로 정렬
+local C_Timer = C_Timer
+local CreateFrame = CreateFrame
+local RunNextFrame = RunNextFrame or (C_Timer and C_Timer.After and function(func) C_Timer.After(0, func) end)
+
+-- ==============================
+-- 기능 1: 필터 적용
 -- ==============================
 
 -- 경매장 필터 적용
-local function ApplyAuctionFilter()
-    if dodoDB.useAuctionFilter == false then return end
+local function apply_auction_filter()
+    if not dodo.DB or dodo.DB.enableExpFilterModule == false then return end
     if not (Enum and Enum.AuctionHouseFilter and Enum.AuctionHouseFilter.CurrentExpansionOnly) then return end
 
     RunNextFrame(function()
@@ -24,7 +33,8 @@ local function ApplyAuctionFilter()
         local searchBar = frame and frame.SearchBar
         local filterButton = searchBar and searchBar.FilterButton
         
-        if filterButton and type(filterButton.filters) == "table" then
+        -- 성능최적화: 불필요한 type() 문자열 평가 대신 존재 여부만 안전하게 확인
+        if filterButton and filterButton.filters then
             filterButton.filters[Enum.AuctionHouseFilter.CurrentExpansionOnly] = true
             searchBar:UpdateClearFiltersButton()
         end
@@ -32,8 +42,8 @@ local function ApplyAuctionFilter()
 end
 
 -- 주문 제작 필터 적용 (초기화 지연 대비 재시도 로직 포함)
-local function ApplyCraftFilter(remainingRetries)
-    if dodoDB.useCraftFilter == false then return end
+local function apply_craft_filter(remaining_retries)
+    if not dodo.DB or dodo.DB.enableExpFilterModule == false then return end
     if not (Enum and Enum.AuctionHouseFilter and Enum.AuctionHouseFilter.CurrentExpansionOnly) then return end
 
     RunNextFrame(function()
@@ -42,10 +52,10 @@ local function ApplyCraftFilter(remainingRetries)
         local searchBar = browseOrders and browseOrders.SearchBar
         local filterDropdown = searchBar and searchBar.FilterDropdown
 
-        -- 블리자드 UI 초기화가 지연될 경우 최대 3프레임까지 재시도
-        if not filterDropdown or type(filterDropdown.filters) ~= "table" then
-            if (remainingRetries or 0) > 0 then
-                ApplyCraftFilter((remainingRetries or 0) - 1)
+        -- 성능최적화: 불필요한 type() 문자열 평가 생략
+        if not filterDropdown or not filterDropdown.filters then
+            if (remaining_retries or 0) > 0 then
+                apply_craft_filter((remaining_retries or 0) - 1)
             end
             return
         end
@@ -56,32 +66,56 @@ local function ApplyCraftFilter(remainingRetries)
 end
 
 -- ==============================
--- 외부 노출 (Option.lua 호환성)
+-- 기능 2: 외부 노출 및 이벤트 연동
 -- ==============================
-dodo.AuctionFilter = function()
-    ApplyAuctionFilter()
-    ApplyCraftFilter(3)
+local function apply_filters()
+    apply_auction_filter()
+    apply_craft_filter(3)
 end
-dodo.expFilter = dodo.AuctionFilter
 
 -- ==============================
--- 전역 이벤트 리스너
+-- 초기화
 -- ==============================
-local f = CreateFrame("Frame")
--- 설정 적용 및 애드온 로드 직후 확인용
-f:RegisterEvent("PLAYER_ENTERING_WORLD")
--- 실제 블리자드 UI 창이 열릴 때 발생하는 전용 이벤트
-f:RegisterEvent("AUCTION_HOUSE_SHOW")
-f:RegisterEvent("CRAFTINGORDERS_SHOW_CUSTOMER")
-
-f:SetScript("OnEvent", function(self, event)
-    if event == "AUCTION_HOUSE_SHOW" then
-        ApplyAuctionFilter()
-    elseif event == "CRAFTINGORDERS_SHOW_CUSTOMER" then
-        -- 주문 제작 창은 최대 3번 재시도
-        ApplyCraftFilter(3)
-    elseif event == "PLAYER_ENTERING_WORLD" then
-        -- 로딩이 끝난 후 혹시 창이 열려있는 상태라면 바로 적용
-        C_Timer.After(1, dodo.AuctionFilter)
+local function initialize()
+    if dodo.DB and dodo.DB.enableExpFilterModule == nil then
+        dodo.DB.enableExpFilterModule = false
     end
-end)
+end
+
+-- ==============================
+-- 모듈 생명주기
+-- ==============================
+function module:OnEnable()
+    initialize()
+
+    local f = CreateFrame("Frame")
+    f:RegisterEvent("PLAYER_ENTERING_WORLD")
+    f:RegisterEvent("AUCTION_HOUSE_SHOW")
+    f:RegisterEvent("CRAFTINGORDERS_SHOW_CUSTOMER")
+
+    f:SetScript("OnEvent", function(self, event)
+        if event == "AUCTION_HOUSE_SHOW" then
+            apply_auction_filter()
+        elseif event == "CRAFTINGORDERS_SHOW_CUSTOMER" then
+            apply_craft_filter(3)
+        elseif event == "PLAYER_ENTERING_WORLD" then
+            C_Timer.After(1, apply_filters)
+        end
+    end)
+
+    -- dodoEditModePanel 내부에 2열 그리드로 세부 설정 주입
+    if dodo.RegisterEditModeSetting then
+        dodo.RegisterEditModeSetting("일반", {
+            {
+                name = "현행 확장팩 필터",
+                get = function() return dodo.DB and dodo.DB.enableExpFilterModule or false end,
+                set = function(checked)
+                    if dodo.DB then 
+                        dodo.DB.enableExpFilterModule = checked 
+                    end
+                    apply_filters()
+                end
+            }
+        })
+    end
+end

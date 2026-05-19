@@ -3,7 +3,9 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-dodoDB = dodoDB or {}
+local LibEditMode = LibStub and LibStub("LibEditMode", true)
+local module = {}
+dodo:RegisterModule("ResourceBar", module)
 
 -- 바 크기
 local barConfigs = {
@@ -144,16 +146,28 @@ local function UpdateBar1()
         bar1Frame:SetMinMaxValues(0, max)
         bar1Frame:SetValue(current, Enum.StatusBarInterpolation.ExponentialEaseOut)
         if bar1Frame.countPower then
-            if pType == 0 then bar1Frame.countPower:SetFormattedText("%d", UnitPowerPercent("player", 0, false, curve))
-            else bar1Frame.countPower:SetText(current) end
+            if pType == 0 then
+                local pct = UnitPowerPercent("player", 0, false, CurveConstants and CurveConstants.ScaleTo100)
+                if pct then
+                    bar1Frame.countPower:SetFormattedText("%d", pct)
+                else
+                    bar1Frame.countPower:SetText("0")
+                end
+            else
+                bar1Frame.countPower:SetText(current)
+            end
         end
     end
 end
 
 local updateTicker = nil
 local function OnCombatChange(inCombat)
-    if updateTicker then updateTicker:Cancel() end
-    updateTicker = C_Timer.NewTicker(inCombat and 0.1 or 0.5, UpdateBar1)
+    if updateTicker then updateTicker:Cancel(); updateTicker = nil end
+    local isEnabled = (dodo.DB and dodo.DB.enableResourceBarModule ~= false)
+    local useBar1 = (dodo.DB and dodo.DB.useResourceBar1 ~= false)
+    if isEnabled and useBar1 then
+        updateTicker = C_Timer.NewTicker(inCombat and 0.1 or 0.5, UpdateBar1)
+    end
 end
 
 local combatFrame = CreateFrame("Frame")
@@ -557,11 +571,20 @@ Mixin(bar2Frame, ResourceBar2Mixin)
 bar2Frame:SetSize(barConfigs[2].width, barConfigs[2].height)
 bar2Frame:SetPoint("TOP", bar1Frame, "BOTTOM", 0, barConfigs[2].y)
 
--- 이벤트 등록
-bar2Frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-bar2Frame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-bar2Frame:RegisterEvent("PLAYER_TALENT_UPDATE")
-bar2Frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+local function ToggleBar2Events(enable)
+    if enable then
+        bar2Frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+        bar2Frame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+        bar2Frame:RegisterEvent("PLAYER_TALENT_UPDATE")
+        bar2Frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+        local _, class = UnitClass("player")
+        if class == "DEATHKNIGHT" then
+            bar2Frame:RegisterEvent("RUNE_POWER_UPDATE")
+        end
+    else
+        bar2Frame:UnregisterAllEvents()
+    end
+end
 
 bar2Frame:SetScript("OnEvent", function(self, event, ...)
     -- Mixin된 OnEvent 호출
@@ -574,30 +597,208 @@ bar2Frame:SetScript("OnEvent", function(self, event, ...)
 end)
 
 local updater = CreateFrame("Frame"); Mixin(updater, ResourceBar2UpdaterMixin)
--- 실시간 설정 반영 함수
-function dodo.UpdateResourceBarVisibility()
-    if dodoDB.useResourceBar1 ~= false then
-        bar1Frame:Show()
-        UpdateBar1()
-    else
-        bar1Frame:Hide()
+function dodoUpdateResourceBarOption()
+    if not bar1Frame or not bar2Frame then return end
+
+    local width = (dodo.DB and dodo.DB.resourceBarWidth) or 270
+    local height = (dodo.DB and dodo.DB.resourceBarHeight) or 10
+    local height2 = math.max(height - 3, 5)
+
+    bar1Frame:SetSize(width, height)
+    bar2Frame:SetSize(width, height2)
+
+    local fontSize = (dodo.DB and dodo.DB.resourceBarFontSize) or 12
+    if bar1Frame.countPower then
+        local font, _, flags = bar1Frame.countPower:GetFont()
+        bar1Frame.countPower:SetFont(font, fontSize, flags)
+    end
+    if bar2Frame.countStack then
+        local font, _, flags = bar2Frame.countStack:GetFont()
+        bar2Frame.countStack:SetFont(font, fontSize, flags)
     end
 
-    if dodoDB.useResourceBar2 ~= false then
+    if dodo.DB and dodo.DB.resourceBarX and dodo.DB.resourceBarY then
+        bar1Frame:ClearAllPoints()
+        bar1Frame:SetPoint(dodo.DB.resourceBarPoint or "CENTER", UIParent, dodo.DB.resourceBarPoint or "CENTER", dodo.DB.resourceBarX, dodo.DB.resourceBarY)
+    else
+        bar1Frame:ClearAllPoints()
+        bar1Frame:SetPoint("CENTER", UIParent, "CENTER", 0, -220)
+    end
+
+    bar2Frame:ClearAllPoints()
+    bar2Frame:SetPoint("TOP", bar1Frame, "BOTTOM", 0, -4)
+end
+
+local function UpdateResourceBarVisibility()
+    dodoUpdateResourceBarOption()
+
+    local isEnabled = (dodo.DB and dodo.DB.enableResourceBarModule ~= false)
+    if not isEnabled then
+        bar1Frame:Hide()
+        bar2Frame:Hide()
+        if staggerTicker then staggerTicker:Cancel(); staggerTicker = nil end
+        if updateTicker then updateTicker:Cancel(); updateTicker = nil end
+        ToggleBar2Events(false)
+        return
+    end
+
+    if dodo.DB and dodo.DB.useResourceBar1 ~= false then
+        bar1Frame:Show()
+        UpdateBar1()
+        OnCombatChange(UnitAffectingCombat("player"))
+    else
+        bar1Frame:Hide()
+        if updateTicker then updateTicker:Cancel(); updateTicker = nil end
+    end
+
+    if dodo.DB and dodo.DB.useResourceBar2 ~= false then
         bar2Frame:Show()
+        ToggleBar2Events(true)
         UpdateCurrentSpecConfig()
     else
         bar2Frame:Hide()
+        ToggleBar2Events(false)
         if staggerTicker then staggerTicker:Cancel(); staggerTicker = nil end
     end
 end
 
-local init = CreateFrame("Frame"); init:RegisterEvent("PLAYER_LOGIN")
-init:SetScript("OnEvent", function(self)
+dodo.UpdateResourceBarModuleState = function()
+    UpdateResourceBarVisibility()
+end
+
+function module:OnEnable()
     updater:OnLoad()
-    dodo.UpdateResourceBarVisibility()
-    self:UnregisterEvent("PLAYER_LOGIN")
-end)
+    dodoUpdateResourceBarOption()
+    UpdateResourceBarVisibility()
+
+    -- LibEditMode 등록
+    bar1Frame.editModeName = "dodo 개인 자원바"
+    if LibEditMode then
+        LibEditMode:AddFrame(
+            bar1Frame,
+            function(frame, layoutName, point, x, y)
+                if dodo.DB then
+                    dodo.DB.resourceBarX = x
+                    dodo.DB.resourceBarY = y
+                    dodo.DB.resourceBarPoint = point
+                end
+            end,
+            {
+                point = "CENTER",
+                x = 0,
+                y = -220,
+            },
+            "dodo 개인 자원바"
+        )
+
+        LibEditMode:AddFrameSettings(bar1Frame, {
+            {
+                kind = LibEditMode.SettingType.Checkbox,
+                name = "플레이어 자원바",
+                desc = "마나/분노 등의 자원을 나타내는 기본 자원바를 활성화합니다.",
+                default = true,
+                get = function()
+                    return (dodo.DB and dodo.DB.useResourceBar1 ~= false)
+                end,
+                set = function(_, newValue)
+                    if dodo.DB then dodo.DB.useResourceBar1 = newValue end
+                    UpdateResourceBarVisibility()
+                end,
+            },
+            {
+                kind = LibEditMode.SettingType.Checkbox,
+                name = "버프 추적 바",
+                desc = "특성에 따른 주요 버프를 나타내는 트래킹 바를 활성화합니다.",
+                default = true,
+                get = function()
+                    return (dodo.DB and dodo.DB.useResourceBar2 ~= false)
+                end,
+                set = function(_, newValue)
+                    if dodo.DB then dodo.DB.useResourceBar2 = newValue end
+                    UpdateResourceBarVisibility()
+                end,
+            },
+            {
+                kind = LibEditMode.SettingType.Slider,
+                name = "바 가로 크기",
+                desc = "자원바와 버프트래킹 바의 가로 너비를 조절합니다.",
+                default = 268,
+                minValue = 200,
+                maxValue = 300,
+                valueStep = 2,
+                get = function()
+                    return (dodo.DB and dodo.DB.resourceBarWidth) or 268
+                end,
+                set = function(_, newValue)
+                    if dodo.DB then dodo.DB.resourceBarWidth = newValue end
+                    dodoUpdateResourceBarOption()
+                end,
+            },
+            {
+                kind = LibEditMode.SettingType.Slider,
+                name = "바 세로 크기",
+                desc = "자원바의 세로 두께를 조절합니다. (버프바는 자동 비례 조절됩니다.)",
+                default = 10,
+                minValue = 6,
+                maxValue = 20,
+                valueStep = 1,
+                get = function()
+                    return (dodo.DB and dodo.DB.resourceBarHeight) or 10
+                end,
+                set = function(_, newValue)
+                    if dodo.DB then dodo.DB.resourceBarHeight = newValue end
+                    dodoUpdateResourceBarOption()
+                end,
+            },
+            {
+                kind = LibEditMode.SettingType.Slider,
+                name = "글씨 크기",
+                desc = "자원바/버프바의 수치 글씨 크기를 조절합니다.",
+                default = 12,
+                minValue = 8,
+                maxValue = 18,
+                valueStep = 1,
+                get = function()
+                    return (dodo.DB and dodo.DB.resourceBarFontSize) or 12
+                end,
+                set = function(_, newValue)
+                    if dodo.DB then dodo.DB.resourceBarFontSize = newValue end
+                    dodoUpdateResourceBarOption()
+                end,
+            },
+        })
+
+        LibEditMode:RegisterCallback("enter", function()
+            local moduleEnabled = (dodo.DB and dodo.DB.enableResourceBarModule ~= false)
+            if not moduleEnabled then return end
+
+            local isEnabled1 = (dodo.DB and dodo.DB.useResourceBar1 ~= false)
+            local isEnabled2 = (dodo.DB and dodo.DB.useResourceBar2 ~= false)
+            if isEnabled1 or isEnabled2 then
+                bar1Frame:Show()
+                bar2Frame:Show()
+                bar1Frame:SetMinMaxValues(0, 100)
+                bar1Frame:SetValue(80)
+                if bar1Frame.countPower then bar1Frame.countPower:SetText("80") end
+                
+                bar2Frame:SetMinMaxValues(0, 100)
+                bar2Frame:SetValue(60)
+                if bar2Frame.countStack then bar2Frame.countStack:SetText("3") end
+            end
+        end)
+
+        LibEditMode:RegisterCallback("exit", function()
+            UpdateResourceBarVisibility()
+        end)
+    end
+end
+
+-- ==============================
+-- 설정
+-- ==============================
+function module:CreateOptions()
+    -- 별도 설정 없음 (편집 모드에 통합)
+end
 
 local traitEventFrame = CreateFrame("Frame")
 traitEventFrame:RegisterEvent("TRAIT_CONFIG_UPDATED")

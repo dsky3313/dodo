@@ -8,7 +8,8 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-dodoDB = dodoDB or {}
+local module = {}
+dodo:RegisterModule("NewLFG", module)
 
 dodo.newLFG_AlertSoundTable = {
     { label = "MurlocAggro", value = "416" },
@@ -75,7 +76,7 @@ function NewLFG()
     if InCombatLockdown() then return end
 
     local isLeader = UnitIsGroupLeader("player") == true
-    local useMemberAlert = dodoDB.useNewLFGLeader
+    local useMemberAlert = dodo.DB.useNewLFGLeader
     if not useMemberAlert and not isLeader then return end
 
     if GroupFinderFrame and not GroupFinderFrame:IsVisible() then
@@ -92,7 +93,7 @@ function NewLFG()
         if newLFG_Alert:IsShown() then newLFG_Alert:Hide() end 
     end)
 
-    local soundID = (dodoDB and dodoDB.soundID) or "5274"
+    local soundID = (dodo.DB and dodo.DB.soundID) or "5274"
     local sID = tonumber(soundID) or 5274
 
     if sID > 100000 then
@@ -111,7 +112,7 @@ local initNewLFG = CreateFrame("Frame")
 local function UpdateNewLFGRegistration()
     if not initNewLFG then return end
     
-    local isEnabled = (dodoDB and dodoDB.useNewLFG ~= false)
+    local isEnabled = (dodo.DB and dodo.DB.useNewLFG ~= false)
     local inInstance = isIns()
 
     -- 기능이 켜져 있고 인스턴스가 아닐 때만 작동
@@ -150,22 +151,33 @@ initNewLFG:SetScript("OnEvent", function(self, event)
     end
 end)
 
--- 초기 초기화 및 지역 이동 감지용 별도 프레임
-local initializer = CreateFrame("Frame")
-initializer:RegisterEvent("ADDON_LOADED")
-initializer:RegisterEvent("PLAYER_ENTERING_WORLD")
-initializer:SetScript("OnEvent", function(self, event, arg1)
-    if event == "ADDON_LOADED" and arg1 == addonName then
-        UpdateNewLFGRegistration()
-    elseif event == "PLAYER_ENTERING_WORLD" then
-        UpdateNewLFGRegistration()
+function module:OnEnable()
+    local initializer = CreateFrame("Frame")
+    initializer:RegisterEvent("PLAYER_ENTERING_WORLD")
+    initializer:SetScript("OnEvent", function(self, event, arg1)
+        if event == "PLAYER_ENTERING_WORLD" then
+            UpdateNewLFGRegistration()
+        end
+    end)
+    armedAt = GetTime() + 2
+end
+
+-- ==============================
+-- 설정
+-- ==============================
+function module:CreateOptions()
+    local settingParentNewLFG, _, initParentNewLFG = dodo.UI.CheckBoxDropDown(dodo.subCategoryParty, "useNewLFG", "soundID", "파티신청 알림",
+    "새로운 파티신청 시 알림", dodo.newLFG_AlertSoundTable, false, dodo.newLFG_AlertSoundTable[2].value, NewLFG)
+    local settingChildNewLFG, initChildNewLFG = dodo.UI.Checkbox(dodo.subCategoryParty, "useNewLFGLeader", "파티원 기능 활성화",
+    "파티장원일 경우에도 활성화합니다. ", false, NewLFG)
+    if settingParentNewLFG and settingChildNewLFG then
+        settingParentNewLFG:SetValueChangedCallback(function(_, value)
+            if value == false then
+                settingChildNewLFG:SetValue(false) -- 부모가 꺼지면 자식도 끔
+            end
+        end)
+        initChildNewLFG:SetParentInitializer(initParentNewLFG, function()
+            return settingParentNewLFG:GetValue()
+        end)
     end
-end)
-
-armedAt = GetTime() + 2
-
--- ==============================
--- 외부 노출 (Option.lua용)
--- ==============================
-dodo.UpdateNewLFG = UpdateNewLFGRegistration
-dodo.NewLFG = NewLFG
+end

@@ -8,24 +8,27 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-dodoDB = dodoDB or {}
+local module = {}
+dodo:RegisterModule("WowheadLink", module)
+
+local LibIcon = dodo.LibIcon
 
 -- ==============================
 -- 캐싱
 -- ==============================
+-- abc 가나다 순으로 정렬
+local C_Timer = C_Timer
 local CreateFrame = CreateFrame
+local GameTooltip = GameTooltip
+local GameTooltip_Hide = GameTooltip_Hide
 local GetInstanceInfo = GetInstanceInfo
 local hooksecurefunc = hooksecurefunc
 local IsControlKeyDown = IsControlKeyDown
 local IsMetaKeyDown = IsMetaKeyDown
 local PlaySound = PlaySound
-local C_Timer = C_Timer
 
-local _G = _G
 local SOUNDKIT = SOUNDKIT
 local UIParent = UIParent
-local GameTooltip = GameTooltip
-local GameTooltip_Hide = GameTooltip_Hide
 
 local COMMENT_SUFFIX = "#english-comments"
 local SHOW_COMMENTS = true
@@ -35,7 +38,7 @@ local L_COPY_DONE = "|cff00ff00복사 완료!|r"
 
 -- 인스턴스 상태 캐싱 (쐐기/레이드 성능 최적화용)
 local isInsideRestrictedInstance = false
-local function UpdateInstanceStatus()
+local function update_instance_status()
     local _, instanceType, difficultyID = GetInstanceInfo()
     -- 8: 쐐기, raid: 레이드
     isInsideRestrictedInstance = (difficultyID == 8 or instanceType == "raid")
@@ -44,9 +47,9 @@ end
 -- ==============================
 -- 유틸리티
 -- ==============================
-local function SetWowheadLink(editbox, idType, id)
+local function set_wowhead_link(editbox, id_type, id)
     if not editbox then return end
-    local url = WOWHEAD_BASE .. idType .. "=" .. id
+    local url = WOWHEAD_BASE .. id_type .. "=" .. id
     if SHOW_COMMENTS then url = url .. COMMENT_SUFFIX end
     
     editbox.lastURL = url
@@ -58,7 +61,7 @@ end
 -- ==============================
 -- 디스플레이
 -- ==============================
-local function CreateDirectEditBox(parent, name)
+local function create_direct_edit_box(parent, name)
     local linkEditbox = CreateFrame("EditBox", name, parent, "InputBoxInstructionsTemplate")
     linkEditbox:SetSize(200, 18)
     linkEditbox:SetFontObject("GameFontHighlightSmall")
@@ -67,8 +70,8 @@ local function CreateDirectEditBox(parent, name)
     linkEditbox:SetTextInsets(5, 5, 0, 0)
 
     -- 아이콘
-    if dodo and dodo.IconLib then
-        local icon = dodo.IconLib:Create(name .. "Icon", linkEditbox, { iconsize = { 20, 20 } })
+    if LibIcon then
+        local icon = LibIcon:Create(name .. "Icon", linkEditbox, { iconsize = { 20, 20 } })
         icon:SetPoint("RIGHT", linkEditbox, "LEFT", -7, 0)
         icon:ApplyConfig({
             type = "macro",
@@ -139,7 +142,7 @@ end
 -- 지도
 local mapEditbox
 local lastMapQuestID
-local function UpdateMapLink()
+local function update_map_link()
     -- 쐐기/레이드 시 즉시 종료 (최우선 순위 체크)
     if isInsideRestrictedInstance then
         if mapEditbox then mapEditbox:Hide() end
@@ -147,53 +150,53 @@ local function UpdateMapLink()
     end
 
     local questID = QuestMapFrame_GetDetailQuestID()
-    local isEnabled = (dodoDB.useWowheadLink ~= false)
+    local isEnabled = (dodo.DB and dodo.DB.enableWowheadLinkModule ~= false)
 
     if questID == lastMapQuestID and mapEditbox and mapEditbox:IsShown() then return end
     lastMapQuestID = questID
 
     if isEnabled and questID and questID ~= 0 and QuestMapFrame.DetailsFrame:IsShown() then
         if not mapEditbox then
-            mapEditbox = CreateDirectEditBox(WorldMapFrame, "WowhadMapEditbox")
+            mapEditbox = create_direct_edit_box(WorldMapFrame, "WowhadMapEditbox")
             mapEditbox:SetPoint("TOPRIGHT", WorldMapFrame, "BOTTOMRIGHT", -2, -2)
         end
-        SetWowheadLink(mapEditbox, "quest", questID)
+        set_wowhead_link(mapEditbox, "quest", questID)
     elseif mapEditbox then
         mapEditbox:Hide()
     end
 end
 
 hooksecurefunc(QuestMapFrame.DetailsFrame, "Hide", function() if mapEditbox then mapEditbox:Hide() end end)
-hooksecurefunc("QuestMapFrame_ShowQuestDetails", UpdateMapLink)
+hooksecurefunc("QuestMapFrame_ShowQuestDetails", update_map_link)
 
 -- 업적
 EventUtil.ContinueOnAddOnLoaded("Blizzard_AchievementUI", function()
-    local achievementEditbox = CreateDirectEditBox(AchievementFrame, "WowheadAchievementEditbox")
+    local achievementEditbox = create_direct_edit_box(AchievementFrame, "WowheadAchievementEditbox")
     achievementEditbox:SetPoint("TOPRIGHT", AchievementFrame, "BOTTOMRIGHT", -2, -2)
     achievementEditbox:Hide()
 
     local lastAchiID
-    local function UpdateAchiLink(self, achievementID)
+    local function update_achi_link(self, achievementID)
         -- 쐐기/레이드 시 즉시 종료
         if isInsideRestrictedInstance then
             achievementEditbox:Hide()
             return
         end
 
-        local isEnabled = (dodoDB.useWowheadLink ~= false)
+        local isEnabled = (dodo.DB and dodo.DB.enableWowheadLinkModule ~= false)
         local shouldShowLink = isEnabled and achievementID and achievementID ~= 0
 
         if shouldShowLink and achievementID == lastAchiID and achievementEditbox:IsShown() then return end
         lastAchiID = achievementID
 
         if shouldShowLink then
-            SetWowheadLink(achievementEditbox, "achievement", achievementID)
+            set_wowhead_link(achievementEditbox, "achievement", achievementID)
         else
             achievementEditbox:Hide()
         end
     end
 
-    hooksecurefunc(AchievementTemplateMixin, "DisplayObjectives", UpdateAchiLink)
+    hooksecurefunc(AchievementTemplateMixin, "DisplayObjectives", update_achi_link)
 
     hooksecurefunc(AchievementTemplateMixin, "OnClick", function(self)
         C_Timer.After(0.1, function()
@@ -215,9 +218,40 @@ EventUtil.ContinueOnAddOnLoaded("Blizzard_AchievementUI", function()
     end)
 end)
 
--- 초기화 및 이벤트
-local frame = CreateFrame("Frame")
-frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-frame:SetScript("OnEvent", function(self, event)
-    UpdateInstanceStatus()
-end)
+-- ==============================
+-- 초기화
+-- ==============================
+local function initialize()
+    if dodo.DB and dodo.DB.enableWowheadLinkModule == nil then
+        dodo.DB.enableWowheadLinkModule = false
+    end
+end
+
+-- ==============================
+-- 모듈 생명주기
+-- ==============================
+function module:OnEnable()
+    initialize()
+
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    frame:SetScript("OnEvent", function(self, event)
+        update_instance_status()
+    end)
+
+    -- dodoEditModePanel 내부에 세부 설정 주입
+    if dodo.RegisterEditModeSetting then
+        dodo.RegisterEditModeSetting("인터페이스", {
+            {
+                name = "와우헤드 링크 복사",
+                get = function() return dodo.DB and dodo.DB.enableWowheadLinkModule or false end,
+                set = function(checked)
+                    if dodo.DB then 
+                        dodo.DB.enableWowheadLinkModule = checked 
+                    end
+                    update_map_link()
+                end
+            }
+        })
+    end
+end
