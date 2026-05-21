@@ -14,7 +14,6 @@ dodo:RegisterModule("ExpFilter", module)
 -- ==============================
 -- 캐싱
 -- ==============================
--- abc 가나다 순으로 정렬
 local C_Timer = C_Timer
 local CreateFrame = CreateFrame
 local RunNextFrame = RunNextFrame or (C_Timer and C_Timer.After and function(func) C_Timer.After(0, func) end)
@@ -105,7 +104,7 @@ function module:OnEnable()
 
     -- dodoEditModePanel 내부에 2열 그리드로 세부 설정 주입
     if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("일반", {
+        dodo.RegisterEditModeSetting("편의기능", {
             {
                 name = "현행 확장팩 필터",
                 get = function() return dodo.DB and dodo.DB.enableExpFilterModule or false end,

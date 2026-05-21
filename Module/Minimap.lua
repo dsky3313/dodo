@@ -26,27 +26,33 @@ local function get_minimap_shape_square() return "SQUARE" end
 -- ==============================
 local fpsFrame
 local fpsTicker
+local coordFrame -- 좌표 표시 프레임
+local worldMapCoordFrame -- 월드맵 좌표 표시 프레임
+local coordTicker
 local initMinimap
 local minimapBorder
 
 -- ==============================
 -- 캐싱
 -- ==============================
-local CreateFrame = CreateFrame
+local C_Map = C_Map
 local C_Timer = C_Timer
-local format = string.format
+local CreateFrame = CreateFrame
 local GetFramerate = GetFramerate
 local GetInstanceInfo = GetInstanceInfo
 local GetNetStats = GetNetStats
-local ipairs = ipairs
 local IsInInstance = IsInInstance
-local issecretvalue = issecretvalue or function() return false end
 local Minimap = Minimap
 local MinimapCluster = MinimapCluster
 local NineSliceUtil = NineSliceUtil
 local PlaySound = PlaySound
 local UIParent = UIParent
+local WorldMapFrame = WorldMapFrame
 local _G = _G
+local format = string.format
+local ipairs = ipairs
+local issecretvalue = issecretvalue or function() return false end
+
 
 -- ==============================
 -- 기능 1: 사각형 미니맵
@@ -172,11 +178,96 @@ local function update_fps_display()
 end
 
 -- ==============================
+-- 기능 4: 좌표 표시
+-- ==============================
+local function update_worldmap_coords(self, elapsed)
+    self.elapsed = (self.elapsed or 0) + elapsed
+    if self.elapsed < 0.1 then return end
+    self.elapsed = 0
+
+    local mapID = WorldMapFrame:GetMapID()
+    local playerMapID = C_Map.GetBestMapForUnit("player")
+
+    local playerText = "Player: --"
+    if playerMapID then
+        local playerPos = C_Map.GetPlayerMapPosition(playerMapID, "player")
+        if playerPos then
+            local x, y = playerPos:GetXY()
+            if x and y and not issecretvalue(x) and not issecretvalue(y) then
+                playerText = format("Player: [#%d] %.2f, %.2f", playerMapID, x * 100, y * 100)
+            else
+                playerText = format("Player: [#%d] --, --", playerMapID)
+            end
+        else
+            playerText = format("Player: [#%d] --, --", playerMapID)
+        end
+    end
+
+    local cursorText = "Cursor: --"
+    if mapID and WorldMapFrame.ScrollContainer:IsMouseOver() then
+        local x, y = WorldMapFrame.ScrollContainer:GetNormalizedCursorPosition()
+        if x and y and not issecretvalue(x) and not issecretvalue(y) and x >= 0 and x <= 1 and y >= 0 and y <= 1 then
+            cursorText = format("Cursor: [#%d] %.2f, %.2f", mapID, x * 100, y * 100)
+        else
+            cursorText = format("Cursor: [#%d] --, --", mapID)
+        end
+    end
+
+    self.PlayerText:SetText(playerText)
+    self.CursorText:SetText(cursorText)
+end
+
+local function update_coord_text()
+    if not coordFrame then return end
+    local playerMapID = C_Map.GetBestMapForUnit("player")
+    if playerMapID then
+        local playerPos = C_Map.GetPlayerMapPosition(playerMapID, "player")
+        if playerPos then
+            local x, y = playerPos:GetXY()
+            if x and y and not issecretvalue(x) and not issecretvalue(y) then
+                coordFrame.text:SetText(format("%d, %d", x * 100, y * 100))
+                return
+            end
+        end
+    end
+    coordFrame.text:SetText("--, --")
+end
+
+local function update_coord_display()
+    if not coordFrame then return end
+    local isEnabled = (dodo.DB and dodo.DB.enableMinimapModule ~= false and dodo.DB.useCoord ~= false)
+    local inInstance = IsInInstance()
+
+    if isEnabled and not inInstance then
+        coordFrame:Show()
+        if not coordTicker then
+            coordTicker = C_Timer.NewTicker(0.5, update_coord_text)
+        end
+    else
+        coordFrame:Hide()
+        if coordTicker then
+            coordTicker:Cancel()
+            coordTicker = nil
+        end
+    end
+
+    if worldMapCoordFrame then
+        if isEnabled then
+            worldMapCoordFrame:Show()
+        else
+            worldMapCoordFrame:Hide()
+        end
+    end
+end
+
+-- ==============================
 -- 모듈 On/Off 활성화 상태 제어
 -- ==============================
 local function update_module_state()
     apply_minimap_square()
     update_fps_display()
+    update_coord_display()
+
     
     local enabled = (dodo.DB and dodo.DB.enableMinimapModule ~= false)
     if enabled then
@@ -270,17 +361,60 @@ local function create_ui()
     fpsFrame.text:SetPoint("RIGHT", border, "RIGHT", -5, 0)
     fpsFrame.text:SetJustifyH("RIGHT")
 
+    -- 플레이어 좌표 표시 프레임 생성
+    coordFrame = CreateFrame("Frame", "dodoMinimapCoordFrame", UIParent)
+    coordFrame:SetSize(52, 16)
+    coordFrame:Hide()
+
+    if MinimapCluster then  
+        coordFrame:SetPoint("TOPRIGHT", MinimapCluster.BorderTop, "BOTTOMRIGHT", 0, -2)
+    end
+
+    local coordBorder = CreateFrame("Frame", nil, coordFrame, "NineSliceCodeTemplate")
+    coordBorder:SetAllPoints(coordFrame)
+    coordBorder.layoutType = "UniqueCornersLayout"
+    coordBorder.layoutTextureKit = "ui-hud-minimap-button"
+    NineSliceUtil.ApplyLayout(coordBorder, NineSliceUtil.GetLayout(coordBorder.layoutType), coordBorder.layoutTextureKit)
+
+    coordFrame.text = coordBorder:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    coordFrame.text:SetPoint("CENTER", coordBorder, "CENTER", 0, 0)
+    coordFrame.text:SetJustifyH("CENTER")
+
+    -- 월드맵 좌표 표시 프레임 생성
+    if not worldMapCoordFrame and WorldMapFrame then
+        worldMapCoordFrame = CreateFrame("Frame", "dodoWorldMapCoordFrame", WorldMapFrame)
+        worldMapCoordFrame:SetSize(200, 30)
+        worldMapCoordFrame:SetPoint("BOTTOMRIGHT", WorldMapFrame.ScrollContainer, "BOTTOMRIGHT", -40, 4)
+        worldMapCoordFrame:SetFrameLevel(WorldMapFrame.ScrollContainer:GetFrameLevel() + 1)
+
+        local playerText = worldMapCoordFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightOutline")
+        playerText:SetPoint("BOTTOMLEFT", worldMapCoordFrame, "BOTTOMLEFT", 0, 0)
+        playerText:SetShadowOffset(0, 0)
+        worldMapCoordFrame.PlayerText = playerText
+
+        local cursorText = worldMapCoordFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightOutline")
+        cursorText:SetPoint("BOTTOMLEFT", worldMapCoordFrame, "BOTTOMLEFT", 0, 16)
+        cursorText:SetShadowOffset(0, 0)
+        worldMapCoordFrame.CursorText = cursorText
+
+        worldMapCoordFrame:SetScript("OnUpdate", update_worldmap_coords)
+    end
+
     -- zoom 리셋용 프레임 생성
     initMinimap = CreateFrame("Frame")
 end
 
 local function initialize()
+    if dodo.DB and dodo.DB.useCoord == nil then
+        dodo.DB.useCoord = true
+    end
     create_ui()
 end
 
 local function update_feature()
     apply_minimap_square()
     update_fps_display()
+    update_coord_display()
     update_minimap_zoom_reset()
 end
 
@@ -306,7 +440,8 @@ function module:OnEnable()
             end
         elseif event == "PLAYER_ENTERING_WORLD" then
             update_minimap_zoom_reset()
-            update_fps_display() -- 인스턴스 상태에 따라 Ticker 간격 재조정
+            update_fps_display()
+            update_coord_display()
         elseif event == "MINIMAP_UPDATE_ZOOM" then
             reset_minimap_zoom()
         end
@@ -350,6 +485,21 @@ function module:OnEnable()
             },
             {
                 kind = settingType.Checkbox,
+                name = "좌표 표시",
+                desc = "미니맵 우측 상단 및 월드맵 우측 하단에 좌표를 표시합니다.",
+                default = true,
+                get = function()
+                    return (dodo.DB and dodo.DB.useCoord ~= false)
+                end,
+                set = function(_, newValue)
+                    if dodo.DB then dodo.DB.useCoord = newValue end
+                    if dodo.DB and dodo.DB.enableMinimapModule ~= false then
+                        update_coord_display()
+                    end
+                end,
+            },
+            {
+                kind = settingType.Checkbox,
                 name = "FPS, 핑 표시",
                 desc = "미니맵 상단에 현재 프레임(FPS)과 지연 시간(ms)을 표시합니다.",
                 default = true,
@@ -363,6 +513,19 @@ function module:OnEnable()
                     end
                 end,
             },
+        })
+    end
+
+    if dodo.RegisterEditModeSetting then
+        dodo.RegisterEditModeSetting("인터페이스", {
+            {
+                name = "미니맵",
+                get = function() return dodo.DB and dodo.DB.enableMinimapModule ~= false end,
+                set = function(checked)
+                    if dodo.DB then dodo.DB.enableMinimapModule = checked end
+                    update_module_state()
+                end
+            }
         })
     end
 end

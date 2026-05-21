@@ -1,13 +1,18 @@
 -- ==============================
--- 설정
+-- Inspired
+-- ==============================
+-- dodo ResourceBar Module
+
+-- ==============================
+-- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-local LibEditMode = LibStub and LibStub("LibEditMode", true)
 local module = {}
 dodo:RegisterModule("ResourceBar", module)
 
--- 바 크기
+local LibEditMode = LibStub and LibStub("LibEditMode", true)
+
 local barConfigs = {
     { name = "ResourceBar1", width = 270, height = 10, y = -220, level = 3000, template = "ResourceBar1Template" },
     { name = "ResourceBar2", width = 270, height = 7, y = -4, level = 3001, template = "ResourceBar2Template" }
@@ -15,17 +20,17 @@ local barConfigs = {
 
 local classConfig = {
     ["DEATHKNIGHT"] = { [1] = {{barMode = "rune"}}, [2] = {{barMode = "rune"}}, [3] = {{barMode = "rune"}} },
-    ["DEMONHUNTER"] = { [2] = {{spellID = 203981, barMode = "stack", maxStack = 6}} }, -- 악탱 영혼파편
-    ["DRUID"] = { [3] = {{spellID = 192081, barMode = "ironfur"}} }, -- 수드 무쇠가죽 (특수 트래킹)
-    ["MONK"] = { [1] = {{barMode = "stagger"}} }, -- 양조 시간차
-    ["SHAMAN"] = { [3] = {{spellID = 51564, barMode = "stack", maxStack = 3}} }, -- 복술 굽이치는물결
+    ["DEMONHUNTER"] = { [2] = {{spellID = 203981, barMode = "stack", maxStack = 6}} },
+    ["DRUID"] = { [3] = {{spellID = 192081, barMode = "ironfur"}} },
+    ["MONK"] = { [1] = {{barMode = "stagger"}} },
+    ["SHAMAN"] = { [3] = {{spellID = 51564, barMode = "stack", maxStack = 3}} },
     ["WARRIOR"] = {
-        [1] = {{spellID = 167105, barMode = "duration"}}, -- 무전 거강
+        [1] = {{spellID = 167105, barMode = "duration"}},
         [2] = {
-            {spellID = 12950,  barMode = "stack",    maxStack = 4, requiredSpell = 12950},  -- 분전 소용돌이연마
-            {spellID = 184361, barMode = "duration", excludedSpell = 12950},  -- 분전 격노
+            {spellID = 12950,  barMode = "stack",    maxStack = 4, requiredSpell = 12950},
+            {spellID = 184361, barMode = "duration", excludedSpell = 12950},
         },
-        [3] = {{spellID = 190456, barMode = "stack", maxStack = 100}} -- 전탱 고통감내
+        [3] = {{spellID = 190456, barMode = "stack", maxStack = 100}}
     },
 }
 
@@ -41,10 +46,35 @@ local specColors = {
 -- ==============================
 -- 캐싱
 -- ==============================
+local C_CooldownViewer = C_CooldownViewer
+local C_PaperDollInfo = C_PaperDollInfo
+local C_SpecializationInfo = C_SpecializationInfo
+local C_Spell = C_Spell
+local C_SpellBook = C_SpellBook
+local C_Timer = C_Timer
+local C_UnitAuras = C_UnitAuras
+local CreateFrame = CreateFrame
+local GetRuneCooldown = GetRuneCooldown
+local GetTime = GetTime
+local Mixin = Mixin
+local UnitAffectingCombat = UnitAffectingCombat
+local UnitClass = UnitClass
+local UnitHealthMax = UnitHealthMax
+local UnitPower = UnitPower
+local UnitPowerMax = UnitPowerMax
+local UnitPowerPercent = UnitPowerPercent
+local UnitPowerType = UnitPowerType
+local UnitStagger = UnitStagger
+local hooksecurefunc = hooksecurefunc
+local ipairs = ipairs
+local math = math
+local pairs = pairs
+local rawget = rawget
+local table = table
+
 local currentSpecBuffs = {}
 local cachedPowerType = nil
 local cachedSpecColor = { r = 1, g = 1, b = 1 }
-local bar2Frame
 local runeIndexes = { 1, 2, 3, 4, 5, 6 }
 local staggerTicker = nil
 local ironfurExpiries = {}
@@ -52,11 +82,21 @@ local ironfurDurations = {}
 local goeExpiry = 0
 local ironfurBaseDuration = 7
 local hasGoeTalent = false
+local updateTicker = nil
 
+-- ==============================
+-- 프레임 및 이벤트
+-- ==============================
+local bar1Frame
+local bar2Frame
+local combatFrame = CreateFrame("Frame")
+local updater = CreateFrame("Frame")
+
+-- ==============================
+-- 기능 1: 유틸 및 헬퍼 함수
+-- ==============================
 local function RefreshIronfurTalents()
-    -- 우르속의 인내력 (393611): 지속시간 +2초
     ironfurBaseDuration = C_SpellBook.IsSpellKnown(393611) and 9 or 7
-    -- 엘룬의 수호자 (155578): 짓이기기가 다음 무쇠가죽/광재 지속시간 +3초
     hasGoeTalent = C_SpellBook.IsSpellKnown(155578)
 end
 
@@ -75,10 +115,7 @@ local function UpdateCurrentSpecConfig()
     cachedSpecColor = (specColors[englishClass] and specColors[englishClass][spec]) or { r = 1, g = 1, b = 1 }
 
     local baseConfig = (classConfig[englishClass] and classConfig[englishClass][spec]) or {}
-    currentSpecBuffs = baseConfig
-
-    -- 조건부 필터링: requiredSpell/excludedSpell 필드로 탤런트 보유 여부에 따라 항목 선택
-    -- 새 직업/특성 추가 시 classConfig만 수정하면 되고 이 코드는 변경 불필요
+    
     currentSpecBuffs = {}
     for _, config in ipairs(baseConfig) do
         local ok = true
@@ -89,7 +126,7 @@ local function UpdateCurrentSpecConfig()
             ok = false
         end
         if ok then
-            currentSpecBuffs[#currentSpecBuffs + 1] = config
+            table.insert(currentSpecBuffs, config)
         end
     end
 
@@ -101,10 +138,8 @@ local function UpdateCurrentSpecConfig()
         if bar2.countStack then bar2.countStack:SetText("0") end
         bar2:SetValue(0)
 
-        -- 전문화 변경 시 항상 기존 stagger 폴링 중단
         if staggerTicker then staggerTicker:Cancel(); staggerTicker = nil end
         
-        -- 무쇠가죽 특성 정보 갱신
         RefreshIronfurTalents()
 
         if englishClass == "DEATHKNIGHT" then
@@ -124,13 +159,6 @@ local function UpdateCurrentSpecConfig()
         bar2:Update()
     end
 end
-
--- ==============================
--- Bar1 자원바
--- ==============================
-local bar1Frame = CreateFrame("StatusBar", "ResourceBar1", UIParent, barConfigs[1].template)
-bar1Frame:SetSize(barConfigs[1].width, barConfigs[1].height)
-bar1Frame:SetPoint("CENTER", UIParent, "CENTER", 0, barConfigs[1].y)
 
 local function UpdateBar1()
     if not bar1Frame or not bar1Frame:IsShown() then return end
@@ -160,7 +188,6 @@ local function UpdateBar1()
     end
 end
 
-local updateTicker = nil
 local function OnCombatChange(inCombat)
     if updateTicker then updateTicker:Cancel(); updateTicker = nil end
     local isEnabled = (dodo.DB and dodo.DB.enableResourceBarModule ~= false)
@@ -170,14 +197,22 @@ local function OnCombatChange(inCombat)
     end
 end
 
-local combatFrame = CreateFrame("Frame")
-combatFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
-combatFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-combatFrame:SetScript("OnEvent", function(_, event) OnCombatChange(event == "PLAYER_REGEN_DISABLED") end)
-OnCombatChange(false)
+local function ToggleBar1CombatEvents(enable)
+    if enable then
+        combatFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+        combatFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+    else
+        combatFrame:UnregisterAllEvents()
+        if updateTicker then updateTicker:Cancel(); updateTicker = nil end
+    end
+end
+
+combatFrame:SetScript("OnEvent", function(_, event)
+    OnCombatChange(event == "PLAYER_REGEN_DISABLED")
+end)
 
 -- ==============================
--- Bar2 버프트래킹 Mixin
+-- 기능 2: ResourceBar2 Mixin & 동작
 -- ==============================
 local ResourceBar2Mixin = {}
 
@@ -313,7 +348,6 @@ function ResourceBar2Mixin:UpdateStackTicks(maxStack)
 
     local barWidth = self:GetWidth()
     local barHeight = self:GetHeight()
-    local scale = self:GetEffectiveScale()
 
     for i = 1, maxStack - 1 do
         if not self.ticks[i] then
@@ -349,9 +383,8 @@ function ResourceBar2Mixin:UpdateRuneSystem()
 
     if not self.runebars then
         self.runebars = {}
-        local spacing = 0
-        local barWidth = barConfigs[2].width - 2  -- 270
-        local runeWidth = barWidth / 6  -- = 45px * 6 = 270px 정확
+        local barWidth = barConfigs[2].width - 2
+        local runeWidth = barWidth / 6
         for i = 1, 6 do
             local rb = CreateFrame("StatusBar", nil, self, "ResourceBar2Template")
             rb:SetSize(runeWidth, self:GetHeight())
@@ -415,22 +448,17 @@ function ResourceBar2Mixin:UpdateStaggerSystem()
             end
         end
     else
-        -- 12.0.0 인스턴스 제한 상황 (비밀 값)
-        -- 산술 연산이 불가능하므로 전용 API와 오라를 사용하여 처리
         local sPct = C_PaperDollInfo.GetStaggerPercentage("player")
-        
-        -- 오라를 통해 색상 결정 (Light/Moderate/Heavy)
         if C_UnitAuras.GetPlayerAuraBySpellID(124273) then -- Heavy
             self:SetStatusBarColor(1, 0, 0)
         elseif C_UnitAuras.GetPlayerAuraBySpellID(124274) then -- Moderate
             self:SetStatusBarColor(1, 0.8, 0)
-        else -- Light or None
+        else
             local c = self:GetSpecColor()
             self:SetStatusBarColor(c.r, c.g, c.b)
         end
         
         if self.countStack then
-            -- SetText는 비밀 값을 지원함
             if sPct == 0 then
                 self.countStack:SetText("0")
             else
@@ -449,7 +477,6 @@ function ResourceBar2Mixin:Update()
         self:UpdateStaggerSystem(); self:Show(); return
     end
 
-    -- 룬바 숨기기
     if self.runebars then for _, rb in ipairs(self.runebars) do rb:Hide() end end
     if self.countStack then self.countStack:Show() end
 
@@ -457,10 +484,10 @@ function ResourceBar2Mixin:Update()
     if self.buffConfig then
         if self.buffConfig.barMode == "duration" then
             maxValue = self.buffConfig.duration or 20
-            if self.ticks then for _, tick in ipairs(self.ticks) do tick:Hide() end end -- 지속시간 모드에선 틱 숨김
+            if self.ticks then for _, tick in ipairs(self.ticks) do tick:Hide() end end
         elseif self.buffConfig.barMode == "stack" then
             maxValue = self.buffConfig.maxStack or 100
-            self:UpdateStackTicks(maxValue) -- 스택 모드일 때 틱 생성
+            self:UpdateStackTicks(maxValue)
         end
     end
 
@@ -505,7 +532,7 @@ function ResourceBar2Mixin:Update()
 end
 
 -- ==============================
--- Bar2 Updater
+-- 기능 3: ResourceBar2 Updater
 -- ==============================
 local ResourceBar2UpdaterMixin = {}
 
@@ -531,7 +558,7 @@ function ResourceBar2UpdaterMixin:UpdateFromItem(item)
                 local curItem = self.bar2Frame.viewerItem
                 if curItem and rawget(curItem, "auraDataUnit") and rawget(curItem, "auraInstanceID") then
                     local curAura = C_UnitAuras.GetAuraDataByAuraInstanceID(curItem.auraDataUnit, curItem.auraInstanceID)
-                    if curAura then return end -- 더 높은 우선순위 버프가 유지 중이면 무시
+                    if curAura then return end
                 end
             end
 
@@ -563,14 +590,6 @@ function ResourceBar2UpdaterMixin:HookViewerItem(item)
     self:UpdateFromItem(item)
 end
 
--- ==============================
--- 초기화 / 이벤트
--- ==============================
-bar2Frame = CreateFrame("StatusBar", "ResourceBar2", UIParent, barConfigs[2].template)
-Mixin(bar2Frame, ResourceBar2Mixin)
-bar2Frame:SetSize(barConfigs[2].width, barConfigs[2].height)
-bar2Frame:SetPoint("TOP", bar1Frame, "BOTTOM", 0, barConfigs[2].y)
-
 local function ToggleBar2Events(enable)
     if enable then
         bar2Frame:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -586,17 +605,6 @@ local function ToggleBar2Events(enable)
     end
 end
 
-bar2Frame:SetScript("OnEvent", function(self, event, ...)
-    -- Mixin된 OnEvent 호출
-    self:OnEvent(event, ...)
-    
-    -- 룬 시스템 특수 처리
-    if event == "RUNE_POWER_UPDATE" and self.UpdateRuneSystem then
-        self:UpdateRuneSystem()
-    end
-end)
-
-local updater = CreateFrame("Frame"); Mixin(updater, ResourceBar2UpdaterMixin)
 function dodoUpdateResourceBarOption()
     if not bar1Frame or not bar2Frame then return end
 
@@ -637,7 +645,7 @@ local function UpdateResourceBarVisibility()
         bar1Frame:Hide()
         bar2Frame:Hide()
         if staggerTicker then staggerTicker:Cancel(); staggerTicker = nil end
-        if updateTicker then updateTicker:Cancel(); updateTicker = nil end
+        ToggleBar1CombatEvents(false)
         ToggleBar2Events(false)
         return
     end
@@ -645,10 +653,11 @@ local function UpdateResourceBarVisibility()
     if dodo.DB and dodo.DB.useResourceBar1 ~= false then
         bar1Frame:Show()
         UpdateBar1()
+        ToggleBar1CombatEvents(true)
         OnCombatChange(UnitAffectingCombat("player"))
     else
         bar1Frame:Hide()
-        if updateTicker then updateTicker:Cancel(); updateTicker = nil end
+        ToggleBar1CombatEvents(false)
     end
 
     if dodo.DB and dodo.DB.useResourceBar2 ~= false then
@@ -662,16 +671,53 @@ local function UpdateResourceBarVisibility()
     end
 end
 
-dodo.UpdateResourceBarModuleState = function()
+-- ==============================
+-- 모듈 On/Off 활성화 상태 제어
+-- ==============================
+local function update_module_state()
     UpdateResourceBarVisibility()
 end
 
+dodo.UpdateResourceBarModuleState = update_module_state
+
+-- ==============================
+-- 초기화
+-- ==============================
+local function create_ui()
+    if bar1Frame then return end
+
+    bar1Frame = CreateFrame("StatusBar", "ResourceBar1", UIParent, barConfigs[1].template)
+    bar1Frame:SetSize(barConfigs[1].width, barConfigs[1].height)
+    bar1Frame:SetPoint("CENTER", UIParent, "CENTER", 0, barConfigs[1].y)
+
+    bar2Frame = CreateFrame("StatusBar", "ResourceBar2", UIParent, barConfigs[2].template)
+    Mixin(bar2Frame, ResourceBar2Mixin)
+    bar2Frame:SetSize(barConfigs[2].width, barConfigs[2].height)
+    bar2Frame:SetPoint("TOP", bar1Frame, "BOTTOM", 0, barConfigs[2].y)
+
+    bar2Frame:SetScript("OnEvent", function(self, event, ...)
+        self:OnEvent(event, ...)
+        if event == "RUNE_POWER_UPDATE" and self.UpdateRuneSystem then
+            self:UpdateRuneSystem()
+        end
+    end)
+
+    Mixin(updater, ResourceBar2UpdaterMixin)
+end
+
+local function initialize()
+    create_ui()
+end
+
+-- ==============================
+-- 모듈 생명주기
+-- ==============================
 function module:OnEnable()
+    initialize()
     updater:OnLoad()
     dodoUpdateResourceBarOption()
     UpdateResourceBarVisibility()
 
-    -- LibEditMode 등록
     bar1Frame.editModeName = "dodo 개인 자원바"
     if LibEditMode then
         LibEditMode:AddFrame(
@@ -791,19 +837,17 @@ function module:OnEnable()
             UpdateResourceBarVisibility()
         end)
     end
+
+    if dodo.RegisterEditModeSetting then
+        dodo.RegisterEditModeSetting("전투", {
+            {
+                name = "자원바",
+                get = function() return dodo.DB and dodo.DB.enableResourceBarModule ~= false end,
+                set = function(checked)
+                    if dodo.DB then dodo.DB.enableResourceBarModule = checked end
+                    UpdateResourceBarVisibility()
+                end
+            }
+        })
+    end
 end
-
--- ==============================
--- 설정
--- ==============================
-function module:CreateOptions()
-    -- 별도 설정 없음 (편집 모드에 통합)
-end
-
-local traitEventFrame = CreateFrame("Frame")
-traitEventFrame:RegisterEvent("TRAIT_CONFIG_UPDATED")
-traitEventFrame:SetScript("OnEvent", UpdateCurrentSpecConfig)
-
-local specEventFrame = CreateFrame("Frame")
-specEventFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-specEventFrame:SetScript("OnEvent", UpdateCurrentSpecConfig)

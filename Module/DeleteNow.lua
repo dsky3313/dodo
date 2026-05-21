@@ -159,7 +159,7 @@ function module:OnEnable()
 
     -- dodoEditModePanel 내부에 2열 그리드로 세부 설정 주입
     if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("일반", {
+        dodo.RegisterEditModeSetting("편의기능", {
             {
                 name = "아이템 파괴 간소화",
                 get = function() return dodo.DB and dodo.DB.enableDeleteNowModule or false end,

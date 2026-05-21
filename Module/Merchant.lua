@@ -29,7 +29,7 @@ local RepairAllItems = RepairAllItems
 local PREFIX = "[|cff00ff00dodo|r]"
 
 -- ==============================
--- 동작 (상점 자동화)
+-- 기능 1: 상점 자동화
 -- ==============================
 local function on_merchant_show()
     if not dodo.DB or dodo.DB.enableMerchantModule == false then return end
@@ -91,7 +91,7 @@ function module:OnEnable()
 
     -- dodoEditModePanel 내부에 세부 설정 주입 (비시각적 상점 설정)
     if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("일반", {
+        dodo.RegisterEditModeSetting("편의기능", {
             {
                 name = "자동 수리/판매",
                 get = function() return dodo.DB and dodo.DB.enableMerchantModule or false end,

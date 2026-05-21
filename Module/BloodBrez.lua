@@ -398,6 +398,19 @@ function module:OnEnable()
         end)
     end
 
+    if dodo.RegisterEditModeSetting then
+        dodo.RegisterEditModeSetting("전투", {
+            {
+                name = "블러드 & 전투부활",
+                get = function() return dodo.DB and dodo.DB.enableBloodBrezModule ~= false end,
+                set = function(checked)
+                    if dodo.DB then dodo.DB.enableBloodBrezModule = checked end
+                    update_module_state()
+                end
+            }
+        })
+    end
+
     frame:SetScript("OnEvent", OnEvent)
 end
 

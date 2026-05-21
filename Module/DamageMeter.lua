@@ -14,7 +14,6 @@ dodo:RegisterModule("DamageMeter", module)
 
 local LibEditMode = LibStub and LibStub("LibEditMode", true)
 
--- 스냅 설정 (수정 가능)
 local snapConfig = {
     point = "BOTTOM",       -- 2번 창의 기준점
     relativePoint = "TOP",  -- 1번 창의 기준점
@@ -327,6 +326,19 @@ function module:OnEnable()
                     end
                 end,
             },
+        })
+    end
+
+    if dodo.RegisterEditModeSetting then
+        dodo.RegisterEditModeSetting("전투", {
+            {
+                name = "피해량 측정기",
+                get = function() return dodo.DB and dodo.DB.enableDamageMeterModule ~= false end,
+                set = function(checked)
+                    if dodo.DB then dodo.DB.enableDamageMeterModule = checked end
+                    update_module_state()
+                end
+            }
         })
     end
 end

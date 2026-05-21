@@ -16,7 +16,6 @@ local LibIcon = dodo.LibIcon
 -- ==============================
 -- 캐싱
 -- ==============================
--- abc 가나다 순으로 정렬
 local C_Timer = C_Timer
 local CreateFrame = CreateFrame
 local GameTooltip = GameTooltip
@@ -241,7 +240,7 @@ function module:OnEnable()
 
     -- dodoEditModePanel 내부에 세부 설정 주입
     if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("인터페이스", {
+        dodo.RegisterEditModeSetting("편의기능", {
             {
                 name = "와우헤드 링크 복사",
                 get = function() return dodo.DB and dodo.DB.enableWowheadLinkModule or false end,

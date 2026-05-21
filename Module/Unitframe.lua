@@ -161,6 +161,10 @@ function oUF:DisableBlizzard(unit)
 		disable_unit_frame(TargetFrame, 'TargetFrameContainer', 'TargetFrameContent')
 	elseif unit == 'focus' then
 		disable_unit_frame(FocusFrame, 'TargetFrameContainer', 'TargetFrameContent')
+	elseif unit == 'targettarget' then
+		disable_unit_frame(TargetFrameToT)
+	elseif unit == 'focustarget' then
+		disable_unit_frame(FocusFrameToT)
 	elseif unit and unit:match('^boss%d?$') then
 		if not is_boss_hooked then
 			is_boss_hooked = true
@@ -642,6 +646,8 @@ local function update_module_state()
 		disable_unit_frame(PlayerFrame, 'PlayerFrameContainer', 'PlayerFrameContent')
 		disable_unit_frame(TargetFrame, 'TargetFrameContainer', 'TargetFrameContent')
 		disable_unit_frame(FocusFrame, 'TargetFrameContainer', 'TargetFrameContent')
+		disable_unit_frame(TargetFrameToT)
+		disable_unit_frame(FocusFrameToT)
 		if BossTargetFrameContainer then
 			BossTargetFrameContainer:SetAlpha(0)
 		end
@@ -661,6 +667,8 @@ local function update_module_state()
 		restore_unit_frame(PlayerFrame, 'PlayerFrameContainer', 'PlayerFrameContent')
 		restore_unit_frame(TargetFrame, 'TargetFrameContainer', 'TargetFrameContent')
 		restore_unit_frame(FocusFrame, 'TargetFrameContainer', 'TargetFrameContent')
+		if TargetFrameToT then TargetFrameToT:SetAlpha(1) end
+		if FocusFrameToT then FocusFrameToT:SetAlpha(1) end
 		if BossTargetFrameContainer then
 			BossTargetFrameContainer:SetAlpha(1)
 		end
@@ -769,6 +777,19 @@ function module:OnEnable()
 				end,
 			}
 		}, playerSubSystemID)
+	end
+
+	if dodo.RegisterEditModeSetting then
+		dodo.RegisterEditModeSetting("전투", {
+			{
+				name = "유닛프레임",
+				get = function() return dodo.DB and dodo.DB.enableUnitframeModule ~= false end,
+				set = function(checked)
+					if dodo.DB then dodo.DB.enableUnitframeModule = checked end
+					update_module_state()
+				end
+			}
+		})
 	end
 end
 

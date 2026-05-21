@@ -15,9 +15,10 @@ dodo:RegisterModule("BrowseGroup", module)
 -- 캐싱
 -- ==============================
 local CreateFrame = CreateFrame
+local GetActiveEntryInfo = C_LFGList.GetActiveEntryInfo
+local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local UnitIsGroupLeader = UnitIsGroupLeader
 local issecretvalue = issecretvalue
-local GetActiveEntryInfo = C_LFGList.GetActiveEntryInfo
 
 local initialized = false
 local LFGListFrame
@@ -36,10 +37,15 @@ returnGroupsBtn:SetText(GROUP_FINDER_BACK_TO_GROUP or "파티로 돌아가기")
 returnGroupsBtn:Hide()
 
 -- ==============================
--- 동작
+-- 프레임 및 이벤트
 -- ==============================
-local function updateBtn()
-    local isEnabled = (dodo.DB.useBrowseGroup ~= false)
+local eventFrame = CreateFrame("Frame")
+
+-- ==============================
+-- 기능 1: 파티 탐색하기 버튼 상태 업데이트
+-- ==============================
+local function update_buttons()
+    local isEnabled = (dodo.DB and dodo.DB.useBrowseGroup ~= false)
     if not isEnabled or not LFGListFrame then
         if browseGroupsBtn:IsShown() then browseGroupsBtn:Hide() end
         if returnGroupsBtn:IsShown() then returnGroupsBtn:Hide() end
@@ -69,7 +75,7 @@ local function updateBtn()
     end
 end
 
-local function initBtn()
+local function init_buttons()
     LFGListFrame = _G.LFGListFrame
     if not LFGListFrame or initialized then return end
     
@@ -105,49 +111,59 @@ local function initBtn()
         end)
     end)
 
-    LFGListFrame.ApplicationViewer:HookScript("OnShow", updateBtn)
-    LFGListFrame.SearchPanel:HookScript("OnShow", updateBtn)
+    LFGListFrame.ApplicationViewer:HookScript("OnShow", update_buttons)
+    LFGListFrame.SearchPanel:HookScript("OnShow", update_buttons)
     LFGListFrame:HookScript("OnHide", function()
         browseGroupsBtn:Hide()
         returnGroupsBtn:Hide()
     end)
 
     initialized = true
-    updateBtn()
+    update_buttons()
 end
 
 -- ==============================
--- 이벤트
--- ==============================
--- ==============================
--- 초기화 & 옵션 UI
+-- 모듈 생명주기
 -- ==============================
 function module:OnEnable()
-    local initBrowseGroupBtn = CreateFrame("Frame")
-    initBrowseGroupBtn:RegisterEvent("ADDON_LOADED")
-    initBrowseGroupBtn:RegisterEvent("PARTY_LEADER_CHANGED")
-    initBrowseGroupBtn:RegisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
+    -- 최적화된 이벤트 감지 설정
+    eventFrame:RegisterEvent("ADDON_LOADED")
+    eventFrame:RegisterEvent("PARTY_LEADER_CHANGED")
+    eventFrame:RegisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
 
-    initBrowseGroupBtn:SetScript("OnEvent", function(self, event, arg1)
-        if event == "ADDON_LOADED" and arg1 == "Blizzard_GroupFinder" then
-            initBtn()
+    eventFrame:SetScript("OnEvent", function(self, event, arg1)
+        if event == "ADDON_LOADED" then
+            if arg1 == "Blizzard_GroupFinder" then
+                init_buttons()
+                eventFrame:UnregisterEvent("ADDON_LOADED") -- 로드 완료 시 이벤트 해제로 성능 향상
+            end
         elseif event == "PARTY_LEADER_CHANGED" or event == "LFG_LIST_ACTIVE_ENTRY_UPDATE" then
-            if not initialized then 
-                if C_AddOns.IsAddOnLoaded("Blizzard_GroupFinder") then initBtn() end
-            else 
-                updateBtn() 
+            if initialized then 
+                update_buttons() 
+            elseif IsAddOnLoaded("Blizzard_GroupFinder") then
+                init_buttons()
+                eventFrame:UnregisterEvent("ADDON_LOADED")
             end
         end
     end)
 
-    if C_AddOns and C_AddOns.IsAddOnLoaded("Blizzard_GroupFinder") then
-        initBtn()
+    if IsAddOnLoaded("Blizzard_GroupFinder") then
+        init_buttons()
+        eventFrame:UnregisterEvent("ADDON_LOADED")
+    end
+
+    -- dodoEditModePanel 내부에 2열 그리드로 세부 설정 주입
+    if dodo.RegisterEditModeSetting then
+        dodo.RegisterEditModeSetting("인터페이스", {
+            {
+                name = "파티 탐색하기 버튼",
+                get = function() return dodo.DB and dodo.DB.useBrowseGroup ~= false end,
+                set = function(checked)
+                    if dodo.DB then dodo.DB.useBrowseGroup = checked end
+                    update_buttons()
+                end
+            }
+        })
     end
 end
 
--- ==============================
--- 설정
--- ==============================
-function module:CreateOptions()
-    dodo.UI.Checkbox(dodo.subCategoryParty, "useBrowseGroup", "파티 탐색하기 버튼", "파티원일 경우에도 '파티 탐색하기' 버튼을 표시합니다.", false, updateBtn)
-end

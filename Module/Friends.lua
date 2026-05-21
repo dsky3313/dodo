@@ -27,7 +27,6 @@ end
 -- ==============================
 -- 캐싱
 -- ==============================
--- abc 가나다 순으로 정렬
 local C_BattleNet = C_BattleNet
 local C_ClassColor = C_ClassColor
 local C_CreatureInfo = C_CreatureInfo
@@ -285,7 +284,7 @@ function module:OnEnable()
 
     -- dodoEditModePanel 내부에 세부 설정 주입
     if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("인터페이스", {
+        dodo.RegisterEditModeSetting("편의기능", {
             {
                 name = "친구창",
                 get = function() return dodo.DB and dodo.DB.enableFriendsModule or false end,

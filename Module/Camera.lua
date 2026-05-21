@@ -13,7 +13,6 @@ dodo:RegisterModule("Camera", module)
 
 local cameraTiltAngle = 1.0
 
--- CVars
 local CAM_DYNAMIC_PITCH = "test_cameraDynamicPitch"
 local CAM_FOV_PAD = "test_cameraDynamicPitchBaseFovPad"
 local CAM_FOV_PAD_DOWN = "test_cameraDynamicPitchBaseFovPadDownScale"
@@ -23,7 +22,6 @@ local CAM_KEEP_CENTERED = "CameraKeepCharacterCentered"
 -- ==============================
 -- 캐싱
 -- ==============================
--- abc 가나다 순으로 정렬
 local C_Timer = C_Timer
 local GetCVar = GetCVar
 local SetCVar = SetCVar
@@ -113,7 +111,7 @@ function module:OnEnable()
 
     -- Editmode 설정창에 동적 설정 등록
     if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("일반", {
+        dodo.RegisterEditModeSetting("인터페이스", {
             {
                 name = "카메라 각도 조절",
                 get = function() return dodo.DB and dodo.DB.enableCameraModule ~= false end,

@@ -1,6 +1,7 @@
 -- ==============================
 -- Inspired
 -- ==============================
+-- dodo UI Party Class Status
 
 -- ==============================
 -- 설정 및 테이블
@@ -44,23 +45,20 @@ local UtilTable = {
 -- ==============================
 local C_Timer = C_Timer
 local CreateFrame = CreateFrame
-local GetInstanceInfo = GetInstanceInfo
+local GetInstanceInfo = GetInstanceInfo -- (사용처 없음, 기존 코드 유지 규칙에 따라 유지)
 local GetNumGroupMembers = GetNumGroupMembers
-local ipairs = ipairs
 local IsInRaid = IsInRaid
-local math_floor = math.floor
-local pairs = pairs
 local PVEFrame = PVEFrame
-local table_insert = table.insert
 local UIParent = UIParent
 local UnitClass = UnitClass
+local ipairs = ipairs
+local math_floor = math.floor
+local pairs = pairs
+local table_insert = table.insert
 local wipe = wipe
 
-local activeIDs = {}
-local iconsCreated = false
-
 -- ==============================
--- 디스플레이 (프레임)
+-- 프레임 및 이벤트
 -- ==============================
 local partyClassFrame = CreateFrame("Frame", "PartyClassFrame", UIParent, "DefaultPanelBaseTemplate")
 partyClassFrame:SetSize(542, 214)
@@ -79,6 +77,12 @@ partyClassFrame.Background:SetPoint("BOTTOMRIGHT", -2, 2)
 
 partyClassFrame.ClassIcons = {}
 
+local activeIDs = {}
+local iconsCreated = false
+
+-- ==============================
+-- 기능 1: 파티 클래스 현황
+-- ==============================
 -- 헬퍼: 텍스트 및 Vertex 색상 안전하게 설정
 local function set_color_from_table(obj, r, g, b, a, is_vertex)
     if not obj then return end
@@ -142,9 +146,7 @@ local function create_icons_if_needed()
     iconsCreated = true
 end
 
--- ==============================
--- 동작 (UI 갱신)
--- ==============================
+-- UI 갱신 동작 함수
 local function update_ui()
     if not partyClassFrame:IsShown() then return end
     
@@ -178,8 +180,8 @@ local function update_ui()
     end
 end
 
--- 최종 호출 함수 (가시성 판단 및 업데이트)
-local function party_class()
+-- 기능 반영 (dodo 표준)
+local function update_feature()
     local isEnabled = (dodo.DB and dodo.DB.enablePartyClassModule ~= false)
     local pveShown = PVEFrame and PVEFrame:IsShown()
 
@@ -192,18 +194,18 @@ local function party_class()
     end
 end
 
--- ==============================
--- 이벤트 감지 제어
--- ==============================
-local function update_event_registration()
+-- 모듈 On/Off 상태 및 이벤트 연동 제어
+local function update_module_state()
     local isEnabled = (dodo.DB and dodo.DB.enablePartyClassModule ~= false)
+    local pveShown = PVEFrame and PVEFrame:IsShown()
 
-    if isEnabled then
+    -- PVEFrame 가시성 및 모듈 상태가 참일 때만 GROUP_ROSTER_UPDATE 이벤트 감지 등록 (최적화)
+    if isEnabled and pveShown then
         partyClassFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
     else
         partyClassFrame:UnregisterEvent("GROUP_ROSTER_UPDATE")
     end
-    party_class()
+    update_feature()
 end
 
 partyClassFrame:SetScript("OnEvent", function(self, event)
@@ -228,24 +230,25 @@ local pveHooked = false
 function module:OnEnable()
     initialize()
 
+    -- 로드 직후 CPU 피크 방지 지연 실행
     local initFrame = CreateFrame("Frame")
     initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
     initFrame:SetScript("OnEvent", function(self, event)
         if event == "PLAYER_ENTERING_WORLD" then
-            C_Timer.After(0.5, update_event_registration)
+            C_Timer.After(0.5, update_module_state)
             self:UnregisterAllEvents()
         end
     end)
 
     if PVEFrame and not pveHooked then
-        PVEFrame:HookScript("OnShow", party_class)
-        PVEFrame:HookScript("OnHide", party_class)
+        PVEFrame:HookScript("OnShow", update_module_state)
+        PVEFrame:HookScript("OnHide", update_module_state)
         pveHooked = true
     end
 
     -- dodoEditModePanel 내부에 세부 설정 주입
     if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("인터페이스", {
+        dodo.RegisterEditModeSetting("편의기능", {
             {
                 name = "파티 클래스 현황",
                 get = function() return dodo.DB and dodo.DB.enablePartyClassModule or false end,
@@ -253,7 +256,7 @@ function module:OnEnable()
                     if dodo.DB then 
                         dodo.DB.enablePartyClassModule = checked 
                     end
-                    update_event_registration()
+                    update_module_state()
                 end
             }
         })

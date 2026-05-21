@@ -40,8 +40,7 @@ local CDMMapping = {
 }
 
 local customCDMConfigs = {
-    [241309] = { duration = 30 }, -- 빛의 잠재력 (3성)
-    [241308] = { duration = 30 }  -- 빛의 잠재력 (2성)
+    [1236616] = { matchIDs = { 241308, 241309 }, duration = 30, type = 3 }, --1236616(버프ID) 발동 시 241308, 241309(물약 등) 매칭
 }
 
 local Interrupts = {
@@ -142,6 +141,7 @@ local registeredButtons = {}
 local watchedUnit = 'target'
 
 local DesatCurve = C_CurveUtil.CreateCurve()
+localType = Enum.LuaCurveType.Step
 DesatCurve:SetType(Enum.LuaCurveType.Step)
 DesatCurve:AddPoint(0, 0)
 DesatCurve:AddPoint(0.001, 1)
@@ -328,17 +328,17 @@ local function CDMUpdateFrame_OnUpdate(self, elapsed)
     local hasActive = false
     local now = GetTime()
     for overlay in pairs(activeOverlays) do
-        if overlay.fakeAuraSpellID and overlay.fakeAuraEndTime then
+        if overlay.customCDMSpellID and overlay.customCDMEndTime then
             hasActive = true
-            local remaining = overlay.fakeAuraEndTime - now
+            local remaining = overlay.customCDMEndTime - now
             if remaining > -0.5 then
                 overlay.Timer:SetFormattedText("%.0f", remaining > 0 and remaining or 0)
                 overlay.Timer:Show()
                 overlay.InnerGlow:Show()
                 overlay:Show()
             else
-                customCDMAuras[overlay.fakeAuraSpellID] = nil
-                overlay:StopFakeAura()
+                customCDMAuras[overlay.customCDMSpellID] = nil
+                overlay:StopCustomCDM()
             end
         else
             local item = overlay.viewerItem
@@ -404,9 +404,9 @@ function CDMOverlayMixin:StopTicker()
     end
 end
 
-function CDMOverlayMixin:StartFakeAura(spellID, duration)
-    self.fakeAuraSpellID = spellID
-    self.fakeAuraEndTime = GetTime() + duration
+function CDMOverlayMixin:StartCustomCDM(spellID, duration)
+    self.customCDMSpellID = spellID
+    self.customCDMEndTime = GetTime() + duration
     self.InnerGlow:Show()
     self.Timer:Show()
     self:Show()
@@ -417,9 +417,9 @@ function CDMOverlayMixin:StartFakeAura(spellID, duration)
     end
 end
 
-function CDMOverlayMixin:StopFakeAura()
-    self.fakeAuraSpellID = nil
-    self.fakeAuraEndTime = nil
+function CDMOverlayMixin:StopCustomCDM()
+    self.customCDMSpellID = nil
+    self.customCDMEndTime = nil
     self:StopTicker()
 end
 
@@ -447,7 +447,7 @@ function CDMOverlayMixin:Update()
         if activeFake then
             local remaining = activeFake.duration - (GetTime() - activeFake.startTime)
             if remaining > 0 then
-                self:StartFakeAura(matchedSpellID, remaining)
+                self:StartCustomCDM(matchedSpellID, remaining)
                 return
             else
                 customCDMAuras[matchedSpellID] = nil
@@ -589,41 +589,74 @@ end
 -- ==============================
 -- 기능 4: 커스텀 CDM (물약)
 -- ==============================
-local function init_fake_aura_spells()
-    for id, config in pairs(customCDMConfigs) do
-        if C_Item.GetItemInfoInstant(id) then
-            -- 아이템(Item)으로 판별된 경우
-            local item = Item:CreateFromItemID(id)
+local function init_custom_cdm_spells()
+    for key, config in pairs(customCDMConfigs) do
+        customCDMSpellMap[key] = key
+        if config.matchIDs then
+            for _, tID in ipairs(config.matchIDs) do
+                if C_Item.GetItemInfoInstant(tID) then
+                    local item = Item:CreateFromItemID(tID)
+                    if item and not item:IsItemEmpty() then
+                        item:ContinueOnItemLoad(function()
+                            local _, spellID = C_Item.GetItemSpell(tID)
+                            if spellID then
+                                customCDMSpellMap[spellID] = key
+                            end
+                        end)
+                    end
+                else
+                    customCDMSpellMap[tID] = key
+                end
+            end
+        end
+        
+        if type(key) == "number" and not config.matchIDs and C_Item.GetItemInfoInstant(key) then
+            local item = Item:CreateFromItemID(key)
             if item and not item:IsItemEmpty() then
                 item:ContinueOnItemLoad(function()
-                    local _, spellID = C_Item.GetItemSpell(id)
+                    local _, spellID = C_Item.GetItemSpell(key)
                     if spellID then
-                        customCDMSpellMap[spellID] = id
+                        customCDMSpellMap[spellID] = key
                     end
                 end)
             end
-            customCDMSpellMap[id] = id
-        else
-            -- 주문(Spell)으로 판별된 경우
-            customCDMSpellMap[id] = id
         end
     end
 end
 
-local function get_matching_buttons(targetSpellID, targetItemID)
+local function get_matching_buttons(targetSpellID, configKey)
     local matched = {}
+    local config = customCDMConfigs[configKey]
     for i = 1, 12 do
         local btn = _G["MultiBar7Button" .. i]
         if btn and btn.action then
             local actionType, id = get_action_spell_or_item_id(btn.action)
             if actionType == "spell" then
                 local baseSpellID = C_Spell.GetBaseSpell(id)
-                if baseSpellID == targetSpellID or id == targetSpellID then
+                local isMatch = false
+                if config and config.matchIDs then
+                    for _, tID in ipairs(config.matchIDs) do
+                        if baseSpellID == tID or id == tID then isMatch = true; break end
+                    end
+                end
+                
+                if isMatch or baseSpellID == targetSpellID or id == targetSpellID or id == configKey or baseSpellID == configKey then
                     table_insert(matched, btn)
                 end
             elseif actionType == "item" then
-                if id == targetItemID then
+                local isMatch = false
+                if config and config.matchIDs then
+                    for _, tID in ipairs(config.matchIDs) do
+                        if id == tID then isMatch = true; break end
+                    end
+                end
+                if isMatch or id == configKey then
                     table_insert(matched, btn)
+                else
+                    local _, btnSpellID = C_Item.GetItemSpell(id)
+                    if btnSpellID and btnSpellID == targetSpellID then
+                        table_insert(matched, btn)
+                    end
                 end
             end
         end
@@ -828,13 +861,11 @@ f:RegisterEvent("PLAYER_REGEN_ENABLED")
 f:RegisterEvent("PLAYER_REGEN_DISABLED")
 f:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
 f:RegisterEvent("UNIT_DIED")
+f:RegisterEvent("PLAYER_DEAD")
 
 f:SetScript("OnEvent", function(self, event, ...)
     if event == "ACTIONBAR_SLOT_CHANGED" then
-        local slot = ...
-        if not slot or slot <= 72 then
-            build_special_button_cache()
-        end
+        build_special_button_cache()
     elseif event == "ACTION_RANGE_CHECK_UPDATE" then
         local slot = ...
         local slotButtons = ActionBarButtonRangeCheckFrame.actions and ActionBarButtonRangeCheckFrame.actions[slot]
@@ -852,23 +883,46 @@ f:SetScript("OnEvent", function(self, event, ...)
         if matchedItemID then
             local itemConfig = customCDMConfigs[matchedItemID]
             local duration = itemConfig and itemConfig.duration or 30
-            if not customCDMAuras[spellID] then
-                customCDMAuras[spellID] = { startTime = GetTime(), duration = duration, savedTime = time() }
-                local buttons = get_matching_buttons(spellID, matchedItemID)
-                for _, btn in ipairs(buttons) do
-                    if btn.cdmOverlay then
-                        btn.cdmOverlay:StartFakeAura(spellID, duration)
+            local refreshType = itemConfig and itemConfig.type or 1 -- 기본 type은 1 (None)
+            
+            local now = GetTime()
+            local activeAura = customCDMAuras[spellID]
+            
+            if activeAura then
+                local remaining = activeAura.duration - (now - activeAura.startTime)
+                if remaining > 0 then
+                    if refreshType == 2 then -- Add
+                        activeAura.duration = remaining + duration
+                        activeAura.startTime = now
+                    elseif refreshType == 3 then -- Reset
+                        activeAura.duration = duration
+                        activeAura.startTime = now
                     end
+                    -- Type 1 (None)의 경우 아무 처리도 안 함 (기존 타이머 유지)
+                else
+                    customCDMAuras[spellID] = { startTime = now, duration = duration, savedTime = time() }
+                end
+            else
+                customCDMAuras[spellID] = { startTime = now, duration = duration, savedTime = time() }
+            end
+            
+            local updatedAura = customCDMAuras[spellID]
+            local currentRemaining = updatedAura.duration - (now - updatedAura.startTime)
+            
+            local buttons = get_matching_buttons(spellID, matchedItemID)
+            for _, btn in ipairs(buttons) do
+                if btn.cdmOverlay then
+                    btn.cdmOverlay:StartCustomCDM(spellID, currentRemaining)
                 end
             end
         end
-    elseif event == "UNIT_DIED" then
+    elseif event == "UNIT_DIED" or event == "PLAYER_DEAD" then
         local guid = ...
-        if guid == UnitGUID("player") then
+        if event == "PLAYER_DEAD" or (guid and not issecretvalue(guid) and guid == UnitGUID("player")) then
             wipe(customCDMAuras)
             for overlay in pairs(activeOverlays) do
-                if overlay.fakeAuraSpellID then
-                    overlay:StopFakeAura()
+                if overlay.customCDMSpellID then
+                    overlay:StopCustomCDM()
                 end
             end
         end
@@ -942,7 +996,7 @@ function module:OnEnable()
     hooksecurefunc(BuffIconCooldownViewer, "OnAcquireItemFrame", cdmHook)
 
     C_Timer.After(0.5, function()
-        init_fake_aura_spells()
+        init_custom_cdm_spells()
         build_special_button_cache()
         for _, item in ipairs(BuffBarCooldownViewer:GetItemFrames()) do hook_viewer_item(item) end
         for _, item in ipairs(BuffIconCooldownViewer:GetItemFrames()) do hook_viewer_item(item) end
@@ -1046,6 +1100,21 @@ function module:OnEnable()
                     actionbar_apply_interrupt()
                 end,
             },
+        })
+    end
+
+    if dodo.RegisterEditModeSetting then
+        dodo.RegisterEditModeSetting("전투", {
+            {
+                name = "행동단축바",
+                get = function() return dodo.DB and dodo.DB.enableActionBarModule ~= false end,
+                set = function(checked)
+                    if dodo.DB then dodo.DB.enableActionBarModule = checked end
+                    if dodo.UpdateActionBarModuleState then
+                        dodo.UpdateActionBarModuleState()
+                    end
+                end
+            }
         })
     end
 end

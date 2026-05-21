@@ -1003,4 +1003,17 @@ function module:OnEnable()
     end
 
     update_auras()
+
+    if dodo.RegisterEditModeSetting then
+        dodo.RegisterEditModeSetting("전투", {
+            {
+                name = "플레이어 디버프",
+                get = function() return dodo.DB and dodo.DB.enableDebuffModule ~= false end,
+                set = function(checked)
+                    if dodo.DB then dodo.DB.enableDebuffModule = checked end
+                    update_module_state()
+                end
+            }
+        })
+    end
 end

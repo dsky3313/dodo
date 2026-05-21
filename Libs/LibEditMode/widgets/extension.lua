@@ -112,7 +112,7 @@ end
 function internal:CreateExtension()
 	local extension = Mixin(CreateFrame('Frame', nil, UIParent, 'ResizeLayoutFrame'), extensionMixin)
 	extension:SetSize(64, 64)
-	extension:SetPoint('TOPLEFT', EditModeSystemSettingsDialog, 'TOPRIGHT', 5, 0)
+	extension:SetPoint('TOPLEFT', EditModeSystemSettingsDialog, 'TOPRIGHT', 2, 0)
 	extension:SetFrameStrata('DIALOG')
 	extension:SetFrameLevel(300)
 	extension:EnableMouse(true)

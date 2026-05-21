@@ -424,6 +424,16 @@ local function update_feature()
 end
 
 -- ==============================
+-- 외부 노출
+-- ==============================
+local function update_chat_module_state()
+    update_feature()
+    update_module_state()
+end
+
+dodo.UpdateChatModuleState = update_chat_module_state
+
+-- ==============================
 -- 모듈 생명주기
 -- ==============================
 function module:OnEnable()
@@ -562,14 +572,18 @@ function module:OnEnable()
             }
         })
     end
+
+    if dodo.RegisterEditModeSetting then
+        dodo.RegisterEditModeSetting("인터페이스", {
+            {
+                name = "대화창",
+                get = function() return dodo.DB and dodo.DB.enableChatModule ~= false end,
+                set = function(checked)
+                    if dodo.DB then dodo.DB.enableChatModule = checked end
+                    update_chat_module_state()
+                end
+            }
+        })
+    end
 end
 
--- ==============================
--- 외부 노출
--- ==============================
-local function update_chat_module_state()
-    update_feature()
-    update_module_state()
-end
-
-dodo.UpdateChatModuleState = update_chat_module_state

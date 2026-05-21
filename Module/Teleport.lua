@@ -446,7 +446,7 @@ function module:OnEnable()
 
     -- dodoEditModePanel 내부에 세부 설정 주입
     if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("인터페이스", {
+        dodo.RegisterEditModeSetting("편의기능", {
             {
                 name = "던전 텔레포트 메뉴",
                 get = function() return dodo.DB and dodo.DB.enableTeleportModule or false end,

@@ -435,4 +435,17 @@ function module:OnEnable()
             }
         })
     end
+
+    if dodo.RegisterEditModeSetting then
+        dodo.RegisterEditModeSetting("편의기능", {
+            {
+                name = "툴팁",
+                get = function() return dodo.DB and dodo.DB.enableTooltipModule ~= false end,
+                set = function(checked)
+                    if dodo.DB then dodo.DB.enableTooltipModule = checked end
+                    update_module_state()
+                end
+            }
+        })
+    end
 end

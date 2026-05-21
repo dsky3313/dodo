@@ -10,6 +10,7 @@
 
 Libs\LibEditMode\LibStub\LibStub.lua
 Libs\LibEditMode\embed.xml
+Libs\LibOpenRaid\lib.xml
 Libs\oUF\oUF.xml
 
 UI/OptionUI.xml
@@ -27,31 +28,30 @@ Module\Audio.lua
 Module\BloodBrez.lua
 Module\BrowseGroup.lua
 Module\Camera.lua
-Module\ChatFrame.lua
 Module\ChatBubble.lua
+Module\ChatFrame.lua
 Module\CVar.lua
 Module\DamageMeter.lua
 Module\Debuff.lua
-Module\Editmode.lua
 Module\DeleteNow.lua
+Module\Editmode.lua
 Module\ExpFilter.lua
-Module\Friends.lua
 Module\FrameOption.lua
+Module\Friends.lua
 Module\InsDifficulty.lua
-
-#Module\Item.lua
-
+Module\Item.lua
+Module\Keystone.lua
 Module\Merchant.lua
 Module\Minimap.lua
-Module\NewLFG.lua  
+Module\NewLFG.lua
 Module\PartyClass.lua
 Module\QuickBobber.lua
 Module\ResourceBar.lua
 Module\Slash.lua
+Module\Teleport.lua
 Module\Tooltip.lua
 Module\Unitframe.lua
-Module\Teleport.lua 
-Module\WMarker.lua 
-Module\WowheadLink.lua 
+Module\WMarker.lua
+Module\WowheadLink.lua
 
 Option.lua

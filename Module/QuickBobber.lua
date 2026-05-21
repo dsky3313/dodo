@@ -131,7 +131,7 @@ function module:OnEnable()
 
     -- dodoEditModePanel 내부에 세부 설정 주입
     if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("인터페이스", {
+        dodo.RegisterEditModeSetting("편의기능", {
             {
                 name = "낚시찌 장난감 버튼",
                 get = function() return dodo.DB and dodo.DB.enableQuickBobberModule or false end,

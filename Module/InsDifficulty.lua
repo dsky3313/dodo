@@ -400,4 +400,17 @@ function module:OnEnable()
             update_ui_status()
         end)
     end
+
+    if dodo.RegisterEditModeSetting then
+        dodo.RegisterEditModeSetting("편의기능", {
+            {
+                name = "난이도 설정창",
+                get = function() return dodo.DB and dodo.DB.enableInsDifficultyModule ~= false end,
+                set = function(checked)
+                    if dodo.DB then dodo.DB.enableInsDifficultyModule = checked end
+                    update_module_state()
+                end
+            }
+        })
+    end
 end
