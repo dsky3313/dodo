@@ -2,6 +2,7 @@
 -- Inspired
 -- ==============================
 -- Chonky Character Sheet (https://www.curseforge.com/wow/addons/chonky-character-sheet)
+-- Enhanced QOL (ahttps://www.curseforge.com/wow/addons/fex)
 -- Fex (https://www.curseforge.com/wow/addons/fex)
 
 -- ==============================
@@ -11,6 +12,8 @@
 local addonName, dodo = ...
 local module = {}
 dodo:RegisterModule("Item", module)
+
+local Colors = dodo.Colors -- 엔진
 
 -- API 로컬 캐싱
 local _G = _G
@@ -22,6 +25,7 @@ local CreateColor = CreateColor
 local CreateFrame = CreateFrame
 local GetInventoryItemID = GetInventoryItemID
 local GetInventoryItemLink = GetInventoryItemLink
+local GetItemInfo = GetItemInfo
 local GetItemInfoInstant = GetItemInfoInstant
 local PaperDollFrame = PaperDollFrame
 local ipairs = ipairs
@@ -30,18 +34,15 @@ local pairs = pairs
 local select = select
 local table_insert = table.insert
 local tonumber = tonumber
-
 local NUM_CONTAINER_FRAMES = NUM_CONTAINER_FRAMES or 13
 
 local configs = {
     ilvl_font_size       = 12,
     enchant_font_size    = 12,
-    gem_bg_size         = 14,
-    gem_size            = 10,
-    gem_stride          = 16,
     ilvl_space          = 10, -- 아이콘과 텍스트 사이 간격
     wide_width          = 650,
     normal_width        = 448,
+    gem_size            = 12, -- 보석 마크업 폰트 사이즈
 }
 
 local SLOT_LIST = {
@@ -76,14 +77,6 @@ local inspectUnit = nil
 local MAX_GEMS = 4
 local OUTLINE_FONT = "Fonts\\2002.TTF"
 
--- 글로벌에서 빈 소켓 문자열 동적 캐싱 (로컬라이징 대응)
-local emptySockets = {}
-for name, v in pairs(_G) do
-    if name and type(name) == "string" and string.find(name, "EMPTY_SOCKET_", 1, true) then
-        table_insert(emptySockets, v)
-    end
-end
-
 -- ============================================================
 -- 함수
 -- ============================================================
@@ -105,6 +98,46 @@ local function get_enchant_name(unit, slotID)
     return nil
 end
 
+local gemCache = {}
+local function get_gems_string_optimized(unit, slotID)
+    local link = GetInventoryItemLink(unit, slotID)
+    if not link then return nil end
+
+    if gemCache[link] ~= nil then
+        return gemCache[link] or nil
+    end
+
+    local numSockets = C_Item.GetItemNumSockets(link) or 0
+    if numSockets == 0 then
+        gemCache[link] = false
+        return nil
+    end
+
+    local gemStrings = {}
+    for i = 1, numSockets do
+        local gemID = C_Item.GetItemGemID(link, i)
+        local icon
+        if gemID then
+            icon = C_Item.GetItemIconByID(gemID)
+        end
+
+        if not icon then
+            icon = "Interface\\ItemSocketingFrame\\UI-EmptySocket-Prismatic"
+        end
+
+        table_insert(gemStrings, "\124T" .. icon .. ":11:11:0:0:64:64:4:60:4:60\124t")
+    end
+
+    if #gemStrings > 0 then
+        local gemString = table.concat(gemStrings, " ")
+        gemCache[link] = gemString
+        return gemString
+    end
+    
+    gemCache[link] = false
+    return nil
+end
+
 local function hide_character_backgrounds()
     local bgs = {
         "CharacterModelFrameBackgroundOverlay",
@@ -122,55 +155,7 @@ local function hide_character_backgrounds()
     end
 end
 
-local function get_gem_data(unit, slotID)
-    local link = GetInventoryItemLink(unit, slotID)
-    if not link then return nil end
-
-    -- 1. 링크에서 박혀있는 보석 ID 직접 추출 (100% 신뢰성 보장)
-    local gemLinks = {}
-    local g1, g2, g3, g4 = match(link, "item:%d*:%d*:(%d*):(%d*):(%d*):(%d*)")
-    for _, gStr in ipairs({g1, g2, g3, g4}) do
-        local gID = tonumber(gStr)
-        if gID and gID > 0 then
-            table_insert(gemLinks, gID)
-        end
-    end
-
-    -- 2. 툴팁에서 빈 소켓 개수 검출
-    local emptyCount = 0
-    local tooltipData = C_TooltipInfo.GetInventoryItem(unit, slotID)
-    if tooltipData and tooltipData.lines then
-        for _, line in ipairs(tooltipData.lines) do
-            local text = line.leftText
-            if text then
-                for _, socketName in ipairs(emptySockets) do
-                    if text:find(socketName, 1, true) then
-                        emptyCount = emptyCount + 1
-                        break
-                    end
-                end
-            end
-        end
-    end
-
-    -- 보석이 아예 없으면 nil 반환
-    if #gemLinks == 0 and emptyCount == 0 then
-        return nil
-    end
-
-    local gems = {}
-    -- 채워진 보석 추가
-    for _, gID in ipairs(gemLinks) do
-        local gemIcon = select(5, GetItemInfoInstant(gID)) or 134400
-        table_insert(gems, { filled = true, texture = gemIcon })
-    end
-    -- 빈 소켓 추가
-    for _ = 1, emptyCount do
-        table_insert(gems, { filled = false })
-    end
-
-    return gems
-end
+-- get_gems_string removed
 
 local function update_slots(unit, slotData)
     if not unit then return end
@@ -184,13 +169,10 @@ local function update_slots(unit, slotData)
             if data.tex then data.tex:Hide() end
             if data.enchantText then data.enchantText:Hide() end
             data.ilvlText:Hide()
-            for i = 1, MAX_GEMS do
-                data.gemBgs[i]:Hide()
-                data.gemTexs[i]:Hide()
-            end
+            if data.gemText then data.gemText:Hide() end
         else
-            local gems = get_gem_data(unit, data.slotID)
-            local hasGems = (gems ~= nil)
+            local gemString = get_gems_string_optimized(unit, data.slotID)
+            local hasGems = (gemString and gemString ~= "")
 
             -- 배경 그라데이션 및 마법부여
             if dodo.DB and dodo.DB.useItemLevel and data.tex then
@@ -233,7 +215,8 @@ local function update_slots(unit, slotData)
                 if unit == "player" and itemLoc and C_Item.DoesItemExist(itemLoc) then
                     local ilvl = C_Item.GetCurrentItemLevel(itemLoc)
                     local quality = C_Item.GetItemQuality(itemLoc)
-                    local r, g, b = C_Item.GetItemQualityColor(quality or 1)
+                    local qColor = (Colors and Colors.Quality[quality or 1]) or { r = 1, g = 1, b = 1 }
+                    local r, g, b = qColor.r, qColor.g, qColor.b
                     data.ilvlText:SetTextColor(r, g, b)
                     data.ilvlText:SetText(ilvl)
                     data.ilvlText:Show()
@@ -242,7 +225,8 @@ local function update_slots(unit, slotData)
                     if link then
                         local ilvl = C_Item.GetDetailedItemLevelInfo(link)
                         local quality = C_Item.GetItemQualityByID(link)
-                        local r, g, b = C_Item.GetItemQualityColor(quality or 1)
+                        local qColor = (Colors and Colors.Quality[quality or 1]) or { r = 1, g = 1, b = 1 }
+                        local r, g, b = qColor.r, qColor.g, qColor.b
                         data.ilvlText:SetTextColor(r, g, b)
                         data.ilvlText:SetText(ilvl)
                         data.ilvlText:Show()
@@ -255,28 +239,15 @@ local function update_slots(unit, slotData)
             end
 
             -- 보석 아이콘 표시
-            if dodo.DB and dodo.DB.useItemLevel then
-                for i = 1, MAX_GEMS do
-                    if gems and gems[i] then
-                        data.gemBgs[i]:Show()
-                        local gem = gems[i]
-                        if gem.filled then
-                            data.gemTexs[i]:SetTexture(gem.texture or "Interface\\BUTTONS\\WHITE8X8")
-                            data.gemTexs[i]:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-                            data.gemTexs[i]:Show()
-                        else
-                            data.gemTexs[i]:Hide()
-                        end
-                    else
-                        data.gemBgs[i]:Hide()
-                        data.gemTexs[i]:Hide()
-                    end
+            if dodo.DB and dodo.DB.useItemLevel and data.gemText then
+                if hasGems then
+                    data.gemText:SetText(gemString)
+                    data.gemText:Show()
+                else
+                    data.gemText:Hide()
                 end
             else
-                for i = 1, MAX_GEMS do
-                    data.gemBgs[i]:Hide()
-                    data.gemTexs[i]:Hide()
-                end
+                if data.gemText then data.gemText:Hide() end
             end
         end
     end
@@ -293,7 +264,7 @@ local function build_slots(prefix, slotData)
         local slotName = info.frame:gsub("Character", prefix)
         local slotFrame = _G[slotName]
         if slotFrame then
-            local entry = { slotID = info.slotID, dir = info.dir, gemBgs = {}, gemTexs = {}, isEnchantSlot = info.enchant, slotFrame = slotFrame }
+            local entry = { slotID = info.slotID, dir = info.dir, isEnchantSlot = info.enchant, slotFrame = slotFrame }
 
             -- 아이템 레벨 텍스트
             local ilvlText = slotFrame:CreateFontString(nil, "OVERLAY")
@@ -316,31 +287,11 @@ local function build_slots(prefix, slotData)
                 entry.enchantText = enchantText
             end
 
-            -- 보석 슬롯
-            for i = 1, MAX_GEMS do
-                local bgOffsetX = configs.ilvl_space + (i - 1) * configs.gem_stride
-                local texOffsetX = bgOffsetX + 2
-
-                local bg = slotFrame:CreateTexture(nil, "OVERLAY")
-                bg:SetSize(configs.gem_bg_size, configs.gem_bg_size)
-                bg:SetTexture("Interface\\ItemSocketingFrame\\UI-EmptySocket-Prismatic")
-                bg:Hide()
-
-                local gt = slotFrame:CreateTexture(nil, "OVERLAY")
-                gt:SetSize(configs.gem_size, configs.gem_size)
-                gt:Hide()
-
-                if info.dir == "RIGHT" then
-                    bg:SetPoint("BOTTOMLEFT", slotFrame, "BOTTOMRIGHT", bgOffsetX, 2)
-                    gt:SetPoint("BOTTOMLEFT", slotFrame, "BOTTOMRIGHT", texOffsetX, 4)
-                else
-                    bg:SetPoint("BOTTOMRIGHT", slotFrame, "BOTTOMLEFT", -bgOffsetX, 2)
-                    gt:SetPoint("BOTTOMRIGHT", slotFrame, "BOTTOMLEFT", -texOffsetX, 4)
-                end
-
-                table_insert(entry.gemBgs, bg)
-                table_insert(entry.gemTexs, gt)
-            end
+            -- 보석 텍스트 (단일 FontString 방식)
+            local gemText = slotFrame:CreateFontString(nil, "OVERLAY")
+            gemText:SetFont(OUTLINE_FONT, configs.gem_size or 11, "OUTLINE")
+            gemText:Hide()
+            entry.gemText = gemText
 
             -- 위치 설정
             if info.dir == "RIGHT" then
@@ -352,6 +303,8 @@ local function build_slots(prefix, slotData)
                     entry.enchantText:SetJustifyH("LEFT")
                 end
                 entry.ilvlText:SetJustifyH("LEFT")
+                gemText:SetPoint("BOTTOMLEFT", slotFrame, "BOTTOMRIGHT", configs.ilvl_space, 2)
+                gemText:SetJustifyH("LEFT")
             else
                 entry.tex:SetPoint("TOPRIGHT", slotFrame, "TOPLEFT")
                 entry.tex:SetPoint("BOTTOMRIGHT", slotFrame, "BOTTOMLEFT")
@@ -361,6 +314,8 @@ local function build_slots(prefix, slotData)
                     entry.enchantText:SetJustifyH("RIGHT")
                 end
                 entry.ilvlText:SetJustifyH("LEFT")
+                gemText:SetPoint("BOTTOMRIGHT", slotFrame, "BOTTOMLEFT", -configs.ilvl_space, 2)
+                gemText:SetJustifyH("RIGHT")
             end
 
             table_insert(slotData, entry)
@@ -458,7 +413,8 @@ local function update_bag_slot(button)
         if isEquip then
             local itemLevel = C_Item.GetDetailedItemLevelInfo(info.hyperlink)
             if itemLevel and itemLevel > 1 then
-                local r, g, b = C_Item.GetItemQualityColor(quality or 1)
+                local qColor = (Colors and Colors.Quality[quality or 1]) or { r = 1, g = 1, b = 1 }
+                local r, g, b = qColor.r, qColor.g, qColor.b
                 ilvlFS:SetTextColor(r, g, b)
                 ilvlFS:SetText(itemLevel)
                 ilvlFS:Show()
@@ -481,19 +437,18 @@ end
 -- ==============================
 -- 동작
 -- ==============================
-local isPendingUpdate = false
-
-local function try_update_slots()
-    isPendingUpdate = false
-    if not PaperDollFrame:IsShown() then return end
-    update_slots("player", fexSlotData)
-end
+local updateSlotsTimer = nil
 
 local function request_update_slots()
     if not (dodo.DB and dodo.DB.useItemLevel) then return end
-    if isPendingUpdate then return end
-    isPendingUpdate = true
-    try_update_slots()
+    if updateSlotsTimer then return end
+    
+    updateSlotsTimer = C_Timer.NewTimer(0.2, function()
+        updateSlotsTimer = nil
+        if PaperDollFrame and PaperDollFrame:IsShown() then
+            update_slots("player", fexSlotData)
+        end
+    end)
 end
 
 local function update_feature()
@@ -546,15 +501,10 @@ local function on_event(self, event, ...)
                 if itemID then
                     C_Item.RequestLoadItemDataByID(itemID)
                 end
-                local g1, g2, g3, g4 = match(link, "item:%d*:%d*:(%d*):(%d*):(%d*):(%d*)")
-                for _, gStr in ipairs({g1, g2, g3, g4}) do
-                    local gID = tonumber(gStr)
-                    if gID and gID > 0 then
-                        C_Item.RequestLoadItemDataByID(gID)
-                    end
-                end
             end
         end
+        request_update_slots()
+    elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "SOCKET_INFO_ACCEPT" then
         request_update_slots()
     elseif event == "ADDON_LOADED" then
         local addon = ...
@@ -600,10 +550,7 @@ local function update_module_state()
             if data.tex then data.tex:Hide() end
             if data.enchantText then data.enchantText:Hide() end
             if data.ilvlText then data.ilvlText:Hide() end
-            for i = 1, MAX_GEMS do
-                if data.gemBgs[i] then data.gemBgs[i]:Hide() end
-                if data.gemTexs[i] then data.gemTexs[i]:Hide() end
-            end
+            if data.gemText then data.gemText:Hide() end
         end
     else
         if not fexSlotBuilt then
@@ -618,6 +565,7 @@ local function update_module_state()
         event_frame:RegisterEvent("PLAYER_LOGIN")
         event_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
         event_frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+        event_frame:RegisterEvent("SOCKET_INFO_ACCEPT")
         event_frame:RegisterEvent("UNIT_INVENTORY_CHANGED")
         event_frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
         event_frame:RegisterEvent("ENCHANT_SPELL_COMPLETED")
@@ -646,44 +594,40 @@ local function initialize()
         end
     end
 
-    -- Hook 설정
-    hooksecurefunc("NotifyInspect", function(unit)
+    -- Hook 설정 (중복 훅 방지 적용)
+    dodo.HookOnce("NotifyInspect", function(unit)
         inspectUnit = unit
     end)
 
     if CharacterFrame then
-        CharacterFrame:HookScript("OnShow", function()
-            if not (dodo.DB and dodo.DB.useItemLevel) then return end
-            if not fexSlotBuilt then
-                C_AddOns.LoadAddOn("Blizzard_CharacterFrame")
+        if not CharacterFrame.dodoHookedOnShow then
+            CharacterFrame.dodoHookedOnShow = true
+            CharacterFrame:HookScript("OnShow", function()
+                if not (dodo.DB and dodo.DB.useItemLevel) then return end
+                if not fexSlotBuilt then
+                    C_AddOns.LoadAddOn("Blizzard_CharacterFrame")
+                    hide_character_backgrounds()
+                    build_slots("Character", fexSlotData)
+                end
                 hide_character_backgrounds()
-                build_slots("Character", fexSlotData)
-            end
-            hide_character_backgrounds()
-            apply_wide_layout()
+                apply_wide_layout()
 
-            for slot = 1, 19 do
-                local link = GetInventoryItemLink("player", slot)
-                if link then
-                    local itemID = GetInventoryItemID("player", slot)
-                    if itemID then
-                        C_Item.RequestLoadItemDataByID(itemID)
-                    end
-                    local g1, g2, g3, g4 = match(link, "item:%d*:%d*:(%d*):(%d*):(%d*):(%d*)")
-                    for _, gStr in ipairs({g1, g2, g3, g4}) do
-                        local gID = tonumber(gStr)
-                        if gID and gID > 0 then
-                            C_Item.RequestLoadItemDataByID(gID)
+                for slot = 1, 19 do
+                    local link = GetInventoryItemLink("player", slot)
+                    if link then
+                        local itemID = GetInventoryItemID("player", slot)
+                        if itemID then
+                            C_Item.RequestLoadItemDataByID(itemID)
                         end
                     end
                 end
-            end
-            request_update_slots()
-        end)
+                request_update_slots()
+            end)
+        end
 
-        hooksecurefunc(CharacterFrame, "Expand", apply_wide_layout)
-        hooksecurefunc(CharacterFrame, "UpdateSize", apply_wide_layout)
-        hooksecurefunc(CharacterFrame, "Collapse", function()
+        dodo.HookOnce(CharacterFrame, "Expand", apply_wide_layout)
+        dodo.HookOnce(CharacterFrame, "UpdateSize", apply_wide_layout)
+        dodo.HookOnce(CharacterFrame, "Collapse", function()
             if not (dodo.DB and dodo.DB.useItemLevel) then return end
             CharacterFrame:SetWidth(configs.normal_width)
             if fexOriginalHeight then
@@ -695,20 +639,25 @@ local function initialize()
     for i = 1, NUM_CONTAINER_FRAMES do
         local cf = _G["ContainerFrame" .. i]
         if cf then
-            hooksecurefunc(cf, "UpdateItems", function(self) update_bag_frame(self) end)
+            dodo.HookOnce(cf, "UpdateItems", function(self) update_bag_frame(self) end)
         end
     end
     if ContainerFrameCombinedBags then
-        hooksecurefunc(ContainerFrameCombinedBags, "UpdateItems", function(self) update_bag_frame(self) end)
+        dodo.HookOnce(ContainerFrameCombinedBags, "UpdateItems", function(self) update_bag_frame(self) end)
     end
 end
 
 -- ==============================
 -- 모듈 생명주기
 -- ==============================
+local isInitialized = false
 function module:OnEnable()
     initialize()
     update_module_state()
+
+    if isInitialized then return end
+    isInitialized = true
+
     event_frame:SetScript("OnEvent", on_event)
 
     -- dodoEditModePanel 내부에 세부 설정 동적 주입 등록

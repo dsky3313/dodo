@@ -380,8 +380,12 @@ end
 -- 모듈 생명주기
 -- ==============================
 local menuHooked = false
+local isInitialized = false
 function module:OnEnable()
     initialize()
+
+    if isInitialized then return end
+    isInitialized = true
 
     TeleportFrame:SetScript("OnShow", update_ui_status)
 

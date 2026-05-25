@@ -1,5 +1,5 @@
 -- ==============================
--- Inspired
+-- Inspired damageMeterEnabled 0 / 1
 -- ==============================
 -- DamageMeterTools 暴雪傷害統計增強 (https://www.curseforge.com/wow/addons/damagemetertools)
 -- Default DamageMeter Tweaks (https://www.curseforge.com/wow/addons/default-damagemeter-tweaks)
@@ -146,11 +146,14 @@ end
 local function hook_main_size()
     if win1 or DamageMeterSessionWindow1 then
         win1 = win1 or DamageMeterSessionWindow1
-        win1:HookScript("OnSizeChanged", function()
-            if dodo.DB and dodo.DB.enableDamageMeterModule ~= false then
-                sync_all_window_sizes()
-            end
-        end)
+        if not win1.dodoHookedOnSize then
+            win1.dodoHookedOnSize = true
+            win1:HookScript("OnSizeChanged", function()
+                if dodo.DB and dodo.DB.enableDamageMeterModule ~= false then
+                    sync_all_window_sizes()
+                end
+            end)
+        end
     end
 end
 
@@ -263,12 +266,17 @@ end
 -- ==============================
 -- 모듈 생명주기
 -- ==============================
+local isInitialized = false
 function module:OnEnable()
-    initialize()
     update_feature()
     update_module_state()
 
-    hooksecurefunc(DamageMeter, "ShowNewSecondarySessionWindow", function()
+    if isInitialized then return end
+    isInitialized = true
+
+    initialize()
+
+    dodo.HookOnce(DamageMeter, "ShowNewSecondarySessionWindow", function()
         if dodo.DB and dodo.DB.enableDamageMeterModule ~= false then
             sync_all_window_sizes()
             apply_reset_buttons()

@@ -49,10 +49,7 @@ local function CreateEditModePanel()
     frame:SetPoint("BOTTOMLEFT", EditModeManagerFrame, "BOTTOMRIGHT", Settings.positionX, -Settings.positionY)
     frame:Hide()
 
-    if EditModeManagerFrame then
-        frame:SetFrameStrata(EditModeManagerFrame:GetFrameStrata())
-        frame:SetFrameLevel(EditModeManagerFrame:GetFrameLevel())
-    end
+    frame:SetFrameStrata("HIGH")
 
     if frame.TitleContainer and frame.TitleContainer.TitleText then
         frame.TitleContainer.TitleText:SetText("dodo 모듈 설정")
@@ -207,6 +204,27 @@ local function CreateEditModePanel()
         return frame
     end
 
+    -- 버튼 컴포넌트 빌더 함수
+    local function CreateButton(parent, label, text, onClickFunc)
+        local frame = CreateFrame("Frame", nil, parent)
+        frame:SetSize(150, 26)
+
+        local title = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        title:SetPoint("LEFT", frame, "LEFT", 10, 0)
+        title:SetText(label)
+
+        local btn = CreateFrame("Button", nil, frame, "UIPanelButtonNoTooltipTemplate")
+        btn:SetSize(60, 22)
+        btn:SetPoint("LEFT", title, "RIGHT", 10, 0)
+        btn:SetText(text)
+        btn:SetScript("OnClick", onClickFunc)
+
+        frame.Button = btn
+        frame.Title = title
+
+        return frame
+    end
+
     -- 와우 순정 편집모드 스타일의 ScrollFrameTemplate 적용
     local scrollFrame = CreateFrame("ScrollFrame", "$parentScrollFrame", frame, "ScrollFrameTemplate")
     scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -30)
@@ -247,6 +265,74 @@ local function CreateEditModePanel()
     local defaultMenuItems = {
         { isHeader = true, text = "전투" },
         { isHeader = true, text = "인터페이스" },
+        {
+            name = "퀘스트 편의기능",
+            get = function()
+                if dodo.DB and dodo.DB.enableQuestsModule ~= nil then
+                    return dodo.DB.enableQuestsModule
+                end
+                return true -- 기본 활성화
+            end,
+            set = function(checked)
+                if dodo.DB then
+                    dodo.DB.enableQuestsModule = checked
+                end
+                if dodo.UpdateQuestsModuleState then
+                    dodo.UpdateQuestsModuleState()
+                end
+            end
+        },
+        {
+            name = "공격대 준비 체크",
+            get = function()
+                if dodo.DB and dodo.DB.enableReadyCheckModule ~= nil then
+                    return dodo.DB.enableReadyCheckModule
+                end
+                return true -- 기본 활성화
+            end,
+            set = function(checked)
+                if dodo.DB then
+                    dodo.DB.enableReadyCheckModule = checked
+                end
+                if dodo.UpdateReadyCheckModuleState then
+                    dodo.UpdateReadyCheckModuleState()
+                end
+            end
+        },
+        {
+            name = "던전 도감 업적 표시",
+            get = function()
+                if dodo.DB and dodo.DB.enableEncounterAchievementsModule ~= nil then
+                    return dodo.DB.enableEncounterAchievementsModule
+                end
+                return true -- 기본 활성화
+            end,
+            set = function(checked)
+                if dodo.DB then
+                    dodo.DB.enableEncounterAchievementsModule = checked
+                end
+                if dodo.UpdateEncounterAchievementsModuleState then
+                    dodo.UpdateEncounterAchievementsModuleState()
+                end
+            end
+        },
+        {
+            name = "버프 누락 알림",
+            get = function()
+                if dodo.DB and dodo.DB.enableBuffReminderModule ~= nil then
+                    return dodo.DB.enableBuffReminderModule
+                end
+                return true -- 기본 활성화
+            end,
+            set = function(checked)
+                if dodo.DB then
+                    dodo.DB.enableBuffReminderModule = checked
+                end
+                if dodo.UpdateBuffReminderModuleState then
+                    dodo.UpdateBuffReminderModuleState()
+                end
+            end
+        },
         { isHeader = true, text = "음성" },
         { isHeader = true, text = "편의기능" },
         { isHeader = true, text = "일반" },
@@ -288,11 +374,11 @@ local function CreateEditModePanel()
                             })
                             idx = idx + 2
                         else
-                            -- 단독 아이템 (체크박스이거나 개별 설정 등)
+                            -- 단독 아이템 (체크박스, 개별 버튼 등)
                             table.insert(sets, {
                                 cb = item,
                                 name = item.name or "",
-                                hasSetting = (item.type == "dropdown" or item.type == "slider")
+                                hasSetting = (item.type == "dropdown" or item.type == "slider" or item.type == "button")
                             })
                             idx = idx + 1
                         end
@@ -406,6 +492,20 @@ local function CreateEditModePanel()
                     currentY = currentY - 26
                     col = 0
                 end
+            elseif item.type == "button" then -- 버튼 컴포넌트 생성 (좌측 시작 강제)
+                if col == 1 then
+                    currentY = currentY - 26
+                    col = 0
+                end
+                
+                local btnFrame = CreateButton(scrollChild, item.name, item.text or "실행", item.onClick)
+                btnFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 8, currentY)
+
+                if item.disabled then
+                    table.insert(updateQueue, { comp = btnFrame, type = "button", check = item.disabled })
+                end
+
+                currentY = currentY - 26
             else -- 개별 체크박스 생성 및 2열 정렬
                 -- 지능형 세트 정렬 보정: 다음 항목이 드롭다운이나 슬라이더면 반드시 좌측(col = 0) 시작
                 local nextItem = menuItems[i + 1]
@@ -448,6 +548,16 @@ local function CreateEditModePanel()
                 SetSliderEnabled(q.comp, enabled)
             elseif q.type == "dropdown" then
                 SetDropdownEnabled(q.comp, enabled)
+            elseif q.type == "button" then
+                if enabled then
+                    q.comp:SetAlpha(1.0)
+                    if q.comp.Button then q.comp.Button:Enable() end
+                    if q.comp.Title then q.comp.Title:SetTextColor(1, 0.82, 0) end
+                else
+                    q.comp:SetAlpha(0.35)
+                    if q.comp.Button then q.comp.Button:Disable() end
+                    if q.comp.Title then q.comp.Title:SetTextColor(0.5, 0.5, 0.5) end
+                end
             else
                 SetComponentEnabled(q.comp, enabled)
             end

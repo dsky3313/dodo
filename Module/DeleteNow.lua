@@ -138,8 +138,12 @@ end
 -- ==============================
 -- 모듈 생명주기
 -- ==============================
+local isInitialized = false
 function module:OnEnable()
     initialize()
+
+    if isInitialized then return end
+    isInitialized = true
 
     hooksecurefunc("StaticPopup_Show", function(which)
         if dodo.DB and dodo.DB.enableDeleteNowModule == false then return end

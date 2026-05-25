@@ -11,6 +11,8 @@ local addonName, dodo = ...
 local module = {}
 dodo:RegisterModule("Friends", module)
 
+local Colors = dodo.Colors -- 엔진
+
 -- 로컬라이즈된 클래스명 → 토큰 맵
 local localizedClassMap = {}
 if LOCALIZED_CLASS_NAMES_MALE then
@@ -71,7 +73,7 @@ end
 
 local function get_class_color_from_token(token)
     if not token or token == "" then return nil end
-    local colorObj = C_ClassColor and C_ClassColor.GetClassColor and C_ClassColor.GetClassColor(token)
+    local colorObj = (Colors and Colors.Class[token]) or (C_ClassColor and C_ClassColor.GetClassColor and C_ClassColor.GetClassColor(token))
     if colorObj and colorObj.r then return colorObj.r, colorObj.g, colorObj.b end
     return nil
 end
@@ -99,6 +101,13 @@ local function get_class_color_hex(class_token, class_id, localized_name)
 
     local cached = classHexCache[token]
     if cached then return cached end
+
+    local colorObj = Colors and Colors.Class[token]
+    if colorObj and colorObj.colorStr then
+        local hex = colorObj.colorStr:sub(5)
+        classHexCache[token] = hex
+        return hex
+    end
 
     local r, g, b = get_class_color_from_token(token)
     if r then
@@ -274,6 +283,7 @@ end
 -- ==============================
 -- 모듈 생명주기
 -- ==============================
+local isInitialized = false
 function module:OnEnable()
     initialize()
 
@@ -281,6 +291,9 @@ function module:OnEnable()
         ensure_hook()
         refresh()
     end
+
+    if isInitialized then return end
+    isInitialized = true
 
     -- dodoEditModePanel 내부에 세부 설정 주입
     if dodo.RegisterEditModeSetting then

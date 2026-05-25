@@ -98,8 +98,13 @@ end
 -- 모듈 생명주기
 -- ==============================
 local bookHooked = false
+local isInitialized = false
 function module:OnEnable()
     initialize()
+    quick_bobber()
+
+    if isInitialized then return end
+    isInitialized = true
 
     local initFrame = CreateFrame("Frame")
     initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")

@@ -25,7 +25,6 @@ dodo.subCategoryGeneral = Settings.RegisterVerticalLayoutSubcategory(mainCategor
 dodo.subCategoryInterface = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "인터페이스")
 dodo.subCategoryCombat = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "전투")
 dodo.subCategoryParty = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "파티")
-dodo.subCategorySettingProfile = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "설정 & 프로필")
 
 function dodoCreateOptions()
     if dodoOptionsCreated then return end
@@ -72,11 +71,12 @@ end
 SLASH_dodo1 = "/dd"
 SLASH_dodo2 = "/ㅇㅇ"
 SLASH_dodo3 = "/dodo"
-SlashCmdList["dodo"] = function()
+SlashCmdList["dodo"] = function(msg)
     if InCombatLockdown() then
         print("|cffff0000dodo: 전투 중에는 설정창을 열 수 없습니다.|r")
         return
     end
+
     -- 명령어로 열 때도 옵션 UI가 생성되어 있는지 확인
     if dodoCreateOptions then dodoCreateOptions() end
     Settings.OpenToCategory(mainCategory:GetID())

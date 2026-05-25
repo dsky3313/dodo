@@ -12,6 +12,7 @@ local addonName, dodo = ...
 local module = {}
 dodo:RegisterModule("Debuff", module)
 
+local Colors = dodo.Colors -- 엔진
 local LibEditMode = LibStub and LibStub("LibEditMode", true)
 
 local DEFAULT_SIZE = 56
@@ -104,7 +105,7 @@ end
 
 local colorcurve = C_CurveUtil.CreateColorCurve()
 colorcurve:SetType(Enum.LuaCurveType.Step)
-for dispeltype, v in pairs(debuffinfo) do
+for dispeltype, v in pairs((Colors and Colors.Debuff) or debuffinfo) do
     colorcurve:AddPoint(dispeltype, v)
 end
 
@@ -440,7 +441,7 @@ local function update_debuff_frames()
             frame.cooldown:SetCooldown(GetTime(), aura.duration)
             frame.cooldown:Show()
 
-            local color = debuffinfo[aura.dispelType]
+            local color = (dodo.DispelColorCurve and dodo.DispelColorCurve:Evaluate(aura.dispelType)) or (Colors and Colors.Debuff[aura.dispelType]) or debuffinfo[aura.dispelType]
             if color then
                 frame.border:SetVertexColor(color.r, color.g, color.b)
             else
@@ -460,7 +461,7 @@ local function update_debuff_frames()
             local durationobject = GetAuraDuration("player", aura.auraInstanceID)
             set_cooldown_frame(frame.cooldown, durationobject, true)
 
-            local color = GetAuraDispelTypeColor("player", aura.auraInstanceID, colorcurve)
+            local color = GetAuraDispelTypeColor("player", aura.auraInstanceID, dodo.DispelColorCurve or colorcurve)
             if color then
                 frame.border:SetVertexColor(color.r, color.g, color.b)
             else
@@ -841,10 +842,16 @@ end
 -- ==============================
 -- 모듈 생명주기
 -- ==============================
+local isInitialized = false
 function module:OnEnable()
-    initialize()
+    if not isInitialized then
+        initialize()
+    end
     update_feature()
     update_module_state()
+
+    if isInitialized then return end
+    isInitialized = true
 
     -- LibEditMode 등록
     main_frame.editModeName = "dodo 플레이어 디버프"

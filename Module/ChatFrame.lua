@@ -436,10 +436,15 @@ dodo.UpdateChatModuleState = update_chat_module_state
 -- ==============================
 -- 모듈 생명주기
 -- ==============================
+local isInitialized = false
 function module:OnEnable()
-    initialize()
     update_feature()
     update_module_state()
+
+    if isInitialized then return end
+    isInitialized = true
+
+    initialize()
 
     if dodo.DB.enableChatModule then
         local events = {

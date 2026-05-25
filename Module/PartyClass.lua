@@ -227,8 +227,13 @@ end
 -- 모듈 생명주기
 -- ==============================
 local pveHooked = false
+local isInitialized = false
 function module:OnEnable()
     initialize()
+    update_module_state()
+
+    if isInitialized then return end
+    isInitialized = true
 
     -- 로드 직후 CPU 피크 방지 지연 실행
     local initFrame = CreateFrame("Frame")

@@ -12,15 +12,11 @@
 local addonName, dodo = ...
 local module = {}
 dodo:RegisterModule("ActionBar", module)
+local Colors = dodo.Colors
 
 local LibEditMode = LibStub and LibStub("LibEditMode", true)
 
 local config = {
-    colors = {
-        range  = { r = 0.9, g = 0.1, b = 0.1 },
-        mana   = { r = 0.1, g = 0.3, b = 1.0 },
-        normal = { r = 1.0, g = 1.0, b = 1.0 }
-    },
     replaceText = {
         { "SHIFT[%-%+]", "S" },
         { "CTRL[%-%+]", "C" },
@@ -37,6 +33,12 @@ local config = {
 local CDMMapping = {
     [386634] = 12294, -- 집행자의 정밀함  - 필사의 일격 (무전)
     [12950] = 190411, 6343 -- 소용돌이 연마  - 소용돌이 (분전)
+}
+
+local POTION_IDS = {
+    [241307] = true, [241308] = true, [241309] = true, [241310] = true, -- 빛의 잠재력
+    [212241] = true, [212242] = true, [212243] = true, [212244] = true, [212940] = true, -- 내부 전쟁
+    [191383] = true, [191389] = true, [191380] = true, -- 용군단
 }
 
 local customCDMConfigs = {
@@ -141,7 +143,6 @@ local registeredButtons = {}
 local watchedUnit = 'target'
 
 local DesatCurve = C_CurveUtil.CreateCurve()
-localType = Enum.LuaCurveType.Step
 DesatCurve:SetType(Enum.LuaCurveType.Step)
 DesatCurve:AddPoint(0, 0)
 DesatCurve:AddPoint(0.001, 1)
@@ -156,15 +157,49 @@ IntCooldownCurve:SetType(Enum.LuaCurveType.Step)
 IntCooldownCurve:AddPoint(0, 0)
 IntCooldownCurve:AddPoint(0.001, 1)
 
-local timerColorCurve = C_CurveUtil.CreateColorCurve()
-timerColorCurve:SetType(Enum.LuaCurveType.Linear)
-timerColorCurve:AddPoint(0.0,  CreateColor(1, 0.5, 0.5, 1))
-timerColorCurve:AddPoint(3.0,  CreateColor(1, 1,   0.5, 1))
-timerColorCurve:AddPoint(3.01, CreateColor(1, 1,   1,   1))
-timerColorCurve:AddPoint(10.0, CreateColor(1, 1,   1,   1))
-
 local customCDMAuras = {}
 local customCDMSpellMap = {}
+
+-- ==============================
+-- Potion Overlay Mixin
+-- ==============================
+PotionOverlayMixin = {}
+function PotionOverlayMixin:Update(active)
+    if active then
+        if not self.ProcLoop:IsPlaying() then self.ProcLoop:Play() end
+        self:Show()
+    else
+        if self.ProcLoop:IsPlaying() then self.ProcLoop:Stop() end
+        self:Hide()
+    end
+end
+
+local function update_potion_proc(btn)
+    if not btn.action then return end
+    
+    local isEnabled = (dodo.DB and dodo.DB.useActionbarPotionProc ~= false)
+    if not isEnabled then
+        if btn.potionOverlay then btn.potionOverlay:Update(false) end
+        return
+    end
+
+    local actionType, id = GetActionInfo(btn.action)
+    if actionType == "item" and POTION_IDS[id] then
+        if not btn.potionOverlay then
+            btn.potionOverlay = CreateFrame("Frame", nil, btn, "PotionOverlayTemplate")
+            btn.potionOverlay:SetAllPoints(btn)
+            local w, h = btn:GetSize()
+            btn.potionOverlay.Proc:SetSize(w * 1.4, h * 1.4)
+        end
+        
+        local count = C_Item.GetItemCount(id)
+        local start, duration = C_Container.GetItemCooldown(id)
+        local isUsable = inCombat and (count > 0) and (start == 0 or duration == 0)
+        btn.potionOverlay:Update(isUsable)
+    elseif btn.potionOverlay then
+        btn.potionOverlay:Update(false)
+    end
+end
 
 -- ==============================
 -- 기능 1: 아이콘 색상 및 텍스트
@@ -215,11 +250,11 @@ local function update_icon_color(btn)
 
     local r, g, b, desat = 1, 1, 1, 0
     if btn.__isOutOfRange then
-        r, g, b, desat = config.colors.range.r, config.colors.range.g, config.colors.range.b, 1
+        r, g, b, desat = Colors.ActionColors.range.r, Colors.ActionColors.range.g, Colors.ActionColors.range.b, 1
     elseif btn.__isNotEnoughMana then
-        r, g, b, desat = config.colors.mana.r, config.colors.mana.g, config.colors.mana.b, 1
+        r, g, b, desat = Colors.ActionColors.mana.r, Colors.ActionColors.mana.g, Colors.ActionColors.mana.b, 1
     else
-        r, g, b = config.colors.normal.r, config.colors.normal.g, config.colors.normal.b
+        r, g, b = Colors.ActionColors.normal.r, Colors.ActionColors.normal.g, Colors.ActionColors.normal.b
         if btn.__isUsable == false then
             desat = 1
         elseif btn.__cdVal then
@@ -241,6 +276,7 @@ local function update_state(btn)
     btn.__isOutOfRange = (inRange == false)
     update_icon_color(btn)
     update_button_text(btn)
+    update_potion_proc(btn)
 end
 
 local function update_cooldown_state(btn)
@@ -249,6 +285,7 @@ local function update_cooldown_state(btn)
     local info = C_ActionBar.GetActionCooldown(btn.action)
     btn.__cdVal = (dur and info and not info.isOnGCD) and dur or nil
     update_icon_color(btn)
+    update_potion_proc(btn)
 end
 
 local function actionbar_apply_color()
@@ -307,7 +344,7 @@ local function get_action_spell_or_item_id(actionID)
     elseif actionType == "item" then
         return "item", id
     elseif actionType == "macro" then
-        local spellID = C_ActionBar.GetActionMacroSpellIndex(actionID)
+        local spellID = C_ActionBar.GetSpell(actionID)
         if spellID then
             return "spell", spellID
         end
@@ -378,10 +415,10 @@ function CDMOverlayMixin:OnLoad()
     local parent = self:GetParent()
     self:SetSize(parent:GetSize())
     self:SetFrameLevel(parent:GetFrameLevel() + 1)
-    self.InnerGlow:SetVertexColor(0, 1, 0, 1)
-    self.Timer:SetTextColor(0, 1, 0)
+    self.InnerGlow:SetVertexColor(Colors.ActionColors.cdmGlow.r, Colors.ActionColors.cdmGlow.g, Colors.ActionColors.cdmGlow.b, 1)
+    self.Timer:SetTextColor(Colors.ActionColors.cdmTimer.r, Colors.ActionColors.cdmTimer.g, Colors.ActionColors.cdmTimer.b)
     self.Timer:Hide()
-    self.Count:SetTextColor(1, 1, 0)
+    self.Count:SetTextColor(Colors.ActionColors.cdmCount.r, Colors.ActionColors.cdmCount.g, Colors.ActionColors.cdmCount.b)
     self:Hide()
 end
 
@@ -683,7 +720,7 @@ function InterruptOverlayMixin:OnUpdate(elapsed)
         local remaining = self.duration:GetRemainingDuration()
         local isSecret = issecretvalue(remaining)
         if isSecret or (remaining ~= self._lastRemaining) then
-            local color = self.duration:EvaluateRemainingDuration(timerColorCurve)
+            local color = self.duration:EvaluateRemainingDuration(Colors.InterruptTimerColorCurve)
             self.TimerReady:SetFormattedText("%.1f", remaining)
             self.TimerCooldown:SetFormattedText("%.1f", remaining)
             self.TimerReady:SetTextColor(color:GetRGB())
@@ -862,10 +899,15 @@ f:RegisterEvent("PLAYER_REGEN_DISABLED")
 f:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
 f:RegisterEvent("UNIT_DIED")
 f:RegisterEvent("PLAYER_DEAD")
+f:RegisterEvent("BAG_UPDATE")
 
 f:SetScript("OnEvent", function(self, event, ...)
     if event == "ACTIONBAR_SLOT_CHANGED" then
         build_special_button_cache()
+    elseif event == "BAG_UPDATE" then
+        for btn in pairs(registeredButtons) do
+            if btn:IsVisible() then update_potion_proc(btn) end
+        end
     elseif event == "ACTION_RANGE_CHECK_UPDATE" then
         local slot = ...
         local slotButtons = ActionBarButtonRangeCheckFrame.actions and ActionBarButtonRangeCheckFrame.actions[slot]
@@ -932,6 +974,7 @@ end)
 -- ==============================
 -- 모듈 생명주기
 -- ==============================
+local isInitialized = false
 function module:OnEnable()
     if dodo.DB then
         if dodo.DB.enableActionBarModule == nil then dodo.DB.enableActionBarModule = true end
@@ -941,7 +984,16 @@ function module:OnEnable()
         if dodo.DB.actionbarPadding == nil then dodo.DB.actionbarPadding = 0 end
         if dodo.DB.useActionbarCDM == nil then dodo.DB.useActionbarCDM = true end
         if dodo.DB.useActionbarInterrupt == nil then dodo.DB.useActionbarInterrupt = true end
+        if dodo.DB.useActionbarPotionProc == nil then dodo.DB.useActionbarPotionProc = true end
     end
+
+    if isInitialized then
+        if dodo.UpdateActionBarModuleState then
+            dodo.UpdateActionBarModuleState()
+        end
+        return
+    end
+    isInitialized = true
 
     local groups = {
         "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton",
@@ -1098,6 +1150,21 @@ function module:OnEnable()
                         dodo.DB.useActionbarInterrupt = newValue
                     end
                     actionbar_apply_interrupt()
+                end,
+            },
+            {
+                kind = settingType.Checkbox,
+                name = "물약 프록 오버레이",
+                desc = "물약 사용 가능 시 버튼에 프록 애니메이션을 표시합니다.",
+                default = true,
+                get = function()
+                    return dodo.DB and dodo.DB.useActionbarPotionProc ~= false
+                end,
+                set = function(_, newValue)
+                    if dodo.DB then
+                        dodo.DB.useActionbarPotionProc = newValue
+                    end
+                    dodo.UpdateActionBarModuleState()
                 end,
             },
         })

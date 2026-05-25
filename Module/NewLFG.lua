@@ -34,6 +34,7 @@ local GetTime = GetTime
 local GroupFinderFrame = GroupFinderFrame
 local GroupFinderFrameGroupButton3 = GroupFinderFrameGroupButton3
 local InCombatLockdown = InCombatLockdown
+local IsInGroup = IsInGroup
 local PlaySound = PlaySound
 local PlaySoundFile = PlaySoundFile
 local PVEFrame_ShowFrame = PVEFrame_ShowFrame
@@ -75,7 +76,7 @@ newLFG_Alert.Text:SetText("[ 신규 신청 ]\n\n|cffffff00파티창을 확인하
 local function play_newLFG_alert()
     if InCombatLockdown() then return end
 
-    local isLeader = UnitIsGroupLeader("player") == true
+    local isLeader = not IsInGroup() or UnitIsGroupLeader("player")
     -- [임시 비활성화] 파티원일 때 알림 기능 비활성화 (방장 전용)
     -- local useMemberAlert = dodo.DB and dodo.DB.useNewLFGLeader
     -- if not useMemberAlert and not isLeader then return end
@@ -163,6 +164,7 @@ end)
 -- ==============================
 -- 모듈 생명주기
 -- ==============================
+local isInitialized = false
 function module:OnEnable()
     -- DB 설정 초기값 세팅 (파티원일 때도 알림 기본 비활성화)
     if dodo.DB then
@@ -171,10 +173,14 @@ function module:OnEnable()
         end
     end
 
-    -- 일회성 프레임 대신 단일 initNewLFG 프레임을 활용해 메모리 & 이벤트 감지 성능 최적화
-    initNewLFG:RegisterEvent("PLAYER_ENTERING_WORLD")
     UpdateNewLFGRegistration()
     armedAt = GetTime() + 2
+
+    if isInitialized then return end
+    isInitialized = true
+
+    -- 일회성 프레임 대신 단일 initNewLFG 프레임을 활용해 메모리 & 이벤트 감지 성능 최적화
+    initNewLFG:RegisterEvent("PLAYER_ENTERING_WORLD")
 
     -- dodoEditModePanel 내부에 2열 그리드로 세부 설정 주입
     if dodo.RegisterEditModeSetting then

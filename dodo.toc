@@ -18,6 +18,8 @@ UI/OptionUI.lua
 UI/Icon.lua
 
 Core/Engine.lua
+Core/Utils.lua
+Core/Colors.lua
 Core/Modules.lua
 
 UI/ActionBar.xml
@@ -26,15 +28,19 @@ UI/ResourceBar.xml
 
 Module\Audio.lua
 Module\BloodBrez.lua
+#Module\BuffReminder.lua
 Module\BrowseGroup.lua
 Module\Camera.lua
 Module\ChatBubble.lua
 Module\ChatFrame.lua
-Module\CVar.lua
+Module\Profiles.lua
+#Module\Quests.lua
+#Module\ReadyCheck.lua
 Module\DamageMeter.lua
 Module\Debuff.lua
 Module\DeleteNow.lua
 Module\Editmode.lua
+#Module\EncounterAchievements.lua
 Module\ExpFilter.lua
 Module\FrameOption.lua
 Module\Friends.lua
@@ -49,6 +55,7 @@ Module\QuickBobber.lua
 Module\ResourceBar.lua
 Module\Slash.lua
 Module\Teleport.lua
+#Module\Timeline.lua
 Module\Tooltip.lua
 Module\Unitframe.lua
 Module\WMarker.lua

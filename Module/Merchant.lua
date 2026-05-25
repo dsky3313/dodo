@@ -84,8 +84,12 @@ end
 -- ==============================
 -- 모듈 생명주기
 -- ==============================
+local isInitialized = false
 function module:OnEnable()
     initialize()
+
+    if isInitialized then return end
+    isInitialized = true
 
     hooksecurefunc(MerchantFrame, "Show", on_merchant_show)
 

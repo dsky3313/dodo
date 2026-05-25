@@ -11,6 +11,7 @@ local addonName, dodo = ...
 local module = {}
 dodo:RegisterModule("ResourceBar", module)
 
+local Colors = dodo.Colors
 local LibEditMode = LibStub and LibStub("LibEditMode", true)
 
 local barConfigs = {
@@ -18,12 +19,37 @@ local barConfigs = {
     { name = "ResourceBar2", width = 270, height = 7, y = -4, level = 3001, template = "ResourceBar2Template" }
 }
 
-local classConfig = {
+local bar1ClassConfig = {
+    ["DEMONHUNTER"] = { powerType = 17, powerToken = "FURY" }, -- 악사 분노 (전 스펙)
+    ["DRUID"] = {
+        [1] = { powerType = 8,  powerToken = "LUNAR_POWER" }, -- 조화 달의 힘
+        [2] = { powerType = 4,  powerToken = "COMBO_POINTS", isTickPower = true }, -- 야드 연계 점수
+    },
+    ["EVOKER"]  = { powerType = 19, powerToken = "ESSENCE", isTickPower = true }, -- ticks: UnitPowerMax (6)
+    ["HUNTER"]  = { powerType = 2,  powerToken = "FOCUS" }, -- 사냥꾼 집중력 (전 스펙)
+    ["MAGE"] = {
+        [1] = { powerType = 0, powerToken = "MANA" }, -- 비법 마나
+    },
+    ["MONK"] = { [3] = { powerType = 12, powerToken = "CHI", isTickPower = true, ticks = 5 }}, -- 풍운 기
+    ["PALADIN"] = { powerType = 9, powerToken = "HOLY_POWER", isTickPower = true, ticks = 5 }, -- 성기사 신성한 힘 (전 스펙)
+    ["PRIEST"] = {
+        [3] = { powerType = 13, powerToken = "INSANITY" }, -- 암흑 광기
+    },
+    ["ROGUE"]   = { powerType = 3, powerToken = "ENERGY" }, -- 도적 에너지
+    --["SHAMAN"]   = { [2] = { powerType = 3, powerToken = "ENERGY" } }, -- 도적 에너지
+    ["WARLOCK"] = { powerType = 7, powerToken = "SOUL_SHARDS", isTickPower = true, ticks = 5 }, -- 흑마 영혼 조각
+}
+
+local bar2ClassConfig = {
     ["DEATHKNIGHT"] = { [1] = {{barMode = "rune"}}, [2] = {{barMode = "rune"}}, [3] = {{barMode = "rune"}} },
-    ["DEMONHUNTER"] = { [2] = {{spellID = 203981, barMode = "stack", maxStack = 6}} },
+    ["DEMONHUNTER"] = { [2] = {{barMode = "soulfragments", maxStack = 5}} },
     ["DRUID"] = { [3] = {{spellID = 192081, barMode = "ironfur"}} },
+    ["MAGE"] = { [1] = {{barMode = "power", powerType = 16, powerToken = "ARCANE_CHARGES", isTickPower = true, ticks = 4}} }, -- 비전 충전물
     ["MONK"] = { [1] = {{barMode = "stagger"}} },
-    ["SHAMAN"] = { [3] = {{spellID = 51564, barMode = "stack", maxStack = 3}} },
+    ["ROGUE"] = { {barMode = "power", powerType = 4, powerToken = "COMBO_POINTS", isTickPower = true} }, -- 전 스펙
+    ["SHAMAN"] = {
+        [3] = {{spellID = 51564,  barMode = "stack", maxStack = 3}},
+    },
     ["WARRIOR"] = {
         [1] = {{spellID = 167105, barMode = "duration"}},
         [2] = {
@@ -34,20 +60,11 @@ local classConfig = {
     },
 }
 
-local specColors = {
-    ["DEATHKNIGHT"] = { [1] = {r=1, g=0, b=0}, [2] = {r=0, g=0.8, b=1}, [3] = {r=0.3, g=0.9, b=0.3} },
-    ["DEMONHUNTER"] = { [2] = {r=0.86, g=0.59, b=0.98} },
-    ["DRUID"] = { [3] = {r=0, g=0.82, b=1} },
-    ["MONK"] = { [1] = {r=0, g=1, b=0.59} },
-    ["SHAMAN"] = { [3] = {r=0, g=0.82, b=1} },
-    ["WARRIOR"] = { [1] = {r=1, g=0.588, b=0.196}, [2] = {r=0, g=0.82, b=1}, [3] = {r=1, g=0.588, b=0.196} },
-}
 
 -- ==============================
 -- 캐싱
 -- ==============================
 local C_CooldownViewer = C_CooldownViewer
-local C_PaperDollInfo = C_PaperDollInfo
 local C_SpecializationInfo = C_SpecializationInfo
 local C_Spell = C_Spell
 local C_SpellBook = C_SpellBook
@@ -57,6 +74,7 @@ local CreateFrame = CreateFrame
 local GetRuneCooldown = GetRuneCooldown
 local GetTime = GetTime
 local Mixin = Mixin
+local PowerBarColor = PowerBarColor
 local UnitAffectingCombat = UnitAffectingCombat
 local UnitClass = UnitClass
 local UnitHealthMax = UnitHealthMax
@@ -77,12 +95,52 @@ local cachedPowerType = nil
 local cachedSpecColor = { r = 1, g = 1, b = 1 }
 local runeIndexes = { 1, 2, 3, 4, 5, 6 }
 local staggerTicker = nil
+local ironfurTicker = nil
+local runeTicker = nil
 local ironfurExpiries = {}
 local ironfurDurations = {}
 local goeExpiry = 0
 local ironfurBaseDuration = 7
 local hasGoeTalent = false
+
+local function GetUpdateInterval()
+    return UnitAffectingCombat("player") and 0.1 or 0.5
+end
+
+local function RestartRuneTicker()
+    if runeTicker then
+        runeTicker:Cancel()
+        runeTicker = nil
+    end
+    if bar2Frame and bar2Frame.buffConfig and bar2Frame.buffConfig.barMode == "rune" then
+        bar2Frame:UpdateRuneSystem()
+    end
+end
+
+local function RestartIronfurTicker()
+    if ironfurTicker then
+        ironfurTicker:Cancel()
+        ironfurTicker = nil
+    end
+    if bar2Frame and bar2Frame.buffConfig and bar2Frame.buffConfig.barMode == "ironfur" then
+        if bar2Frame.UpdateIronfurSystemActual then
+            bar2Frame:UpdateIronfurSystemActual()
+        end
+    end
+end
+
+local function RestartStaggerTicker()
+    if staggerTicker then
+        staggerTicker:Cancel()
+        staggerTicker = nil
+    end
+    if bar2Frame and bar2Frame.buffConfig and bar2Frame.buffConfig.barMode == "stagger" then
+        bar2Frame:UpdateStaggerSystem()
+    end
+end
 local updateTicker = nil
+local isArcaneOrHealer = false
+local overridePowerConfig = nil
 
 -- ==============================
 -- 프레임 및 이벤트
@@ -112,9 +170,30 @@ local function UpdateCurrentSpecConfig()
     local _, englishClass = UnitClass("player")
     local spec = C_SpecializationInfo.GetSpecialization()
 
-    cachedSpecColor = (specColors[englishClass] and specColors[englishClass][spec]) or { r = 1, g = 1, b = 1 }
+    local specID = spec and C_SpecializationInfo.GetSpecializationInfo(spec)
+    isArcaneOrHealer = (specID == 62) or (specID == 65) or (specID == 256) or (specID == 257) or (specID == 264) or (specID == 105) or (specID == 270) or (specID == 1468)
 
-    local baseConfig = (classConfig[englishClass] and classConfig[englishClass][spec]) or {}
+    overridePowerConfig = nil
+    local classConf = bar1ClassConfig[englishClass]
+    if classConf then
+        if classConf.powerType then
+            overridePowerConfig = classConf
+        elseif spec and classConf[spec] then
+            overridePowerConfig = classConf[spec]
+        end
+    end
+
+    cachedSpecColor = (Colors and Colors.Spec and Colors.Spec[englishClass] and Colors.Spec[englishClass][spec]) or { r = 1, g = 1, b = 1 }
+
+    local baseConfig = {}
+    if bar2ClassConfig[englishClass] then
+        local c2 = bar2ClassConfig[englishClass]
+        if spec and c2[spec] then
+            baseConfig = c2[spec]
+        elseif c2[1] and c2[1].barMode then
+            baseConfig = c2 -- 전 스펙 flat 구조
+        end
+    end
     
     currentSpecBuffs = {}
     for _, config in ipairs(baseConfig) do
@@ -139,51 +218,127 @@ local function UpdateCurrentSpecConfig()
         bar2:SetValue(0)
 
         if staggerTicker then staggerTicker:Cancel(); staggerTicker = nil end
+        if ironfurTicker then ironfurTicker:Cancel(); ironfurTicker = nil end
+        if runeTicker then runeTicker:Cancel(); runeTicker = nil end
         
         RefreshIronfurTalents()
+
+        local powerModeConfig = nil
+        for _, config in ipairs(currentSpecBuffs) do
+            if config.barMode == "power" then powerModeConfig = config; break end
+        end
 
         if englishClass == "DEATHKNIGHT" then
             bar2:SetBuffConfig({ barMode = "rune" })
             bar2:RegisterEvent("RUNE_POWER_UPDATE")
+            bar2:UnregisterEvent("UNIT_POWER_UPDATE")
         elseif englishClass == "MONK" and spec == 1 then
             bar2:SetBuffConfig({ barMode = "stagger" })
             bar2:UnregisterEvent("RUNE_POWER_UPDATE")
-            staggerTicker = C_Timer.NewTicker(0.1, function()
-                if bar2Frame and bar2Frame.buffConfig and bar2Frame.buffConfig.barMode == "stagger" then
-                    bar2Frame:UpdateStaggerSystem()
-                end
-            end)
+            bar2:UnregisterEvent("UNIT_POWER_UPDATE")
+            bar2:UpdateStaggerSystem()
+        elseif powerModeConfig then
+            bar2:SetBuffConfig(powerModeConfig)
+            bar2:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
+            bar2:UnregisterEvent("RUNE_POWER_UPDATE")
         else
             bar2:UnregisterEvent("RUNE_POWER_UPDATE")
+            bar2:UnregisterEvent("UNIT_POWER_UPDATE")
         end
         bar2:Update()
+    end
+end
+
+local function UpdateBar1Ticks(maxStack)
+    if not bar1Frame then return end
+    if not bar1Frame.ticks then bar1Frame.ticks = {} end
+
+    for _, tick in ipairs(bar1Frame.ticks) do tick:Hide() end
+
+    if not maxStack or maxStack <= 1 or maxStack > 10 then
+        bar1Frame._lastMaxStack = nil
+        return
+    end
+
+    if bar1Frame._lastMaxStack == maxStack then
+        for i = 1, maxStack - 1 do
+            if bar1Frame.ticks[i] then bar1Frame.ticks[i]:Show() end
+        end
+        return
+    end
+    bar1Frame._lastMaxStack = maxStack
+
+    local barWidth = bar1Frame:GetWidth()
+    local barHeight = bar1Frame:GetHeight()
+
+    for i = 1, maxStack - 1 do
+        if not bar1Frame.ticks[i] then
+            local tick = bar1Frame:CreateTexture(nil, "OVERLAY")
+            tick:SetColorTexture(0, 0, 0, 0.8)
+            bar1Frame.ticks[i] = tick
+        end
+
+        local tick = bar1Frame.ticks[i]
+        tick:ClearAllPoints()
+        PixelUtil.SetSize(tick, 1, barHeight)
+        local xOffset = (barWidth / maxStack) * i
+        PixelUtil.SetPoint(tick, "LEFT", bar1Frame, "LEFT", xOffset, 0)
+        tick:Show()
     end
 end
 
 local function UpdateBar1()
     if not bar1Frame or not bar1Frame:IsShown() then return end
     local pType, pToken = UnitPowerType("player")
+
+    if overridePowerConfig then
+        pType = overridePowerConfig.powerType
+        pToken = overridePowerConfig.powerToken
+    end
+
+    if pType == 0 and not isArcaneOrHealer then
+        bar1Frame:SetValue(0)
+        if bar1Frame.countPower then bar1Frame.countPower:SetText("") end
+        return
+    end
+
     if pType ~= cachedPowerType then
         cachedPowerType = pType
-        local c = PowerBarColor[pToken] or PowerBarColor[pType] or { r = 1, g = 1, b = 1 }
+        local c = (Colors and Colors.Power[pToken]) or PowerBarColor[pToken] or PowerBarColor[pType] or { r = 1, g = 1, b = 1 }
         bar1Frame:SetStatusBarColor(c.r, c.g, c.b)
     end
     local current = UnitPower("player", pType)
     local max = UnitPowerMax("player", pType)
     if max and max > 0 then
         bar1Frame:SetMinMaxValues(0, max)
-        bar1Frame:SetValue(current, Enum.StatusBarInterpolation.ExponentialEaseOut)
-        if bar1Frame.countPower then
-            if pType == 0 then
-                local pct = UnitPowerPercent("player", 0, false, CurveConstants and CurveConstants.ScaleTo100)
-                if pct then
-                    bar1Frame.countPower:SetFormattedText("%d", pct)
-                else
-                    bar1Frame.countPower:SetText("0")
-                end
+        
+        local isTickPower = overridePowerConfig and overridePowerConfig.isTickPower
+        if isTickPower then
+            if pType == 19 then
+                local partial = UnitPartialPower("player", 19) or 0
+                bar1Frame:SetValue(current + (partial / 1000), Enum.StatusBarInterpolation.ExponentialEaseOut)
             else
+                bar1Frame:SetValue(current, Enum.StatusBarInterpolation.ExponentialEaseOut)
+            end
+            if bar1Frame.countPower then
                 bar1Frame.countPower:SetText(current)
             end
+            UpdateBar1Ticks(overridePowerConfig.ticks or max)
+        else
+            bar1Frame:SetValue(current, Enum.StatusBarInterpolation.ExponentialEaseOut)
+            if bar1Frame.countPower then
+                if pType == 0 then
+                    local pct = UnitPowerPercent("player", 0, false, CurveConstants and CurveConstants.ScaleTo100)
+                    if pct then
+                        bar1Frame.countPower:SetFormattedText("%d", pct)
+                    else
+                        bar1Frame.countPower:SetText("0")
+                    end
+                else
+                    bar1Frame.countPower:SetText(current)
+                end
+            end
+            UpdateBar1Ticks(nil)
         end
     end
 end
@@ -261,7 +416,10 @@ local function UpdateIronfurSystem(f)
         f:SetValue(0)
         if f.countStack then f.countStack:SetText("0") end
         if f.ironfurTicks then for _, t in ipairs(f.ironfurTicks) do t:Hide() end end
-        f:SetScript("OnUpdate", nil)
+        if ironfurTicker then
+            ironfurTicker:Cancel()
+            ironfurTicker = nil
+        end
         f._hasIronfurUpdate = false
         return
     end
@@ -281,12 +439,33 @@ local function UpdateIronfurSystem(f)
     if f.countStack then f.countStack:SetText(stackCount) end
 
     f:UpdateIronfurTicks(stackCount, longestIdx, fillPct, f:GetWidth(), f:GetHeight())
+
+    if not ironfurTicker then
+        local function tick()
+            if bar2Frame and bar2Frame.buffConfig and bar2Frame.buffConfig.barMode == "ironfur" then
+                UpdateIronfurSystem(bar2Frame)
+            end
+        end
+        ironfurTicker = C_Timer.NewTicker(GetUpdateInterval(), tick)
+    end
+end
+
+function ResourceBar2Mixin:UpdateIronfurSystemActual()
+    UpdateIronfurSystem(self)
 end
 
 function ResourceBar2Mixin:OnEvent(event, ...)
     if event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_SPECIALIZATION_CHANGED" or event == "PLAYER_TALENT_UPDATE" then
         UpdateCurrentSpecConfig()
         RefreshIronfurTalents()
+    elseif event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
+        if self.buffConfig and self.buffConfig.barMode == "stagger" then
+            self:UpdateStaggerSystem()
+        end
+    elseif event == "UNIT_POWER_UPDATE" then
+        if self.buffConfig and self.buffConfig.barMode == "power" then
+            self:Update()
+        end
     elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
         local unit, _, spellID = ...
         if spellID == 192081 then -- 무쇠가죽
@@ -297,10 +476,7 @@ function ResourceBar2Mixin:OnEvent(event, ...)
             local n = #ironfurExpiries + 1
             ironfurExpiries[n] = now + duration
             ironfurDurations[n] = duration
-            if not self._hasIronfurUpdate and self.buffConfig and self.buffConfig.barMode == "ironfur" then
-                self:SetScript("OnUpdate", UpdateIronfurSystem)
-                self._hasIronfurUpdate = true
-            end
+            UpdateIronfurSystem(self)
         elseif spellID == 33917 then -- 짓이기기
             if hasGoeTalent then
                 goeExpiry = GetTime() + 15
@@ -365,19 +541,6 @@ function ResourceBar2Mixin:UpdateStackTicks(maxStack)
     end
 end
 
-local function OnUpdateRuneBar(rb)
-    if not rb.start or not rb.ctimer then return end
-    local currTime = GetTime()
-    local elapsed = currTime - rb.start
-    if elapsed < rb.duration then
-        rb:SetValue(elapsed, Enum.StatusBarInterpolation.ExponentialEaseOut)
-    else
-        rb:SetValue(rb.duration, Enum.StatusBarInterpolation.ExponentialEaseOut)
-        rb.start = nil
-        if rb.ctimer then rb.ctimer:Cancel(); rb.ctimer = nil end
-    end
-end
-
 function ResourceBar2Mixin:UpdateRuneSystem()
     self:SetSize(barConfigs[2].width, barConfigs[2].height)
 
@@ -396,6 +559,8 @@ function ResourceBar2Mixin:UpdateRuneSystem()
     self:SetStatusBarColor(0, 0, 0, 0)
     table.sort(runeIndexes, RuneSortComparator)
     local c = self:GetSpecColor()
+
+    local hasRecharging = false
     for i, index in ipairs(runeIndexes) do
         local start, duration, ready = GetRuneCooldown(index)
         local rb = self.runebars[i]
@@ -403,16 +568,37 @@ function ResourceBar2Mixin:UpdateRuneSystem()
         rb:SetMinMaxValues(0, ready and 1 or duration)
         if ready then
             rb.start = nil
-            if rb.ctimer then rb.ctimer:Cancel(); rb.ctimer = nil end
             rb:SetStatusBarColor(c.r, c.g, c.b)
             rb:SetValue(1)
+            rb.isRecharging = false
         else
             rb:SetStatusBarColor(1, 1, 1)
             rb.start    = start
             rb.duration = duration
-            if not rb.ctimer or rb.ctimer:IsCancelled() then
-                rb.ctimer = C_Timer.NewTicker(0.1, function() OnUpdateRuneBar(rb) end)
+            rb.isRecharging = true
+            hasRecharging = true
+
+            local elapsed = GetTime() - start
+            local progress = elapsed / duration
+            if progress < 0 then progress = 0 end
+            if progress > 1 then progress = 1 end
+            rb:SetValue(progress, Enum.StatusBarInterpolation.ExponentialEaseOut)
+        end
+    end
+
+    if hasRecharging then
+        if not runeTicker then
+            local function tick()
+                if bar2Frame and bar2Frame.buffConfig and bar2Frame.buffConfig.barMode == "rune" then
+                    bar2Frame:UpdateRuneSystem()
+                end
             end
+            runeTicker = C_Timer.NewTicker(GetUpdateInterval(), tick)
+        end
+    else
+        if runeTicker then
+            runeTicker:Cancel()
+            runeTicker = nil
         end
     end
 end
@@ -427,43 +613,44 @@ function ResourceBar2Mixin:UpdateStaggerSystem()
     self:SetMinMaxValues(0, maxHealth)
     self:SetValue(stagger, Enum.StatusBarInterpolation.ExponentialEaseOut)
 
-    local pct = 0
-    local isSecret = issecretvalue(stagger) or issecretvalue(maxHealth)
-    
-    if not isSecret then
-        pct = (stagger / maxHealth) * 100
-        if pct >= 60 then
-            self:SetStatusBarColor(1, 0, 0)
-        elseif pct >= 30 then
-            self:SetStatusBarColor(1, 0.8, 0)
+    local isSecret = type(stagger) == "userdata" or type(maxHealth) == "userdata"
+
+    if C_UnitAuras.GetPlayerAuraBySpellID(124273) then -- Heavy Stagger
+        self:SetStatusBarColor(1, 0, 0)
+    elseif C_UnitAuras.GetPlayerAuraBySpellID(124274) then -- Moderate Stagger
+        self:SetStatusBarColor(1, 0.8, 0)
+    else
+        local c = self:GetSpecColor()
+        self:SetStatusBarColor(c.r, c.g, c.b)
+    end
+
+    if self.countStack then
+        if isSecret then
+            self.countStack:SetText("")
+        elseif stagger == 0 then
+            self.countStack:SetText("0")
         else
-            local c = self:GetSpecColor()
-            self:SetStatusBarColor(c.r, c.g, c.b)
+            local pct = (stagger / maxHealth) * 100
+            self.countStack:SetFormattedText("%.0f", pct)
         end
-        if self.countStack then
-            if stagger == 0 then
-                self.countStack:SetText("0")
-            else
-                self.countStack:SetFormattedText("%.0f", pct)
+    end
+
+    local inCombat = UnitAffectingCombat("player")
+    local hasStagger = stagger > 0
+    
+    if (inCombat or hasStagger) then
+        if not staggerTicker then
+            local function tick()
+                if bar2Frame and bar2Frame.buffConfig and bar2Frame.buffConfig.barMode == "stagger" then
+                    bar2Frame:UpdateStaggerSystem()
+                end
             end
+            staggerTicker = C_Timer.NewTicker(GetUpdateInterval(), tick)
         end
     else
-        local sPct = C_PaperDollInfo.GetStaggerPercentage("player")
-        if C_UnitAuras.GetPlayerAuraBySpellID(124273) then -- Heavy
-            self:SetStatusBarColor(1, 0, 0)
-        elseif C_UnitAuras.GetPlayerAuraBySpellID(124274) then -- Moderate
-            self:SetStatusBarColor(1, 0.8, 0)
-        else
-            local c = self:GetSpecColor()
-            self:SetStatusBarColor(c.r, c.g, c.b)
-        end
-        
-        if self.countStack then
-            if sPct == 0 then
-                self.countStack:SetText("0")
-            else
-                self.countStack:SetText(sPct)
-            end
+        if staggerTicker then
+            staggerTicker:Cancel()
+            staggerTicker = nil
         end
     end
 end
@@ -475,6 +662,33 @@ function ResourceBar2Mixin:Update()
     end
     if self.buffConfig and self.buffConfig.barMode == "stagger" then
         self:UpdateStaggerSystem(); self:Show(); return
+    end
+    if self.buffConfig and self.buffConfig.barMode == "soulfragments" then
+        self:SetMinMaxValues(0, 5)
+        local count = C_Spell.GetSpellCastCount(228477) or 0
+        if self.countStack then self.countStack:SetText(count) end
+        self:SetValue(count, Enum.StatusBarInterpolation.ExponentialEaseOut)
+        self:UpdateStackTicks(5)
+        self:Show()
+        return
+    end
+    if self.buffConfig and self.buffConfig.barMode == "power" then
+        local pType  = self.buffConfig.powerType
+        local pToken = self.buffConfig.powerToken
+        local maxVal = self.buffConfig.ticks or UnitPowerMax("player", pType) or 1
+        local current = UnitPower("player", pType)
+        local c = (Colors and Colors.Power and Colors.Power[pToken]) or PowerBarColor[pToken] or PowerBarColor[pType] or { r = 1, g = 1, b = 1 }
+        self:SetMinMaxValues(0, maxVal)
+        self:SetStatusBarColor(c.r, c.g, c.b)
+        if self.countStack then self.countStack:SetText(current) end
+        self:SetValue(current, Enum.StatusBarInterpolation.ExponentialEaseOut)
+        if self.buffConfig.isTickPower then
+            self:UpdateStackTicks(maxVal)
+        else
+            if self.ticks then for _, t in ipairs(self.ticks) do t:Hide() end end
+        end
+        self:Show()
+        return
     end
 
     if self.runebars then for _, rb in ipairs(self.runebars) do rb:Hide() end end
@@ -516,13 +730,9 @@ function ResourceBar2Mixin:Update()
             end
         elseif self.buffConfig and self.buffConfig.barMode == "ironfur" then
             self:SetMinMaxValues(0, 1)
-            if not self._hasIronfurUpdate then
-                self:SetScript("OnUpdate", UpdateIronfurSystem)
-                self._hasIronfurUpdate = true
-            end
+            UpdateIronfurSystem(self)
         else
             if self._hasDurationUpdate then self:SetScript("OnUpdate", nil); self._hasDurationUpdate = false end
-            if self._hasIronfurUpdate then self:SetScript("OnUpdate", nil); self._hasIronfurUpdate = false end
             local countBar = auraData.applications or 0
             if self.countStack then self.countStack:SetText(countBar) end
             self:SetValue(countBar, Enum.StatusBarInterpolation.ExponentialEaseOut)
@@ -596,6 +806,8 @@ local function ToggleBar2Events(enable)
         bar2Frame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
         bar2Frame:RegisterEvent("PLAYER_TALENT_UPDATE")
         bar2Frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+        bar2Frame:RegisterEvent("PLAYER_REGEN_DISABLED")
+        bar2Frame:RegisterEvent("PLAYER_REGEN_ENABLED")
         local _, class = UnitClass("player")
         if class == "DEATHKNIGHT" then
             bar2Frame:RegisterEvent("RUNE_POWER_UPDATE")
@@ -712,11 +924,16 @@ end
 -- ==============================
 -- 모듈 생명주기
 -- ==============================
+local isInitialized = false
 function module:OnEnable()
     initialize()
-    updater:OnLoad()
     dodoUpdateResourceBarOption()
     UpdateResourceBarVisibility()
+
+    if isInitialized then return end
+    isInitialized = true
+
+    updater:OnLoad()
 
     bar1Frame.editModeName = "dodo 개인 자원바"
     if LibEditMode then

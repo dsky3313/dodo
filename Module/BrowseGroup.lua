@@ -125,7 +125,13 @@ end
 -- ==============================
 -- 모듈 생명주기
 -- ==============================
+local isInitialized = false
 function module:OnEnable()
+    update_buttons()
+
+    if isInitialized then return end
+    isInitialized = true
+
     -- 최적화된 이벤트 감지 설정
     eventFrame:RegisterEvent("ADDON_LOADED")
     eventFrame:RegisterEvent("PARTY_LEADER_CHANGED")

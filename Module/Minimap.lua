@@ -104,17 +104,12 @@ local function update_minimap_zoom_reset()
     end
 end
 
-local isZoomTimerRunning = false
 local function reset_minimap_zoom()
     if not dodo.DB or dodo.DB.enableMinimapModule == false or dodo.DB.useResetMinimapZoom == false then return end
     local _, instanceType, difficultyID = GetInstanceInfo()
     if difficultyID == 8 or instanceType == "raid" then return end
-    if isZoomTimerRunning then return end
 
-    isZoomTimerRunning = true
-
-    C_Timer.After(10, function()
-        isZoomTimerRunning = false
+    dodo.Debounce("MinimapZoomReset", function()
         local _, iType, dID = GetInstanceInfo()
         if not (dID == 8 or iType == "raid") then
             local currentZoom = Minimap:GetZoom()
@@ -123,7 +118,7 @@ local function reset_minimap_zoom()
                 PlaySound(113, "Master")
             end
         end
-    end)
+    end, 10)
 end
 
 -- ==============================
@@ -180,41 +175,39 @@ end
 -- ==============================
 -- 기능 4: 좌표 표시
 -- ==============================
-local function update_worldmap_coords(self, elapsed)
-    self.elapsed = (self.elapsed or 0) + elapsed
-    if self.elapsed < 0.1 then return end
-    self.elapsed = 0
+local function update_worldmap_coords(self)
+    dodo.Throttle("worldmap_coords_update", function()
+        local mapID = WorldMapFrame:GetMapID()
+        local playerMapID = C_Map.GetBestMapForUnit("player")
 
-    local mapID = WorldMapFrame:GetMapID()
-    local playerMapID = C_Map.GetBestMapForUnit("player")
-
-    local playerText = "Player: --"
-    if playerMapID then
-        local playerPos = C_Map.GetPlayerMapPosition(playerMapID, "player")
-        if playerPos then
-            local x, y = playerPos:GetXY()
-            if x and y and not issecretvalue(x) and not issecretvalue(y) then
-                playerText = format("Player: [#%d] %.2f, %.2f", playerMapID, x * 100, y * 100)
+        local playerText = "Player: --"
+        if playerMapID then
+            local playerPos = C_Map.GetPlayerMapPosition(playerMapID, "player")
+            if playerPos then
+                local x, y = playerPos:GetXY()
+                if x and y and not issecretvalue(x) and not issecretvalue(y) then
+                    playerText = format("Player: [#%d] %.2f, %.2f", playerMapID, x * 100, y * 100)
+                else
+                    playerText = format("Player: [#%d] --, --", playerMapID)
+                end
             else
                 playerText = format("Player: [#%d] --, --", playerMapID)
             end
-        else
-            playerText = format("Player: [#%d] --, --", playerMapID)
         end
-    end
 
-    local cursorText = "Cursor: --"
-    if mapID and WorldMapFrame.ScrollContainer:IsMouseOver() then
-        local x, y = WorldMapFrame.ScrollContainer:GetNormalizedCursorPosition()
-        if x and y and not issecretvalue(x) and not issecretvalue(y) and x >= 0 and x <= 1 and y >= 0 and y <= 1 then
-            cursorText = format("Cursor: [#%d] %.2f, %.2f", mapID, x * 100, y * 100)
-        else
-            cursorText = format("Cursor: [#%d] --, --", mapID)
+        local cursorText = "Cursor: --"
+        if mapID and WorldMapFrame.ScrollContainer:IsMouseOver() then
+            local x, y = WorldMapFrame.ScrollContainer:GetNormalizedCursorPosition()
+            if x and y and not issecretvalue(x) and not issecretvalue(y) and x >= 0 and x <= 1 and y >= 0 and y <= 1 then
+                cursorText = format("Cursor: [#%d] %.2f, %.2f", mapID, x * 100, y * 100)
+            else
+                cursorText = format("Cursor: [#%d] --, --", mapID)
+            end
         end
-    end
 
-    self.PlayerText:SetText(playerText)
-    self.CursorText:SetText(cursorText)
+        self.PlayerText:SetText(playerText)
+        self.CursorText:SetText(cursorText)
+    end, 0.1)
 end
 
 local function update_coord_text()
@@ -421,10 +414,14 @@ end
 -- ==============================
 -- 모듈 생명주기
 -- ==============================
+local isInitialized = false
 function module:OnEnable()
     initialize()
     update_feature()
     update_module_state()
+
+    if isInitialized then return end
+    isInitialized = true
 
     -- zoom 리셋용 프레임 스크립트 연결
     initMinimap:SetScript("OnEvent", function(self, event, arg1)

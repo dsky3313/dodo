@@ -118,8 +118,13 @@ end
 -- ==============================
 -- 모듈 생명주기
 -- ==============================
+local isInitialized = false
 function module:OnEnable()
     initialize()
+    audio_sync()
+
+    if isInitialized then return end
+    isInitialized = true
 
     main_frame:SetScript("OnEvent", function(self, event, ...)
         if event == "VOICE_CHAT_OUTPUT_DEVICES_UPDATED" or event == "PLAYER_ENTERING_WORLD" then

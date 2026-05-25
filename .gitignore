@@ -1,9 +1,9 @@
-.git/
 .agents/
 .claude/
+.temp/
 .vscode/
+.git/
 .github/
-temp/
+Backup/
 Agents.md
-CLAUDE.md
 skills-lock.json

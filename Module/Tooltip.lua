@@ -12,6 +12,7 @@ local addonName, dodo = ...
 local module = {}
 dodo:RegisterModule("Tooltip", module)
 
+local Colors = dodo.Colors
 local LibEditMode = LibStub and LibStub("LibEditMode", true)
 
 local EXPANSION_NAMES = {
@@ -154,19 +155,22 @@ local function get_mount_info(unit)
     if unit == "player" and not IsMounted() then return end
     
     local foundName, foundIcon
-    AuraUtil.ForEachAura(unit, "HELPFUL", nil, function(aura)
-        local spellID = aura and aura.spellId
+    for i = 1, 40 do
+        local aura = C_UnitAuras.GetBuffDataByIndex(unit, i)
+        if not aura then break end
+        
+        local spellID = aura.spellId
         if spellID and not is_secret(spellID) then
             local mountID = C_MountJournal.GetMountFromSpell(spellID)
             if mountID then
                 local name, _, icon = C_MountJournal.GetMountInfoByID(mountID)
                 if name and name ~= "" then
                     foundName, foundIcon = name, icon
-                    return true -- 순회 중단
+                    break
                 end
             end
         end
-    end, true)
+    end
     return foundName, foundIcon
 end
 
@@ -195,7 +199,7 @@ local function OnUnitTooltip(self, data)
     if UnitIsPlayer(unit) then
         local _, class = UnitClass(unit)
         if class and dodo.DB.useTooltipColor ~= false then
-            local color = RAID_CLASS_COLORS[class]
+            local color = (Colors and Colors.Class[class]) or RAID_CLASS_COLORS[class]
             if color then
                 r, g, b = color.r, color.g, color.b
                 nameLine:SetTextColor(r, g, b)
@@ -211,7 +215,7 @@ local function OnUnitTooltip(self, data)
     else
         local reaction = UnitReaction(unit, "player")
         if reaction and dodo.DB.useTooltipColor ~= false then
-            local color = FACTION_BAR_COLORS[reaction]
+            local color = (Colors and Colors.Reaction[reaction]) or FACTION_BAR_COLORS[reaction]
             if color then
                 r, g, b = color.r, color.g, color.b
                 nameLine:SetTextColor(r, g, b)
@@ -345,15 +349,20 @@ end
 -- ==============================
 -- 모듈 생명주기
 -- ==============================
+local isInitialized = false
 function module:OnEnable()
     if not dodo.DB then return end
 
-    initialize()
     update_feature()
     update_module_state()
 
-    -- 상태바 숨김을 위한 훅
-    hooksecurefunc(GameTooltipStatusBar, "Show", function(self) 
+    if isInitialized then return end
+    isInitialized = true
+
+    initialize()
+
+    -- 상태바 숨김을 위한 훅 (dodo.HookOnce 기반 중복 훅 방지)
+    dodo.HookOnce(GameTooltipStatusBar, "Show", function(self) 
         if dodo.DB and dodo.DB.enableTooltipModule ~= false and dodo.DB.useTooltipHealthHide ~= false then 
             self:Hide() 
         end

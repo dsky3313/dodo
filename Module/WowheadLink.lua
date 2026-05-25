@@ -229,8 +229,12 @@ end
 -- ==============================
 -- 모듈 생명주기
 -- ==============================
+local isInitialized = false
 function module:OnEnable()
     initialize()
+
+    if isInitialized then return end
+    isInitialized = true
 
     local frame = CreateFrame("Frame")
     frame:RegisterEvent("PLAYER_ENTERING_WORLD")

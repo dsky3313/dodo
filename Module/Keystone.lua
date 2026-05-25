@@ -12,17 +12,21 @@ local addonName, dodo = ...
 local module = {}
 dodo:RegisterModule("Keystone", module)
 
+local Colors = dodo.Colors
 local IconLib = dodo.LibIcon
 local LibEditMode = LibStub and LibStub("LibEditMode", true)
 
 local Config = {
-    -- 크기 및 간격 기본값 설정
+    defaultX     = 20,
+    defaultY     = -140,
+    defaultPoint = "TOPLEFT",
+    frameStrata = "LOW",  -- 프레임 계층
+
     countSize   = 16,     -- 단수(숫자) 폰트 크기
     rowSpacing  = 4,      -- 줄 간격 (아이콘 사이 거리)
     textXOffset = 4,      -- 텍스트 가로 위치 (아이콘과의 거리)
     nameYOffset = -10,    -- 캐릭터 이름 세로 위치
     mapYOffset  = 2,      -- 던전 이름 세로 위치
-    frameStrata = "LOW",  -- 프레임 계층
 }
 
 local DungeonPorts = {
@@ -342,7 +346,7 @@ local function render_party_ui()
             end
 
             local _, class = UnitClass(data.unit or data.name)
-            local classColor = class and RAID_CLASS_COLORS[class] or NORMAL_FONT_COLOR
+            local classColor = class and ((Colors and Colors.Class[class]) or RAID_CLASS_COLORS[class]) or NORMAL_FONT_COLOR
             row.name:SetText(data.name)
             row.name:SetTextColor(classColor.r, classColor.g, classColor.b)
             row:Show()
@@ -481,9 +485,9 @@ local function create_ui()
     MainFrame:SetFrameStrata(Config.frameStrata)
 
     -- 편집 모드 위치 불러오기
-    local savedX = (dodo.DB and dodo.DB.keystoneX) or 20
-    local savedY = (dodo.DB and dodo.DB.keystoneY) or -140
-    local savedPoint = (dodo.DB and dodo.DB.keystonePoint) or "TOPLEFT"
+    local savedX = (dodo.DB and dodo.DB.keystoneX) or Config.defaultX
+    local savedY = (dodo.DB and dodo.DB.keystoneY) or Config.defaultY
+    local savedPoint = (dodo.DB and dodo.DB.keystonePoint) or Config.defaultPoint
     MainFrame:SetPoint(savedPoint, UIParent, savedPoint, savedX, savedY)
 
     for i = 1, 5 do
@@ -716,160 +720,164 @@ end
 -- ==============================
 -- 모듈 생명주기
 -- ==============================
+local isInitialized = false
 function module:OnEnable()
-    initialize()
-    update_module_state()
+    if not isInitialized then
+        isInitialized = true
+        initialize()
 
-    -- 이벤트 바인딩
-    MainFrame:SetScript("OnEvent", OnEvent)
+        -- 이벤트 바인딩
+        MainFrame:SetScript("OnEvent", OnEvent)
 
-    -- LibEditMode 등록 및 설정
-    MainFrame.editModeName = "dodo 쐐기돌 목록"
-    if LibEditMode then
-        LibEditMode:AddFrame(
-            MainFrame,
-            function(f, layoutName, point, x, y)
-                if dodo.DB then
-                    dodo.DB.keystoneX = x
-                    dodo.DB.keystoneY = y
-                    dodo.DB.keystonePoint = point
+        -- LibEditMode 등록 및 설정
+        MainFrame.editModeName = "dodo 쐐기돌 목록"
+        if LibEditMode then
+            LibEditMode:AddFrame(
+                MainFrame,
+                function(f, layoutName, point, x, y)
+                    if dodo.DB then
+                        dodo.DB.keystoneX = x
+                        dodo.DB.keystoneY = y
+                        dodo.DB.keystonePoint = point
+                    end
+                    update_feature()
+                end,
+                {
+                    point = Config.defaultPoint,
+                    x = Config.defaultX,
+                    y = Config.defaultY,
+                },
+                "dodo 쐐기돌 목록"
+            )
+
+            LibEditMode:AddFrameSettings(MainFrame, {
+                {
+                    kind = LibEditMode.SettingType.Slider,
+                    name = "아이콘 크기",
+                    desc = "쐐기돌 아이콘의 크기를 설정합니다.",
+                    default = 40,
+                    minValue = 24,
+                    maxValue = 60,
+                    valueStep = 2,
+                    get = function() 
+                        return (dodo.DB and dodo.DB.keystoneIconSize) or 40 
+                    end,
+                    set = function(_, newValue)
+                        if dodo.DB then 
+                            dodo.DB.keystoneIconSize = newValue 
+                        end
+                        update_feature()
+                    end,
+                },
+                {
+                    kind = LibEditMode.SettingType.Slider,
+                    name = "글꼴 크기",
+                    desc = "캐릭터 및 던전명 글꼴 크기를 설정합니다.",
+                    default = 12,
+                    minValue = 8,
+                    maxValue = 20,
+                    valueStep = 1,
+                    get = function() 
+                        return (dodo.DB and dodo.DB.keystoneFontSize) or 12 
+                    end,
+                    set = function(_, newValue)
+                        if dodo.DB then 
+                            dodo.DB.keystoneFontSize = newValue 
+                        end
+                        update_feature()
+                    end,
+                },
+                {
+                    kind = LibEditMode.SettingType.Checkbox,
+                    name = "내 돌 항상 표시",
+                    desc = "파티 미가입 상태에서도 내 쐐기돌을 표시합니다.",
+                    default = true,
+                    get = function() 
+                        return dodo.DB and dodo.DB.useSoloKeystone ~= false 
+                    end,
+                    set = function(_, newValue)
+                        if dodo.DB then 
+                            dodo.DB.useSoloKeystone = newValue 
+                        end
+                        update_visibility_condition()
+                        render_party_ui()
+                    end,
+                },
+                {
+                    kind = LibEditMode.SettingType.Checkbox,
+                    name = "완료 시 주사위 굴리기 알림",
+                    desc = "쐐기돌 완료 시 파티에 주사위 굴리기를 외칩니다.",
+                    default = true,
+                    get = function() 
+                        return dodo.DB and dodo.DB.useKeyRoll ~= false 
+                    end,
+                    set = function(_, newValue)
+                        if dodo.DB then 
+                            dodo.DB.useKeyRoll = newValue 
+                        end
+                    end,
+                },
+            })
+
+            LibEditMode:RegisterCallback("enter", function()
+                local isEnabled = (dodo.DB and dodo.DB.enableKeystoneModule ~= false)
+                if isEnabled then
+                    MainFrame:Show()
+                    -- Mock 상태 테스트 노출
+                    for i = 1, 5 do
+                        local row = Rows[i]
+                        row.portBtn:ApplyConfig({
+                            type = "spell",
+                            id = 159898,
+                            icon = 1042079,
+                            isAction = false,
+                            label = "",
+                            useTooltip = false,
+                            outline = true,
+                            cooldownSize = 12,
+                            framestrata = Config.frameStrata,
+                        })
+                        row.portBtn.Count:SetText("10")
+                        row.portBtn.icon:SetDesaturated(false)
+                        row.noPort:Hide()
+                        row.noLib:Hide()
+                        row.mapName:SetText("하늘탑 (테스트)")
+                        row.name:SetText("파티원" .. i)
+                        row.name:SetTextColor(1, 0.82, 0)
+                        row:Show()
+                    end
                 end
-                update_feature()
-            end,
-            {
-                point = "TOPLEFT",
-                x = 20,
-                y = -120,
-            },
-            "dodo 쐐기돌 목록"
-        )
+            end)
 
-        LibEditMode:AddFrameSettings(MainFrame, {
-            {
-                kind = LibEditMode.SettingType.Slider,
-                name = "아이콘 크기",
-                desc = "쐐기돌 아이콘의 크기를 설정합니다.",
-                default = 40,
-                minValue = 24,
-                maxValue = 60,
-                valueStep = 2,
-                get = function() 
-                    return (dodo.DB and dodo.DB.keystoneIconSize) or 40 
-                end,
-                set = function(_, newValue)
-                    if dodo.DB then 
-                        dodo.DB.keystoneIconSize = newValue 
-                    end
-                    update_feature()
-                end,
-            },
-            {
-                kind = LibEditMode.SettingType.Slider,
-                name = "글꼴 크기",
-                desc = "캐릭터 및 던전명 글꼴 크기를 설정합니다.",
-                default = 12,
-                minValue = 8,
-                maxValue = 20,
-                valueStep = 1,
-                get = function() 
-                    return (dodo.DB and dodo.DB.keystoneFontSize) or 12 
-                end,
-                set = function(_, newValue)
-                    if dodo.DB then 
-                        dodo.DB.keystoneFontSize = newValue 
-                    end
-                    update_feature()
-                end,
-            },
-            {
-                kind = LibEditMode.SettingType.Checkbox,
-                name = "내 돌 항상 표시",
-                desc = "파티 미가입 상태에서도 내 쐐기돌을 표시합니다.",
-                default = true,
-                get = function() 
-                    return dodo.DB and dodo.DB.useSoloKeystone ~= false 
-                end,
-                set = function(_, newValue)
-                    if dodo.DB then 
-                        dodo.DB.useSoloKeystone = newValue 
-                    end
-                    update_visibility_condition()
+            LibEditMode:RegisterCallback("exit", function()
+                local isEnabled = (dodo.DB and dodo.DB.enableKeystoneModule ~= false)
+                if isEnabled then
                     render_party_ui()
-                end,
-            },
-            {
-                kind = LibEditMode.SettingType.Checkbox,
-                name = "완료 시 주사위 굴리기 알림",
-                desc = "쐐기돌 완료 시 파티에 주사위 굴리기를 외칩니다.",
-                default = true,
-                get = function() 
-                    return dodo.DB and dodo.DB.useKeyRoll ~= false 
-                end,
-                set = function(_, newValue)
-                    if dodo.DB then 
-                        dodo.DB.useKeyRoll = newValue 
-                    end
-                end,
-            },
-        })
-
-        LibEditMode:RegisterCallback("enter", function()
-            local isEnabled = (dodo.DB and dodo.DB.enableKeystoneModule ~= false)
-            if isEnabled then
-                MainFrame:Show()
-                -- Mock 상태 테스트 노출
-                for i = 1, 5 do
-                    local row = Rows[i]
-                    row.portBtn:ApplyConfig({
-                        type = "spell",
-                        id = 159898,
-                        icon = 1042079,
-                        isAction = false,
-                        label = "",
-                        useTooltip = false,
-                        outline = true,
-                        cooldownSize = 12,
-                        framestrata = Config.frameStrata,
-                    })
-                    row.portBtn.Count:SetText("10")
-                    row.portBtn.icon:SetDesaturated(false)
-                    row.noPort:Hide()
-                    row.noLib:Hide()
-                    row.mapName:SetText("하늘탑 (테스트)")
-                    row.name:SetText("파티원" .. i)
-                    row.name:SetTextColor(1, 0.82, 0)
-                    row:Show()
+                else
+                    MainFrame:Hide()
                 end
-            end
-        end)
+            end)
+        end
 
-        LibEditMode:RegisterCallback("exit", function()
-            local isEnabled = (dodo.DB and dodo.DB.enableKeystoneModule ~= false)
-            if isEnabled then
-                render_party_ui()
-            else
-                MainFrame:Hide()
-            end
-        end)
+        -- dodoEditModePanel 내 세부 설정 주입 (마스터 토글만)
+        if dodo.RegisterEditModeSetting then
+            dodo.RegisterEditModeSetting("편의기능", {
+                {
+                    name = "쐐기돌 목록 표시",
+                    get = function() 
+                        return dodo.DB and dodo.DB.enableKeystoneModule ~= false 
+                    end,
+                    set = function(checked)
+                        if dodo.DB then 
+                            dodo.DB.enableKeystoneModule = checked 
+                        end
+                        update_module_state()
+                    end
+                },
+                { isSpacer = true }
+            })
+        end
     end
 
-    -- dodoEditModePanel 내 세부 설정 주입 (마스터 토글만)
-    if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("편의기능", {
-            {
-                name = "쐐기돌 목록 표시",
-                get = function() 
-                    return dodo.DB and dodo.DB.enableKeystoneModule ~= false 
-                end,
-                set = function(checked)
-                    if dodo.DB then 
-                        dodo.DB.enableKeystoneModule = checked 
-                    end
-                    update_module_state()
-                end
-            },
-            { isSpacer = true }
-        })
-    end
-
+    update_module_state()
 end
