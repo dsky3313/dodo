@@ -9,6 +9,7 @@
 local addonName, dodo = ...
 local module = {}
 dodo:RegisterModule("QuickBobber", module)
+module.NonCombat = true
 
 local LibIcon = dodo.LibIcon
 
@@ -31,6 +32,7 @@ local BobberConfig = {
 -- ==============================
 -- 캐싱
 -- ==============================
+-- abc 오름차순 정렬 완료
 -- [주의] ProfessionsBookFrame은 지연 로드(LoD) 되므로 절대 파일 로드 시점에 로컬 캐싱(Upvalue) 하면 안 됩니다!
 local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
@@ -74,7 +76,7 @@ local function quick_bobber()
 end
 
 -- 이벤트 핸들러
-BobberButton:SetScript("OnEvent", function(self, event)
+local function on_bobber_event(self, event)
     if event == "PLAYER_REGEN_ENABLED" then
         self:UnregisterEvent("PLAYER_REGEN_ENABLED")
         quick_bobber()
@@ -83,7 +85,9 @@ BobberButton:SetScript("OnEvent", function(self, event)
             self:UpdateStatus() 
         end
     end
-end)
+end
+
+BobberButton:SetScript("OnEvent", on_bobber_event)
 
 -- ==============================
 -- 초기화
@@ -108,15 +112,15 @@ function module:OnEnable()
 
     local initFrame = CreateFrame("Frame")
     initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-    initFrame:SetScript("OnEvent", function(self, event)
+    local function on_init_event(self, event)
         if event == "PLAYER_ENTERING_WORLD" then
             quick_bobber()
             self:UnregisterAllEvents()
         end
-    end)
+    end
+    initFrame:SetScript("OnEvent", on_init_event)
     
-    -- 지연 로드(LoD)되는 블리자드 전문기술 책 애드온 로드 완료 감시
-    EventUtil.ContinueOnAddOnLoaded("Blizzard_ProfessionsBook", function()
+    local function on_professions_book_loaded()
         local profFrame = _G.ProfessionsBookFrame
         if profFrame and not bookHooked then
             profFrame:HookScript("OnShow", quick_bobber)
@@ -124,7 +128,10 @@ function module:OnEnable()
             bookHooked = true
             quick_bobber()
         end
-    end)
+    end
+
+    -- 지연 로드(LoD)되는 블리자드 전문기술 책 애드온 로드 완료 감시
+    EventUtil.ContinueOnAddOnLoaded("Blizzard_ProfessionsBook", on_professions_book_loaded)
 
     -- 이미 로드되어 있는 상황을 대비한 즉시 훅 처리 (리로드 시)
     local profFrame = _G.ProfessionsBookFrame
@@ -149,4 +156,16 @@ function module:OnEnable()
             }
         })
     end
+end
+
+-- ==============================
+-- 전투 중 휴면 라이프사이클
+-- ==============================
+function module:OnCombatStart()
+    BobberButton:UnregisterAllEvents()
+    BobberButton:Hide()
+end
+
+function module:OnCombatEnd()
+    quick_bobber()
 end

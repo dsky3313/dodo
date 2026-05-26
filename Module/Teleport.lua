@@ -11,6 +11,7 @@
 local addonName, dodo = ...
 local module = {}
 dodo:RegisterModule("Teleport", module)
+module.NonCombat = true
 
 local LibIcon = dodo.LibIcon
 
@@ -165,7 +166,7 @@ local teleportTable = {
 -- ==============================
 -- 캐싱
 -- ==============================
--- abc 가나다 순으로 정렬
+-- abc 가나다 순으로 정렬 완료
 local CreateFrame = CreateFrame
 local GameMenuFrame = GameMenuFrame
 local GetInstanceInfo = GetInstanceInfo
@@ -182,6 +183,7 @@ local unpack = unpack
 local col, row = 0, -1
 local currentCategory = ""
 local teleportIcons = {}
+local initTeleportFrame
 
 local expLookup = {}
 for _, info in ipairs(expTable) do
@@ -389,7 +391,7 @@ function module:OnEnable()
 
     TeleportFrame:SetScript("OnShow", update_ui_status)
 
-    local initTeleportFrame = CreateFrame("Frame")
+    initTeleportFrame = CreateFrame("Frame")
     initTeleportFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 
     local function toggle_events(enable)
@@ -463,4 +465,30 @@ function module:OnEnable()
             }
         })
     end
+end
+
+-- ==============================
+-- 전투 중 휴면 라이프사이클
+-- ==============================
+function module:OnCombatStart()
+    TeleportFrame:Hide()
+    if initTeleportFrame then
+        initTeleportFrame:UnregisterAllEvents()
+    end
+end
+
+function module:OnCombatEnd()
+    if initTeleportFrame then
+        initTeleportFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+        if C_Housing and C_Housing.GetPlayerOwnedHouses then
+            initTeleportFrame:RegisterEvent("PLAYER_HOUSE_LIST_UPDATED")
+        end
+        initTeleportFrame:RegisterEvent("SPELL_UPDATE_COOLDOWN")
+        initTeleportFrame:RegisterEvent("BAG_UPDATE_DELAYED")
+        initTeleportFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+        initTeleportFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+        initTeleportFrame:RegisterEvent("HOUSE_PLOT_ENTERED")
+        initTeleportFrame:RegisterEvent("HOUSE_PLOT_EXITED")
+    end
+    update_ui_status()
 end

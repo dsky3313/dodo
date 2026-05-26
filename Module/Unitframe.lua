@@ -88,6 +88,15 @@ oUF.Tags.Methods['perhp:decimal'] = function(unit)
 end
 oUF.Tags.Events['perhp:decimal'] = 'UNIT_HEALTH UNIT_MAXHEALTH'
 
+-- 가비지 컬렉션 스파이크(spikesum) 방지용 제로가비지(Garbage-free) pcall 헬퍼
+local function check_zero(val)
+	return val == 0
+end
+
+local function format_pct(pct)
+	return string_format('%.0f', pct)
+end
+
 oUF.Tags.Methods['dodopower'] = function(unit)
 	local max = UnitPowerMax(unit)
 	if not max then return '' end
@@ -95,12 +104,13 @@ oUF.Tags.Methods['dodopower'] = function(unit)
 	local powerType, powerToken = UnitPowerType(unit)
 	local isMana = (powerType == 0 or powerToken == "MANA")
 
-	local maxSuccess, isMaxZero = pcall(function() return max == 0 end)
+	-- 비밀값 비교 에러 방지용 가비지 프리 pcall
+	local maxSuccess, isMaxZero = pcall(check_zero, max)
 	if not maxSuccess then
 		if isMana then
 			local pct = UnitPowerPercent(unit, nil, true, CurveConstants and CurveConstants.ScaleTo100)
 			if not pct then return '0' end
-			local ok, formattedPct = pcall(function() return string_format('%.0f', pct) end)
+			local ok, formattedPct = pcall(format_pct, pct)
 			if ok then return formattedPct end
 			return pct
 		else
@@ -112,12 +122,12 @@ oUF.Tags.Methods['dodopower'] = function(unit)
 	if isMaxZero then return '' end
 
 	local cur = UnitPower(unit)
-	local curSuccess, isCurZero = pcall(function() return cur == 0 end)
+	local curSuccess, isCurZero = pcall(check_zero, cur)
 	if not curSuccess then
 		if isMana then
 			local pct = UnitPowerPercent(unit, nil, true, CurveConstants and CurveConstants.ScaleTo100)
 			if not pct then return '0' end
-			local ok, formattedPct = pcall(function() return string_format('%.0f', pct) end)
+			local ok, formattedPct = pcall(format_pct, pct)
 			if ok then return formattedPct end
 			return pct
 		else

@@ -42,7 +42,7 @@ local OPTIMIZED_CVARS = {
     { "damageMeterEnabled", 1 },
     { "damageMeterResetOnNewInstance", 1 },
     { "encounterWarningsEnabled", 1 },
-    
+
     -- 이름표 최적화
     { "nameplateMaxDistance", 60 },      -- 이름표 표시 거리 (60)
     { "nameplateMinScale", 1 },          -- 이름표 최소 크기
@@ -56,7 +56,7 @@ local OPTIMIZED_CVARS = {
     { "cameraDistanceMaxZoomFactor", 2.6 }, -- 최대 시야 거리 확장
     { "cameraIndirectVisibility", 1 },      -- 장애물 뒤 캐릭터 실루엣 표시
     { "cameraIndirectOffset", 10 },
-    
+
     -- 기타 시스템 최적화
     { "advancedCombatLogging", 1 },
     { "autoDismountFlying", 1 },
@@ -105,6 +105,13 @@ local function update_friendly_nameplates()
     end
 end
 
+local function hide_copy_popup()
+    local popup = _G["dodo_LayoutCopyPopup"]
+    if popup then
+        popup:Hide()
+    end
+end
+
 -- ==============================
 -- 기능: 팝업 관리
 -- ==============================
@@ -116,7 +123,7 @@ local function show_copy_popup(text, title)
         popup:SetSize(300, 80)
         popup:SetPoint("CENTER")
         popup:SetFrameStrata("DIALOG")
-        
+
         local eb = CreateFrame("EditBox", nil, popup, "InputBoxTemplate")
         eb:SetPoint("BOTTOMLEFT", 25, 15)
         eb:SetPoint("BOTTOMRIGHT", -15, 15)
@@ -128,7 +135,7 @@ local function show_copy_popup(text, title)
 
         eb:SetScript("OnKeyDown", function(self, key)
             if IsControlKeyDown() and key == "C" then
-                C_Timer.After(0.1, function() popup:Hide() end)
+                C_Timer.After(0.1, hide_copy_popup)
             end
         end)
         popup.editBox = eb

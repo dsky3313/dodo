@@ -1,4 +1,8 @@
 -- ==============================
+-- Inspired
+-- ==============================
+
+-- ==============================
 -- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
@@ -18,9 +22,10 @@ local ButtonFrameTemplate_HidePortrait = ButtonFrameTemplate_HidePortrait
 local CreateFrame = CreateFrame
 local EditModeManagerFrame = EditModeManagerFrame
 local EventRegistry = EventRegistry
-local frame;
+local frame
 local ipairs = ipairs
 local math_abs = math.abs
+local table_insert = table.insert
 local UIParent = UIParent
 
 -- ==============================
@@ -40,8 +45,7 @@ end
 local function CreateEditModePanel()
     if frame then return frame end
 
-    frame = CreateFrame("Frame", "dodoEditModePanel", UIParent, "PortraitFrameTemplate")
-    ButtonFrameTemplate_HidePortrait(frame)
+    frame = dodo.UI:CreatePortraitPanel("dodoEditModePanel", "dodo 모듈 설정")
 
     -- 블리자드 HUD 창과 잘 어우러지는 최적의 크기로 조정 (2열 지원을 위해 너비 확장)
     frame:SetWidth(360)
@@ -49,187 +53,14 @@ local function CreateEditModePanel()
     frame:SetPoint("BOTTOMLEFT", EditModeManagerFrame, "BOTTOMRIGHT", Settings.positionX, -Settings.positionY)
     frame:Hide()
 
-    frame:SetFrameStrata("HIGH")
-
-    if frame.TitleContainer and frame.TitleContainer.TitleText then
-        frame.TitleContainer.TitleText:SetText("dodo 모듈 설정")
-    end
-
-    if frame.Bg then
-        frame.Bg:SetVertexColor(0.08, 0.08, 0.08, 0.8)
-    end
-
-    -- 컴포넌트 활성/비활성 처리 헬퍼 함수
-    local function SetComponentEnabled(comp, enabled)
-        if enabled then
-            comp:SetAlpha(1.0)
-            comp:Enable()
-            if comp.Text then comp.Text:SetTextColor(1, 0.82, 0) end
-        else
-            comp:SetAlpha(0.35)
-            comp:Disable()
-            if comp.Text then comp.Text:SetTextColor(0.5, 0.5, 0.5) end
-        end
-    end
-
-    local function SetSliderEnabled(sliderFrame, enabled)
-        if enabled then
-            sliderFrame:SetAlpha(1.0)
-            if sliderFrame.Slider and sliderFrame.Slider.Slider then
-                sliderFrame.Slider.Slider:Enable()
-            end
-        else
-            sliderFrame:SetAlpha(0.35)
-            if sliderFrame.Slider and sliderFrame.Slider.Slider then
-                sliderFrame.Slider.Slider:Disable()
-            end
-        end
-    end
-
-    local function SetDropdownEnabled(dd, enabled)
-        if enabled then
-            dd:SetAlpha(1.0)
-            dd:Enable()
-        else
-            dd:SetAlpha(0.35)
-            dd:Disable()
-        end
-    end
-
-    -- 체크박스 컴포넌트 빌더 함수 (순정 스타일)
-    local function CreateCheckbox(parent, label, getFunc, setFunc)
-        local cb = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
-        cb:SetSize(24, 24)
-
-        cb.Text = cb:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-        cb.Text:SetPoint("LEFT", cb, "RIGHT", 5, 0)
-        cb.Text:SetText(label)
-
-        cb:SetChecked(getFunc())
-        cb:SetScript("OnClick", function(self)
-            setFunc(self:GetChecked())
-            if _G.dodoEditModePanel and _G.dodoEditModePanel.UpdateDisabledStates then
-                _G.dodoEditModePanel:UpdateDisabledStates()
-            end
-        end)
-
-        return cb
-    end
-
-    -- 드롭다운 컴포넌트 빌더 함수 (순정 WowStyle1DropdownTemplate 적용)
-    local function CreateDropdown(parent, getFunc, setFunc, values)
-        local dropdown = CreateFrame("DropdownButton", nil, parent, "WowStyle1DropdownTemplate")
-        dropdown:SetSize(130, 22)
-
-        local function RefreshText()
-            local currentVal = getFunc()
-            local foundText = "선택"
-            for _, item in ipairs(values) do
-                if item.value == currentVal then
-                    foundText = item.text
-                    break
-                end
-            end
-            dropdown:SetText(foundText)
-        end
-
-        dropdown:SetupMenu(function(owner, rootDescription)
-            for _, item in ipairs(values) do
-                rootDescription:CreateRadio(
-                    item.text,
-                    function()
-                        return getFunc() == item.value
-                    end,
-                    function()
-                        setFunc(item.value)
-                        RefreshText()
-                        if _G.dodoEditModePanel and _G.dodoEditModePanel.UpdateDisabledStates then
-                            _G.dodoEditModePanel:UpdateDisabledStates()
-                        end
-                    end
-                )
-            end
-        end)
-
-        RefreshText()
-        return dropdown
-    end
-
-    -- 슬라이더 컴포넌트 빌더 함수 (블리자드 순정 EditModeSettingSliderTemplate 및 LibEditMode 설계 차용)
-    local function CreateSlider(parent, getFunc, setFunc, minVal, maxVal, step)
-        local frame = CreateFrame("Frame", nil, parent, "EditModeSettingSliderTemplate")
-        frame:SetSize(150, 32)
-        frame:Show()
-
-        if frame.Label then
-            frame.Label:Hide()
-        end
-
-        -- 슬라이더 위치 및 크기 보정 (2열 우측 격자에 최적화)
-        if frame.Slider then
-            frame.Slider:ClearAllPoints()
-            frame.Slider:SetPoint("LEFT", frame, "LEFT", -15, 7)
-            frame.Slider:SetSize(115, 32)
-            frame.Slider:Show()
-
-            -- 증감 텍스트 표시 설정
-            local formatters = {}
-            formatters[MinimalSliderWithSteppersMixin.Label.Right] = CreateMinimalSliderFormatter(
-            MinimalSliderWithSteppersMixin.Label.Right, function(value)
-                return string.format("%.2f", value)
-            end)
-
-            local steps = (maxVal - minVal) / step
-            frame.Slider:Init(getFunc(), minVal, maxVal, steps, formatters)
-
-            -- 조작 시 콜백
-            frame.Slider.Slider:SetScript("OnValueChanged", function(slider, value)
-                frame.Slider:FormatValue(value)
-                setFunc(value)
-                if _G.dodoEditModePanel and _G.dodoEditModePanel.UpdateDisabledStates then
-                    _G.dodoEditModePanel:UpdateDisabledStates()
-                end
-            end)
-
-            local function UpdateValue()
-                local val = getFunc()
-                frame.Slider:SetValue(val)
-                frame.Slider:FormatValue(val)
-            end
-
-            UpdateValue()
-            frame.UpdateValue = UpdateValue
-        end
-
-        return frame
-    end
-
-    -- 버튼 컴포넌트 빌더 함수
-    local function CreateButton(parent, label, text, onClickFunc)
-        local frame = CreateFrame("Frame", nil, parent)
-        frame:SetSize(150, 26)
-
-        local title = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-        title:SetPoint("LEFT", frame, "LEFT", 10, 0)
-        title:SetText(label)
-
-        local btn = CreateFrame("Button", nil, frame, "UIPanelButtonNoTooltipTemplate")
-        btn:SetSize(60, 22)
-        btn:SetPoint("LEFT", title, "RIGHT", 10, 0)
-        btn:SetText(text)
-        btn:SetScript("OnClick", onClickFunc)
-
-        frame.Button = btn
-        frame.Title = title
-
-        return frame
-    end
+    local updateQueue = {}
+    -- updateQueue는 아래 레이아웃 루프에서 disabled 상태 목록을 누적합니다.
 
     -- 와우 순정 편집모드 스타일의 ScrollFrameTemplate 적용
     local scrollFrame = CreateFrame("ScrollFrame", "$parentScrollFrame", frame, "ScrollFrameTemplate")
     scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -30)
     scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -30, 10)
-    
+
     scrollFrame.scrollBarHideIfUnscrollable = true
     scrollFrame.scrollBarX = 6
     scrollFrame.scrollBarTopY = -4
@@ -265,74 +96,6 @@ local function CreateEditModePanel()
     local defaultMenuItems = {
         { isHeader = true, text = "전투" },
         { isHeader = true, text = "인터페이스" },
-        {
-            name = "퀘스트 편의기능",
-            get = function()
-                if dodo.DB and dodo.DB.enableQuestsModule ~= nil then
-                    return dodo.DB.enableQuestsModule
-                end
-                return true -- 기본 활성화
-            end,
-            set = function(checked)
-                if dodo.DB then
-                    dodo.DB.enableQuestsModule = checked
-                end
-                if dodo.UpdateQuestsModuleState then
-                    dodo.UpdateQuestsModuleState()
-                end
-            end
-        },
-        {
-            name = "공격대 준비 체크",
-            get = function()
-                if dodo.DB and dodo.DB.enableReadyCheckModule ~= nil then
-                    return dodo.DB.enableReadyCheckModule
-                end
-                return true -- 기본 활성화
-            end,
-            set = function(checked)
-                if dodo.DB then
-                    dodo.DB.enableReadyCheckModule = checked
-                end
-                if dodo.UpdateReadyCheckModuleState then
-                    dodo.UpdateReadyCheckModuleState()
-                end
-            end
-        },
-        {
-            name = "던전 도감 업적 표시",
-            get = function()
-                if dodo.DB and dodo.DB.enableEncounterAchievementsModule ~= nil then
-                    return dodo.DB.enableEncounterAchievementsModule
-                end
-                return true -- 기본 활성화
-            end,
-            set = function(checked)
-                if dodo.DB then
-                    dodo.DB.enableEncounterAchievementsModule = checked
-                end
-                if dodo.UpdateEncounterAchievementsModuleState then
-                    dodo.UpdateEncounterAchievementsModuleState()
-                end
-            end
-        },
-        {
-            name = "버프 누락 알림",
-            get = function()
-                if dodo.DB and dodo.DB.enableBuffReminderModule ~= nil then
-                    return dodo.DB.enableBuffReminderModule
-                end
-                return true -- 기본 활성화
-            end,
-            set = function(checked)
-                if dodo.DB then
-                    dodo.DB.enableBuffReminderModule = checked
-                end
-                if dodo.UpdateBuffReminderModuleState then
-                    dodo.UpdateBuffReminderModuleState()
-                end
-            end
-        },
         { isHeader = true, text = "음성" },
         { isHeader = true, text = "편의기능" },
         { isHeader = true, text = "일반" },
@@ -341,7 +104,7 @@ local function CreateEditModePanel()
 
     local menuItems = {}
     for _, headerItem in ipairs(defaultMenuItems) do
-        table.insert(menuItems, headerItem)
+        table_insert(menuItems, headerItem)
         if headerItem.isHeader then
             local category = headerItem.text
             local groups = registeredSettings[category]
@@ -351,7 +114,7 @@ local function CreateEditModePanel()
                 for g = 1, #groups do
                     local groupItems = groups[g]
                     for i = 1, #groupItems do
-                        table.insert(flatItems, groupItems[i])
+                        table_insert(flatItems, groupItems[i])
                     end
                 end
 
@@ -366,7 +129,7 @@ local function CreateEditModePanel()
                         local nextItem = flatItems[idx + 1]
                         if nextItem and (nextItem.type == "dropdown" or nextItem.type == "slider") and (not item.type) then
                             -- 체크박스 + 설정(드롭다운/슬라이더) 세트
-                            table.insert(sets, {
+                            table_insert(sets, {
                                 cb = item,
                                 setting = nextItem,
                                 name = item.name or "",
@@ -375,7 +138,7 @@ local function CreateEditModePanel()
                             idx = idx + 2
                         else
                             -- 단독 아이템 (체크박스, 개별 버튼 등)
-                            table.insert(sets, {
+                            table_insert(sets, {
                                 cb = item,
                                 name = item.name or "",
                                 hasSetting = (item.type == "dropdown" or item.type == "slider" or item.type == "button")
@@ -386,8 +149,6 @@ local function CreateEditModePanel()
                 end
 
                 -- 3단계: 정렬 수행
-                -- 설정이 없는 단독 토글을 위로(hasSetting == false), 설정이 있는 토글을 아래로(hasSetting == true) 배치
-                -- 동일 그룹 내에서는 이름(name)을 기준으로 가나다(알파벳) 오름차순 정렬
                 table.sort(sets, function(a, b)
                     if a.hasSetting ~= b.hasSetting then
                         return not a.hasSetting
@@ -397,11 +158,10 @@ local function CreateEditModePanel()
 
                 -- 4단계: 정렬된 세트를 평탄화하고 자동 비활성화(disabled) 조건 래핑
                 for _, set in ipairs(sets) do
-                    table.insert(menuItems, set.cb)
+                    table_insert(menuItems, set.cb)
                     if set.setting then
                         local cbItem = set.cb
                         local originalDisabled = set.setting.disabled
-                        -- 드롭다운/슬라이더의 비활성화 조건을 좌측 체크박스의 활성 상태와 자동으로 바인딩
                         set.setting.disabled = function()
                             if originalDisabled and originalDisabled() then
                                 return true
@@ -416,14 +176,14 @@ local function CreateEditModePanel()
                             end
                             return false
                         end
-                        table.insert(menuItems, set.setting)
+                        table_insert(menuItems, set.setting)
                     end
                 end
             end
         end
     end
 
-    local updateQueue = {}
+    -- (updateQueue는 위에서 선언됨 - 중복 선언 제거)
 
     -- 순정 레이아웃 엔진과 유사하게 2열 정렬 계산 수행
     local startY = -5
@@ -466,12 +226,12 @@ local function CreateEditModePanel()
                     col = 0
                 end
             elseif item.type == "dropdown" then -- 드롭다운 컴포넌트 생성 (우측 2열에만 배치)
-                local dd = CreateDropdown(scrollChild, item.get, item.set, item.values)
+                local dd = dodo.UI:CreateDropdown(scrollChild, item.get, item.set, item.values)
                 local posX = 165
                 dd:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", posX, currentY + 2)
 
                 if item.disabled then
-                    table.insert(updateQueue, { comp = dd, type = "dropdown", check = item.disabled })
+                    table_insert(updateQueue, { comp = dd, type = "dropdown", check = item.disabled })
                 end
 
                 if col == 1 then
@@ -479,13 +239,13 @@ local function CreateEditModePanel()
                     col = 0
                 end
             elseif item.type == "slider" then -- 슬라이더 컴포넌트 생성 (우측 2열에 배치)
-                local slider = CreateSlider(scrollChild, item.get, item.set, item.minVal or 0, item.maxVal or 100,
+                local slider = dodo.UI:CreateSlider(scrollChild, item.get, item.set, item.minVal or 0, item.maxVal or 100,
                     item.step or 1)
                 local posX = 165
                 slider:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", posX, currentY - 4)
 
                 if item.disabled then
-                    table.insert(updateQueue, { comp = slider, type = "slider", check = item.disabled })
+                    table_insert(updateQueue, { comp = slider, type = "slider", check = item.disabled })
                 end
 
                 if col == 1 then
@@ -497,17 +257,16 @@ local function CreateEditModePanel()
                     currentY = currentY - 26
                     col = 0
                 end
-                
-                local btnFrame = CreateButton(scrollChild, item.name, item.text or "실행", item.onClick)
+
+                local btnFrame = dodo.UI:CreateButton(scrollChild, item.name, item.text or "실행", item.onClick)
                 btnFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 8, currentY)
 
                 if item.disabled then
-                    table.insert(updateQueue, { comp = btnFrame, type = "button", check = item.disabled })
+                    table_insert(updateQueue, { comp = btnFrame, type = "button", check = item.disabled })
                 end
 
                 currentY = currentY - 26
             else -- 개별 체크박스 생성 및 2열 정렬
-                -- 지능형 세트 정렬 보정: 다음 항목이 드롭다운이나 슬라이더면 반드시 좌측(col = 0) 시작
                 local nextItem = menuItems[i + 1]
                 if nextItem and (nextItem.type == "dropdown" or nextItem.type == "slider") then
                     if col == 1 then
@@ -516,12 +275,12 @@ local function CreateEditModePanel()
                     end
                 end
 
-                local cb = CreateCheckbox(scrollChild, item.name, item.get, item.set)
+                local cb = dodo.UI:CreateCheckbox(scrollChild, item.name, item.get, item.set)
                 local posX = (col == 0) and 8 or 165
                 cb:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", posX, currentY)
 
                 if item.disabled then
-                    table.insert(updateQueue, { comp = cb, type = "checkbox", check = item.disabled })
+                    table_insert(updateQueue, { comp = cb, type = "checkbox", check = item.disabled })
                 end
 
                 if col == 0 then
@@ -545,9 +304,9 @@ local function CreateEditModePanel()
             local disabled = q.check()
             local enabled = not disabled
             if q.type == "slider" then
-                SetSliderEnabled(q.comp, enabled)
+                dodo.UI:SetSliderEnabled(q.comp, enabled)
             elseif q.type == "dropdown" then
-                SetDropdownEnabled(q.comp, enabled)
+                dodo.UI:SetDropdownEnabled(q.comp, enabled)
             elseif q.type == "button" then
                 if enabled then
                     q.comp:SetAlpha(1.0)
@@ -559,7 +318,7 @@ local function CreateEditModePanel()
                     if q.comp.Title then q.comp.Title:SetTextColor(0.5, 0.5, 0.5) end
                 end
             else
-                SetComponentEnabled(q.comp, enabled)
+                dodo.UI:SetComponentEnabled(q.comp, enabled)
             end
         end
     end
@@ -579,27 +338,31 @@ end
 -- ==============================
 -- 모듈 생명주기
 -- ==============================
-function module:OnEnable()
-    EventRegistry:RegisterCallback("EditMode.Enter", function()
-        local panel = CreateEditModePanel()
-        if panel then
-            panel:ClearAllPoints()
-            panel:SetPoint("TOPLEFT", EditModeManagerFrame, "TOPRIGHT", Settings.positionX, Settings.positionY)
-            if dodo.DB and dodo.DB.editModeMinimized then
-                panel:SetWidth(200)
-                panel:SetHeight(64)
-            else
-                panel:SetPoint("BOTTOMLEFT", EditModeManagerFrame, "BOTTOMRIGHT", Settings.positionX, -Settings
-                .positionY)
-                panel:SetWidth(360)
-            end
-            panel:Show()
+local function on_editmode_enter()
+    local panel = CreateEditModePanel()
+    if panel then
+        panel:ClearAllPoints()
+        panel:SetPoint("TOPLEFT", EditModeManagerFrame, "TOPRIGHT", Settings.positionX, Settings.positionY)
+        if dodo.DB and dodo.DB.editModeMinimized then
+            panel:SetWidth(200)
+            panel:SetHeight(64)
+        else
+            panel:SetPoint("BOTTOMLEFT", EditModeManagerFrame, "BOTTOMRIGHT", Settings.positionX, -Settings.positionY)
+            panel:SetWidth(360)
         end
-    end)
+        panel:Show()
+    end
+end
 
-    EventRegistry:RegisterCallback("EditMode.Exit", function()
-        if frame then
-            frame:Hide()
-        end
-    end)
+local function on_editmode_exit()
+    if frame then frame:Hide() end
+end
+
+local isInitialized = false
+function module:OnEnable()
+    if isInitialized then return end
+    isInitialized = true
+
+    EventRegistry:RegisterCallback("EditMode.Enter", on_editmode_enter)
+    EventRegistry:RegisterCallback("EditMode.Exit", on_editmode_exit)
 end

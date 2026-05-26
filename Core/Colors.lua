@@ -1,7 +1,7 @@
 -- ==============================
 -- Inspired
 -- ==============================
--- RefineUI Colors
+-- RefineUI (https://github.com/Enkiduke/RefineUI)
 
 -- ==============================
 -- 설정 및 테이블
@@ -12,14 +12,16 @@ local addonName, dodo = ...
 -- ==============================
 -- 캐싱
 -- ==============================
--- abc 가나다 순으로 정렬
+local BAG_ITEM_QUALITY_COLORS = BAG_ITEM_QUALITY_COLORS
+local BlizzardCreateColor = CreateColor
 local C_CurveUtil = C_CurveUtil
 local C_Item = C_Item
 local Enum = Enum
 local format = string.format
 local pairs = pairs
+local PowerBarColor = PowerBarColor
 local select = select
-local unpack = unpack
+local type = type
 local UnitClass = UnitClass
 
 -- ==============================
@@ -186,17 +188,17 @@ if C_CurveUtil then
 	-- Cooldowns (Expired -> Seconds -> Minutes)
 	dodo.CooldownColorCurve = C_CurveUtil.CreateColorCurve()
 	dodo.CooldownColorCurve:SetType(Enum.LuaCurveType.Step)
-	dodo.CooldownColorCurve:AddPoint(0,  _G.CreateColor(1, 0, 0))
-	dodo.CooldownColorCurve:AddPoint(4,  _G.CreateColor(1, 0.8, 0))
-	dodo.CooldownColorCurve:AddPoint(60, _G.CreateColor(1, 1, 1))
+	dodo.CooldownColorCurve:AddPoint(0,  BlizzardCreateColor(1, 0, 0))
+	dodo.CooldownColorCurve:AddPoint(4,  BlizzardCreateColor(1, 0.8, 0))
+	dodo.CooldownColorCurve:AddPoint(60, BlizzardCreateColor(1, 1, 1))
 
 	-- Interrupt Timer (ActionBar.lua 차단 타이머 그라데이션)
 	dodo.Colors.InterruptTimerColorCurve = C_CurveUtil.CreateColorCurve()
 	dodo.Colors.InterruptTimerColorCurve:SetType(Enum.LuaCurveType.Linear)
-	dodo.Colors.InterruptTimerColorCurve:AddPoint(0.0,  _G.CreateColor(1, 0.5, 0.5, 1))
-	dodo.Colors.InterruptTimerColorCurve:AddPoint(3.0,  _G.CreateColor(1, 1,   0.5, 1))
-	dodo.Colors.InterruptTimerColorCurve:AddPoint(3.01, _G.CreateColor(1, 1,   1,   1))
-	dodo.Colors.InterruptTimerColorCurve:AddPoint(10.0, _G.CreateColor(1, 1,   1,   1))
+	dodo.Colors.InterruptTimerColorCurve:AddPoint(0.0,  BlizzardCreateColor(1, 0.5, 0.5, 1))
+	dodo.Colors.InterruptTimerColorCurve:AddPoint(3.0,  BlizzardCreateColor(1, 1,   0.5, 1))
+	dodo.Colors.InterruptTimerColorCurve:AddPoint(3.01, BlizzardCreateColor(1, 1,   1,   1))
+	dodo.Colors.InterruptTimerColorCurve:AddPoint(10.0, BlizzardCreateColor(1, 1,   1,   1))
 
 	-- Cast Colors
 	dodo.Colors.Cast = {
@@ -208,4 +210,3 @@ if C_CurveUtil then
 		NonInterruptible = {0.3, 0.06, 0.06},
 	}
 end
-

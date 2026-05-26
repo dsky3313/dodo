@@ -97,6 +97,14 @@ local function on_encounter_event(event, ...)
     end
 end
 
+local function on_event(self, event, ...)
+    if event == "VOICE_CHAT_OUTPUT_DEVICES_UPDATED" or event == "PLAYER_ENTERING_WORLD" then
+        audio_sync()
+    elseif event == "ENCOUNTER_START" or event == "ENCOUNTER_END" then
+        on_encounter_event(event, ...)
+    end
+end
+
 -- ==============================
 -- 초기화
 -- ==============================
@@ -107,10 +115,10 @@ local function initialize()
             dodo.DB.useAudioSync = false
         end
         if dodo.DB.useSoundEncounterStart == nil then
-            dodo.DB.useSoundEncounterStart = true
+            dodo.DB.useSoundEncounterStart = false
         end
         if dodo.DB.useSoundEncounterVictory == nil then
-            dodo.DB.useSoundEncounterVictory = true
+            dodo.DB.useSoundEncounterVictory = false
         end
     end
 end
@@ -126,13 +134,7 @@ function module:OnEnable()
     if isInitialized then return end
     isInitialized = true
 
-    main_frame:SetScript("OnEvent", function(self, event, ...)
-        if event == "VOICE_CHAT_OUTPUT_DEVICES_UPDATED" or event == "PLAYER_ENTERING_WORLD" then
-            audio_sync()
-        elseif event == "ENCOUNTER_START" or event == "ENCOUNTER_END" then
-            on_encounter_event(event, ...)
-        end
-    end)
+    main_frame:SetScript("OnEvent", on_event)
 
     main_frame:RegisterEvent("VOICE_CHAT_OUTPUT_DEVICES_UPDATED")
     main_frame:RegisterEvent("PLAYER_ENTERING_WORLD")

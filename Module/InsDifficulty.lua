@@ -377,28 +377,35 @@ function module:OnEnable()
     end
 
     initInsDifficulty:RegisterEvent("PLAYER_ENTERING_WORLD")
-    initInsDifficulty:SetScript("OnEvent", function(self, event, arg1)
+    local function delayed_init()
+        update_event_registration()
+        ins_difficulty()
+    end
+
+    local function on_init_event(self, event, arg1)
         if event == "PLAYER_ENTERING_WORLD" then
-            C_Timer.After(1, function()
-                update_event_registration()
-                ins_difficulty()
-            end)
+            C_Timer.After(1, delayed_init)
         elseif event == "PARTY_LEADER_CHANGED" or event == "PLAYER_DIFFICULTY_CHANGED" then
             update_ui_status()
         end
-    end)
+    end
+
+    initInsDifficulty:SetScript("OnEvent", on_init_event)
 
     if LibEditMode then
-        LibEditMode:RegisterCallback("enter", function()
+        local function on_editmode_enter()
             local isEnabled = (dodo.DB and dodo.DB.enableInsDifficultyModule ~= false)
             if isEnabled then
                 difficultyFrame:Show()
             end
-        end)
+        end
 
-        LibEditMode:RegisterCallback("exit", function()
+        local function on_editmode_exit()
             update_ui_status()
-        end)
+        end
+
+        LibEditMode:RegisterCallback("enter", on_editmode_enter)
+        LibEditMode:RegisterCallback("exit", on_editmode_exit)
     end
 
     if dodo.RegisterEditModeSetting then

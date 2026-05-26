@@ -1001,12 +1001,11 @@ function module:OnEnable()
             },
         })
 
-        LibEditMode:RegisterCallback("enter", function()
+        local function on_editmode_toggle()
             update_auras()
-        end)
-        LibEditMode:RegisterCallback("exit", function()
-            update_auras()
-        end)
+        end
+        LibEditMode:RegisterCallback("enter", on_editmode_toggle)
+        LibEditMode:RegisterCallback("exit", on_editmode_toggle)
     end
 
     update_auras()

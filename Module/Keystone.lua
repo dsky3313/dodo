@@ -11,6 +11,7 @@
 local addonName, dodo = ...
 local module = {}
 dodo:RegisterModule("Keystone", module)
+module.NonCombat = true
 
 local Colors = dodo.Colors
 local IconLib = dodo.LibIcon
@@ -417,22 +418,26 @@ local function update_my_keystone()
 end
 
 -- 스로틀링 래핑 함수들 (매번 타이머를 생성하지 않고 단일 타이머 보장)
+local function on_my_keystone_timer()
+    isMyKeystoneTimerActive = false
+    update_my_keystone()
+end
+
 local function update_my_keystone_throttled()
     if isMyKeystoneTimerActive then return end
     isMyKeystoneTimerActive = true
-    C_Timer.After(0.5, function()
-        isMyKeystoneTimerActive = false
-        update_my_keystone()
-    end)
+    C_Timer.After(0.5, on_my_keystone_timer)
+end
+
+local function on_party_ui_timer()
+    isUpdateTimerActive = false
+    render_party_ui()
 end
 
 local function render_party_ui_throttled()
     if isUpdateTimerActive then return end
     isUpdateTimerActive = true
-    C_Timer.After(0.2, function()
-        isUpdateTimerActive = false
-        render_party_ui()
-    end)
+    C_Timer.After(0.2, on_party_ui_timer)
 end
 
 -- ==============================
@@ -546,16 +551,18 @@ local function initialize()
     openRaidLib = _G.LibStub and _G.LibStub("LibOpenRaid-1.0", true)
     libKeystone = _G.LibStub and _G.LibStub("LibKeystone", true)
 
+    local function on_openraid_keystone_update()
+        if not InCombatLockdown() then
+            read_from_details()
+            render_party_ui_throttled()
+        else
+            dodo.NeedUpdate = true
+        end
+    end
+
     if openRaidLib then
         local cbHandle = {}
-        openRaidLib.RegisterCallback(cbHandle, "KeystoneUpdate", function()
-            if not InCombatLockdown() then
-                read_from_details()
-                render_party_ui_throttled()
-            else
-                dodo.NeedUpdate = true
-            end
-        end)
+        openRaidLib.RegisterCallback(cbHandle, "KeystoneUpdate", on_openraid_keystone_update)
     end
 
     if libKeystone then
@@ -579,6 +586,53 @@ end
 -- 프레임 이벤트 처리
 -- ==============================
 local function OnEvent(self, event, ...)
+    local function delayed_entering_world()
+        update_my_keystone()
+        if IsInGroup() then
+            read_from_details()
+        end
+        render_party_ui()
+    end
+
+    local function delayed_roster_retry()
+        read_from_details()
+        render_party_ui()
+    end
+
+    local function delayed_roster_update()
+        isRosterTimerActive = false
+        update_my_keystone()
+        
+        local numMembers = GetNumSubgroupMembers()
+        for i = 1, numMembers do
+            local name = UnitName("party" .. i)
+            if name then
+                if not dodo.PartyData[name] then
+                    dodo.PartyData[name] = { unit = "party" .. i, name = name, mapID = 0, level = 0 }
+                end
+            end
+        end
+        
+        if openRaidLib and openRaidLib.RequestKeystoneDataFromParty then
+            openRaidLib.RequestKeystoneDataFromParty()
+        end
+        if libKeystone then
+            libKeystone.Request("PARTY")
+        end
+        
+        read_from_details()
+        render_party_ui()
+        
+        -- 라이브러리 대기 2초 후 재시도
+        C_Timer.After(2, delayed_roster_retry)
+    end
+
+    local function delayed_key_roll_msg()
+        if IsInGroup() then
+            SendChatMessage("돌 굴리세요!", "YELL")
+        end
+    end
+
     if event == "BAG_UPDATE_DELAYED" then
         if not IsInRaid() then 
             update_my_keystone_throttled() 
@@ -596,13 +650,7 @@ local function OnEvent(self, event, ...)
         dodo.IsChallengeActive = (activeLevel and activeLevel > 0)
         update_visibility_condition()
         if not IsInRaid() then
-            C_Timer.After(0.5, function()
-                update_my_keystone()
-                if IsInGroup() then
-                    read_from_details()
-                end
-                render_party_ui()
-            end)
+            C_Timer.After(0.5, delayed_entering_world)
         end
 
     elseif event == "GROUP_ROSTER_UPDATE" then
@@ -610,35 +658,7 @@ local function OnEvent(self, event, ...)
         if IsInGroup() and not IsInRaid() then
             if isRosterTimerActive then return end
             isRosterTimerActive = true
-            C_Timer.After(0.5, function()
-                isRosterTimerActive = false
-                update_my_keystone()
-                
-                for i = 1, GetNumSubgroupMembers() do
-                    local name = UnitName("party" .. i)
-                    if name then
-                        if not dodo.PartyData[name] then
-                            dodo.PartyData[name] = { unit = "party" .. i, name = name, mapID = 0, level = 0 }
-                        end
-                    end
-                end
-                
-                if openRaidLib and openRaidLib.RequestKeystoneDataFromParty then
-                    openRaidLib.RequestKeystoneDataFromParty()
-                end
-                if libKeystone then
-                    libKeystone.Request("PARTY")
-                end
-                
-                read_from_details()
-                render_party_ui()
-                
-                -- 라이브러리 대기 2초 후 재시도
-                C_Timer.After(2, function()
-                    read_from_details()
-                    render_party_ui()
-                end)
-            end)
+            C_Timer.After(0.5, delayed_roster_update)
         else
             local myName = UnitName("player")
             local myData = dodo.PartyData[myName]
@@ -704,11 +724,7 @@ local function OnEvent(self, event, ...)
         C_Timer.After(2, update_my_keystone)
 
         if event == "CHALLENGE_MODE_COMPLETED" and dodo.DB and dodo.DB.useKeyRoll ~= false then
-            C_Timer.After(5, function()
-                if IsInGroup() then
-                    SendChatMessage("돌 굴리세요!", "YELL")
-                end
-            end)
+            C_Timer.After(5, delayed_key_roll_msg)
         end
 
     elseif event == "PLAYER_REGEN_ENABLED" then
@@ -819,7 +835,7 @@ function module:OnEnable()
                 },
             })
 
-            LibEditMode:RegisterCallback("enter", function()
+            local function on_editmode_enter()
                 local isEnabled = (dodo.DB and dodo.DB.enableKeystoneModule ~= false)
                 if isEnabled then
                     MainFrame:Show()
@@ -847,16 +863,19 @@ function module:OnEnable()
                         row:Show()
                     end
                 end
-            end)
+            end
 
-            LibEditMode:RegisterCallback("exit", function()
+            local function on_editmode_exit()
                 local isEnabled = (dodo.DB and dodo.DB.enableKeystoneModule ~= false)
                 if isEnabled then
                     render_party_ui()
                 else
                     MainFrame:Hide()
                 end
-            end)
+            end
+
+            LibEditMode:RegisterCallback("enter", on_editmode_enter)
+            LibEditMode:RegisterCallback("exit", on_editmode_exit)
         end
 
         -- dodoEditModePanel 내 세부 설정 주입 (마스터 토글만)
@@ -881,3 +900,16 @@ function module:OnEnable()
 
     update_module_state()
 end
+
+-- ==============================
+-- 전투 중 휴면 라이프사이클
+-- ==============================
+function module:OnCombatStart()
+    MainFrame:Hide()
+    MainFrame:UnregisterAllEvents()
+end
+
+function module:OnCombatEnd()
+    update_module_state()
+end
+

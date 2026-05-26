@@ -27,6 +27,7 @@ dodo.chatbubbleFontTable = {
 -- ==============================
 local ChatBubbleFont = ChatBubbleFont
 local ipairs = ipairs
+local table_insert = table.insert
 local originalFontPath, originalFontSize, originalFontFlag
 
 -- ==============================
@@ -69,15 +70,19 @@ end
 -- ==============================
 -- 모듈 생명주기
 -- ==============================
+local isInitialized = false
 function module:OnEnable()
     initialize()
     update_feature()
+
+    if isInitialized then return end
+    isInitialized = true
 
     -- 1. 모듈설정창(dodoEditModePanel)에 글꼴 드롭다운 및 글꼴 크기 슬라이더를 직접 등록
     if dodo.RegisterEditModeSetting then
         local dropdownValues = {}
         for _, item in ipairs(dodo.chatbubbleFontTable) do
-            table.insert(dropdownValues, { text = item.label, value = item.value })
+            table_insert(dropdownValues, { text = item.label, value = item.value })
         end
 
         dodo.RegisterEditModeSetting("인터페이스", {
@@ -133,11 +138,4 @@ function module:OnEnable()
             }
         })
     end
-end
-
--- ==============================
--- 설정 (대체로 사용하지 않으나 하위 호환을 위해 빈 껍데기 유지)
--- ==============================
-function module:CreateOptions()
-    -- 기존 Blizzard 설정창 옵션은 중복 표시 방지를 위해 비워둡니다.
 end

@@ -22,46 +22,49 @@ local RunNextFrame = RunNextFrame or (C_Timer and C_Timer.After and function(fun
 -- 기능 1: 필터 적용
 -- ==============================
 
--- 경매장 필터 적용
+local function do_auction_filter()
+    local frame = AuctionHouseFrame
+    local searchBar = frame and frame.SearchBar
+    local filterButton = searchBar and searchBar.FilterButton
+    
+    if filterButton and filterButton.filters then
+        filterButton.filters[Enum.AuctionHouseFilter.CurrentExpansionOnly] = true
+        searchBar:UpdateClearFiltersButton()
+    end
+end
+
 local function apply_auction_filter()
     if not dodo.DB or dodo.DB.enableExpFilterModule == false then return end
     if not (Enum and Enum.AuctionHouseFilter and Enum.AuctionHouseFilter.CurrentExpansionOnly) then return end
 
-    RunNextFrame(function()
-        local frame = AuctionHouseFrame
-        local searchBar = frame and frame.SearchBar
-        local filterButton = searchBar and searchBar.FilterButton
-        
-        -- 성능최적화: 불필요한 type() 문자열 평가 대신 존재 여부만 안전하게 확인
-        if filterButton and filterButton.filters then
-            filterButton.filters[Enum.AuctionHouseFilter.CurrentExpansionOnly] = true
-            searchBar:UpdateClearFiltersButton()
-        end
-    end)
+    RunNextFrame(do_auction_filter)
 end
 
--- 주문 제작 필터 적용 (초기화 지연 대비 재시도 로직 포함)
+local current_craft_retries = 0
+local function do_craft_filter()
+    local frame = ProfessionsCustomerOrdersFrame
+    local browseOrders = frame and frame.BrowseOrders
+    local searchBar = browseOrders and browseOrders.SearchBar
+    local filterDropdown = searchBar and searchBar.FilterDropdown
+
+    if not filterDropdown or not filterDropdown.filters then
+        if current_craft_retries > 0 then
+            current_craft_retries = current_craft_retries - 1
+            RunNextFrame(do_craft_filter)
+        end
+        return
+    end
+
+    filterDropdown.filters[Enum.AuctionHouseFilter.CurrentExpansionOnly] = true
+    if filterDropdown.ValidateResetState then filterDropdown:ValidateResetState() end
+end
+
 local function apply_craft_filter(remaining_retries)
     if not dodo.DB or dodo.DB.enableExpFilterModule == false then return end
     if not (Enum and Enum.AuctionHouseFilter and Enum.AuctionHouseFilter.CurrentExpansionOnly) then return end
 
-    RunNextFrame(function()
-        local frame = ProfessionsCustomerOrdersFrame
-        local browseOrders = frame and frame.BrowseOrders
-        local searchBar = browseOrders and browseOrders.SearchBar
-        local filterDropdown = searchBar and searchBar.FilterDropdown
-
-        -- 성능최적화: 불필요한 type() 문자열 평가 생략
-        if not filterDropdown or not filterDropdown.filters then
-            if (remaining_retries or 0) > 0 then
-                apply_craft_filter((remaining_retries or 0) - 1)
-            end
-            return
-        end
-
-        filterDropdown.filters[Enum.AuctionHouseFilter.CurrentExpansionOnly] = true
-        if filterDropdown.ValidateResetState then filterDropdown:ValidateResetState() end
-    end)
+    current_craft_retries = remaining_retries or 0
+    RunNextFrame(do_craft_filter)
 end
 
 -- ==============================
@@ -96,7 +99,7 @@ function module:OnEnable()
     f:RegisterEvent("AUCTION_HOUSE_SHOW")
     f:RegisterEvent("CRAFTINGORDERS_SHOW_CUSTOMER")
 
-    f:SetScript("OnEvent", function(self, event)
+    local function on_event(self, event)
         if event == "AUCTION_HOUSE_SHOW" then
             apply_auction_filter()
         elseif event == "CRAFTINGORDERS_SHOW_CUSTOMER" then
@@ -104,7 +107,9 @@ function module:OnEnable()
         elseif event == "PLAYER_ENTERING_WORLD" then
             C_Timer.After(1, apply_filters)
         end
-    end)
+    end
+
+    f:SetScript("OnEvent", on_event)
 
     -- dodoEditModePanel 내부에 2열 그리드로 세부 설정 주입
     if dodo.RegisterEditModeSetting then

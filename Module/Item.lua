@@ -80,9 +80,20 @@ local OUTLINE_FONT = "Fonts\\2002.TTF"
 -- ============================================================
 -- 함수
 -- ============================================================
+local enchantCache = {}
 local function get_enchant_name(unit, slotID)
+    local link = GetInventoryItemLink(unit, slotID)
+    if not link then return nil end
+
+    if enchantCache[link] ~= nil then
+        return enchantCache[link] or nil
+    end
+
     local data = C_TooltipInfo.GetInventoryItem(unit, slotID)
-    if not data or not data.lines then return nil end
+    if not data or not data.lines then 
+        enchantCache[link] = false
+        return nil 
+    end
     
     local enchantPattern = ENCHANTED_TOOLTIP_LINE:gsub("%%s", "(.*)")
     for _, line in ipairs(data.lines) do
@@ -91,10 +102,13 @@ local function get_enchant_name(unit, slotID)
             local name = match(text, enchantPattern)
             if name then
                 local suffix = match(name, " %- (.+)$")
-                return suffix or name
+                local result = suffix or name
+                enchantCache[link] = result
+                return result
             end
         end
     end
+    enchantCache[link] = false
     return nil
 end
 
@@ -157,6 +171,9 @@ end
 
 -- get_gems_string removed
 
+local ilvlCache = {}
+local ilvlColorCache = {}
+
 local function update_slots(unit, slotData)
     if not unit then return end
     if not (dodo.DB and dodo.DB.useItemLevel) then return end
@@ -164,8 +181,8 @@ local function update_slots(unit, slotData)
     if unit ~= "player" and (not InspectFrame or not InspectFrame:IsShown()) then return end
 
     for _, data in ipairs(slotData) do
-        local hasItem = GetInventoryItemID(unit, data.slotID) ~= nil
-        if not hasItem then
+        local link = GetInventoryItemLink(unit, data.slotID)
+        if not link then
             if data.tex then data.tex:Hide() end
             if data.enchantText then data.enchantText:Hide() end
             data.ilvlText:Hide()
@@ -211,28 +228,26 @@ local function update_slots(unit, slotData)
 
             -- 아이템 레벨
             if dodo.DB and dodo.DB.useItemLevel then
-                local itemLoc = ItemLocation:CreateFromEquipmentSlot(data.slotID)
-                if unit == "player" and itemLoc and C_Item.DoesItemExist(itemLoc) then
-                    local ilvl = C_Item.GetCurrentItemLevel(itemLoc)
-                    local quality = C_Item.GetItemQuality(itemLoc)
-                    local qColor = (Colors and Colors.Quality[quality or 1]) or { r = 1, g = 1, b = 1 }
-                    local r, g, b = qColor.r, qColor.g, qColor.b
-                    data.ilvlText:SetTextColor(r, g, b)
+                local ilvl = ilvlCache[link]
+                local color = ilvlColorCache[link]
+
+                if not ilvl then
+                    ilvl = C_Item.GetDetailedItemLevelInfo(link)
+                    if ilvl and ilvl > 0 then
+                        ilvlCache[link] = ilvl
+                        local quality = C_Item.GetItemQualityByID(link)
+                        local qColor = (Colors and Colors.Quality[quality or 1]) or { r = 1, g = 1, b = 1 }
+                        color = { r = qColor.r, g = qColor.g, b = qColor.b }
+                        ilvlColorCache[link] = color
+                    end
+                end
+
+                if ilvl then
+                    data.ilvlText:SetTextColor(color.r, color.g, color.b)
                     data.ilvlText:SetText(ilvl)
                     data.ilvlText:Show()
                 else
-                    local link = GetInventoryItemLink(unit, data.slotID)
-                    if link then
-                        local ilvl = C_Item.GetDetailedItemLevelInfo(link)
-                        local quality = C_Item.GetItemQualityByID(link)
-                        local qColor = (Colors and Colors.Quality[quality or 1]) or { r = 1, g = 1, b = 1 }
-                        local r, g, b = qColor.r, qColor.g, qColor.b
-                        data.ilvlText:SetTextColor(r, g, b)
-                        data.ilvlText:SetText(ilvl)
-                        data.ilvlText:Show()
-                    else
-                        data.ilvlText:Hide()
-                    end
+                    data.ilvlText:Hide()
                 end
             else
                 data.ilvlText:Hide()
@@ -439,16 +454,18 @@ end
 -- ==============================
 local updateSlotsTimer = nil
 
+local function on_update_slots_timer()
+    updateSlotsTimer = nil
+    if PaperDollFrame and PaperDollFrame:IsShown() then
+        update_slots("player", fexSlotData)
+    end
+end
+
 local function request_update_slots()
     if not (dodo.DB and dodo.DB.useItemLevel) then return end
     if updateSlotsTimer then return end
     
-    updateSlotsTimer = C_Timer.NewTimer(0.2, function()
-        updateSlotsTimer = nil
-        if PaperDollFrame and PaperDollFrame:IsShown() then
-            update_slots("player", fexSlotData)
-        end
-    end)
+    updateSlotsTimer = C_Timer.NewTimer(0.2, on_update_slots_timer)
 end
 
 local function update_feature()
@@ -594,56 +611,66 @@ local function initialize()
         end
     end
 
-    -- Hook 설정 (중복 훅 방지 적용)
-    dodo.HookOnce("NotifyInspect", function(unit)
+    local function on_notify_inspect(unit)
         inspectUnit = unit
-    end)
+    end
+
+    -- Hook 설정 (중복 훅 방지 적용)
+    dodo.HookOnce("NotifyInspect", on_notify_inspect)
 
     if CharacterFrame then
-        if not CharacterFrame.dodoHookedOnShow then
-            CharacterFrame.dodoHookedOnShow = true
-            CharacterFrame:HookScript("OnShow", function()
-                if not (dodo.DB and dodo.DB.useItemLevel) then return end
-                if not fexSlotBuilt then
-                    C_AddOns.LoadAddOn("Blizzard_CharacterFrame")
-                    hide_character_backgrounds()
-                    build_slots("Character", fexSlotData)
-                end
+        local function on_character_frame_show()
+            if not (dodo.DB and dodo.DB.useItemLevel) then return end
+            if not fexSlotBuilt then
+                C_AddOns.LoadAddOn("Blizzard_CharacterFrame")
                 hide_character_backgrounds()
-                apply_wide_layout()
+                build_slots("Character", fexSlotData)
+            end
+            hide_character_backgrounds()
+            apply_wide_layout()
 
-                for slot = 1, 19 do
-                    local link = GetInventoryItemLink("player", slot)
-                    if link then
-                        local itemID = GetInventoryItemID("player", slot)
-                        if itemID then
-                            C_Item.RequestLoadItemDataByID(itemID)
-                        end
+            for slot = 1, 19 do
+                local link = GetInventoryItemLink("player", slot)
+                if link then
+                    local itemID = GetInventoryItemID("player", slot)
+                    if itemID then
+                        C_Item.RequestLoadItemDataByID(itemID)
                     end
                 end
-                request_update_slots()
-            end)
+            end
+            request_update_slots()
         end
 
-        dodo.HookOnce(CharacterFrame, "Expand", apply_wide_layout)
-        dodo.HookOnce(CharacterFrame, "UpdateSize", apply_wide_layout)
-        dodo.HookOnce(CharacterFrame, "Collapse", function()
+        local function on_character_frame_collapse()
             if not (dodo.DB and dodo.DB.useItemLevel) then return end
             CharacterFrame:SetWidth(configs.normal_width)
             if fexOriginalHeight then
                 CharacterFrame:SetHeight(fexOriginalHeight)
             end
-        end)
+        end
+
+        if not CharacterFrame.dodoHookedOnShow then
+            CharacterFrame.dodoHookedOnShow = true
+            CharacterFrame:HookScript("OnShow", on_character_frame_show)
+        end
+
+        dodo.HookOnce(CharacterFrame, "Expand", apply_wide_layout)
+        dodo.HookOnce(CharacterFrame, "UpdateSize", apply_wide_layout)
+        dodo.HookOnce(CharacterFrame, "Collapse", on_character_frame_collapse)
+    end
+
+    local function on_bag_update_items(self)
+        update_bag_frame(self)
     end
 
     for i = 1, NUM_CONTAINER_FRAMES do
         local cf = _G["ContainerFrame" .. i]
         if cf then
-            dodo.HookOnce(cf, "UpdateItems", function(self) update_bag_frame(self) end)
+            dodo.HookOnce(cf, "UpdateItems", on_bag_update_items)
         end
     end
     if ContainerFrameCombinedBags then
-        dodo.HookOnce(ContainerFrameCombinedBags, "UpdateItems", function(self) update_bag_frame(self) end)
+        dodo.HookOnce(ContainerFrameCombinedBags, "UpdateItems", on_bag_update_items)
     end
 end
 

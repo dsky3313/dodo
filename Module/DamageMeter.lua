@@ -40,7 +40,7 @@ local GameTooltip = GameTooltip
 local hooksecurefunc = hooksecurefunc
 local InCombatLockdown = InCombatLockdown
 local ipairs = ipairs
-local issecretvalue = issecretvalue
+local issecretvalue = issecretvalue or function() return false end
 local PlaySound = PlaySound
 local SOUNDKIT = SOUNDKIT
 local UIParent = UIParent
@@ -142,17 +142,19 @@ local function sync_all_window_sizes()
     end
 end
 
+local function on_size_changed()
+    if dodo.DB and dodo.DB.enableDamageMeterModule ~= false then
+        sync_all_window_sizes()
+    end
+end
+
 -- 메인 창 크기 실시간 동기화
 local function hook_main_size()
     if win1 or DamageMeterSessionWindow1 then
         win1 = win1 or DamageMeterSessionWindow1
         if not win1.dodoHookedOnSize then
             win1.dodoHookedOnSize = true
-            win1:HookScript("OnSizeChanged", function()
-                if dodo.DB and dodo.DB.enableDamageMeterModule ~= false then
-                    sync_all_window_sizes()
-                end
-            end)
+            win1:HookScript("OnSizeChanged", on_size_changed)
         end
     end
 end
@@ -276,12 +278,14 @@ function module:OnEnable()
 
     initialize()
 
-    dodo.HookOnce(DamageMeter, "ShowNewSecondarySessionWindow", function()
+    local function on_show_secondary_window()
         if dodo.DB and dodo.DB.enableDamageMeterModule ~= false then
             sync_all_window_sizes()
             apply_reset_buttons()
         end
-    end)
+    end
+
+    dodo.HookOnce(DamageMeter, "ShowNewSecondarySessionWindow", on_show_secondary_window)
 
     -- LibEditMode 등록
     if LibEditMode then

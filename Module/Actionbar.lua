@@ -30,18 +30,120 @@ local config = {
     }
 }
 
+local FeatureBars = {
+    color = {
+        ["MainActionBar"]       = true,
+        ["MultiBarBottomLeft"]  = true,
+        ["MultiBarBottomRight"] = true,
+        ["MultiBarRight"]       = true,
+        ["MultiBarLeft"]        = true,
+        ["MultiBar5"]           = true,
+        ["MultiBar6"]           = true,
+        ["MultiBar7"]           = true,
+        ["StanceBar"]           = true,
+        ["PetActionBar"]        = true,
+    },
+    textHide = {
+        ["MainActionBar"]       = true,
+        ["MultiBarBottomLeft"]  = true,
+        ["MultiBarBottomRight"] = true,
+        ["MultiBarRight"]       = true,
+        ["MultiBarLeft"]        = true,
+        ["MultiBar5"]           = true,
+        ["MultiBar6"]           = true,
+        ["MultiBar7"]           = true,
+        ["StanceBar"]           = true,
+        ["PetActionBar"]        = true,
+    },
+    textShorten = {
+        ["MainActionBar"]       = true,
+        ["MultiBarBottomLeft"]  = true,
+        ["MultiBarBottomRight"] = true,
+        ["MultiBarRight"]       = true,
+        ["MultiBarLeft"]        = true,
+        ["MultiBar5"]           = true,
+        ["MultiBar6"]           = true,
+        ["MultiBar7"]           = true,
+        ["StanceBar"]           = true,
+        ["PetActionBar"]        = true,
+    },
+    padding = {
+        ["MainActionBar"]       = true,
+        ["MultiBarBottomLeft"]  = true,
+        ["MultiBarBottomRight"] = true,
+        ["MultiBarRight"]       = true,
+        ["MultiBarLeft"]        = true,
+        ["MultiBar5"]           = true,
+        ["MultiBar6"]           = true,
+        ["MultiBar7"]           = true,
+        ["StanceBar"]           = true,
+        ["PetActionBar"]        = true,
+    },
+    cdm = {
+        ["MainActionBar"]       = true,
+        ["MultiBarBottomLeft"]  = true,
+        ["MultiBarBottomRight"] = true,
+        ["MultiBar7"]           = true,
+    },
+    interrupt = {
+        ["MainActionBar"]       = true,
+        ["MultiBarBottomLeft"]  = true,
+        ["MultiBarBottomRight"] = true,
+        ["MultiBarRight"]       = true,
+        ["MultiBarLeft"]        = true,
+        ["MultiBar5"]           = true,
+        ["MultiBar6"]           = true,
+        ["MultiBar7"]           = true,
+    },
+    potion = {
+        ["MultiBar7"]           = true,
+    }
+}
+
+local function get_bar_name_by_button(btn)
+    if not btn then return nil end
+    if btn.__barName then return btn.__barName end
+
+    local name = btn:GetName()
+    if not name then return nil end
+
+    local barName
+    if name:find("^ActionButton") then
+        barName = "MainActionBar"
+    elseif name:find("^MultiBarBottomLeftButton") then
+        barName = "MultiBarBottomLeft"
+    elseif name:find("^MultiBarBottomRightButton") then
+        barName = "MultiBarBottomRight"
+    elseif name:find("^MultiBarRightButton") then
+        barName = "MultiBarRight"
+    elseif name:find("^MultiBarLeftButton") then
+        barName = "MultiBarLeft"
+    elseif name:find("^MultiBar5Button") then
+        barName = "MultiBar5"
+    elseif name:find("^MultiBar6Button") then
+        barName = "MultiBar6"
+    elseif name:find("^MultiBar7Button") then
+        barName = "MultiBar7"
+    elseif name:find("^StanceButton") then
+        barName = "StanceBar"
+    elseif name:find("^PetActionButton") then
+        barName = "PetActionBar"
+    end
+
+    btn.__barName = barName
+    return barName
+end
+
 local CDMMapping = {
     [386634] = 12294, -- 집행자의 정밀함  - 필사의 일격 (무전)
     [12950] = 190411, 6343 -- 소용돌이 연마  - 소용돌이 (분전)
 }
 
-local POTION_IDS = {
-    [241307] = true, [241308] = true, [241309] = true, [241310] = true, -- 빛의 잠재력
-    [212241] = true, [212242] = true, [212243] = true, [212244] = true, [212940] = true, -- 내부 전쟁
-    [191383] = true, [191389] = true, [191380] = true, -- 용군단
+local POTION_IDS = { -- 포션 쿨
+    [241308] = true, [241309] = true,-- 빛의 잠재력
 }
 
-local customCDMConfigs = {
+local customCDMConfigs = { -- 포션 cdm
     [1236616] = { matchIDs = { 241308, 241309 }, duration = 30, type = 3 }, --1236616(버프ID) 발동 시 241308, 241309(물약 등) 매칭
 }
 
@@ -98,7 +200,6 @@ local C_Item = C_Item
 local C_Spell = C_Spell
 local C_Timer = C_Timer
 local C_UnitAuras = C_UnitAuras
-local CreateColor = CreateColor
 local CreateFrame = CreateFrame
 local CreateFramePool = CreateFramePool
 local Enum = Enum
@@ -126,7 +227,6 @@ local PetActionBar = PetActionBar
 local PixelUtil = PixelUtil
 local rawget = rawget
 local StanceBar = StanceBar
-local string_format = string.format
 local table_insert = table.insert
 local time = time
 local type = type
@@ -141,6 +241,8 @@ local wipe = wipe
 local inCombat = false
 local registeredButtons = {}
 local watchedUnit = 'target'
+local pendingCooldownUpdates = {}
+local cooldownUpdateFrame = CreateFrame("Frame")
 
 local DesatCurve = C_CurveUtil.CreateCurve()
 DesatCurve:SetType(Enum.LuaCurveType.Step)
@@ -159,47 +261,7 @@ IntCooldownCurve:AddPoint(0.001, 1)
 
 local customCDMAuras = {}
 local customCDMSpellMap = {}
-
--- ==============================
--- Potion Overlay Mixin
--- ==============================
-PotionOverlayMixin = {}
-function PotionOverlayMixin:Update(active)
-    if active then
-        if not self.ProcLoop:IsPlaying() then self.ProcLoop:Play() end
-        self:Show()
-    else
-        if self.ProcLoop:IsPlaying() then self.ProcLoop:Stop() end
-        self:Hide()
-    end
-end
-
-local function update_potion_proc(btn)
-    if not btn.action then return end
-    
-    local isEnabled = (dodo.DB and dodo.DB.useActionbarPotionProc ~= false)
-    if not isEnabled then
-        if btn.potionOverlay then btn.potionOverlay:Update(false) end
-        return
-    end
-
-    local actionType, id = GetActionInfo(btn.action)
-    if actionType == "item" and POTION_IDS[id] then
-        if not btn.potionOverlay then
-            btn.potionOverlay = CreateFrame("Frame", nil, btn, "PotionOverlayTemplate")
-            btn.potionOverlay:SetAllPoints(btn)
-            local w, h = btn:GetSize()
-            btn.potionOverlay.Proc:SetSize(w * 1.4, h * 1.4)
-        end
-        
-        local count = C_Item.GetItemCount(id)
-        local start, duration = C_Container.GetItemCooldown(id)
-        local isUsable = inCombat and (count > 0) and (start == 0 or duration == 0)
-        btn.potionOverlay:Update(isUsable)
-    elseif btn.potionOverlay then
-        btn.potionOverlay:Update(false)
-    end
-end
+local update_potion_proc
 
 -- ==============================
 -- 기능 1: 아이콘 색상 및 텍스트
@@ -218,9 +280,13 @@ end
 local function update_button_text(btn)
     if not btn.HotKey then return end
     
+    local barName = get_bar_name_by_button(btn)
+    if not barName then return end
+
     local enabled = (dodo.DB and dodo.DB.enableActionBarModule ~= false)
-    local hideHotkeys = enabled and (dodo.DB and dodo.DB.useActionbarHideHotkeys ~= false)
-    local hideMacroNames = enabled and (dodo.DB and dodo.DB.useActionbarHideMacroNames == true)
+    local hideHotkeys = enabled and (dodo.DB and dodo.DB.useActionbarHideHotkeys ~= false) and (FeatureBars.textHide[barName] == true)
+    local hideMacroNames = enabled and (dodo.DB and dodo.DB.useActionbarHideMacroNames == true) and (FeatureBars.textHide[barName] == true)
+    local useShorten = (FeatureBars.textShorten[barName] == true)
     
     local RANGE_INDICATOR = "●"
     local text = btn.HotKey:GetText()
@@ -229,16 +295,30 @@ local function update_button_text(btn)
         btn.HotKey:SetAlpha(text == RANGE_INDICATOR and 1 or 0)
     else
         btn.HotKey:SetAlpha(1)
-        local short = get_shortened_key(text)
-        if text ~= short then btn.HotKey:SetText(short) end
+        if useShorten then
+            local short = get_shortened_key(text)
+            if text ~= short then btn.HotKey:SetText(short) end
+        end
     end
+    
     if btn.Name and not (btn:GetName() or ""):find("Pet") then
-        btn.Name:SetAlpha(hideMacroNames and 0 or 1)
+        if hideMacroNames then
+            btn.Name:SetAlpha(0)
+        else
+            btn.Name:SetAlpha(1)
+        end
     end
 end
 
 local function update_icon_color(btn)
     if not btn.icon then return end
+
+    local barName = get_bar_name_by_button(btn)
+    if not barName or not FeatureBars.color[barName] then
+        btn.icon:SetVertexColor(1, 1, 1)
+        btn.icon:SetDesaturation(0)
+        return
+    end
 
     local enabled = (dodo.DB and dodo.DB.enableActionBarModule ~= false)
     local useColor = enabled and (dodo.DB and dodo.DB.useActionbarColor ~= false)
@@ -288,6 +368,24 @@ local function update_cooldown_state(btn)
     update_potion_proc(btn)
 end
 
+local function process_pending_cooldowns()
+    cooldownUpdateFrame:SetScript("OnUpdate", nil)
+    for btn in pairs(pendingCooldownUpdates) do
+        if btn:IsVisible() then
+            update_cooldown_state(btn)
+        end
+    end
+    wipe(pendingCooldownUpdates)
+end
+
+local function on_actionbutton_applycooldown(cd)
+    local btn = cd:GetParent()
+    if btn and registeredButtons[btn] then
+        pendingCooldownUpdates[btn] = true
+        cooldownUpdateFrame:SetScript("OnUpdate", process_pending_cooldowns)
+    end
+end
+
 local function actionbar_apply_color()
     for btn in pairs(registeredButtons) do
         if btn:IsVisible() then update_icon_color(btn) end
@@ -307,6 +405,9 @@ local function update_padding(frame)
 
     local enabled = (dodo.DB and dodo.DB.enableActionBarModule ~= false)
     if not enabled then return end
+
+    local frameName = frame:GetName()
+    if not frameName or not FeatureBars.padding[frameName] then return end
 
     local pad = (dodo.DB and dodo.DB.actionbarPadding) or 0
     local numRows = frame.numRows or 1
@@ -356,7 +457,7 @@ local cdmUpdateFrame = CreateFrame("Frame")
 local elapsedSinceLastUpdate = 0
 local activeOverlays = {}
 
-local function CDMUpdateFrame_OnUpdate(self, elapsed)
+local function actual_cdm_updateframe_onupdate(self, elapsed)
     elapsedSinceLastUpdate = elapsedSinceLastUpdate + elapsed
     local interval = inCombat and 0.1 or 1.0
     if elapsedSinceLastUpdate < interval then return end
@@ -408,6 +509,10 @@ local function CDMUpdateFrame_OnUpdate(self, elapsed)
     end
 end
 
+local function cdm_updateframe_onupdate(self, elapsed)
+    dodo.Profile("ActionBar_CDMUpdateFrame_OnUpdate", actual_cdm_updateframe_onupdate, self, elapsed)
+end
+
 -- CDM Overlay Mixin
 CDMOverlayMixin = {}
 
@@ -425,7 +530,7 @@ end
 function CDMOverlayMixin:StartTicker()
     activeOverlays[self] = true
     if not cdmUpdateFrame:GetScript("OnUpdate") then
-        cdmUpdateFrame:SetScript("OnUpdate", CDMUpdateFrame_OnUpdate)
+        cdmUpdateFrame:SetScript("OnUpdate", cdm_updateframe_onupdate)
     end
 end
 
@@ -450,7 +555,7 @@ function CDMOverlayMixin:StartCustomCDM(spellID, duration)
 
     activeOverlays[self] = true
     if not cdmUpdateFrame:GetScript("OnUpdate") then
-        cdmUpdateFrame:SetScript("OnUpdate", CDMUpdateFrame_OnUpdate)
+        cdmUpdateFrame:SetScript("OnUpdate", cdm_updateframe_onupdate)
     end
 end
 
@@ -466,8 +571,15 @@ function CDMOverlayMixin:Update()
     if not isEnabled then self:StopTicker(); return end
 
     local parent = self:GetParent()
-    local parentName = parent and parent:GetName() or ""
-    if parentName:find("^MultiBar7Button") and parent.action then
+    if not parent then return end
+    local barName = get_bar_name_by_button(parent)
+    if not barName or not FeatureBars.cdm[barName] then self:StopTicker(); return end
+
+    if parent.__isPotionBar == nil then
+        parent.__isPotionBar = (FeatureBars.potion[barName] == true)
+    end
+
+    if parent.__isPotionBar and parent.action then
         local actionType, id = get_action_spell_or_item_id(parent.action)
         local activeFake = nil
         local matchedSpellID = nil
@@ -481,7 +593,7 @@ function CDMOverlayMixin:Update()
             activeFake = customCDMAuras[matchedSpellID]
         end
 
-        if activeFake then
+        if activeFake and matchedSpellID then
             local remaining = activeFake.duration - (GetTime() - activeFake.startTime)
             if remaining > 0 then
                 self:StartCustomCDM(matchedSpellID, remaining)
@@ -589,29 +701,38 @@ local function hook_viewer_item(item)
     update_cdm_from_item(item)
 end
 
-local isCachePending = false
-local function build_special_button_cache()
-    if InCombatLockdown() or isCachePending then return end
-    isCachePending = true
-    C_Timer.After(0.1, function()
-        isCachePending = false
-        if InCombatLockdown() then return end
-        
-        local cdmBars = { "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton", "MultiBar7Button" }
-        for _, group in ipairs(cdmBars) do
-            for i = 1, 12 do
-                local btn = _G[group .. i]
-                if btn and btn.action then
+local function actual_build_special_button_cache()
+    if InCombatLockdown() then return end
+    
+    local cdmBars = { "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton", "MultiBar7Button" }
+    for _, group in ipairs(cdmBars) do
+        for i = 1, 12 do
+            local btn = _G[group .. i]
+            if btn then
+                btn.__isPotion = nil
+                local barName = get_bar_name_by_button(btn)
+                if btn.action and barName and FeatureBars.cdm[barName] then
                     if not btn.cdmOverlay then
                         btn.cdmOverlay = CreateFrame("Frame", nil, btn, "CDMOverlayTemplate")
                     end
                     btn.cdmOverlay:ClearAllPoints()
                     btn.cdmOverlay:SetAllPoints(btn)
+                elseif btn.cdmOverlay then
+                    btn.cdmOverlay:Hide()
                 end
             end
         end
-        build_button_cache()
-    end)
+    end
+    build_button_cache()
+end
+
+local lastEventFrameTime = 0
+local function build_special_button_cache()
+    if InCombatLockdown() then return end
+    local now = GetTime()
+    if now == lastEventFrameTime then return end
+    lastEventFrameTime = now
+    dodo.Debounce("BuildSpecialButtonCache", actual_build_special_button_cache, 0.1)
 end
 
 local function actionbar_apply_cdm()
@@ -700,7 +821,6 @@ local function get_matching_buttons(targetSpellID, configKey)
     end
     return matched
 end
-
 
 -- ==============================
 -- 기능 5: 차단 오버레이
@@ -817,11 +937,14 @@ end
 function dodoAB3ControllerMixin:CreateOverlays()
     self.overlayPool:ReleaseAll()
     for _, actionButton in pairs(ActionBarButtonEventsFrame.frames) do
-        local _, spellID = GetActionInfo(actionButton.action)
-        if Interrupts[spellID] then
-            local overlay = self.overlayPool:Acquire()
-            overlay.spellID = spellID
-            overlay:Attach(actionButton)
+        local barName = get_bar_name_by_button(actionButton)
+        if barName and FeatureBars.interrupt[barName] then
+            local _, spellID = GetActionInfo(actionButton.action)
+            if Interrupts[spellID] then
+                local overlay = self.overlayPool:Acquire()
+                overlay.spellID = spellID
+                overlay:Attach(actionButton)
+            end
         end
     end
 end
@@ -863,7 +986,7 @@ function dodoAB3ControllerMixin:Update()
     self:RefreshOverlays(false)
 end
 
-function dodoAB3ControllerMixin:OnEvent(event, ...)
+local function actual_dodoAB3Controller_OnEvent(self, event, ...)
     if event == 'PLAYER_LOGIN' then
         self:Initialize()
         self:CreateOverlays()
@@ -883,11 +1006,78 @@ function dodoAB3ControllerMixin:OnEvent(event, ...)
     end
 end
 
+function dodoAB3ControllerMixin:OnEvent(event, ...)
+    dodo.Profile("ActionBar_AB3Controller_OnEvent_"..tostring(event), actual_dodoAB3Controller_OnEvent, self, event, ...)
+end
+
 local function actionbar_apply_interrupt()
     if dodoAB3ControllerMixin.controller then
         dodoAB3ControllerMixin.controller:Update()
     end
 end
+
+-- ==============================
+-- 기능 6: 물약 프록 오버레이
+-- ==============================
+PotionOverlayMixin = {}
+function PotionOverlayMixin:Update(active)
+    if active then
+        if not self.ProcLoop:IsPlaying() then self.ProcLoop:Play() end
+        self:Show()
+    else
+        if self.ProcLoop:IsPlaying() then self.ProcLoop:Stop() end
+        self:Hide()
+    end
+end
+
+function update_potion_proc(btn)
+    if not btn.action then return end
+    
+    local isEnabled = (dodo.DB and dodo.DB.useActionbarPotionProc ~= false)
+    if not isEnabled then
+        if btn.potionOverlay then btn.potionOverlay:Update(false) end
+        return
+    end
+
+    local barName = get_bar_name_by_button(btn)
+    if not barName or not FeatureBars.potion[barName] then
+        if btn.potionOverlay then btn.potionOverlay:Update(false) end
+        return
+    end
+
+    if btn.__isPotion == nil then
+        local actionType, id = GetActionInfo(btn.action)
+        btn.__isPotion = (actionType == "item" and POTION_IDS[id] == true)
+        btn.__potionItemID = btn.__isPotion and id or nil
+    end
+
+    if btn.__isPotion then
+        local id = btn.__potionItemID
+        if not btn.potionOverlay then
+            btn.potionOverlay = CreateFrame("Frame", nil, btn, "PotionOverlayTemplate")
+            btn.potionOverlay:SetAllPoints(btn)
+            local w, h = btn:GetSize()
+            btn.potionOverlay.Proc:SetSize(w * 1.4, h * 1.4)
+        end
+        
+        local count = C_Item.GetItemCount(id)
+        local start, duration = C_Container.GetItemCooldown(id)
+        local isUsable = inCombat and (count > 0) and (start == 0 or duration == 0)
+        btn.potionOverlay:Update(isUsable)
+    elseif btn.potionOverlay then
+        btn.potionOverlay:Update(false)
+    end
+end
+
+local function update_all_potion_procs()
+    for i = 1, 12 do
+        local btn = _G["MultiBar7Button" .. i]
+        if btn and btn:IsVisible() then
+            update_potion_proc(btn)
+        end
+    end
+end
+
 -- ==============================
 -- 이벤트
 -- ==============================
@@ -901,13 +1091,11 @@ f:RegisterEvent("UNIT_DIED")
 f:RegisterEvent("PLAYER_DEAD")
 f:RegisterEvent("BAG_UPDATE")
 
-f:SetScript("OnEvent", function(self, event, ...)
+local function actual_on_event(self, event, ...)
     if event == "ACTIONBAR_SLOT_CHANGED" then
         build_special_button_cache()
     elseif event == "BAG_UPDATE" then
-        for btn in pairs(registeredButtons) do
-            if btn:IsVisible() then update_potion_proc(btn) end
-        end
+        dodo.Debounce("ActionBar_PotionProcBagUpdate", update_all_potion_procs, 0.1)
     elseif event == "ACTION_RANGE_CHECK_UPDATE" then
         local slot = ...
         local slotButtons = ActionBarButtonRangeCheckFrame.actions and ActionBarButtonRangeCheckFrame.actions[slot]
@@ -969,7 +1157,12 @@ f:SetScript("OnEvent", function(self, event, ...)
             end
         end
     end
-end)
+end
+
+local function on_event(self, event, ...)
+    dodo.Profile("ActionBar_Main_OnEvent_"..tostring(event), actual_on_event, self, event, ...)
+end
+f:SetScript("OnEvent", on_event)
 
 -- ==============================
 -- 모듈 생명주기
@@ -995,64 +1188,58 @@ function module:OnEnable()
     end
     isInitialized = true
 
-    local groups = {
-        "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton",
-        "MultiBarRightButton", "MultiBarLeftButton", "MultiBar5Button", "MultiBar6Button", "MultiBar7Button",
-        "StanceButton", "PetActionButton"
-    }
-    for _, group in ipairs(groups) do
-        for i = 1, 12 do
-            local btn = _G[group .. i]
-            if btn then
-                registeredButtons[btn] = true
-                if btn.Update then hooksecurefunc(btn, "Update", update_state) end
-                if btn.UpdateUsable then hooksecurefunc(btn, "UpdateUsable", update_state) end
-                if (group == "StanceButton" or group == "PetActionButton") and btn.UpdateState then
-                    hooksecurefunc(btn, "UpdateState", update_state)
+    -- [최적화] 부팅 및 리로드 극초기 부하 분산을 위해 무거운 훅 및 초기 갱신 로직을 0.5초 지연 실행
+    C_Timer.After(0.5, function()
+        local groups = {
+            "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton",
+            "MultiBarRightButton", "MultiBarLeftButton", "MultiBar5Button", "MultiBar6Button", "MultiBar7Button",
+            "StanceButton", "PetActionButton"
+        }
+        for _, group in ipairs(groups) do
+            for i = 1, 12 do
+                local btn = _G[group .. i]
+                if btn then
+                    registeredButtons[btn] = true
+                    if btn.Update then hooksecurefunc(btn, "Update", update_state) end
+                    if btn.UpdateUsable then hooksecurefunc(btn, "UpdateUsable", update_state) end
+                    if (group == "StanceButton" or group == "PetActionButton") and btn.UpdateState then
+                        hooksecurefunc(btn, "UpdateState", update_state)
+                    end
+                    if btn.cooldown then
+                        btn.cooldown:HookScript("OnCooldownDone", function()
+                            btn.__cdVal = nil
+                            update_icon_color(btn)
+                        end)
+                    end
+                    update_state(btn)
+                    update_cooldown_state(btn)
                 end
-                if btn.cooldown then
-                    btn.cooldown:HookScript("OnCooldownDone", function()
-                        btn.__cdVal = nil
-                        update_icon_color(btn)
-                    end)
-                end
-                update_state(btn)
-                update_cooldown_state(btn)
             end
         end
-    end
 
-    hooksecurefunc("ActionButton_ApplyCooldown", function(cd)
-        local btn = cd:GetParent()
-        if btn and registeredButtons[btn] then
-            C_Timer.After(0, function()
-                if btn:IsVisible() then update_cooldown_state(btn) end
-            end)
+        hooksecurefunc("ActionButton_ApplyCooldown", on_actionbutton_applycooldown)
+
+        local bars = {
+            MainActionBar, MultiBarBottomLeft, MultiBarBottomRight,
+            MultiBarRight, MultiBarLeft, MultiBar5, MultiBar6, MultiBar7,
+            StanceBar, PetActionBar
+        }
+        for _, bar in ipairs(bars) do
+            if bar then
+                hooksecurefunc(bar, "UpdateGridLayout", update_padding)
+                update_padding(bar)
+            end
         end
-    end)
 
-    local bars = {
-        MainActionBar, MultiBarBottomLeft, MultiBarBottomRight,
-        MultiBarRight, MultiBarLeft, MultiBar5, MultiBar6, MultiBar7,
-        StanceBar, PetActionBar
-    }
-    for _, bar in ipairs(bars) do
-        if bar then
-            hooksecurefunc(bar, "UpdateGridLayout", update_padding)
-            update_padding(bar)
-        end
-    end
-
-    local cdmHook = function(_, item) hook_viewer_item(item) end
-    hooksecurefunc(BuffBarCooldownViewer, "OnAcquireItemFrame", cdmHook)
-    hooksecurefunc(BuffIconCooldownViewer, "OnAcquireItemFrame", cdmHook)
-
-    C_Timer.After(0.5, function()
         init_custom_cdm_spells()
         build_special_button_cache()
         for _, item in ipairs(BuffBarCooldownViewer:GetItemFrames()) do hook_viewer_item(item) end
         for _, item in ipairs(BuffIconCooldownViewer:GetItemFrames()) do hook_viewer_item(item) end
     end)
+
+    local cdmHook = function(_, item) hook_viewer_item(item) end
+    hooksecurefunc(BuffBarCooldownViewer, "OnAcquireItemFrame", cdmHook)
+    hooksecurefunc(BuffIconCooldownViewer, "OnAcquireItemFrame", cdmHook)
 
     if LibEditMode then
         local settingType = LibEditMode.SettingType

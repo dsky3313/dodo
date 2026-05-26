@@ -73,6 +73,10 @@ newLFG_Alert.Text:SetText("[ 신규 신청 ]\n\n|cffffff00파티창을 확인하
 -- ==============================
 -- 기능 1: 신청 알림
 -- ==============================
+local function hide_alert_frame()
+    if newLFG_Alert:IsShown() then newLFG_Alert:Hide() end
+end
+
 local function play_newLFG_alert()
     if InCombatLockdown() then return end
 
@@ -92,9 +96,7 @@ local function play_newLFG_alert()
     end
     
     if alertTimer then alertTimer:Cancel() end
-    alertTimer = C_Timer.After(7, function() 
-        if newLFG_Alert:IsShown() then newLFG_Alert:Hide() end 
-    end)
+    alertTimer = C_Timer.After(7, hide_alert_frame)
 
     local soundID = (dodo.DB and dodo.DB.soundID) or "5274"
     local sID = tonumber(soundID) or 5274
@@ -105,6 +107,7 @@ local function play_newLFG_alert()
         PlaySound(sID, "Master")
     end
 end
+
 NewLFG = play_newLFG_alert -- 전역 역호환성 유지용 바인딩
 
 -- ==============================
@@ -134,7 +137,7 @@ local function UpdateNewLFGRegistration()
     end
 end
 
-initNewLFG:SetScript("OnEvent", function(self, event)
+local function OnEvent(self, event)
     local now = GetTime()
     
     if event == "PLAYER_ENTERING_WORLD" then
@@ -159,7 +162,9 @@ initNewLFG:SetScript("OnEvent", function(self, event)
         end
         lastApps = count
     end
-end)
+end
+
+initNewLFG:SetScript("OnEvent", OnEvent)
 
 -- ==============================
 -- 모듈 생명주기

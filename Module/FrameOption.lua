@@ -71,7 +71,7 @@ local function update_feature()
 end
 
 -- 지연 로드 이벤트 핸들러
-eventFrame:SetScript("OnEvent", function(self, event, addon)
+local function OnEvent(self, event, addon)
     if event == "ADDON_LOADED" and addon == "Blizzard_TalkingHeadUI" then
         local th = _G["TalkingHeadFrame"]
         if th and dodo.DB then
@@ -80,7 +80,9 @@ eventFrame:SetScript("OnEvent", function(self, event, addon)
         end
         self:UnregisterEvent("ADDON_LOADED") -- 로드 완료 시 즉시 이벤트 해제로 CPU 소모 방지
     end
-end)
+end
+
+eventFrame:SetScript("OnEvent", OnEvent)
 
 -- ==============================
 -- 초기화

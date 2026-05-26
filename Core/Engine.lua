@@ -1,3 +1,11 @@
+-- ==============================
+-- Inspired
+-- ==============================
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
+---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 _G[addonName] = dodo
 
@@ -7,11 +15,17 @@ dodo.Modules = dodo.Modules or {}
 dodo.ModuleRegistry = dodo.ModuleRegistry or {}
 dodo.UI = dodo.UI or {}
 
-local engine = CreateFrame("Frame")
-engine:RegisterEvent("ADDON_LOADED")
-engine:RegisterEvent("PLAYER_LOGIN")
+-- ==============================
+-- 캐싱
+-- ==============================
+local CreateFrame = CreateFrame
 
-engine:SetScript("OnEvent", function(self, event, ...)
+-- ==============================
+-- 프레임 및 이벤트
+-- ==============================
+local engine = CreateFrame("Frame")
+
+local function on_event(self, event, ...)
     local arg1 = ...
     if event == "ADDON_LOADED" and arg1 == addonName then
         dodoDB = dodoDB or {}
@@ -21,4 +35,8 @@ engine:SetScript("OnEvent", function(self, event, ...)
         if dodo.OnEnable then dodo:OnEnable() end
         self:UnregisterEvent("PLAYER_LOGIN")
     end
-end)
+end
+
+engine:SetScript("OnEvent", on_event)
+engine:RegisterEvent("ADDON_LOADED")
+engine:RegisterEvent("PLAYER_LOGIN")

@@ -13,8 +13,7 @@ Libs\LibEditMode\embed.xml
 Libs\LibOpenRaid\lib.xml
 Libs\oUF\oUF.xml
 
-UI/OptionUI.xml
-UI/OptionUI.lua
+UI/Widgets.lua
 UI/Icon.lua
 
 Core/Engine.lua
@@ -28,7 +27,7 @@ UI/ResourceBar.xml
 
 Module\Audio.lua
 Module\BloodBrez.lua
-#Module\BuffReminder.lua
+##Module\BuffReminder.lua
 Module\BrowseGroup.lua
 Module\Camera.lua
 Module\ChatBubble.lua
@@ -50,15 +49,15 @@ Module\Keystone.lua
 Module\Merchant.lua
 Module\Minimap.lua
 Module\NewLFG.lua
-Module\PartyClass.lua
+###Module\PartyClass.lua
 Module\QuickBobber.lua
 Module\ResourceBar.lua
 Module\Slash.lua
 Module\Teleport.lua
-#Module\Timeline.lua
+##Module\Timeline.lua
 Module\Tooltip.lua
 Module\Unitframe.lua
-Module\WMarker.lua
+#Module\WMarker.lua
 Module\WowheadLink.lua
 
-Option.lua
+#Option.lua

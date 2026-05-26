@@ -10,6 +10,7 @@
 local addonName, dodo = ...
 local module = {}
 dodo:RegisterModule("BrowseGroup", module)
+module.NonCombat = true
 
 -- ==============================
 -- 캐싱
@@ -18,23 +19,12 @@ local CreateFrame = CreateFrame
 local GetActiveEntryInfo = C_LFGList.GetActiveEntryInfo
 local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local UnitIsGroupLeader = UnitIsGroupLeader
-local issecretvalue = issecretvalue
+local issecretvalue = issecretvalue or function() return false end
 
 local initialized = false
 local LFGListFrame
-
--- ==============================
--- 디스플레이
--- ==============================
-local browseGroupsBtn = CreateFrame("Button", "browseGroupsBtn", UIParent, "UIPanelButtonTemplate")
-browseGroupsBtn:SetSize(144, 22)
-browseGroupsBtn:SetText(GROUP_FINDER_BROWSE or "파티 탐색하기")
-browseGroupsBtn:Hide()
-
-local returnGroupsBtn = CreateFrame("Button", "returnGroupsBtn", UIParent, "UIPanelButtonTemplate")
-returnGroupsBtn:SetSize(144, 22)
-returnGroupsBtn:SetText(GROUP_FINDER_BACK_TO_GROUP or "파티로 돌아가기")
-returnGroupsBtn:Hide()
+local browseGroupsBtn
+local returnGroupsBtn
 
 -- ==============================
 -- 프레임 및 이벤트
@@ -47,8 +37,8 @@ local eventFrame = CreateFrame("Frame")
 local function update_buttons()
     local isEnabled = (dodo.DB and dodo.DB.useBrowseGroup ~= false)
     if not isEnabled or not LFGListFrame then
-        if browseGroupsBtn:IsShown() then browseGroupsBtn:Hide() end
-        if returnGroupsBtn:IsShown() then returnGroupsBtn:Hide() end
+        if browseGroupsBtn and browseGroupsBtn:IsShown() then browseGroupsBtn:Hide() end
+        if returnGroupsBtn and returnGroupsBtn:IsShown() then returnGroupsBtn:Hide() end
         return
     end
 
@@ -56,7 +46,7 @@ local function update_buttons()
     local isEntrySecret = issecretvalue(entryInfo)
     local active = (not isEntrySecret and entryInfo ~= nil) or isEntrySecret
     local isLeader = UnitIsGroupLeader("player")
-    
+
     local shownApp = LFGListFrame.ApplicationViewer and LFGListFrame.ApplicationViewer:IsShown()
     local shownSearch = LFGListFrame.SearchPanel and LFGListFrame.SearchPanel:IsShown()
 
@@ -75,10 +65,48 @@ local function update_buttons()
     end
 end
 
+-- ==============================
+-- 기능 2: 버튼 클릭 핸들러 (가비지 프리: 정적 함수로 분리)
+-- ==============================
+local function on_browse_click()
+    local bgb = LFGListFrame.ApplicationViewer and LFGListFrame.ApplicationViewer.BrowseGroupsButton
+    if bgb and bgb:IsEnabled() then
+        bgb:Click()
+    end
+end
+
+local function do_return_panel()
+    LFGListFrame_SetActivePanel(LFGListFrame, LFGListFrame.ApplicationViewer)
+end
+
+local function on_return_click()
+    C_Timer.After(0, do_return_panel)
+end
+
+local function on_lfglist_hide()
+    browseGroupsBtn:Hide()
+    returnGroupsBtn:Hide()
+end
+
+-- ==============================
+-- 기능 3: 버튼 초기화
+-- ==============================
+local function create_ui()
+    browseGroupsBtn = CreateFrame("Button", "browseGroupsBtn", UIParent, "UIPanelButtonTemplate")
+    browseGroupsBtn:SetSize(144, 22)
+    browseGroupsBtn:SetText(GROUP_FINDER_BROWSE or "파티 탐색하기")
+    browseGroupsBtn:Hide()
+
+    returnGroupsBtn = CreateFrame("Button", "returnGroupsBtn", UIParent, "UIPanelButtonTemplate")
+    returnGroupsBtn:SetSize(144, 22)
+    returnGroupsBtn:SetText(GROUP_FINDER_BACK_TO_GROUP or "파티로 돌아가기")
+    returnGroupsBtn:Hide()
+end
+
 local function init_buttons()
     LFGListFrame = _G.LFGListFrame
     if not LFGListFrame or initialized then return end
-    
+
     browseGroupsBtn:SetParent(LFGListFrame)
     browseGroupsBtn:ClearAllPoints()
     browseGroupsBtn:SetPoint("TOP", LFGListFrame, "BOTTOM", -100, 26)
@@ -94,32 +122,34 @@ local function init_buttons()
         returnGroupsBtn:SetFrameStrata(strata); returnGroupsBtn:SetFrameLevel(500)
     end
 
-    -- 클릭: 파티 탐색하기
-    browseGroupsBtn:SetScript("OnClick", function()
-        local bgb = LFGListFrame.ApplicationViewer and LFGListFrame.ApplicationViewer.BrowseGroupsButton
-        if bgb then
-            if bgb:IsEnabled() then
-                bgb:Click()
-            end
-        end
-    end)
-
-    -- 클릭: 파티로 돌아가기
-    returnGroupsBtn:SetScript("OnClick", function()
-        C_Timer.After(0, function()
-            LFGListFrame_SetActivePanel(LFGListFrame, LFGListFrame.ApplicationViewer)
-        end)
-    end)
+    browseGroupsBtn:SetScript("OnClick", on_browse_click)
+    returnGroupsBtn:SetScript("OnClick", on_return_click)
 
     LFGListFrame.ApplicationViewer:HookScript("OnShow", update_buttons)
     LFGListFrame.SearchPanel:HookScript("OnShow", update_buttons)
-    LFGListFrame:HookScript("OnHide", function()
-        browseGroupsBtn:Hide()
-        returnGroupsBtn:Hide()
-    end)
+    LFGListFrame:HookScript("OnHide", on_lfglist_hide)
 
     initialized = true
     update_buttons()
+end
+
+-- ==============================
+-- 이벤트 핸들러 (가비지 프리: 정적 함수로 분리)
+-- ==============================
+local function on_event(self, event, arg1)
+    if event == "ADDON_LOADED" then
+        if arg1 == "Blizzard_GroupFinder" then
+            init_buttons()
+            eventFrame:UnregisterEvent("ADDON_LOADED") -- 로드 완료 시 이벤트 해제로 성능 향상
+        end
+    elseif event == "PARTY_LEADER_CHANGED" or event == "LFG_LIST_ACTIVE_ENTRY_UPDATE" then
+        if initialized then
+            update_buttons()
+        elseif IsAddOnLoaded("Blizzard_GroupFinder") then
+            init_buttons()
+            eventFrame:UnregisterEvent("ADDON_LOADED")
+        end
+    end
 end
 
 -- ==============================
@@ -132,26 +162,13 @@ function module:OnEnable()
     if isInitialized then return end
     isInitialized = true
 
+    create_ui()
+
     -- 최적화된 이벤트 감지 설정
     eventFrame:RegisterEvent("ADDON_LOADED")
     eventFrame:RegisterEvent("PARTY_LEADER_CHANGED")
     eventFrame:RegisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
-
-    eventFrame:SetScript("OnEvent", function(self, event, arg1)
-        if event == "ADDON_LOADED" then
-            if arg1 == "Blizzard_GroupFinder" then
-                init_buttons()
-                eventFrame:UnregisterEvent("ADDON_LOADED") -- 로드 완료 시 이벤트 해제로 성능 향상
-            end
-        elseif event == "PARTY_LEADER_CHANGED" or event == "LFG_LIST_ACTIVE_ENTRY_UPDATE" then
-            if initialized then 
-                update_buttons() 
-            elseif IsAddOnLoaded("Blizzard_GroupFinder") then
-                init_buttons()
-                eventFrame:UnregisterEvent("ADDON_LOADED")
-            end
-        end
-    end)
+    eventFrame:SetScript("OnEvent", on_event)
 
     if IsAddOnLoaded("Blizzard_GroupFinder") then
         init_buttons()
@@ -173,3 +190,21 @@ function module:OnEnable()
     end
 end
 
+-- ==============================
+-- 전투 중 휴면 라이프사이클
+-- ==============================
+function module:OnCombatStart()
+    browseGroupsBtn:Hide()
+    returnGroupsBtn:Hide()
+    eventFrame:UnregisterAllEvents()
+end
+
+function module:OnCombatEnd()
+    eventFrame:RegisterEvent("PARTY_LEADER_CHANGED")
+    eventFrame:RegisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
+    if not initialized and IsAddOnLoaded("Blizzard_GroupFinder") then
+        init_buttons()
+    else
+        update_buttons()
+    end
+end

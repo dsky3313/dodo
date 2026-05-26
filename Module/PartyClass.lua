@@ -147,7 +147,7 @@ local function create_icons_if_needed()
 end
 
 -- UI 갱신 동작 함수
-local function update_ui()
+local function actual_update_ui()
     if not partyClassFrame:IsShown() then return end
     
     wipe(activeIDs)
@@ -180,8 +180,12 @@ local function update_ui()
     end
 end
 
+local function update_ui()
+    dodo.Profile("PartyClass_update_ui", actual_update_ui)
+end
+
 -- 기능 반영 (dodo 표준)
-local function update_feature()
+local function actual_update_feature()
     local isEnabled = (dodo.DB and dodo.DB.enablePartyClassModule ~= false)
     local pveShown = PVEFrame and PVEFrame:IsShown()
 
@@ -192,6 +196,10 @@ local function update_feature()
     else
         partyClassFrame:Hide()
     end
+end
+
+local function update_feature()
+    dodo.Profile("PartyClass_update_feature", actual_update_feature)
 end
 
 -- 모듈 On/Off 상태 및 이벤트 연동 제어
@@ -209,9 +217,11 @@ local function update_module_state()
 end
 
 partyClassFrame:SetScript("OnEvent", function(self, event)
-    if event == "GROUP_ROSTER_UPDATE" then
-        update_ui()
-    end
+    dodo.Profile("PartyClass_OnEvent_"..tostring(event), function()
+        if event == "GROUP_ROSTER_UPDATE" then
+            update_ui()
+        end
+    end)
 end)
 
 -- ==============================

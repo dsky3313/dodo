@@ -49,7 +49,7 @@ local GetPlayerAuraBySpellID = C_UnitAuras.GetPlayerAuraBySpellID
 local GetSpellCharges = C_Spell.GetSpellCharges
 local GetTime = GetTime
 local ipairs = ipairs
-local issecretvalue = issecretvalue
+local issecretvalue = issecretvalue or function() return false end
 local math_ceil = math.ceil
 local PlaySoundFile = PlaySoundFile
 local tostring = tostring
@@ -67,7 +67,7 @@ local isSatedActive  = false
 -- ==============================
 local update_bloodlust
 
-local function OnOverlayUpdate(self)
+local function actual_OnOverlayUpdate()
     local now = GetTime()
     if blActiveUntil > 0 and now < blActiveUntil then
         local rem = math_ceil(blActiveUntil - now - 1)
@@ -77,12 +77,16 @@ local function OnOverlayUpdate(self)
             bloodOverlayTimer._lastText = remainingText
         end
     else
-        self:SetScript("OnUpdate", nil)
+        bloodOverlay:SetScript("OnUpdate", nil)
         update_bloodlust()
     end
 end
 
-function update_bloodlust()
+local function OnOverlayUpdate(self)
+    dodo.Throttle("BloodBrezOverlayUpdate", actual_OnOverlayUpdate, 0.1)
+end
+
+local function update_bloodlust()
     local foundAura = nil
     for _, id in ipairs(BL_DEBUFFS) do
         local aura = GetPlayerAuraBySpellID(id)
@@ -304,123 +308,122 @@ end
 
 local isInitialized = false
 function module:OnEnable()
-    if not isInitialized then
-        isInitialized = true
-        initialize()
-
-        -- LibEditMode 등록
-        frame.editModeName = "dodo 블러드 & 전투부활"
-        if LibEditMode then
-            LibEditMode:AddFrame(
-                frame,
-                function(f, layoutName, point, x, y)
-                    if dodo.DB then
-                        dodo.DB.bloodBrezX = x
-                        dodo.DB.bloodBrezY = y
-                        dodo.DB.bloodBrezPoint = point
-                    end
-                end,
-                {
-                    point = "BOTTOMLEFT",
-                    x = Settings.iconPositionX,
-                    y = Settings.iconPositionY,
-                },
-                "dodo 블러드 & 전투부활"
-            )
-
-            LibEditMode:AddFrameSettings(frame, {
-                {
-                    kind = LibEditMode.SettingType.Slider,
-                    name = "아이콘 크기",
-                    desc = "블러드 및 전투부활 아이콘 크기를 조절합니다.",
-                    default = 46,
-                    minValue = 40,
-                    maxValue = 70,
-                    valueStep = 2,
-                    get = function()
-                        return (dodo.DB and dodo.DB.bloodBrezSize) or 46
-                    end,
-                    set = function(_, newValue)
-                        if dodo.DB then
-                            dodo.DB.bloodBrezSize = newValue
-                        end
-                        if dodo.UpdateBloodBrezLayout then
-                            dodo.UpdateBloodBrezLayout()
-                        end
-                    end,
-                },
-                {
-                    kind = LibEditMode.SettingType.Slider,
-                    name = "아이콘 간격",
-                    desc = "두 아이콘 사이의 간격을 조절합니다.",
-                    default = 2,
-                    minValue = 0,
-                    maxValue = 6,
-                    valueStep = 1,
-                    get = function()
-                        return (dodo.DB and dodo.DB.bloodBrezPadding) or 2
-                    end,
-                    set = function(_, newValue)
-                        if dodo.DB then
-                            dodo.DB.bloodBrezPadding = newValue
-                        end
-                        if dodo.UpdateBloodBrezLayout then
-                            dodo.UpdateBloodBrezLayout()
-                        end
-                    end,
-                },
-            })
-
-            if not frame.dodoHookedCallbacks then
-                frame.dodoHookedCallbacks = true
-
-                LibEditMode:RegisterCallback("enter", function()
-                    local isEnabled = (dodo.DB and dodo.DB.enableBloodBrezModule ~= false)
-                    if isEnabled then
-                        frame:Show()
-                        -- Mock 상태 표시
-                        bloodIcon.icon:SetDesaturated(false)
-                        bloodOverlay:Show()
-                        bloodOverlayTimer:SetText("40")
-                        brezIcon.icon:SetDesaturated(false)
-                        brezIcon.Count:SetText("3")
-                        brezIcon.Count:Show()
-                    end
-                end)
-
-                LibEditMode:RegisterCallback("exit", function()
-                    blPhase = "init"
-                    brezDesatCache = nil
-                    local isEnabled = (dodo.DB and dodo.DB.enableBloodBrezModule ~= false)
-                    if isEnabled then
-                        update_bloodlust()
-                        update_brez()
-                    else
-                        frame:Hide()
-                    end
-                end)
-            end
-        end
-
-        if dodo.RegisterEditModeSetting then
-            dodo.RegisterEditModeSetting("전투", {
-                {
-                    name = "블러드 & 전투부활",
-                    get = function() return dodo.DB and dodo.DB.enableBloodBrezModule ~= false end,
-                    set = function(checked)
-                        if dodo.DB then dodo.DB.enableBloodBrezModule = checked end
-                        update_module_state()
-                    end
-                }
-            })
-        end
-
-        frame:SetScript("OnEvent", OnEvent)
-    end
-
+    initialize()
     update_bloodlust()
     update_brez()
     update_module_state()
+
+    if isInitialized then return end
+    isInitialized = true
+
+    -- LibEditMode 등록
+    frame.editModeName = "dodo 블러드 & 전투부활"
+    if LibEditMode then
+        LibEditMode:AddFrame(
+            frame,
+            function(f, layoutName, point, x, y)
+                if dodo.DB then
+                    dodo.DB.bloodBrezX = x
+                    dodo.DB.bloodBrezY = y
+                    dodo.DB.bloodBrezPoint = point
+                end
+            end,
+            {
+                point = "BOTTOMLEFT",
+                x = Settings.iconPositionX,
+                y = Settings.iconPositionY,
+            },
+            "dodo 블러드 & 전투부활"
+        )
+
+        LibEditMode:AddFrameSettings(frame, {
+            {
+                kind = LibEditMode.SettingType.Slider,
+                name = "아이콘 크기",
+                desc = "블러드 및 전투부활 아이콘 크기를 조절합니다.",
+                default = 46,
+                minValue = 40,
+                maxValue = 70,
+                valueStep = 2,
+                get = function()
+                    return (dodo.DB and dodo.DB.bloodBrezSize) or 46
+                end,
+                set = function(_, newValue)
+                    if dodo.DB then
+                        dodo.DB.bloodBrezSize = newValue
+                    end
+                    if dodo.UpdateBloodBrezLayout then
+                        dodo.UpdateBloodBrezLayout()
+                    end
+                end,
+            },
+            {
+                kind = LibEditMode.SettingType.Slider,
+                name = "아이콘 간격",
+                desc = "두 아이콘 사이의 간격을 조절합니다.",
+                default = 2,
+                minValue = 0,
+                maxValue = 6,
+                valueStep = 1,
+                get = function()
+                    return (dodo.DB and dodo.DB.bloodBrezPadding) or 2
+                end,
+                set = function(_, newValue)
+                    if dodo.DB then
+                        dodo.DB.bloodBrezPadding = newValue
+                    end
+                    if dodo.UpdateBloodBrezLayout then
+                        dodo.UpdateBloodBrezLayout()
+                    end
+                end,
+            },
+        })
+
+        if not frame.dodoHookedCallbacks then
+            frame.dodoHookedCallbacks = true
+
+            LibEditMode:RegisterCallback("enter", function()
+                local isEnabled = (dodo.DB and dodo.DB.enableBloodBrezModule ~= false)
+                if isEnabled then
+                    frame:Show()
+                    -- Mock 상태 표시
+                    bloodIcon.icon:SetDesaturated(false)
+                    bloodOverlay:Show()
+                    bloodOverlayTimer:SetText("40")
+                    brezIcon.icon:SetDesaturated(false)
+                    brezIcon.Count:SetText("3")
+                    brezIcon.Count:Show()
+                end
+            end)
+
+            LibEditMode:RegisterCallback("exit", function()
+                blPhase = "init"
+                brezDesatCache = nil
+                local isEnabled = (dodo.DB and dodo.DB.enableBloodBrezModule ~= false)
+                if isEnabled then
+                    update_bloodlust()
+                    update_brez()
+                else
+                    frame:Hide()
+                end
+            end)
+        end
+    end
+
+    if dodo.RegisterEditModeSetting then
+        dodo.RegisterEditModeSetting("전투", {
+            {
+                name = "블러드 & 전투부활",
+                get = function() return dodo.DB and dodo.DB.enableBloodBrezModule ~= false end,
+                set = function(checked)
+                    if dodo.DB then dodo.DB.enableBloodBrezModule = checked end
+                    update_module_state()
+                end
+            }
+        })
+    end
+
+    frame:SetScript("OnEvent", OnEvent)
 end
 
 -- ==============================

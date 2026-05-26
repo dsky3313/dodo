@@ -93,6 +93,7 @@ local table = table
 local currentSpecBuffs = {}
 local cachedPowerType = nil
 local cachedSpecColor = { r = 1, g = 1, b = 1 }
+local fallbackSpecColor = { r = 1, g = 1, b = 1 } -- static fallback to prevent spikesum garbage
 local runeIndexes = { 1, 2, 3, 4, 5, 6 }
 local staggerTicker = nil
 local ironfurTicker = nil
@@ -153,6 +154,26 @@ local updater = CreateFrame("Frame")
 -- ==============================
 -- 기능 1: 유틸 및 헬퍼 함수
 -- ==============================
+local UpdateIronfurSystem
+
+local function ironfur_tick()
+    if bar2Frame and bar2Frame.buffConfig and bar2Frame.buffConfig.barMode == "ironfur" then
+        UpdateIronfurSystem(bar2Frame)
+    end
+end
+
+local function stagger_tick()
+    if bar2Frame and bar2Frame.buffConfig and bar2Frame.buffConfig.barMode == "stagger" then
+        bar2Frame:UpdateStaggerSystem()
+    end
+end
+
+local function rune_tick()
+    if bar2Frame and bar2Frame.buffConfig and bar2Frame.buffConfig.barMode == "rune" then
+        bar2Frame:UpdateRuneSystem()
+    end
+end
+
 local function RefreshIronfurTalents()
     ironfurBaseDuration = C_SpellBook.IsSpellKnown(393611) and 9 or 7
     hasGoeTalent = C_SpellBook.IsSpellKnown(155578)
@@ -183,7 +204,7 @@ local function UpdateCurrentSpecConfig()
         end
     end
 
-    cachedSpecColor = (Colors and Colors.Spec and Colors.Spec[englishClass] and Colors.Spec[englishClass][spec]) or { r = 1, g = 1, b = 1 }
+    cachedSpecColor = (Colors and Colors.Spec and Colors.Spec[englishClass] and Colors.Spec[englishClass][spec]) or fallbackSpecColor
 
     local baseConfig = {}
     if bar2ClassConfig[englishClass] then
@@ -404,7 +425,7 @@ function ResourceBar2Mixin:UpdateIronfurTicks(stackCount, longestIdx, fillPct, b
     end
 end
 
-local function UpdateIronfurSystem(f)
+function UpdateIronfurSystem(f)
     local now = GetTime()
     while #ironfurExpiries > 0 and ironfurExpiries[1] <= now do
         table.remove(ironfurExpiries, 1)
@@ -441,12 +462,7 @@ local function UpdateIronfurSystem(f)
     f:UpdateIronfurTicks(stackCount, longestIdx, fillPct, f:GetWidth(), f:GetHeight())
 
     if not ironfurTicker then
-        local function tick()
-            if bar2Frame and bar2Frame.buffConfig and bar2Frame.buffConfig.barMode == "ironfur" then
-                UpdateIronfurSystem(bar2Frame)
-            end
-        end
-        ironfurTicker = C_Timer.NewTicker(GetUpdateInterval(), tick)
+        ironfurTicker = C_Timer.NewTicker(GetUpdateInterval(), ironfur_tick)
     end
 end
 
@@ -588,12 +604,7 @@ function ResourceBar2Mixin:UpdateRuneSystem()
 
     if hasRecharging then
         if not runeTicker then
-            local function tick()
-                if bar2Frame and bar2Frame.buffConfig and bar2Frame.buffConfig.barMode == "rune" then
-                    bar2Frame:UpdateRuneSystem()
-                end
-            end
-            runeTicker = C_Timer.NewTicker(GetUpdateInterval(), tick)
+            runeTicker = C_Timer.NewTicker(GetUpdateInterval(), rune_tick)
         end
     else
         if runeTicker then
@@ -613,7 +624,7 @@ function ResourceBar2Mixin:UpdateStaggerSystem()
     self:SetMinMaxValues(0, maxHealth)
     self:SetValue(stagger, Enum.StatusBarInterpolation.ExponentialEaseOut)
 
-    local isSecret = type(stagger) == "userdata" or type(maxHealth) == "userdata"
+    local isSecret = issecretvalue(stagger) or issecretvalue(maxHealth)
 
     if C_UnitAuras.GetPlayerAuraBySpellID(124273) then -- Heavy Stagger
         self:SetStatusBarColor(1, 0, 0)
@@ -640,12 +651,7 @@ function ResourceBar2Mixin:UpdateStaggerSystem()
     
     if (inCombat or hasStagger) then
         if not staggerTicker then
-            local function tick()
-                if bar2Frame and bar2Frame.buffConfig and bar2Frame.buffConfig.barMode == "stagger" then
-                    bar2Frame:UpdateStaggerSystem()
-                end
-            end
-            staggerTicker = C_Timer.NewTicker(GetUpdateInterval(), tick)
+            staggerTicker = C_Timer.NewTicker(GetUpdateInterval(), stagger_tick)
         end
     else
         if staggerTicker then
@@ -691,6 +697,7 @@ function ResourceBar2Mixin:Update()
         return
     end
 
+    self:SetSize(barConfigs[2].width, barConfigs[2].height)
     if self.runebars then for _, rb in ipairs(self.runebars) do rb:Hide() end end
     if self.countStack then self.countStack:Show() end
 
@@ -740,6 +747,7 @@ function ResourceBar2Mixin:Update()
         self:Show()
     end
 end
+
 
 -- ==============================
 -- 기능 3: ResourceBar2 Updater

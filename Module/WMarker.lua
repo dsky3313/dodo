@@ -28,7 +28,7 @@ local secureButtons = {}
 -- ==============================
 -- 기능 1: 키바인딩 및 보안 버튼 생성
 -- ==============================
-local function create_binding_button(name, label, macrotext)
+local function actual_create_binding_button(name, label, macrotext)
     _G["BINDING_NAME_CLICK " .. name .. ":LeftButton"] = label
     
     local btn = CreateFrame("Button", name, nil, "SecureActionButtonTemplate")
@@ -37,6 +37,10 @@ local function create_binding_button(name, label, macrotext)
     btn:RegisterForClicks("AnyUp", "AnyDown")
     
     secureButtons[name] = btn
+end
+
+local function create_binding_button(name, label, macrotext)
+    dodo.Profile("WMarker_create_binding_button", actual_create_binding_button, name, label, macrotext)
 end
 
 -- ==============================

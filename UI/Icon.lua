@@ -6,9 +6,28 @@ local addonName, dodo = ...
 local LibIcon = {}
 dodo.LibIcon = LibIcon
 
+-- ==============================
+-- 캐싱
+-- ==============================
+-- abc 가나다 순으로 정렬 완료
+local C_Housing = C_Housing
+local C_HousingNeighborhood = C_HousingNeighborhood
+local C_Item = C_Item
+local C_Spell = C_Spell
+local C_SpellBook = C_SpellBook
+local C_ToyBox = C_ToyBox
+local GameTooltip = GameTooltip
+local InCombatLockdown = InCombatLockdown
+local issecretvalue = issecretvalue
+local LibEditMode = LibStub and LibStub("LibEditMode", true)
+local math_max = math.max
+local type = type
+local UnitFactionGroup = UnitFactionGroup
+local _G = _G
+
 local function RescaleIcon(self)
     local width = self:GetWidth()
-    local margin = math.max(2, width * 0.07)
+    local margin = math_max(2, width * 0.07)
     self.icon:ClearAllPoints()
     self.icon:SetPoint("TOPLEFT", self, "TOPLEFT", margin, -margin - 1.5)
     self.icon:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -margin, margin - 1.5)
@@ -29,7 +48,7 @@ local fontColorTable = {
     gray   = {0.5, 0.5, 0.5},
 }
 
-local LibEditMode = LibStub and LibStub("LibEditMode", true)
+-- LibEditMode는 캐싱 영역으로 이관 완료
 
 -- ==============================
 -- 공유 이벤트 및 동작 함수 (가비지 생성 최적화)

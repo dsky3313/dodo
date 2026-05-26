@@ -10,7 +10,9 @@
 local addonName, dodo = ...
 local module = {}
 dodo:RegisterModule("Friends", module)
+module.NonCombat = true
 
+local inCombat = false
 local Colors = dodo.Colors -- 엔진
 
 -- 로컬라이즈된 클래스명 → 토큰 맵
@@ -243,6 +245,7 @@ end
 
 -- 훅에서 호출되는 라우터 함수
 local function update_friend_button(button)
+    if inCombat then return end
     if not button or not button.buttonType or not dodo.DB or dodo.DB.enableFriendsModule == false then return end
     if button.buttonType == FRIENDS_BUTTON_TYPE_WOW then
         decorate_wow_friend(button)
@@ -313,4 +316,16 @@ function module:OnEnable()
             }
         })
     end
+end
+
+-- ==============================
+-- 전투 중 휴면 라이프사이클
+-- ==============================
+function module:OnCombatStart()
+    inCombat = true
+end
+
+function module:OnCombatEnd()
+    inCombat = false
+    refresh()
 end

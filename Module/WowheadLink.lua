@@ -10,12 +10,14 @@
 local addonName, dodo = ...
 local module = {}
 dodo:RegisterModule("WowheadLink", module)
+module.NonCombat = true
 
 local LibIcon = dodo.LibIcon
 
 -- ==============================
 -- 캐싱
 -- ==============================
+-- abc 가나다 순으로 정렬 완료
 local C_Timer = C_Timer
 local CreateFrame = CreateFrame
 local GameTooltip = GameTooltip
@@ -258,3 +260,17 @@ function module:OnEnable()
         })
     end
 end
+
+-- ==============================
+-- 전투 중 휴면 라이프사이클
+-- ==============================
+function module:OnCombatStart()
+    isInsideRestrictedInstance = true
+    if mapEditbox then mapEditbox:Hide() end
+end
+
+function module:OnCombatEnd()
+    update_instance_status()
+    update_map_link()
+end
+

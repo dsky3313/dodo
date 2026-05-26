@@ -1,41 +1,54 @@
 -- ==============================
--- dodo Core Utilities (Zero-Garbage Optimized)
+-- Inspired
 -- ==============================
--- RefineUI 기반 코어 유틸리티의 가비지 컬렉션(GC) 및 프레임 스파이크 방지 최적화 버전
+-- RefineUI (https://github.com/Enkiduke/RefineUI)
 
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
+---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 
+-- ==============================
+-- 캐싱
+-- ==============================
 local C_Timer = C_Timer
+local GetTime = GetTime
 local hooksecurefunc = hooksecurefunc
 local tostring = tostring
-local GetTime = GetTime
 local type = type
 
 -- ==============================
--- 1. Debounce (디바운스 - 무가비 방식)
+-- 기능 1: Debounce (디바운스 - 제로가비지 방식)
 -- ==============================
 -- C_Timer.NewTimer 객체를 반복적으로 Cancel하고 생성하면 대량의 메모리 가비지(GC 스파이크)가 튑니다.
--- NewTimer 대신 GetTime 스탬프 비교와 최소한의 C_Timer.After 틱 구조를 활용하여 가비지를 원천 제거합니다.
+-- 문자열 결합 연산(..) 조차 배제하여 가비지를 원천 제거한 중첩 테이블 기반 제로가비지 디바운스입니다.
 local debounces = {}
 function dodo.Debounce(key, func, delay)
     local delayTime = delay or 0.1
     local targetTime = GetTime() + delayTime
-    debounces[key] = targetTime
+    
+    local state = debounces[key]
+    if not state then
+        state = { target = 0, running = false }
+        debounces[key] = state
+    end
+    state.target = targetTime
 
-    if not debounces[key .. "_running"] then
-        debounces[key .. "_running"] = true
+    if not state.running then
+        state.running = true
         
         local function run()
             local now = GetTime()
-            local target = debounces[key]
+            local target = state.target
             if not target then
-                debounces[key .. "_running"] = nil
+                state.running = false
                 return
             end
 
             if now >= target - 0.005 then
-                debounces[key .. "_running"] = nil
-                debounces[key] = nil
+                state.running = false
+                state.target = nil
                 func()
             else
                 C_Timer.After(target - now, run)
@@ -47,9 +60,9 @@ function dodo.Debounce(key, func, delay)
 end
 
 -- ==============================
--- 2. Throttle (쓰로틀 - Zero-Timer 방식)
+-- 기능 2: Throttle (쓰로틀 - Zero-Timer 방식)
 -- ==============================
--- 타이머 자체를 전혀 생성하지 않는 완벽한 무가비 쓰로틀입니다.
+-- 타이머 자체를 전혀 생성하지 않는 완벽한 제로가비지 쓰로틀입니다.
 -- 단순히 최근 실행 완료 시간 스탬프를 저장하여 지정 간격 내 추가 실행 요구를 즉각 거부합니다.
 local throttles = {}
 function dodo.Throttle(key, func, interval)
@@ -62,7 +75,7 @@ function dodo.Throttle(key, func, interval)
 end
 
 -- ==============================
--- 3. HookOnce (단일 secure 훅)
+-- 기능 3: HookOnce (단일 secure 훅)
 -- ==============================
 local hooked = {}
 function dodo.HookOnce(tbl, funcName, hookFunc)
@@ -81,4 +94,25 @@ function dodo.HookOnce(tbl, funcName, hookFunc)
     else
         hooksecurefunc(funcName, hookFunc)
     end
+end
+
+-- ==============================
+-- 기능 4: Profile (정밀 성능 측정)
+-- ==============================
+-- 특정 함수 실행 시간 측정. 2ms(0.002초) 초과 시 경고 출력.
+-- 가비지 생성을 최소화하기 위해 가변 리턴 완벽 지원.
+local GetTimePreciseSec = GetTimePreciseSec
+function dodo.Profile(name, func, ...)
+    local start = GetTimePreciseSec()
+    local function pass(success, ...)
+        local elapsed = GetTimePreciseSec() - start
+        if elapsed > 0.001 then
+            print(string.format("|cffff3333[DodoProfile]|r %s 느림: %.4f초", name, elapsed))
+        end
+        if not success then
+            error(...)
+        end
+        return ...
+    end
+    return pass(pcall(func, ...))
 end

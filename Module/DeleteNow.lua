@@ -145,7 +145,7 @@ function module:OnEnable()
     if isInitialized then return end
     isInitialized = true
 
-    hooksecurefunc("StaticPopup_Show", function(which)
+    local function on_static_popup_show(which)
         if dodo.DB and dodo.DB.enableDeleteNowModule == false then return end
         if which == "DELETE_GOOD_ITEM" or which == "DELETE_GOOD_QUEST_ITEM" or which == "DELETE_ITEM" then
             for i = 1, STATICPOPUP_NUMDIALOGS do
@@ -155,11 +155,14 @@ function module:OnEnable()
                 end
             end
         end
-    end)
+    end
 
-    hooksecurefunc("StaticPopup_OnHide", function(self)
+    local function on_static_popup_hide(self)
         on_popup_hide(self)
-    end)
+    end
+
+    hooksecurefunc("StaticPopup_Show", on_static_popup_show)
+    hooksecurefunc("StaticPopup_OnHide", on_static_popup_hide)
 
     -- dodoEditModePanel 내부에 2열 그리드로 세부 설정 주입
     if dodo.RegisterEditModeSetting then

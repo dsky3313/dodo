@@ -114,10 +114,11 @@ local function create_url_copy_frame()
     eb:SetScript("OnEnterPressed", function() f:Hide() end)
     eb:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
 
-    -- Ctrl+C 누르면 자동으로 닫히게 설정
+    -- Ctrl+C 누르면 자동으로 닫히게 설정 (가비지 프리: 정적 함수 참조)
+    local function hide_frame() f:Hide() end
     eb:SetScript("OnKeyDown", function(self, key)
         if IsControlKeyDown() and key == "C" then
-            C_Timer.After(0.1, function() f:Hide() end)
+            C_Timer.After(0.1, hide_frame)
         end
     end)
     f.EditBox = eb
@@ -142,11 +143,12 @@ end
 -- SetItemRef 훅 (기본 UI 클릭 처리)
 hooksecurefunc("SetItemRef", OnHyperlinkClick)
 
--- EventRegistry 훅
+-- EventRegistry 훅 (가비지 프리: 정적 함수 참조)
+local function on_set_item_ref(_, ...)
+    OnHyperlinkClick(...)
+end
 if EventRegistry and EventRegistry.RegisterCallback then
-    EventRegistry:RegisterCallback("SetItemRef", function(_, ...)
-        OnHyperlinkClick(...)
-    end)
+    EventRegistry:RegisterCallback("SetItemRef", on_set_item_ref)
 end
 
 -- ==============================
@@ -209,9 +211,24 @@ local function FilterMessage(self, event, msg, author, ...)
     return false, msg, author, ...
 end
 
--- ==============================
--- 기능 3: 채팅창 UI 스타일링
--- ==============================
+-- 하이퍼링크 마우스오버 툴팁 핸들러 (가비지 프리: 정적 함수로 분리)
+local function on_hyperlink_enter(self, linkData)
+    if not linkData:find("^url:") then
+        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+        GameTooltip:SetHyperlink(linkData)
+        GameTooltip:Show()
+    end
+end
+local function on_hyperlink_leave()
+    GameTooltip:Hide()
+end
+
+local function on_hyperlink_click(self, link, text, button)
+    if dodo.DB.enableChatModule then
+        OnHyperlinkClick(link, text, button, self)
+    end
+end
+
 local function style_chat_frames()
     for i = 1, NUM_CHAT_WINDOWS do
         local frame = _G["ChatFrame"..i]
@@ -253,29 +270,20 @@ local function style_chat_frames()
                 end
             end
 
-            -- 하이퍼링크 마우스오버 툴팁 설정
-            frame:SetScript("OnHyperlinkEnter", function(self, linkData)
-                if not linkData:find("^url:") then
-                    GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
-                    GameTooltip:SetHyperlink(linkData)
-                    GameTooltip:Show()
-                end
-            end)
-            frame:SetScript("OnHyperlinkLeave", function()
-                GameTooltip:Hide()
-            end)
-
-            -- 하이퍼링크 클릭 후킹
-            if not frame.OldOnHyperlinkClickHooked then
-                frame.OldOnHyperlinkClickHooked = true
-                frame:HookScript("OnHyperlinkClick", function(self, link, text, button)
-                    if dodo.DB.enableChatModule then
-                        OnHyperlinkClick(link, text, button, self)
-                    end
-                end)
+            -- 하이퍼링크 마우스오버 툴팁 설정 (1회만 등록)
+            if not frame.dodoHyperlinkHooked then
+                frame.dodoHyperlinkHooked = true
+                frame:SetScript("OnHyperlinkEnter", on_hyperlink_enter)
+                frame:SetScript("OnHyperlinkLeave", on_hyperlink_leave)
             end
 
-            -- 채널명 축약 후킹
+            -- 하이퍼링크 클릭 훅킹
+            if not frame.OldOnHyperlinkClickHooked then
+                frame.OldOnHyperlinkClickHooked = true
+                frame:HookScript("OnHyperlinkClick", on_hyperlink_click)
+            end
+
+            -- 채널명 축약 훅킹
             if not frame.OldAddMessage then
                 frame.OldAddMessage = frame.AddMessage
                 frame.AddMessage = function(self, text, ...)
@@ -335,10 +343,11 @@ local function ShowTooltip()
         end
     end
 
-    -- 정렬
-    table_sort(tempMembers, function(a, b)
+    -- 정렬 (가비지 프리: 정적 함수로 분리)
+    local function sort_by_name(a, b)
         return GetGuildRosterInfo(a) < GetGuildRosterInfo(b)
-    end)
+    end
+    table_sort(tempMembers, sort_by_name)
 
     -- 출력
     local shownCount = 0
@@ -466,17 +475,18 @@ function module:OnEnable()
             ChatFrame_AddMessageEventFilter(event, FilterMessage)
         end
 
-        -- 마우스휠 스크롤 추가
+        -- 마우스휠 스크롤 추가 (가비지 프리: 정적 함수로 분리)
+        local function on_mouse_wheel(self, delta)
+            if delta > 0 then
+                if IsControlKeyDown() then self:ScrollToTop() else self:ScrollUp() end
+            else
+                if IsControlKeyDown() then self:ScrollToBottom() else self:ScrollDown() end
+            end
+        end
         for i = 1, NUM_CHAT_WINDOWS do
             local frame = _G["ChatFrame"..i]
             if frame then
-                frame:SetScript("OnMouseWheel", function(self, delta)
-                    if delta > 0 then
-                        if IsControlKeyDown() then self:ScrollToTop() else self:ScrollUp() end
-                    else
-                        if IsControlKeyDown() then self:ScrollToBottom() else self:ScrollDown() end
-                    end
-                end)
+                frame:SetScript("OnMouseWheel", on_mouse_wheel)
                 frame:EnableMouseWheel(true)
             end
         end
@@ -591,4 +601,3 @@ function module:OnEnable()
         })
     end
 end
-
