@@ -8,15 +8,13 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-local module = {}
-dodo:RegisterModule("ResourceBar", module)
+dodoDB = dodoDB or {}
 
 local Colors = dodo.Colors
-local LibEditMode = LibStub and LibStub("LibEditMode", true)
 
 local barConfigs = {
-    { name = "ResourceBar1", width = 270, height = 10, y = -220, level = 3000, template = "ResourceBar1Template" },
-    { name = "ResourceBar2", width = 270, height = 7, y = -4, level = 3001, template = "ResourceBar2Template" }
+    { name = "ResourceBar1", width = 272, height = 10, y = -220, level = 3000, template = "ResourceBar1Template" },
+    { name = "ResourceBar2", width = 272, height = 7, y = -4, level = 3001, template = "ResourceBar2Template" }
 }
 
 local bar1ClassConfig = {
@@ -36,30 +34,26 @@ local bar1ClassConfig = {
         [3] = { powerType = 13, powerToken = "INSANITY" }, -- 암흑 광기
     },
     ["ROGUE"]   = { powerType = 3, powerToken = "ENERGY" }, -- 도적 에너지
-    --["SHAMAN"]   = { [2] = { powerType = 3, powerToken = "ENERGY" } }, -- 도적 에너지
     ["WARLOCK"] = { powerType = 7, powerToken = "SOUL_SHARDS", isTickPower = true, ticks = 5 }, -- 흑마 영혼 조각
 }
 
-local bar2ClassConfig = {
-    ["DEATHKNIGHT"] = { [1] = {{barMode = "rune"}}, [2] = {{barMode = "rune"}}, [3] = {{barMode = "rune"}} },
-    ["DEMONHUNTER"] = { [2] = {{barMode = "soulfragments", maxStack = 5}} },
-    ["DRUID"] = { [3] = {{spellID = 192081, barMode = "ironfur"}} },
-    ["MAGE"] = { [1] = {{barMode = "power", powerType = 16, powerToken = "ARCANE_CHARGES", isTickPower = true, ticks = 4}} }, -- 비전 충전물
-    ["MONK"] = { [1] = {{barMode = "stagger"}} },
-    ["ROGUE"] = { {barMode = "power", powerType = 4, powerToken = "COMBO_POINTS", isTickPower = true} }, -- 전 스펙
-    ["SHAMAN"] = {
-        [3] = {{spellID = 51564,  barMode = "stack", maxStack = 3}},
-    },
-    ["WARRIOR"] = {
-        [1] = {{spellID = 167105, barMode = "duration"}},
-        [2] = {
-            {spellID = 12950,  barMode = "stack",    maxStack = 4, requiredSpell = 12950},
-            {spellID = 184361, barMode = "duration", excludedSpell = 12950},
-        },
-        [3] = {{spellID = 190456, barMode = "stack", maxStack = 100}}
-    },
-}
 
+local bar2ClassConfig = {
+    ["DEATHKNIGHT"] = { [1] = {{barMode = "rune", color = { r = 1, g = 0, b = 0 }}},
+                        [2] = {{barMode = "rune", color = { r = 0, g = 0.8, b = 1 }}},
+    ["DRUID"] = { [3] = {r=0, g=0.82, b=1} },
+                        [3] = {{barMode = "rune", color = { r = 0.3, g = 0.9, b = 0.3 }}} },
+    ["DEMONHUNTER"] = { [2] = {{barMode = "soulfragments", maxStack = 5, color = { r = 0.8, g = 0.6, b = 1 }}} },
+    ["DRUID"] = { [3] = {{spellID = 192081, barMode = "ironfur", color = { r = 0, g = 0.8, b = 1 }}} },
+    ["MAGE"] = { [1] = {{barMode = "power", powerType = 16, powerToken = "ARCANE_CHARGES", isTickPower = true, ticks = 4, color = { r = 0.6, g = 0.2, b = 0.9 }}} }, -- 비전 충전물
+    ["MONK"] = { [1] = {{barMode = "stagger", color = { r = 0.0, g = 1.0, b = 0.5 }}} },
+    ["ROGUE"] = { {barMode = "power", powerType = 4, powerToken = "COMBO_POINTS", isTickPower = true, color = { r = 1.0, g = 0.8, b = 0.0 }} }, -- 전 스펙
+    ["SHAMAN"] = { [3] = {{spellID = 51564,  barMode = "stack", maxStack = 3, color = { r = 0.0, g = 0.8, b = 1.0 }}}, },
+    ["WARRIOR"] = { [1] = {{spellID = 167105, barMode = "duration", color = { r = 1, g = 0.5, b = 0.2 }}},
+                    [2] = {{spellID = 12950,  barMode = "stack", maxStack = 4, requiredSpell = 12950, color = { r = 0, g = 0.8, b = 1 }},
+                           {spellID = 184361, barMode = "duration", excludedSpell = 12950, color = { r = 0, g = 0.8, b = 1 }},},
+                    [3] = {{spellID = 190456, barMode = "stack", maxStack = 100, color = { r = 1, g = 0.5, b = 0.2 }}}},
+}
 
 -- ==============================
 -- 캐싱
@@ -73,8 +67,10 @@ local C_UnitAuras = C_UnitAuras
 local CreateFrame = CreateFrame
 local GetRuneCooldown = GetRuneCooldown
 local GetTime = GetTime
+local hooksecurefunc = hooksecurefunc
 local Mixin = Mixin
 local PowerBarColor = PowerBarColor
+local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 local UnitAffectingCombat = UnitAffectingCombat
 local UnitClass = UnitClass
 local UnitHealthMax = UnitHealthMax
@@ -83,7 +79,6 @@ local UnitPowerMax = UnitPowerMax
 local UnitPowerPercent = UnitPowerPercent
 local UnitPowerType = UnitPowerType
 local UnitStagger = UnitStagger
-local hooksecurefunc = hooksecurefunc
 local ipairs = ipairs
 local math = math
 local pairs = pairs
@@ -98,6 +93,7 @@ local runeIndexes = { 1, 2, 3, 4, 5, 6 }
 local staggerTicker = nil
 local ironfurTicker = nil
 local runeTicker = nil
+local durationTicker = nil
 local ironfurExpiries = {}
 local ironfurDurations = {}
 local goeExpiry = 0
@@ -106,6 +102,16 @@ local hasGoeTalent = false
 
 local function GetUpdateInterval()
     return UnitAffectingCombat("player") and 0.1 or 0.5
+end
+
+local function RestartDurationTicker()
+    if durationTicker then
+        durationTicker:Cancel()
+        durationTicker = nil
+    end
+    if bar2Frame and bar2Frame.buffConfig and bar2Frame.buffConfig.barMode == "duration" then
+        bar2Frame:Update()
+    end
 end
 
 local function RestartRuneTicker()
@@ -154,11 +160,18 @@ local updater = CreateFrame("Frame")
 -- ==============================
 -- 기능 1: 유틸 및 헬퍼 함수
 -- ==============================
+local function GetBar2Size()
+    local width = (dodo.DB and dodo.DB.resourceBarWidth) or (barConfigs and barConfigs[1] and barConfigs[1].width) or 272
+    local height = (dodo.DB and dodo.DB.resourceBarHeight) or (barConfigs and barConfigs[1] and barConfigs[1].height) or 10
+    local height2 = math.max(height - 3, 5)
+    return width, height2
+end
+
 local UpdateIronfurSystem
 
-local function ironfur_tick()
-    if bar2Frame and bar2Frame.buffConfig and bar2Frame.buffConfig.barMode == "ironfur" then
-        UpdateIronfurSystem(bar2Frame)
+local function duration_tick()
+    if bar2Frame and bar2Frame.buffConfig and bar2Frame.buffConfig.barMode == "duration" then
+        bar2Frame:Update()
     end
 end
 
@@ -179,12 +192,58 @@ local function RefreshIronfurTalents()
     hasGoeTalent = C_SpellBook.IsSpellKnown(155578)
 end
 
-local function RuneSortComparator(a, b)
-    local aS, _, aR = GetRuneCooldown(a)
-    local bS, _, bR = GetRuneCooldown(b)
-    if aR ~= bR then return aR end
-    if aS ~= bS then return (aS or 0) < (bS or 0) end
-    return a < b
+local runeDataCache = {}
+for i = 1, 6 do
+    runeDataCache[i] = {
+        runeIndex = i,
+        startTime = 0,
+        duration = 0,
+        isReady = false,
+        remaining = 0
+    }
+end
+local runeSortOrder = { 1, 2, 3, 4, 5, 6 }
+
+local function CompareRuneOrder(a, b)
+    local runeA = runeDataCache[a]
+    local runeB = runeDataCache[b]
+    if runeA.isReady and not runeB.isReady then
+        return true
+    elseif not runeA.isReady and runeB.isReady then
+        return false
+    end
+    return runeA.remaining < runeB.remaining
+end
+
+local function CollectAndSortRuneData()
+    local now = GetTime()
+    local hasRecharging = false
+
+    for i = 1, 6 do
+        local startTime, duration, runeIsReady = GetRuneCooldown(i)
+        local remaining = 0
+
+        if not runeIsReady and startTime and duration and duration > 0 then
+            remaining = (startTime + duration) - now
+            if remaining < 0 then remaining = 0 end
+            hasRecharging = true
+        end
+
+        local entry = runeDataCache[i]
+        entry.runeIndex = i
+        entry.startTime = startTime
+        entry.duration = duration
+        entry.isReady = runeIsReady
+        entry.remaining = remaining
+    end
+
+    for i = 1, 6 do
+        runeSortOrder[i] = i
+    end
+
+    table.sort(runeSortOrder, CompareRuneOrder)
+
+    return hasRecharging
 end
 
 local function UpdateCurrentSpecConfig()
@@ -234,13 +293,16 @@ local function UpdateCurrentSpecConfig()
     if bar2 then
         bar2:SetViewerItem(nil)
         bar2:SetBuffConfig(nil)
-        bar2.currentPriority = nil
-        if bar2.countStack then bar2.countStack:SetText("0") end
+        bar2.currentPriority = i
+        if bar2.countStack then bar2.countStack:SetText("") end
+        if bar2.countDuration then bar2.countDuration:SetText("") end
+        bar2._lastDurationIntVal = nil
         bar2:SetValue(0)
 
         if staggerTicker then staggerTicker:Cancel(); staggerTicker = nil end
         if ironfurTicker then ironfurTicker:Cancel(); ironfurTicker = nil end
         if runeTicker then runeTicker:Cancel(); runeTicker = nil end
+        if durationTicker then durationTicker:Cancel(); durationTicker = nil end
         
         RefreshIronfurTalents()
 
@@ -325,7 +387,12 @@ local function UpdateBar1()
 
     if pType ~= cachedPowerType then
         cachedPowerType = pType
-        local c = (Colors and Colors.Power[pToken]) or PowerBarColor[pToken] or PowerBarColor[pType] or { r = 1, g = 1, b = 1 }
+        local c
+        if pToken == "ESSENCE" then
+            c = (RAID_CLASS_COLORS and RAID_CLASS_COLORS["EVOKER"]) or { r = 0.20, g = 0.58, b = 0.50 }
+        else
+            c = (Colors and Colors.Power[pToken]) or PowerBarColor[pToken] or PowerBarColor[pType] or { r = 1, g = 1, b = 1 }
+        end
         bar1Frame:SetStatusBarColor(c.r, c.g, c.b)
     end
     local current = UnitPower("player", pType)
@@ -435,7 +502,9 @@ function UpdateIronfurSystem(f)
     local stackCount = #ironfurExpiries
     if stackCount == 0 then
         f:SetValue(0)
-        if f.countStack then f.countStack:SetText("0") end
+        if f.countStack then f.countStack:SetText("") end
+        if f.countDuration then f.countDuration:SetText("") end
+        f._lastDurationIntVal = nil
         if f.ironfurTicks then for _, t in ipairs(f.ironfurTicks) do t:Hide() end end
         if ironfurTicker then
             ironfurTicker:Cancel()
@@ -458,6 +527,12 @@ function UpdateIronfurSystem(f)
     local fillPct = math.max(0, maxRem / ironfurDurations[longestIdx])
     f:SetValue(fillPct, Enum.StatusBarInterpolation.Immediate)
     if f.countStack then f.countStack:SetText(stackCount) end
+
+    local intVal = math.floor(maxRem)
+    if f.countDuration and intVal ~= f._lastDurationIntVal then
+        f.countDuration:SetFormattedText("%.0f", intVal)
+        f._lastDurationIntVal = intVal
+    end
 
     f:UpdateIronfurTicks(stackCount, longestIdx, fillPct, f:GetWidth(), f:GetHeight())
 
@@ -505,20 +580,7 @@ function ResourceBar2Mixin:GetSpecColor()
     return cachedSpecColor
 end
 
-local function Bar2DurationOnUpdate(f)
-    local item = f.viewerItem
-    if not item then return end
-    
-    local auraDataUnit = rawget(item, "auraDataUnit")
-    local auraInstanceID = rawget(item, "auraInstanceID")
-    if not auraDataUnit or not auraInstanceID then return end
-
-    local durObj = C_UnitAuras.GetAuraDuration(auraDataUnit, auraInstanceID)
-    if durObj and f.countStack then
-        local rem = durObj:GetRemainingDuration()
-        f.countStack:SetFormattedText("%.0f", rem)
-    end
-end
+-- Removed Bar2DurationOnUpdate in favor of unified 0.1s/0.5s C_Timer ticker
 
 function ResourceBar2Mixin:UpdateStackTicks(maxStack)
     if not self.ticks then self.ticks = {} end
@@ -558,47 +620,58 @@ function ResourceBar2Mixin:UpdateStackTicks(maxStack)
 end
 
 function ResourceBar2Mixin:UpdateRuneSystem()
-    self:SetSize(barConfigs[2].width, barConfigs[2].height)
+    local width, height2 = GetBar2Size()
+    self:SetSize(width, height2)
+
+    local barWidth = width - 2
+    local runeWidth = barWidth / 6
 
     if not self.runebars then
         self.runebars = {}
-        local barWidth = barConfigs[2].width - 2
-        local runeWidth = barWidth / 6
         for i = 1, 6 do
             local rb = CreateFrame("StatusBar", nil, self, "ResourceBar2Template")
-            rb:SetSize(runeWidth, self:GetHeight())
+            rb:SetSize(runeWidth, height2)
             rb:SetPoint("LEFT", self, "LEFT", (i - 1) * runeWidth, 0)
             self.runebars[i] = rb
         end
+    else
+        for i = 1, 6 do
+            local rb = self.runebars[i]
+            rb:SetSize(runeWidth, height2)
+            rb:SetPoint("LEFT", self, "LEFT", (i - 1) * runeWidth, 0)
+        end
     end
     if self.countStack then self.countStack:Hide() end
+    if self.countDuration then self.countDuration:Hide() end
     self:SetStatusBarColor(0, 0, 0, 0)
-    table.sort(runeIndexes, RuneSortComparator)
-    local c = self:GetSpecColor()
 
-    local hasRecharging = false
-    for i, index in ipairs(runeIndexes) do
-        local start, duration, ready = GetRuneCooldown(index)
+    local hasRecharging = CollectAndSortRuneData()
+    local c = (self.buffConfig and self.buffConfig.color) or self:GetSpecColor()
+    local now = GetTime()
+
+    for i = 1, 6 do
+        local runeIndex = runeSortOrder[i]
+        local rune = runeDataCache[runeIndex]
         local rb = self.runebars[i]
         rb:Show()
-        rb:SetMinMaxValues(0, ready and 1 or duration)
-        if ready then
-            rb.start = nil
+
+        if rune.isReady then
+            rb:SetMinMaxValues(0, 1)
             rb:SetStatusBarColor(c.r, c.g, c.b)
             rb:SetValue(1)
-            rb.isRecharging = false
-        else
+        elseif rune.startTime and rune.duration and rune.duration > 0 then
+            rb:SetMinMaxValues(0, rune.duration)
             rb:SetStatusBarColor(1, 1, 1)
-            rb.start    = start
-            rb.duration = duration
-            rb.isRecharging = true
-            hasRecharging = true
 
-            local elapsed = GetTime() - start
-            local progress = elapsed / duration
+            local elapsed = now - rune.startTime
+            local progress = elapsed
             if progress < 0 then progress = 0 end
-            if progress > 1 then progress = 1 end
-            rb:SetValue(progress, Enum.StatusBarInterpolation.ExponentialEaseOut)
+            if progress > rune.duration then progress = rune.duration end
+            rb:SetValue(progress, Enum.StatusBarInterpolation.Immediate)
+        else
+            rb:SetMinMaxValues(0, 1)
+            rb:SetStatusBarColor(c.r, c.g, c.b)
+            rb:SetValue(0)
         end
     end
 
@@ -618,6 +691,7 @@ function ResourceBar2Mixin:UpdateStaggerSystem()
     if not self:IsShown() then return end
     if self.runebars then for _, rb in ipairs(self.runebars) do rb:Hide() end end
     if self.countStack then self.countStack:Show() end
+    if self.countDuration then self.countDuration:Hide() end
 
     local stagger = UnitStagger("player") or 0
     local maxHealth = UnitHealthMax("player") or 1
@@ -645,6 +719,7 @@ function ResourceBar2Mixin:UpdateStaggerSystem()
             self.countStack:SetFormattedText("%.0f", pct)
         end
     end
+    if self.countDuration then self.countDuration:SetText("") end
 
     local inCombat = UnitAffectingCombat("player")
     local hasStagger = stagger > 0
@@ -673,8 +748,11 @@ function ResourceBar2Mixin:Update()
         self:SetMinMaxValues(0, 5)
         local count = C_Spell.GetSpellCastCount(228477) or 0
         if self.countStack then self.countStack:SetText(count) end
+        if self.countDuration then self.countDuration:SetText("") end
         self:SetValue(count, Enum.StatusBarInterpolation.ExponentialEaseOut)
         self:UpdateStackTicks(5)
+        local c = (self.buffConfig and self.buffConfig.color) or self:GetSpecColor()
+        self:SetStatusBarColor(c.r, c.g, c.b)
         self:Show()
         return
     end
@@ -683,10 +761,11 @@ function ResourceBar2Mixin:Update()
         local pToken = self.buffConfig.powerToken
         local maxVal = self.buffConfig.ticks or UnitPowerMax("player", pType) or 1
         local current = UnitPower("player", pType)
-        local c = (Colors and Colors.Power and Colors.Power[pToken]) or PowerBarColor[pToken] or PowerBarColor[pType] or { r = 1, g = 1, b = 1 }
+        local c = (self.buffConfig and self.buffConfig.color) or (Colors and Colors.Power and Colors.Power[pToken]) or PowerBarColor[pToken] or PowerBarColor[pType] or { r = 1, g = 1, b = 1 }
         self:SetMinMaxValues(0, maxVal)
         self:SetStatusBarColor(c.r, c.g, c.b)
         if self.countStack then self.countStack:SetText(current) end
+        if self.countDuration then self.countDuration:SetText("") end
         self:SetValue(current, Enum.StatusBarInterpolation.ExponentialEaseOut)
         if self.buffConfig.isTickPower then
             self:UpdateStackTicks(maxVal)
@@ -697,9 +776,11 @@ function ResourceBar2Mixin:Update()
         return
     end
 
-    self:SetSize(barConfigs[2].width, barConfigs[2].height)
+    local width, height2 = GetBar2Size()
+    self:SetSize(width, height2)
     if self.runebars then for _, rb in ipairs(self.runebars) do rb:Hide() end end
     if self.countStack then self.countStack:Show() end
+    if self.countDuration then self.countDuration:Show() end
 
     local maxValue = 100
     if self.buffConfig then
@@ -713,13 +794,18 @@ function ResourceBar2Mixin:Update()
     end
 
     self:SetMinMaxValues(0, maxValue)
-    local c = self:GetSpecColor()
+    local c = (self.buffConfig and self.buffConfig.color) or self:GetSpecColor()
     self:SetStatusBarColor(c.r, c.g, c.b)
 
     if not self.viewerItem or not self.viewerItem.auraInstanceID then
-        if self.countStack then self.countStack:SetText("0") end
+        if self.countStack then self.countStack:SetText("") end
+        if self.countDuration then self.countDuration:SetText("0") end
         self:SetValue(0, Enum.StatusBarInterpolation.ExponentialEaseOut)
-        if self._hasDurationUpdate then self:SetScript("OnUpdate", nil); self._hasDurationUpdate = false end
+        if durationTicker then 
+            durationTicker:Cancel()
+            durationTicker = nil 
+            self._lastDurationIntVal = nil
+        end
         return
     end
 
@@ -730,24 +816,50 @@ function ResourceBar2Mixin:Update()
             local durObj = C_UnitAuras.GetAuraDuration(unit, auraID)
             if durObj then
                 self:SetTimerDuration(durObj, Enum.StatusBarInterpolation.ExponentialEaseOut, Enum.StatusBarTimerDirection.RemainingTime)
-                if not self._hasDurationUpdate then
-                    self:SetScript("OnUpdate", Bar2DurationOnUpdate)
-                    self._hasDurationUpdate = true
+                local rem = durObj:GetRemainingDuration()
+                if issecretvalue(rem) then
+                    self.countDuration:SetFormattedText("%.0f", rem)
+                    self._lastDurationIntVal = nil
+                else
+                    local intVal = math.floor(rem)
+                    if intVal ~= self._lastDurationIntVal then
+                        self.countDuration:SetFormattedText("%.0f", intVal)
+                        self._lastDurationIntVal = intVal
+                    end
                 end
             end
+            if self.countStack then self.countStack:SetText("") end
+            if not durationTicker then
+                durationTicker = C_Timer.NewTicker(GetUpdateInterval(), duration_tick)
+            end
         elseif self.buffConfig and self.buffConfig.barMode == "ironfur" then
+            if durationTicker then 
+                durationTicker:Cancel()
+                durationTicker = nil 
+                self._lastDurationIntVal = nil
+            end
             self:SetMinMaxValues(0, 1)
             UpdateIronfurSystem(self)
         else
-            if self._hasDurationUpdate then self:SetScript("OnUpdate", nil); self._hasDurationUpdate = false end
+            if durationTicker then 
+                durationTicker:Cancel()
+                durationTicker = nil 
+                self._lastDurationIntVal = nil
+            end
             local countBar = auraData.applications or 0
-            if self.countStack then self.countStack:SetText(countBar) end
+            if self.countStack then 
+                if issecretvalue(countBar) then
+                    self.countStack:SetText(countBar)
+                else
+                    self.countStack:SetText(countBar > 0 and countBar or "") 
+                end
+            end
+            if self.countDuration then self.countDuration:SetText("") end
             self:SetValue(countBar, Enum.StatusBarInterpolation.ExponentialEaseOut)
         end
         self:Show()
     end
 end
-
 
 -- ==============================
 -- 기능 3: ResourceBar2 Updater
@@ -828,8 +940,8 @@ end
 function dodoUpdateResourceBarOption()
     if not bar1Frame or not bar2Frame then return end
 
-    local width = (dodo.DB and dodo.DB.resourceBarWidth) or 270
-    local height = (dodo.DB and dodo.DB.resourceBarHeight) or 10
+    local width = (dodo.DB and dodo.DB.resourceBarWidth) or (barConfigs and barConfigs[1] and barConfigs[1].width) or 272
+    local height = (dodo.DB and dodo.DB.resourceBarHeight) or (barConfigs and barConfigs[1] and barConfigs[1].height) or 10
     local height2 = math.max(height - 3, 5)
 
     bar1Frame:SetSize(width, height)
@@ -838,11 +950,21 @@ function dodoUpdateResourceBarOption()
     local fontSize = (dodo.DB and dodo.DB.resourceBarFontSize) or 12
     if bar1Frame.countPower then
         local font, _, flags = bar1Frame.countPower:GetFont()
-        bar1Frame.countPower:SetFont(font, fontSize, flags)
+        if font then
+            bar1Frame.countPower:SetFont(font, fontSize, flags)
+        end
     end
     if bar2Frame.countStack then
         local font, _, flags = bar2Frame.countStack:GetFont()
-        bar2Frame.countStack:SetFont(font, fontSize, flags)
+        if font then
+            bar2Frame.countStack:SetFont(font, fontSize, flags)
+        end
+    end
+    if bar2Frame.countDuration then
+        local font, _, flags = bar2Frame.countDuration:GetFont()
+        if font then
+            bar2Frame.countDuration:SetFont(font, fontSize, flags)
+        end
     end
 
     if dodo.DB and dodo.DB.resourceBarX and dodo.DB.resourceBarY then
@@ -888,6 +1010,7 @@ local function UpdateResourceBarVisibility()
         bar2Frame:Hide()
         ToggleBar2Events(false)
         if staggerTicker then staggerTicker:Cancel(); staggerTicker = nil end
+        if durationTicker then durationTicker:Cancel(); durationTicker = nil end
     end
 end
 
@@ -899,6 +1022,7 @@ local function update_module_state()
 end
 
 dodo.UpdateResourceBarModuleState = update_module_state
+dodo.UpdateResourceBarVisibility = UpdateResourceBarVisibility
 
 -- ==============================
 -- 초기화
@@ -930,149 +1054,52 @@ local function initialize()
 end
 
 -- ==============================
--- 모듈 생명주기
+-- 이벤트 및 자동 초기화
 -- ==============================
 local isInitialized = false
-function module:OnEnable()
-    initialize()
-    dodoUpdateResourceBarOption()
-    UpdateResourceBarVisibility()
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("ADDON_LOADED")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self, event, arg1)
+    if event == "ADDON_LOADED" and arg1 == addonName then
+        dodoDB = dodoDB or {}
+        dodo.DB = dodo.DB or dodoDB
+    elseif event == "PLAYER_LOGIN" then
+        dodo.DB = dodo.DB or dodoDB or {}
+        initialize()
+        dodoUpdateResourceBarOption()
+        UpdateResourceBarVisibility()
 
-    if isInitialized then return end
-    isInitialized = true
+        if isInitialized then return end
+        isInitialized = true
 
-    updater:OnLoad()
+        updater:OnLoad()
 
-    bar1Frame.editModeName = "dodo 개인 자원바"
-    if LibEditMode then
-        LibEditMode:AddFrame(
-            bar1Frame,
-            function(frame, layoutName, point, x, y)
-                if dodo.DB then
-                    dodo.DB.resourceBarX = x
-                    dodo.DB.resourceBarY = y
-                    dodo.DB.resourceBarPoint = point
-                end
-            end,
-            {
-                point = "CENTER",
-                x = 0,
-                y = -220,
-            },
-            "dodo 개인 자원바"
-        )
-
-        LibEditMode:AddFrameSettings(bar1Frame, {
-            {
-                kind = LibEditMode.SettingType.Checkbox,
-                name = "플레이어 자원바",
-                desc = "마나/분노 등의 자원을 나타내는 기본 자원바를 활성화합니다.",
-                default = true,
-                get = function()
-                    return (dodo.DB and dodo.DB.useResourceBar1 ~= false)
-                end,
-                set = function(_, newValue)
-                    if dodo.DB then dodo.DB.useResourceBar1 = newValue end
-                    UpdateResourceBarVisibility()
-                end,
-            },
-            {
-                kind = LibEditMode.SettingType.Checkbox,
-                name = "버프 추적 바",
-                desc = "특성에 따른 주요 버프를 나타내는 트래킹 바를 활성화합니다.",
-                default = true,
-                get = function()
-                    return (dodo.DB and dodo.DB.useResourceBar2 ~= false)
-                end,
-                set = function(_, newValue)
-                    if dodo.DB then dodo.DB.useResourceBar2 = newValue end
-                    UpdateResourceBarVisibility()
-                end,
-            },
-            {
-                kind = LibEditMode.SettingType.Slider,
-                name = "바 가로 크기",
-                desc = "자원바와 버프트래킹 바의 가로 너비를 조절합니다.",
-                default = 268,
-                minValue = 200,
-                maxValue = 300,
-                valueStep = 2,
-                get = function()
-                    return (dodo.DB and dodo.DB.resourceBarWidth) or 268
-                end,
-                set = function(_, newValue)
-                    if dodo.DB then dodo.DB.resourceBarWidth = newValue end
-                    dodoUpdateResourceBarOption()
-                end,
-            },
-            {
-                kind = LibEditMode.SettingType.Slider,
-                name = "바 세로 크기",
-                desc = "자원바의 세로 두께를 조절합니다. (버프바는 자동 비례 조절됩니다.)",
-                default = 10,
-                minValue = 6,
-                maxValue = 20,
-                valueStep = 1,
-                get = function()
-                    return (dodo.DB and dodo.DB.resourceBarHeight) or 10
-                end,
-                set = function(_, newValue)
-                    if dodo.DB then dodo.DB.resourceBarHeight = newValue end
-                    dodoUpdateResourceBarOption()
-                end,
-            },
-            {
-                kind = LibEditMode.SettingType.Slider,
-                name = "글씨 크기",
-                desc = "자원바/버프바의 수치 글씨 크기를 조절합니다.",
-                default = 12,
-                minValue = 8,
-                maxValue = 18,
-                valueStep = 1,
-                get = function()
-                    return (dodo.DB and dodo.DB.resourceBarFontSize) or 12
-                end,
-                set = function(_, newValue)
-                    if dodo.DB then dodo.DB.resourceBarFontSize = newValue end
-                    dodoUpdateResourceBarOption()
-                end,
-            },
-        })
-
-        LibEditMode:RegisterCallback("enter", function()
-            local moduleEnabled = (dodo.DB and dodo.DB.enableResourceBarModule ~= false)
-            if not moduleEnabled then return end
-
-            local isEnabled1 = (dodo.DB and dodo.DB.useResourceBar1 ~= false)
-            local isEnabled2 = (dodo.DB and dodo.DB.useResourceBar2 ~= false)
-            if isEnabled1 or isEnabled2 then
-                bar1Frame:Show()
-                bar2Frame:Show()
-                bar1Frame:SetMinMaxValues(0, 100)
-                bar1Frame:SetValue(80)
-                if bar1Frame.countPower then bar1Frame.countPower:SetText("80") end
-                
-                bar2Frame:SetMinMaxValues(0, 100)
-                bar2Frame:SetValue(60)
-                if bar2Frame.countStack then bar2Frame.countStack:SetText("3") end
-            end
-        end)
-
-        LibEditMode:RegisterCallback("exit", function()
-            UpdateResourceBarVisibility()
-        end)
+        updater:OnLoad()
     end
+end)
 
-    if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("전투", {
-            {
-                name = "자원바",
-                get = function() return dodo.DB and dodo.DB.enableResourceBarModule ~= false end,
-                set = function(checked)
-                    if dodo.DB then dodo.DB.enableResourceBarModule = checked end
-                    UpdateResourceBarVisibility()
-                end
-            }
-        })
-    end
-end
+-- ==============================
+-- 외부 노출 및 설정 동적 등록 (Option.lua 연동)
+-- ==============================
+local SettingsPanel = SettingsPanel
+local CreateSettingsListSectionHeaderInitializer = CreateSettingsListSectionHeaderInitializer
+local Checkbox = Checkbox
+local Slider = Slider
+
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["combat"] = dodo.OptionRegistrations["combat"] or {}
+table.insert(dodo.OptionRegistrations["combat"], function(category)
+    local layout = SettingsPanel:GetLayout(category)
+    if not layout then return end
+
+    layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("자원바 표시"))
+    Checkbox(category, "enableResourceBarModule", "자원바 활성화", "개인 자원바 및 버프 추적바 기능을 활성화합니다.", true, dodo.UpdateResourceBarModuleState)
+    Checkbox(category, "useResourceBar1", "플레이어 자원바", "플레이어 마나/분노 표시 바를 활성화합니다.", true, dodo.UpdateResourceBarVisibility)
+    Checkbox(category, "useResourceBar2", "버프 추적 바", "특성에 따른 버프 추적 바를 활성화합니다.", true, dodo.UpdateResourceBarVisibility)
+
+    layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("자원바 크기 설정"))
+    Slider(category, "resourceBarWidth", "바 가로 크기", "자원바와 버프 추적바의 가로 너비를 조절합니다.", 200, 300, 2, 268, "Integer", dodoUpdateResourceBarOption)
+    Slider(category, "resourceBarHeight", "바 세로 크기", "자원바의 세로 두께를 조절합니다. (버프바는 자동 비례 조절됩니다.)", 6, 20, 1, 10, "Integer", dodoUpdateResourceBarOption)
+    Slider(category, "resourceBarFontSize", "수치 글자 크기", "자원바/버프바의 수치 텍스트 글꼴 크기를 조절합니다.", 8, 18, 1, 12, "Integer", dodoUpdateResourceBarOption)
+end)

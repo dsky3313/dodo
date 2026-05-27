@@ -1,3 +1,4 @@
+---@diagnostic disable: redundant-parameter
 -- ==============================
 -- Inspired
 -- ==============================
@@ -9,39 +10,42 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-local module = {}
-dodo:RegisterModule("Debuff", module)
-
-local Colors = dodo.Colors -- 엔진
-local LibEditMode = LibStub and LibStub("LibEditMode", true)
-
-local DEFAULT_SIZE = 56
+dodoDB = dodoDB or {}
 
 local configs = {
-    size           = DEFAULT_SIZE,
+    size           = 56,
     sizerate       = 1,
-    max_debuffs    = 5,
-    max_private    = 5,
+    max_debuffs    = 6,
+    max_private    = 6,
     gap            = 2,    -- 아이콘 간격
+    cool_size      = 50,   -- 쿨다운 크기
     cool_fontsize  = 18,   -- 쿨다운
     cool_x         = 0,
     cool_y         = 0,
     count_fontsize = 18,   -- 스택
     count_x        = 0,
     count_y        = 0,
-    dispel_size    = 20, -- 해제 아이콘
+    dispel_size    = 20,   -- 해제 아이콘
     dispel_x       = 1,
     dispel_y       = 1,
+    clickthrough   = false, -- 클릭 무시 (true시 뒤에 있는 NPC 클릭 가능)
 }
 
+local Options_Default = {
+    Version = 1,
+    xpoint  = 350,         -- 위치
+    ypoint  = 0,
+}
+
+-- [에러 해결]: 전역 DEBUFF_TYPE_*_COLOR가 존재하지 않아 nil 오류 유발되는 문제를 CreateColor 직접 생성으로 해결
 local debuffinfo = {
     [0]  = CreateColor(0.8, 0.8, 0.8), -- 일반 디버프
-    [1]  = DEBUFF_TYPE_MAGIC_COLOR,
-    [2]  = DEBUFF_TYPE_CURSE_COLOR,
-    [3]  = DEBUFF_TYPE_DISEASE_COLOR,
-    [4]  = DEBUFF_TYPE_POISON_COLOR,
-    [9]  = DEBUFF_TYPE_BLEED_COLOR,
-    [11] = DEBUFF_TYPE_BLEED_COLOR,
+    [1]  = CreateColor(0.2, 0.6, 1.0), -- Magic (파랑)
+    [2]  = CreateColor(0.6, 0.0, 1.0), -- Curse (보라)
+    [3]  = CreateColor(0.6, 0.4, 0.0), -- Disease (노랑/갈색)
+    [4]  = CreateColor(0.0, 0.6, 0.0), -- Poison (녹색)
+    [9]  = CreateColor(0.4, 0.2, 0.0), -- Bleed (붉은 갈색)
+    [11] = CreateColor(0.4, 0.2, 0.0), -- Bleed (붉은 갈색)
 }
 
 local filterList = {
@@ -54,62 +58,41 @@ local filterList = {
     [160455] = true, -- 만족함 (Insanity - 북)
     [264689] = true, -- 피로 (Fatigued - 원초적 분노)
     [390435] = true, -- 탈진 (Aspects' Benevolence - 위상의 격노)
-    [97821]  = true, -- 죽기 전부 디버프
 }
 
 -- ==============================
--- 프레임 및 이벤트
+-- 캐싱 (가나다 순 정렬)
 -- ==============================
-local bsetupprivate = false
-local debuff_frame
-local main_frame
-local private_frame
-
--- ==============================
--- 캐싱
--- ==============================
-local CreateColor = CreateColor
+local CopyTable = CopyTable
 local CreateFrame = CreateFrame
 local GameTooltip = GameTooltip
 local GameTooltip_SetDefaultAnchor = GameTooltip_SetDefaultAnchor
-local GetTime = GetTime
 local InCombatLockdown = InCombatLockdown
+local UnitAffectingCombat = UnitAffectingCombat
 local ipairs = ipairs
-local isSecretValue = issecretvalue or function() return false end
 local math_max = math.max
-local math_min = math.min
 local next = next
 local pairs = pairs
-local table_wipe = table.wipe
-local UIParent = UIParent
-local UnitAffectingCombat = UnitAffectingCombat
-
--- C_UnitAuras functions cached for high performance
-local AddPrivateAuraAnchor = C_UnitAuras.AddPrivateAuraAnchor
-local GetAuraApplicationDisplayCount = C_UnitAuras.GetAuraApplicationDisplayCount
-local GetAuraDispelTypeColor = C_UnitAuras.GetAuraDispelTypeColor
-local GetAuraDuration = C_UnitAuras.GetAuraDuration
-local GetUnitAuras = C_UnitAuras.GetUnitAuras
-local RemovePrivateAuraAnchor = C_UnitAuras.RemovePrivateAuraAnchor
+local type = type
 
 local activeDebuffs = {}
 local activeDebuffsCache = {}
+local bsetupprivate = false
+local debuff_frame
 local debufffilter = AuraUtil.CreateFilterString(AuraUtil.AuraFilters.Harmful)
-local DISPEL_TYPE_NAMES = { "Magic", "Curse", "Disease", "Poison", "Bleed" }
-local STANDARD_TEXT_FONT = NumberFontNormal:GetFont()
+local main_frame = CreateFrame("Frame", nil, UIParent)
+local private_frame
+local DISPEL_TYPE_NAMES = { "Magic", "Curse", "Disease", "Poison", "Bleed" } -- 해제 타입 이름 (상수)
 
-local DISPEL_ICON_KEYS = {}
-for _, name in ipairs(DISPEL_TYPE_NAMES) do
-    DISPEL_ICON_KEYS[name] = "dispel" .. name
-end
+local isSecretValue = issecretvalue or function() return false end
 
 local colorcurve = C_CurveUtil.CreateColorCurve()
 colorcurve:SetType(Enum.LuaCurveType.Step)
-for dispeltype, v in pairs((Colors and Colors.Debuff) or debuffinfo) do
+for dispeltype, v in pairs(debuffinfo) do
     colorcurve:AddPoint(dispeltype, v)
 end
 
--- 탐지용 커브 생성 도우미 함수
+-- 탐지용 커브 생성 도우미 함수 (비교 연산 에러 방지용)
 local function create_dispel_curve(type_id, alt_type_id)
     local curve = C_CurveUtil.CreateColorCurve()
     curve:SetType(Enum.LuaCurveType.Step)
@@ -131,101 +114,8 @@ local detect_curves = {
     Bleed   = create_dispel_curve(9, 11),
 }
 
-local mockDebuffs = {
-    {
-        isMock = true,
-        auraInstanceID = 99991,
-        icon = 135903, -- 마법
-        applications = 1,
-        duration = 30,
-        dispelType = 1, -- Magic
-        dispelTypeName = "Magic",
-    },
-    {
-        isMock = true,
-        auraInstanceID = 99992,
-        icon = 136116, -- 저주
-        applications = 3,
-        duration = 60,
-        dispelType = 2, -- Curse
-        dispelTypeName = "Curse",
-    },
-    {
-        isMock = true,
-        auraInstanceID = 99993,
-        icon = 136122, -- 질병
-        applications = 1,
-        duration = 15,
-        dispelType = 3, -- Disease
-        dispelTypeName = "Disease",
-    },
-    {
-        isMock = true,
-        auraInstanceID = 99994,
-        icon = 132108, -- 독
-        applications = 1,
-        duration = 8,
-        dispelType = 4, -- Poison
-        dispelTypeName = "Poison",
-    },
-    {
-        isMock = true,
-        auraInstanceID = 99995,
-        icon = 132291, -- 출혈
-        applications = 5,
-        duration = 18,
-        dispelType = 9, -- Bleed
-        dispelTypeName = "Bleed",
-    },
-    {
-        isMock = true,
-        auraInstanceID = 99996,
-        icon = 135898, -- 마법
-        applications = 1,
-        duration = 45,
-        dispelType = 1, -- Magic
-        dispelTypeName = "Magic",
-    },
-    {
-        isMock = true,
-        auraInstanceID = 99997,
-        icon = 136115, -- 저주
-        applications = 2,
-        duration = 20,
-        dispelType = 2, -- Curse
-        dispelTypeName = "Curse",
-    },
-    {
-        isMock = true,
-        auraInstanceID = 99998,
-        icon = 136120, -- 질병
-        applications = 1,
-        duration = 12,
-        dispelType = 3, -- Disease
-        dispelTypeName = "Disease",
-    },
-    {
-        isMock = true,
-        auraInstanceID = 99999,
-        icon = 132117, -- 독
-        applications = 1,
-        duration = 24,
-        dispelType = 4, -- Poison
-        dispelTypeName = "Poison",
-    },
-    {
-        isMock = true,
-        auraInstanceID = 100000,
-        icon = 132316, -- 출혈
-        applications = 4,
-        duration = 30,
-        dispelType = 9, -- Bleed
-        dispelTypeName = "Bleed",
-    },
-}
-
 -- ==============================
--- 기능 1: Private Aura Mixin
+-- Private Aura Mixin
 -- ==============================
 dodo_PrivateAuraAnchorMixin = {}
 
@@ -236,7 +126,7 @@ function dodo_PrivateAuraAnchorMixin:SetUnit(unit)
     self.unit = unit
 
     if self.anchorID then
-        RemovePrivateAuraAnchor(self.anchorID)
+        C_UnitAuras.RemovePrivateAuraAnchor(self.anchorID)
         self.anchorID = nil
     end
 
@@ -264,12 +154,26 @@ function dodo_PrivateAuraAnchorMixin:SetUnit(unit)
         }
         args.durationAnchor = nil
 
-        self.anchorID = AddPrivateAuraAnchor(args)
+        self.anchorID = C_UnitAuras.AddPrivateAuraAnchor(args)
     end
 end
 
 -- ==============================
--- 기능 2: UI 생성 헬퍼
+-- 마우스 오버 툴팁 정적 핸들러 (가비지 프리)
+-- ==============================
+local function on_debuff_enter(self)
+    if self.auraid then
+        GameTooltip_SetDefaultAnchor(GameTooltip, self)
+        GameTooltip:SetUnitDebuffByAuraInstanceID(self.unit, self.auraid, debufffilter)
+    end
+end
+
+local function on_debuff_leave()
+    GameTooltip:Hide()
+end
+
+-- ==============================
+-- UI 생성
 -- ==============================
 local function create_debuff_frames(parent)
     if parent.frames == nil then
@@ -279,7 +183,7 @@ local function create_debuff_frames(parent)
     local w = configs.size
     local h = configs.size * configs.sizerate
 
-    for idx = 1, 10 do
+    for idx = 1, configs.max_debuffs do
         local frame = CreateFrame("Button", nil, parent, "dodo_DebuffFrameTemplate")
         parent.frames[idx] = frame
 
@@ -288,8 +192,7 @@ local function create_debuff_frames(parent)
         frame.cooldown:SetHideCountdownNumbers(false)
         frame.cooldown:ClearAllPoints()
         frame.cooldown:SetPoint("CENTER", frame.icon, "CENTER", 0, 0)
-        local cool_size = math_max(w - 6, 10)
-        frame.cooldown:SetSize(cool_size, cool_size)
+        frame.cooldown:SetSize(configs.cool_size, configs.cool_size)
         for _, r in next, { frame.cooldown:GetRegions() } do
             if r:GetObjectType() == "FontString" then
                 r:SetFont(STANDARD_TEXT_FONT, configs.cool_fontsize, "OUTLINE")
@@ -304,7 +207,6 @@ local function create_debuff_frames(parent)
         frame.icon:ClearAllPoints()
         frame.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", 4, -4)
         frame.icon:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -4, 4)
-
         frame.border:ClearAllPoints()
         frame.border:SetPoint("CENTER", frame, "CENTER", 0, 0)
         frame.border:SetSize(w, h)
@@ -317,9 +219,9 @@ local function create_debuff_frames(parent)
         frame:SetSize(w, h)
         frame:ClearAllPoints()
 
-        -- 해제 타입 아이콘
+        -- 해제 타입 아이콘 설정
         for _, name in ipairs(DISPEL_TYPE_NAMES) do
-            local dispelIcon = frame[DISPEL_ICON_KEYS[name]]
+            local dispelIcon = frame["dispel" .. name]
             if dispelIcon then
                 dispelIcon:SetSize(configs.dispel_size, configs.dispel_size)
                 dispelIcon:ClearAllPoints()
@@ -327,31 +229,16 @@ local function create_debuff_frames(parent)
             end
         end
 
-        local growDir = dodo.DB and dodo.DB.debuffGrow or "RIGHT_TO_LEFT"
-        if growDir == "LEFT_TO_RIGHT" then
-            if idx == 1 then
-                frame:SetPoint("LEFT", parent, "LEFT", 0, 0)
-            else
-                frame:SetPoint("LEFT", parent.frames[idx - 1], "RIGHT", configs.gap, 0)
-            end
-        else -- "RIGHT_TO_LEFT"
-            if idx == 1 then
-                frame:SetPoint("RIGHT", parent, "RIGHT", 0, 0)
-            else
-                frame:SetPoint("RIGHT", parent.frames[idx - 1], "LEFT", -configs.gap, 0)
-            end
+        if idx == 1 then
+            frame:SetPoint("RIGHT", parent, "RIGHT", 0, 0)
+        else
+            frame:SetPoint("RIGHT", parent.frames[idx - 1], "LEFT", -configs.gap, 0)
         end
 
-        frame:SetScript("OnEnter", function(self)
-            if self.auraid then
-                GameTooltip_SetDefaultAnchor(GameTooltip, self)
-                GameTooltip:SetUnitDebuffByAuraInstanceID(self.unit, self.auraid, debufffilter)
-            end
-        end)
-        frame:SetScript("OnLeave", function()
-            GameTooltip:Hide()
-        end)
+        frame:SetScript("OnEnter", on_debuff_enter)
+        frame:SetScript("OnLeave", on_debuff_leave)
 
+        -- 마우스 설정 (초기)
         if configs.clickthrough then
             frame:EnableMouse(true)
             if frame.SetMouseClickEnabled then frame:SetMouseClickEnabled(false) end
@@ -371,7 +258,7 @@ local function create_private_frames(parent)
         return
     end
 
-    bsetupprivate = true
+    bsetuppprivate = true
 
     local w = configs.size
     local h = configs.size * configs.sizerate
@@ -384,29 +271,22 @@ local function create_private_frames(parent)
         frame:SetSize(w, h)
         frame:ClearAllPoints()
 
-        local privateGrow = dodo.DB and dodo.DB.privateGrow or "LEFT_TO_RIGHT"
-        if privateGrow == "RIGHT_TO_LEFT" then
-            if idx == 1 then
-                frame:SetPoint("RIGHT", parent, "RIGHT", 0, 0)
-            else
-                frame:SetPoint("RIGHT", parent.PrivateAuraAnchors[idx - 1], "LEFT", -configs.gap, 0)
-            end
-        else -- "LEFT_TO_RIGHT"
-            if idx == 1 then
-                frame:SetPoint("LEFT", parent, "LEFT", 0, 0)
-            else
-                frame:SetPoint("LEFT", parent.PrivateAuraAnchors[idx - 1], "RIGHT", configs.gap, 0)
-            end
+        -- private는 왼쪽에서 오른쪽으로 (중앙 기준 오른쪽으로 뻗어나감)
+        if idx == 1 then
+            frame:SetPoint("LEFT", parent, "LEFT", 0, 0)
+        else
+            frame:SetPoint("LEFT", parent.PrivateAuraAnchors[idx - 1], "RIGHT", configs.gap, 0)
         end
 
         frame:SetUnit("player")
     end
 end
 
--- ==============================
--- 기능 3: 디버프 로직
--- ==============================
-local function set_cooldown_frame(cooldown, durationobject, enable)
+-- ============================================================
+-- 디버프 로직
+-- ============================================================
+
+local function set_cooldownframe(cooldown, durationobject, enable)
     if enable and durationobject then
         cooldown:SetCooldownFromDurationObject(durationobject)
         cooldown:Show()
@@ -433,115 +313,83 @@ local function update_debuff_frames()
         frame.auraid = aura.auraInstanceID
 
         frame.icon:SetTexture(aura.icon)
+        frame.count:SetText(C_UnitAuras.GetAuraApplicationDisplayCount("player", aura.auraInstanceID, 1, 100))
 
-        if aura.isMock then
-            local appCount = aura.applications or 1
-            frame.count:SetText(appCount > 1 and appCount or "")
+        local durationobject = C_UnitAuras.GetAuraDuration("player", aura.auraInstanceID)
+        set_cooldownframe(frame.cooldown, durationobject, true)
 
-            frame.cooldown:SetCooldown(GetTime(), aura.duration)
-            frame.cooldown:Show()
-
-            local color = (dodo.DispelColorCurve and dodo.DispelColorCurve:Evaluate(aura.dispelType)) or (Colors and Colors.Debuff[aura.dispelType]) or debuffinfo[aura.dispelType]
-            if color then
-                frame.border:SetVertexColor(color.r, color.g, color.b)
-            else
-                frame.border:SetVertexColor(0, 0, 0)
-            end
-
-            for _, name in ipairs(DISPEL_TYPE_NAMES) do
-                local dispelIcon = frame[DISPEL_ICON_KEYS[name]]
-                if dispelIcon then
-                    dispelIcon:SetAlpha(aura.dispelTypeName == name and 1 or 0)
-                    dispelIcon:Show()
-                end
-            end
+        local color = C_UnitAuras.GetAuraDispelTypeColor("player", aura.auraInstanceID, colorcurve)
+        if color then
+            frame.border:SetVertexColor(color.r, color.g, color.b)
         else
-            frame.count:SetText(GetAuraApplicationDisplayCount("player", aura.auraInstanceID, 1, 100))
+            frame.border:SetVertexColor(0, 0, 0)
+        end
 
-            local durationobject = GetAuraDuration("player", aura.auraInstanceID)
-            set_cooldown_frame(frame.cooldown, durationobject, true)
-
-            local color = GetAuraDispelTypeColor("player", aura.auraInstanceID, dodo.DispelColorCurve or colorcurve)
-            if color then
-                frame.border:SetVertexColor(color.r, color.g, color.b)
-            else
-                frame.border:SetVertexColor(0, 0, 0)
-            end
-
-            for _, name in ipairs(DISPEL_TYPE_NAMES) do
-                local detectColor = GetAuraDispelTypeColor("player", aura.auraInstanceID, detect_curves[name])
-                local dispelIcon = frame[DISPEL_ICON_KEYS[name]]
-                if dispelIcon then
-                    dispelIcon:SetAlpha(detectColor and detectColor.a or 0)
-                    dispelIcon:Show()
-                end
+        -- 각 타입별 디버프 아이콘 처리 (비교 연산 없이 알파값으로 제어)
+        for _, name in ipairs(DISPEL_TYPE_NAMES) do
+            local detectColor = C_UnitAuras.GetAuraDispelTypeColor("player", aura.auraInstanceID, detect_curves[name])
+            local dispelIcon = frame["dispel" .. name]
+            if dispelIcon then
+                dispelIcon:SetAlpha(detectColor and detectColor.a or 0)
+                dispelIcon:Show()
             end
         end
 
         frame:Show()
     end
 
-    for j = shown + 1, #debuff_frame.frames do
+    for j = shown + 1, configs.max_debuffs do
         if debuff_frame.frames[j] then
             debuff_frame.frames[j]:Hide()
         end
     end
 end
 
-local activeMocksCache = {}
 local function update_auras(updateInfo)
-    if LibEditMode and LibEditMode:IsInEditMode() then
-        table_wipe(activeMocksCache)
-        local n = math_min(#mockDebuffs, configs.max_debuffs)
-        for i = 1, n do
-            activeMocksCache[i] = mockDebuffs[i]
-        end
-        activeDebuffs["player"] = activeMocksCache
-        update_debuff_frames()
-        return
-    end
-
-    local useFilter = true
-    if dodo.DB and dodo.DB.useDebuffFilter == false then
-        useFilter = false
-    end
-
     if not updateInfo or updateInfo.isFullUpdate then
-        local auras = GetUnitAuras("player", debufffilter)
-        table_wipe(activeDebuffsCache)
+        -- 전체 재스캔
+        local auras = C_UnitAuras.GetUnitAuras("player", debufffilter)
+        table.wipe(activeDebuffsCache)
         if auras then
             for _, aura in ipairs(auras) do
                 local sid = aura.spellId
                 local isFiltered = false
-                if sid and useFilter and not isSecretValue(sid) and filterList[sid] then
-                    isFiltered = true
+                if sid then
+                    if not isSecretValue(sid) and filterList[sid] then
+                        isFiltered = true
+                    end
                 end
                 if not isFiltered then
-                    activeDebuffsCache[#activeDebuffsCache + 1] = aura
+                    table.insert(activeDebuffsCache, aura)
                     if #activeDebuffsCache >= configs.max_debuffs then break end
                 end
             end
         end
     else
+        -- 부분 갱신: 삭제 처리
         if updateInfo.removedAuraInstanceIDs then
             for _, removedID in ipairs(updateInfo.removedAuraInstanceIDs) do
-                local n = #activeDebuffsCache
-                for i = n, 1, -1 do
+                for i = #activeDebuffsCache, 1, -1 do
                     if activeDebuffsCache[i].auraInstanceID == removedID then
-                        activeDebuffsCache[i] = activeDebuffsCache[n]
-                        activeDebuffsCache[n] = nil
+                        table.remove(activeDebuffsCache, i)
                         break
                     end
                 end
             end
         end
+        -- 부분 갱신: 추가 처리
         if updateInfo.addedAuras then
             for _, aura in ipairs(updateInfo.addedAuras) do
                 if aura.isHarmful and #activeDebuffsCache < configs.max_debuffs then
                     local sid = aura.spellId
-                    local isFiltered = sid and useFilter and not isSecretValue(sid) and filterList[sid]
+                    local isFiltered = false
+                    if sid then
+                        if not isSecretValue(sid) and filterList[sid] then
+                            isFiltered = true
+                        end
+                    end
                     if not isFiltered then
-                        activeDebuffsCache[#activeDebuffsCache + 1] = aura
+                        table.insert(activeDebuffsCache, aura)
                     end
                 end
             end
@@ -553,93 +401,44 @@ local function update_auras(updateInfo)
 end
 
 -- ==============================
--- 기능 4: 위치 저장 및 로드
+-- 위치 저장 및 해제
 -- ==============================
-local function save_frame_position(f, keyPrefix, growKey)
-    if not f then return end
-    local grow = dodo.DB[growKey] or (keyPrefix == "debuff" and "RIGHT_TO_LEFT" or "LEFT_TO_RIGHT")
-    local scale = f:GetEffectiveScale()
-    local us = UIParent:GetEffectiveScale()
-    local screenW = UIParent:GetWidth()
-    
-    local x, y, point
-    if grow == "RIGHT_TO_LEFT" then
-        local r = f:GetRight()
-        local b = f:GetBottom()
-        if r and b and scale and us and screenW then
-            x = (r * scale - screenW * us) / us
-            y = (b * scale) / us
-            point = "BOTTOMRIGHT"
-        end
-    else -- LEFT_TO_RIGHT
-        local l = f:GetLeft()
-        local b = f:GetBottom()
-        if l and b and scale and us then
-            x = (l * scale) / us
-            y = (b * scale) / us
-            point = "BOTTOMLEFT"
-        end
-    end
-    
-    if x and y and point then
-        dodo.DB[keyPrefix .. "Point"] = point
-        dodo.DB[keyPrefix .. "RelativePoint"] = point
-        dodo.DB[keyPrefix .. "X"] = x
-        dodo.DB[keyPrefix .. "Y"] = y
-    end
-end
-
 local function save_position()
-    save_frame_position(main_frame, "debuff", "debuffGrow")
-    save_frame_position(private_frame, "private", "privateGrow")
+    local x, y = main_frame:GetCenter()
+    local scale = main_frame:GetEffectiveScale()
+    local ux, uy = UIParent:GetCenter()
+    local us = UIParent:GetEffectiveScale()
+    local px = (x * scale - ux * us) / us
+    local py = (y * scale - uy * us) / us
+    dodoDB.Debuff = dodoDB.Debuff or {}
+    dodoDB.Debuff.xpoint = px
+    dodoDB.Debuff.ypoint = py
+    dodoDB.debuffX = px
+    dodoDB.debuffY = py
 end
 
 local function load_position()
-    if main_frame then
-        local point = dodo.DB.debuffPoint or "BOTTOMRIGHT"
-        local targetX = dodo.DB.debuffX
-        local targetY = dodo.DB.debuffY
-        
-        if not targetX then
-            local icon_w = configs.size
-            local icon_h = configs.size * configs.sizerate
-            local debuff_w = (icon_w + configs.gap) * configs.max_debuffs
-            targetX = -(UIParent:GetWidth()/2 - 335 - debuff_w/2)
-            targetY = -8 - icon_h/2
-            point = "BOTTOMRIGHT"
-        end
-        
-        main_frame:ClearAllPoints()
-        main_frame:SetPoint(point, UIParent, dodo.DB.debuffRelativePoint or point, targetX, targetY)
-    end
-
-    if private_frame then
-        local point = dodo.DB.privatePoint or "BOTTOMLEFT"
-        local targetX = dodo.DB.privateX
-        local targetY = dodo.DB.privateY
-        
-        if not targetX then
-            local icon_w = configs.size
-            local icon_h = configs.size * configs.sizerate
-            local private_w = (icon_w + configs.gap) * configs.max_private
-            targetX = 335 - private_w/2
-            targetY = -8 - icon_h/2
-            point = "BOTTOMLEFT"
-        end
-        
-        private_frame:ClearAllPoints()
-        private_frame:SetPoint(point, UIParent, dodo.DB.privateRelativePoint or point, targetX, targetY)
-    end
+    local targetX = dodoDB.debuffX or (dodoDB.Debuff and dodoDB.Debuff.xpoint) or 350
+    local targetY = dodoDB.debuffY or (dodoDB.Debuff and dodoDB.Debuff.ypoint) or 0
+    main_frame:ClearAllPoints()
+    main_frame:SetPoint("CENTER", UIParent, "CENTER", targetX, targetY)
 end
 
 -- ==============================
--- 기능 5: 설정 업데이트
+-- 설정 업데이트 (설정창용)
 -- ==============================
-local function update_feature()
+function dodoUpdateDebuffOption()
     if not main_frame or not debuff_frame then return end
 
-    configs.size = dodo.DB.debuffSize or DEFAULT_SIZE
-    configs.max_debuffs = dodo.DB.debuffMax or 5
+    configs.size = dodoDB.debuffSize or 56
+    configs.max_debuffs = dodoDB.debuffMax or 6
+    configs.cool_size = math_max(configs.size - 6, 10)
+
+    if dodoDB.debuffClickthrough ~= nil then
+        configs.clickthrough = dodoDB.debuffClickthrough
+    else
+        configs.clickthrough = true
+    end
 
     load_position()
 
@@ -652,44 +451,23 @@ local function update_feature()
     if private_frame then
         private_frame:SetSize(private_w, icon_h)
     end
-    main_frame:SetSize(debuff_w, icon_h)
 
-    debuff_frame:ClearAllPoints()
-    local debuffGrow = dodo.DB.debuffGrow or "RIGHT_TO_LEFT"
-    if debuffGrow == "LEFT_TO_RIGHT" then
-        debuff_frame:SetPoint("LEFT", main_frame, "LEFT", 0, 0)
-    else
-        debuff_frame:SetPoint("RIGHT", main_frame, "RIGHT", 0, 0)
-    end
-
-    for idx, frame in ipairs(debuff_frame.frames) do
+    for idx, frame in pairs(debuff_frame.frames) do
         frame:SetSize(icon_w, icon_h)
         if frame.border then frame.border:SetSize(icon_w, icon_h) end
-        if frame.cooldown then
-            local cool_size = math_max(icon_w - 6, 10)
-            frame.cooldown:SetSize(cool_size, cool_size)
-        end
+        if frame.cooldown then frame.cooldown:SetSize(configs.cool_size, configs.cool_size) end
         
         frame:ClearAllPoints()
-        if debuffGrow == "LEFT_TO_RIGHT" then
-            if idx == 1 then
-                frame:SetPoint("LEFT", debuff_frame, "LEFT", 0, 0)
-            else
-                frame:SetPoint("LEFT", debuff_frame.frames[idx - 1], "RIGHT", configs.gap, 0)
-            end
-        else -- "RIGHT_TO_LEFT"
-            if idx == 1 then
-                frame:SetPoint("RIGHT", debuff_frame, "RIGHT", 0, 0)
-            else
-                frame:SetPoint("RIGHT", debuff_frame.frames[idx - 1], "LEFT", -configs.gap, 0)
-            end
+        if idx == 1 then
+            frame:SetPoint("RIGHT", debuff_frame, "RIGHT", 0, 0)
+        else
+            frame:SetPoint("RIGHT", debuff_frame.frames[idx - 1], "LEFT", -configs.gap, 0)
         end
         
-        local clickthrough = (dodo.DB.useDebuffClickthrough ~= false)
-        if clickthrough then
+        if configs.clickthrough then
             frame:EnableMouse(true)
             if frame.SetMouseClickEnabled then frame:SetMouseClickEnabled(false) end
-            if dodo.DB.useDebuffClickthroughTooltip == false then
+            if dodoDB.debuffClickthroughTooltip == false then
                 if frame.SetMouseMotionEnabled then frame:SetMouseMotionEnabled(false) end
             else
                 if frame.SetMouseMotionEnabled then frame:SetMouseMotionEnabled(true) end
@@ -700,40 +478,13 @@ local function update_feature()
             if frame.SetMouseMotionEnabled then frame:SetMouseMotionEnabled(true) end
         end
     end
-
-    if private_frame and private_frame.PrivateAuraAnchors and not InCombatLockdown() then
-        local privateGrow = dodo.DB.privateGrow or "LEFT_TO_RIGHT"
-        for idx, frame in ipairs(private_frame.PrivateAuraAnchors) do
-            frame:SetSize(icon_w, icon_h)
-            frame:ClearAllPoints()
-            if privateGrow == "RIGHT_TO_LEFT" then
-                if idx == 1 then
-                    frame:SetPoint("RIGHT", private_frame, "RIGHT", 0, 0)
-                else
-                    frame:SetPoint("RIGHT", private_frame.PrivateAuraAnchors[idx - 1], "LEFT", -configs.gap, 0)
-                end
-            else -- "LEFT_TO_RIGHT"
-                if idx == 1 then
-                    frame:SetPoint("LEFT", private_frame, "LEFT", 0, 0)
-                else
-                    frame:SetPoint("LEFT", private_frame.PrivateAuraAnchors[idx - 1], "RIGHT", configs.gap, 0)
-                end
-            end
-        end
-    end
-
-    -- 설정 변경 후 표시 갱신
-    if LibEditMode and LibEditMode:IsInEditMode() then
-        update_auras()
-    else
-        update_debuff_frames()
-    end
+    update_auras()
 end
 
 -- ==============================
--- 모듈 On/Off 활성화 상태 제어
+-- 이벤트 핸들러 (가비지 프리 정적 참조)
 -- ==============================
-local function OnEvent(self, event, arg1, arg2)
+local function on_event(self, event, arg1, arg2)
     if event == "UNIT_AURA" and arg1 == "player" then
         update_auras(arg2)
     elseif event == "PLAYER_ENTERING_WORLD" then
@@ -750,276 +501,104 @@ local function OnEvent(self, event, arg1, arg2)
     end
 end
 
-local function update_module_state()
-    local enabled = true
-    if dodo.DB and dodo.DB.enableDebuffModule ~= nil then
-        enabled = dodo.DB.enableDebuffModule
-    end
-
-    if not enabled then
-        main_frame:Hide()
-        main_frame:UnregisterAllEvents()
-        if private_frame then
-            private_frame:Hide()
-        end
-        if LibEditMode and LibEditMode.frameSelections then
-            if LibEditMode.frameSelections[main_frame] then
-                LibEditMode.frameSelections[main_frame]:Hide()
-            end
-            if LibEditMode.frameSelections[private_frame] then
-                LibEditMode.frameSelections[private_frame]:Hide()
-            end
-        end
-    else
-        main_frame:Show()
-        if private_frame then
-            private_frame:Show()
-        end
-        
-        main_frame:RegisterUnitEvent("UNIT_AURA", "player")
-        main_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        main_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
-        main_frame:RegisterEvent("PLAYER_REGEN_DISABLED")
-        main_frame:RegisterEvent("PLAYER_LOGOUT")
-        main_frame:SetScript("OnEvent", OnEvent)
-        
-        update_auras()
-        
-        if LibEditMode and LibEditMode:IsInEditMode() and LibEditMode.frameSelections then
-            if LibEditMode.frameSelections[main_frame] then
-                LibEditMode.frameSelections[main_frame]:ShowHighlighted()
-            end
-            if LibEditMode.frameSelections[private_frame] then
-                LibEditMode.frameSelections[private_frame]:ShowHighlighted()
-            end
-        end
-    end
-end
-
-dodo.UpdateDebuffModuleState = update_module_state
-
 -- ==============================
 -- 초기화
 -- ==============================
-local function create_ui()
+local function init_frames()
+    if dodoDB.Debuff == nil or dodoDB.Debuff.Version ~= Options_Default.Version then
+        dodoDB.Debuff = CopyTable(Options_Default)
+    end
+
+    configs.size = dodoDB.debuffSize or configs.size
+    configs.max_debuffs = dodoDB.debuffMax or configs.max_debuffs
+    if dodoDB.debuffClickthrough ~= nil then
+        configs.clickthrough = dodoDB.debuffClickthrough
+    end
+
+    main_frame:SetFrameStrata("MEDIUM")
+    main_frame:SetSize(1, 1)
+    load_position()
+    main_frame:Show()
+
     local icon_w = configs.size
     local icon_h = configs.size * configs.sizerate
     local debuff_w = (icon_w + configs.gap) * configs.max_debuffs
     local private_w = (icon_w + configs.gap) * configs.max_private
 
-    main_frame = CreateFrame("Frame", "dodo_DebuffMainFrame", UIParent)
-    main_frame:SetFrameStrata("MEDIUM")
-    main_frame:SetSize(debuff_w, icon_h)
-
     debuff_frame = CreateFrame("Frame", nil, main_frame)
     debuff_frame:SetSize(debuff_w, icon_h)
-    debuff_frame:SetPoint("CENTER", main_frame, "CENTER", 0, 0)
+    debuff_frame:SetPoint("RIGHT", main_frame, "CENTER", -configs.gap, 0)
     debuff_frame:Show()
     create_debuff_frames(debuff_frame)
 
-    private_frame = CreateFrame("Frame", "dodo_PrivateAuraMainFrame", UIParent)
-    private_frame:SetFrameStrata("MEDIUM")
+    private_frame = CreateFrame("Frame", nil, main_frame)
     private_frame:SetSize(private_w, icon_h)
+    private_frame:SetPoint("LEFT", main_frame, "CENTER", configs.gap, 0)
     private_frame:Show()
     create_private_frames(private_frame)
     dodo.private_frame = private_frame -- CoTankPrivateAura 모듈에서 위치 참조용
-end
 
-local function initialize()
-    if dodo.DB.debuffGrow == nil then
-        dodo.DB.debuffGrow = "RIGHT_TO_LEFT"
-    end
-    if dodo.DB.privateGrow == nil then
-        dodo.DB.privateGrow = "LEFT_TO_RIGHT"
-    end
-
-    configs.size = dodo.DB.debuffSize or configs.size
-    configs.max_debuffs = dodo.DB.debuffMax or configs.max_debuffs
-
-    create_ui()
-end
-
--- ==============================
--- 모듈 생명주기
--- ==============================
-local isInitialized = false
-function module:OnEnable()
-    if not isInitialized then
-        initialize()
-    end
-    update_feature()
-    update_module_state()
-
-    if isInitialized then return end
-    isInitialized = true
-
-    -- LibEditMode 등록
-    main_frame.editModeName = "dodo 플레이어 디버프"
-    private_frame.editModeName = "dodo 프라이빗 오라"
-    if LibEditMode then
-        -- 디버프 프레임 등록
-        LibEditMode:AddFrame(
-            main_frame,
-            function(frame, layoutName, point, x, y)
-                save_frame_position(frame, "debuff", "debuffGrow")
-            end,
-            {
-                point = "CENTER",
-                x = 190,
-                y = -8,
-            },
-            "dodo 플레이어 디버프"
-        )
-
-        LibEditMode:AddFrameSettings(main_frame, {
-            {
-                kind = LibEditMode.SettingType.Checkbox,
-                name = "클릭 무시",
-                desc = "디버프 아이콘 클릭을 무시하여 뒤에 있는 대상을 클릭할 수 있게 합니다.",
-                default = true,
-                get = function()
-                    return dodo.DB.useDebuffClickthrough ~= false
-                end,
-                set = function(_, newValue)
-                    dodo.DB.useDebuffClickthrough = newValue
-                    update_feature()
-                end,
-            },
-            {
-                kind = LibEditMode.SettingType.Checkbox,
-                name = "툴팁 표시",
-                desc = "마우스를 올렸을 때 툴팁을 표시합니다.",
-                default = true,
-                get = function()
-                    return dodo.DB.useDebuffClickthroughTooltip ~= false
-                end,
-                set = function(_, newValue)
-                    dodo.DB.useDebuffClickthroughTooltip = newValue
-                    update_feature()
-                end,
-                disabled = function()
-                    return not (dodo.DB.useDebuffClickthrough ~= false)
-                end,
-            },
-            {
-                kind = LibEditMode.SettingType.Checkbox,
-                name = "디버프 필터링",
-                desc = "불필요한 디버프(탈영병, 소진, 포만감 등)를 숨깁니다.",
-                default = true,
-                get = function()
-                    return dodo.DB.useDebuffFilter ~= false
-                end,
-                set = function(_, newValue)
-                    dodo.DB.useDebuffFilter = newValue
-                    update_feature()
-                end,
-            },
-            {
-                kind = LibEditMode.SettingType.Slider,
-                name = "아이콘 크기",
-                desc = "디버프 아이콘의 크기를 조절합니다.\n(추천: " .. DEFAULT_SIZE .. ")",
-                default = DEFAULT_SIZE,
-                minValue = 30,
-                maxValue = 80,
-                valueStep = 2,
-                get = function()
-                    return dodo.DB.debuffSize or DEFAULT_SIZE
-                end,
-                set = function(_, newValue)
-                    dodo.DB.debuffSize = newValue
-                    update_feature()
-                end,
-            },
-            {
-                kind = LibEditMode.SettingType.Slider,
-                name = "최대 표시 개수",
-                desc = "최대로 표시할 디버프 개수를 설정합니다.",
-                default = 5,
-                minValue = 1,
-                maxValue = 10,
-                valueStep = 1,
-                get = function()
-                    return dodo.DB.debuffMax or 5
-                end,
-                set = function(_, newValue)
-                    dodo.DB.debuffMax = newValue
-                    update_feature()
-                end,
-            },
-            {
-                kind = LibEditMode.SettingType.Dropdown,
-                name = "아이콘 방향",
-                desc = "디버프 아이콘이 표시되어 뻗어나갈 방향을 결정합니다.",
-                default = "RIGHT_TO_LEFT",
-                get = function()
-                    return dodo.DB.debuffGrow or "RIGHT_TO_LEFT"
-                end,
-                set = function(_, newValue)
-                    dodo.DB.debuffGrow = newValue
-                    save_frame_position(main_frame, "debuff", "debuffGrow")
-                    update_feature()
-                end,
-                values = {
-                    { text = "오른쪽에서 왼쪽", value = "RIGHT_TO_LEFT" },
-                    { text = "왼쪽에서 오른쪽", value = "LEFT_TO_RIGHT" },
-                }
-            },
-        })
-
-        -- 프라이빗 오라 프레임 등록
-        LibEditMode:AddFrame(
-            private_frame,
-            function(frame, layoutName, point, x, y)
-                save_frame_position(frame, "private", "privateGrow")
-            end,
-            {
-                point = "CENTER",
-                x = 480,
-                y = -8,
-            },
-            "dodo 플레이어 프라이빗 오라"
-        )
-
-        LibEditMode:AddFrameSettings(private_frame, {
-            {
-                kind = LibEditMode.SettingType.Dropdown,
-                name = "아이콘 방향",
-                desc = "프라이빗 오라 아이콘이 표시되어 뻗어나갈 방향을 결정합니다.",
-                default = "LEFT_TO_RIGHT",
-                get = function()
-                    return dodo.DB.privateGrow or "LEFT_TO_RIGHT"
-                end,
-                set = function(_, newValue)
-                    dodo.DB.privateGrow = newValue
-                    save_frame_position(private_frame, "private", "privateGrow")
-                    update_feature()
-                end,
-                values = {
-                    { text = "왼쪽에서 오른쪽", value = "LEFT_TO_RIGHT" },
-                    { text = "오른쪽에서 왼쪽", value = "RIGHT_TO_LEFT" },
-                }
-            },
-        })
-
-        local function on_editmode_toggle()
-            update_auras()
-        end
-        LibEditMode:RegisterCallback("enter", on_editmode_toggle)
-        LibEditMode:RegisterCallback("exit", on_editmode_toggle)
-    end
+    main_frame:RegisterUnitEvent("UNIT_AURA", "player")
+    main_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    main_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+    main_frame:RegisterEvent("PLAYER_REGEN_DISABLED")
+    main_frame:RegisterEvent("PLAYER_LOGOUT")
+    main_frame:SetScript("OnEvent", on_event)
 
     update_auras()
+end
 
-    if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("전투", {
-            {
-                name = "플레이어 디버프",
-                get = function() return dodo.DB and dodo.DB.enableDebuffModule ~= false end,
-                set = function(checked)
-                    if dodo.DB then dodo.DB.enableDebuffModule = checked end
-                    update_module_state()
-                end
-            }
-        })
+-- 로그인 이벤트 핸들러 (가비지 프리)
+local function on_login_event(self)
+    init_frames()
+    self:UnregisterEvent("PLAYER_LOGIN")
+end
+
+local init = CreateFrame("Frame")
+init:RegisterEvent("PLAYER_LOGIN")
+init:SetScript("OnEvent", on_login_event)
+
+-- ==============================
+-- 설정 동적 등록 (Option.lua 연동)
+-- ==============================
+local SettingsPanel = SettingsPanel
+local CreateSettingsListSectionHeaderInitializer = CreateSettingsListSectionHeaderInitializer
+local Checkbox = Checkbox
+local Slider = Slider
+
+local settingParentClickthrough, initParentClickthrough
+local settingChildTooltip, initChildTooltip
+
+local function on_parent_changed(_, value)
+    if value == false and settingChildTooltip then
+        settingChildTooltip:SetValue(false) -- 부모가 꺼지면 자식도 끔
     end
 end
+
+local function on_parent_active()
+    if settingParentClickthrough then
+        return settingParentClickthrough:GetValue()
+    end
+    return true
+end
+
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["combat"] = dodo.OptionRegistrations["combat"] or {}
+table.insert(dodo.OptionRegistrations["combat"], function(category)
+    local layout = SettingsPanel:GetLayout(category)
+    if not layout then return end
+
+    layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("디버프"))
+    settingParentClickthrough, initParentClickthrough = Checkbox(category, "debuffClickthrough", "클릭스루 (클릭 무시)", "디버프 아이콘 클릭을 무시하여 뒤에 있는 대상을 클릭할 수 있게 합니다.", false, dodoUpdateDebuffOption)
+    settingChildTooltip, initChildTooltip = Checkbox(category, "debuffClickthroughTooltip", "클릭스루 시 툴팁 표시", "클릭스루 상태에서도 마우스를 올렸을 때 툴팁을 표시합니다.", true, dodoUpdateDebuffOption)
+    
+    if settingParentClickthrough and settingChildTooltip then
+        settingParentClickthrough:SetValueChangedCallback(on_parent_changed)
+        initChildTooltip:SetParentInitializer(initParentClickthrough, on_parent_active)
+    end
+
+    Slider(category, "debuffSize", "아이콘 크기", "디버프 아이콘의 크기를 조절합니다.\n\n|cffaaffaa추천 : 56|r", 30, 80, 2, 56, "Integer", dodoUpdateDebuffOption)
+    Slider(category, "debuffMax", "최대 표시 개수", "최대로 표시할 디버프 개수를 설정합니다.\n|cffff0000(개수 변경은 /reload 필요)|r", 1, 10, 1, 6, "Integer", dodoUpdateDebuffOption)
+    Slider(category, "debuffX", "가로 위치 (X)", "화면 중앙을 기준으로 가로 위치를 조절합니다.", -1000, 1000, 10, 350, "Integer", dodoUpdateDebuffOption)
+    Slider(category, "debuffY", "세로 위치 (Y)", "화면 중앙을 기준으로 세로 위치를 조절합니다.", -1000, 1000, 10, 0, "Integer", dodoUpdateDebuffOption)
+end)

@@ -8,25 +8,26 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-local module = {}
-dodo:RegisterModule("NewLFG", module)
+dodoDB = dodoDB or {}
 
 dodo.newLFG_AlertSoundTable = {
-    { text = "멀록", value = "416" },
-    { text = "경매장 1", value = "5274" },
-    { text = "경매장 2", value = "5275" },
-    { text = "PVP 1", value = "9378" },
-    { text = "PVP 2", value = "9379" },
-    { text = "퀘스트", value = "26905" },
-    { text = "공격대 1", value = "8959" },
-    { text = "공격대 2", value = "11773" },
-    { text = "인간여성", value = "552141" },
+    { label = "MurlocAggro", value = "416" },
+    { label = "AuctionWindowOpen", value = "5274" },
+    { label = "AuctionWindowClose", value = "5275" },
+    { label = "PVPFlagTaken.Mono", value = "9378" },
+    { label = "PVPFlagTakenHordeMono", value = "9379" },
+    { label = "UI_QuestObjectivesComplete", value = "26905" },
+    { label = "UI_RaidBossWhisperWarning", value = "11773" },
+    { label = "RaidWarning", value = "8959" },
+    { label = "HumanFemaleStandardNPCGreetings", value = "552141" },
 }
 
 -- ==============================
 -- 캐싱
 -- ==============================
+-- 함수
 local C_LFGList = C_LFGList
+local GetNumApplicants = C_LFGList.GetNumApplicants
 local C_Timer = C_Timer
 local CreateFrame = CreateFrame
 local GetInstanceInfo = GetInstanceInfo
@@ -34,27 +35,22 @@ local GetTime = GetTime
 local GroupFinderFrame = GroupFinderFrame
 local GroupFinderFrameGroupButton3 = GroupFinderFrameGroupButton3
 local InCombatLockdown = InCombatLockdown
-local IsInGroup = IsInGroup
 local PlaySound = PlaySound
 local PlaySoundFile = PlaySoundFile
 local PVEFrame_ShowFrame = PVEFrame_ShowFrame
 local tonumber = tonumber
-local UIParent = UIParent
 local UnitIsGroupLeader = UnitIsGroupLeader
-local GetNumApplicants = C_LFGList.GetNumApplicants
-
--- ==============================
--- 상태 변수
--- ==============================
-local alertTimer
-local armedAt = 0
-local lastApps = 0
-local lastTrig = 0
+local UIParent = UIParent
 
 local function isIns()
     local _, instanceType, difficultyID = GetInstanceInfo()
     return (difficultyID == 8 or instanceType == "raid")
 end
+
+local alertTimer
+local armedAt = 0
+local lastApps = 0
+local lastTrig = 0
 
 -- ==============================
 -- 디스플레이
@@ -71,20 +67,18 @@ newLFG_Alert.Text:SetFont(fontPath or "fonts/frizqt__.ttf", 22, fontFlags)
 newLFG_Alert.Text:SetText("[ 신규 신청 ]\n\n|cffffff00파티창을 확인하세요!|r")
 
 -- ==============================
--- 기능 1: 신청 알림
+-- 동작
 -- ==============================
-local function hide_alert_frame()
+local function on_alert_timer_tick()
     if newLFG_Alert:IsShown() then newLFG_Alert:Hide() end
 end
 
-local function play_newLFG_alert()
+function NewLFG()
     if InCombatLockdown() then return end
 
-    local isLeader = not IsInGroup() or UnitIsGroupLeader("player")
-    -- [임시 비활성화] 파티원일 때 알림 기능 비활성화 (방장 전용)
-    -- local useMemberAlert = dodo.DB and dodo.DB.useNewLFGLeader
-    -- if not useMemberAlert and not isLeader then return end
-    if not isLeader then return end
+    local isLeader = UnitIsGroupLeader("player") == true
+    local useMemberAlert = dodoDB.useNewLFGLeader
+    if not useMemberAlert and not isLeader then return end
 
     if GroupFinderFrame and not GroupFinderFrame:IsVisible() then
         PVEFrame_ShowFrame("GroupFinderFrame")
@@ -96,9 +90,9 @@ local function play_newLFG_alert()
     end
     
     if alertTimer then alertTimer:Cancel() end
-    alertTimer = C_Timer.After(7, hide_alert_frame)
+    alertTimer = C_Timer.After(7, on_alert_timer_tick)
 
-    local soundID = (dodo.DB and dodo.DB.soundID) or "5274"
+    local soundID = (dodoDB and dodoDB.soundID) or "5274"
     local sID = tonumber(soundID) or 5274
 
     if sID > 100000 then
@@ -108,10 +102,8 @@ local function play_newLFG_alert()
     end
 end
 
-NewLFG = play_newLFG_alert -- 전역 역호환성 유지용 바인딩
-
 -- ==============================
--- 이벤트 및 알림 제어
+-- 이벤트
 -- ==============================
 local initNewLFG = CreateFrame("Frame")
 
@@ -119,7 +111,7 @@ local initNewLFG = CreateFrame("Frame")
 local function UpdateNewLFGRegistration()
     if not initNewLFG then return end
     
-    local isEnabled = (dodo.DB and dodo.DB.useNewLFG ~= false)
+    local isEnabled = (dodoDB and dodoDB.useNewLFG ~= false)
     local inInstance = isIns()
 
     -- 기능이 켜져 있고 인스턴스가 아닐 때만 작동
@@ -137,14 +129,8 @@ local function UpdateNewLFGRegistration()
     end
 end
 
-local function OnEvent(self, event)
+local function on_event(self, event)
     local now = GetTime()
-    
-    if event == "PLAYER_ENTERING_WORLD" then
-        UpdateNewLFGRegistration()
-        return
-    end
-
     local count = GetNumApplicants() or 0
 
     if event == "LFG_LIST_ACTIVE_ENTRY_UPDATE" then
@@ -156,7 +142,7 @@ local function OnEvent(self, event)
     if event == "LFG_LIST_APPLICANT_LIST_UPDATED" then
         if now >= armedAt and count > lastApps then
             if (now - lastTrig) > 1.0 then
-                play_newLFG_alert()
+                NewLFG()
                 lastTrig = now
             end
         end
@@ -164,64 +150,72 @@ local function OnEvent(self, event)
     end
 end
 
-initNewLFG:SetScript("OnEvent", OnEvent)
+initNewLFG:SetScript("OnEvent", on_event)
 
--- ==============================
--- 모듈 생명주기
--- ==============================
-local isInitialized = false
-function module:OnEnable()
-    -- DB 설정 초기값 세팅 (파티원일 때도 알림 기본 비활성화)
-    if dodo.DB then
-        if dodo.DB.useNewLFGLeader == nil then
-            dodo.DB.useNewLFGLeader = false
-        end
-    end
+-- 초기 초기화 및 지역 이동 감지용 별도 프레임
+local initializer = CreateFrame("Frame")
+initializer:RegisterEvent("ADDON_LOADED")
+initializer:RegisterEvent("PLAYER_ENTERING_WORLD")
 
-    UpdateNewLFGRegistration()
-    armedAt = GetTime() + 2
-
-    if isInitialized then return end
-    isInitialized = true
-
-    -- 일회성 프레임 대신 단일 initNewLFG 프레임을 활용해 메모리 & 이벤트 감지 성능 최적화
-    initNewLFG:RegisterEvent("PLAYER_ENTERING_WORLD")
-
-    -- dodoEditModePanel 내부에 2열 그리드로 세부 설정 주입
-    if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("음성", {
-            {
-                name = "파티신청 알림",
-                get = function() return dodo.DB and dodo.DB.useNewLFG ~= false end,
-                set = function(checked)
-                    if dodo.DB then dodo.DB.useNewLFG = checked end
-                    UpdateNewLFGRegistration()
-                end
-            },
-            {
-                type = "dropdown",
-                get = function() return dodo.DB and dodo.DB.soundID or "5274" end,
-                set = function(val)
-                    if dodo.DB then dodo.DB.soundID = val end
-                    -- 테스트 음성 출력 (방장/파티 조건 없이 소리만)
-                    local sID = tonumber(val) or 5274
-                    if sID > 100000 then
-                        PlaySoundFile(sID, "Master")
-                    else
-                        PlaySound(sID, "Master")
-                    end
-                end,
-                values = dodo.newLFG_AlertSoundTable
-            },
-            -- [임시 비활성화]
-            -- {
-            --     name = "파티원일 때도 알림",
-            --     get = function() return dodo.DB and dodo.DB.useNewLFGLeader or false end,
-            --     set = function(checked)
-            --         if dodo.DB then dodo.DB.useNewLFGLeader = checked end
-            --     end
-            -- },
-            { isSpacer = true }
-        })
+local function on_init_event(self, event, arg1)
+    if event == "ADDON_LOADED" and arg1 == addonName then
+        UpdateNewLFGRegistration()
+    elseif event == "PLAYER_ENTERING_WORLD" then
+        UpdateNewLFGRegistration()
     end
 end
+
+initializer:SetScript("OnEvent", on_init_event)
+
+armedAt = GetTime() + 2
+
+-- ==============================
+-- 외부 노출 (Option.lua용)
+-- ==============================
+dodo.UpdateNewLFG = UpdateNewLFGRegistration
+dodo.NewLFG = NewLFG
+
+-- ==============================
+-- 외부 노출 및 설정 동적 등록 (Option.lua 연동)
+-- ==============================
+local settingParentNewLFG
+local settingChildNewLFG
+
+local function on_newlfg_parent_changed(_, value)
+    if value == false then
+        if settingChildNewLFG then
+            settingChildNewLFG:SetValue(false)
+        end
+    end
+end
+
+local function on_newlfg_parent_active()
+    if settingParentNewLFG then
+        return settingParentNewLFG:GetValue()
+    end
+    return true
+end
+
+local SettingsPanel = SettingsPanel
+local Checkbox = Checkbox
+local CheckBoxDropDown = CheckBoxDropDown
+
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["party"] = dodo.OptionRegistrations["party"] or {}
+table.insert(dodo.OptionRegistrations["party"], function(category)
+    local layout = SettingsPanel:GetLayout(category)
+    if not layout then return end
+
+    local initParentNewLFG
+    settingParentNewLFG, _, initParentNewLFG = CheckBoxDropDown(category, "useNewLFG", "soundID", "파티신청 알림",
+        "새로운 파티신청 시 알림", dodo.newLFG_AlertSoundTable, true, dodo.newLFG_AlertSoundTable[2].value, dodo.NewLFG)
+
+    local initChildNewLFG
+    settingChildNewLFG, initChildNewLFG = Checkbox(category, "useNewLFGLeader", "파티원 기능 활성화",
+        "파티장원일 경우에도 활성화합니다. ", true, dodo.NewLFG)
+
+    if settingParentNewLFG and settingChildNewLFG then
+        settingParentNewLFG:SetValueChangedCallback(on_newlfg_parent_changed)
+        initChildNewLFG:SetParentInitializer(initParentNewLFG, on_newlfg_parent_active)
+    end
+end)

@@ -8,49 +8,54 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-local module = {}
-dodo:RegisterModule("ExpFilter", module)
+dodoDB = dodoDB or {}
 
 -- ==============================
--- 캐싱
+-- 캐싱 (가나다 순 정렬)
 -- ==============================
 local C_Timer = C_Timer
 local CreateFrame = CreateFrame
-local RunNextFrame = RunNextFrame or (C_Timer and C_Timer.After and function(func) C_Timer.After(0, func) end)
+local RunNextFrame = RunNextFrame
+local type = type
+
+local craftRetries = 0
 
 -- ==============================
--- 기능 1: 필터 적용
+-- 동작 로직 (EnhanceQoL 완벽 이식 - 가비지 프리)
 -- ==============================
 
-local function do_auction_filter()
+-- 경매장 필터 적용 프레임 틱
+local function on_auction_filter_next_frame()
     local frame = AuctionHouseFrame
     local searchBar = frame and frame.SearchBar
     local filterButton = searchBar and searchBar.FilterButton
     
-    if filterButton and filterButton.filters then
+    if filterButton and type(filterButton.filters) == "table" then
         filterButton.filters[Enum.AuctionHouseFilter.CurrentExpansionOnly] = true
         searchBar:UpdateClearFiltersButton()
     end
 end
 
-local function apply_auction_filter()
-    if not dodo.DB or dodo.DB.enableExpFilterModule == false then return end
+-- 경매장 필터 적용
+local function ApplyAuctionFilter()
+    if dodoDB.useAuctionFilter == false then return end
     if not (Enum and Enum.AuctionHouseFilter and Enum.AuctionHouseFilter.CurrentExpansionOnly) then return end
 
-    RunNextFrame(do_auction_filter)
+    RunNextFrame(on_auction_filter_next_frame)
 end
 
-local current_craft_retries = 0
-local function do_craft_filter()
+-- 주문 제작 필터 적용 프레임 틱 (최대 3프레임 재시도)
+local function on_craft_filter_next_frame()
     local frame = ProfessionsCustomerOrdersFrame
     local browseOrders = frame and frame.BrowseOrders
     local searchBar = browseOrders and browseOrders.SearchBar
     local filterDropdown = searchBar and searchBar.FilterDropdown
 
-    if not filterDropdown or not filterDropdown.filters then
-        if current_craft_retries > 0 then
-            current_craft_retries = current_craft_retries - 1
-            RunNextFrame(do_craft_filter)
+    -- 블리자드 UI 초기화가 지연될 경우 최대 3프레임까지 재시도
+    if not filterDropdown or type(filterDropdown.filters) ~= "table" then
+        if craftRetries > 0 then
+            craftRetries = craftRetries - 1
+            RunNextFrame(on_craft_filter_next_frame)
         end
         return
     end
@@ -59,71 +64,62 @@ local function do_craft_filter()
     if filterDropdown.ValidateResetState then filterDropdown:ValidateResetState() end
 end
 
-local function apply_craft_filter(remaining_retries)
-    if not dodo.DB or dodo.DB.enableExpFilterModule == false then return end
+-- 주문 제작 필터 적용 (초기화 지연 대비 재시도 로직 포함)
+local function ApplyCraftFilter(remainingRetries)
+    if dodoDB.useCraftFilter == false then return end
     if not (Enum and Enum.AuctionHouseFilter and Enum.AuctionHouseFilter.CurrentExpansionOnly) then return end
 
-    current_craft_retries = remaining_retries or 0
-    RunNextFrame(do_craft_filter)
+    craftRetries = remainingRetries or 0
+    RunNextFrame(on_craft_filter_next_frame)
 end
 
 -- ==============================
--- 기능 2: 외부 노출 및 이벤트 연동
+-- 외부 노출 (Option.lua 호환성)
 -- ==============================
-local function apply_filters()
-    apply_auction_filter()
-    apply_craft_filter(3)
+dodo.AuctionFilter = function()
+    ApplyAuctionFilter()
+    ApplyCraftFilter(3)
 end
+dodo.expFilter = dodo.AuctionFilter
 
 -- ==============================
--- 초기화
+-- 이벤트 핸들러 (가비지 프리 정적 참조)
 -- ==============================
-local function initialize()
-    if dodo.DB and dodo.DB.enableExpFilterModule == nil then
-        dodo.DB.enableExpFilterModule = false
+local function on_event(self, event)
+    if event == "AUCTION_HOUSE_SHOW" then
+        ApplyAuctionFilter()
+    elseif event == "CRAFTINGORDERS_SHOW_CUSTOMER" then
+        -- 주문 제작 창은 최대 3번 재시도
+        ApplyCraftFilter(3)
+    elseif event == "PLAYER_ENTERING_WORLD" then
+        -- 로딩이 끝난 후 혹시 창이 열려있는 상태라면 바로 적용
+        C_Timer.After(1, dodo.AuctionFilter)
     end
 end
 
 -- ==============================
--- 모듈 생명주기
+-- 전역 이벤트 리스너
 -- ==============================
-local isInitialized = false
-function module:OnEnable()
-    initialize()
+local f = CreateFrame("Frame")
+-- 설정 적용 및 애드온 로드 직후 확인용
+f:RegisterEvent("PLAYER_ENTERING_WORLD")
+-- 실제 블리자드 UI 창이 열릴 때 발생하는 전용 이벤트
+f:RegisterEvent("AUCTION_HOUSE_SHOW")
+f:RegisterEvent("CRAFTINGORDERS_SHOW_CUSTOMER")
+f:SetScript("OnEvent", on_event)
 
-    if isInitialized then return end
-    isInitialized = true
+-- ==============================
+-- 설정 동적 등록 (Option.lua 연동)
+-- ==============================
+local SettingsPanel = SettingsPanel
+local Checkbox = Checkbox
 
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("PLAYER_ENTERING_WORLD")
-    f:RegisterEvent("AUCTION_HOUSE_SHOW")
-    f:RegisterEvent("CRAFTINGORDERS_SHOW_CUSTOMER")
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["interface"] = dodo.OptionRegistrations["interface"] or {}
+table.insert(dodo.OptionRegistrations["interface"], function(category)
+    local layout = SettingsPanel:GetLayout(category)
+    if not layout then return end
 
-    local function on_event(self, event)
-        if event == "AUCTION_HOUSE_SHOW" then
-            apply_auction_filter()
-        elseif event == "CRAFTINGORDERS_SHOW_CUSTOMER" then
-            apply_craft_filter(3)
-        elseif event == "PLAYER_ENTERING_WORLD" then
-            C_Timer.After(1, apply_filters)
-        end
-    end
-
-    f:SetScript("OnEvent", on_event)
-
-    -- dodoEditModePanel 내부에 2열 그리드로 세부 설정 주입
-    if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("편의기능", {
-            {
-                name = "현행 확장팩 필터",
-                get = function() return dodo.DB and dodo.DB.enableExpFilterModule or false end,
-                set = function(checked)
-                    if dodo.DB then 
-                        dodo.DB.enableExpFilterModule = checked 
-                    end
-                    apply_filters()
-                end
-            }
-        })
-    end
-end
+    Checkbox(category, "useAuctionFilter", "경매장 필터", "경매장에서 '현행 확장팩 전용'을 자동 활성화합니다.", true, dodo.expFilter)
+    Checkbox(category, "useCraftFilter", "주문제작 필터", "주문제작에서 '현행 확장팩 전용'을 자동 활성화합니다.", true, dodo.expFilter)
+end)

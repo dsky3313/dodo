@@ -8,26 +8,28 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-local module = {}
-dodo:RegisterModule("Camera", module)
+dodoDB = dodoDB or {}
 
-local cameraTiltAngle = 1.0
-
-local CAM_DYNAMIC_PITCH    = "test_cameraDynamicPitch"
-local CAM_FOV_PAD          = "test_cameraDynamicPitchBaseFovPad"
-local CAM_FOV_PAD_DOWN     = "test_cameraDynamicPitchBaseFovPadDownScale"
-local CAM_FOV_PAD_FLYING   = "test_cameraDynamicPitchBaseFovPadFlying"
-local CAM_KEEP_CENTERED    = "CameraKeepCharacterCentered"
+local cameraTiltAngle = 0.55
 
 -- ==============================
 -- 캐싱
 -- ==============================
-local C_Timer = C_Timer
+local CreateFrame = CreateFrame
 local GetCVar = GetCVar
 local SetCVar = SetCVar
-local UIParent = UIParent
 local tostring = tostring
+local UIParent = UIParent
 
+local CAM_DYNAMIC_PITCH = "test_cameraDynamicPitch"
+local CAM_FOV_PAD = "test_cameraDynamicPitchBaseFovPad"
+local CAM_FOV_PAD_DOWN = "test_cameraDynamicPitchBaseFovPadDownScale"
+local CAM_FOV_PAD_FLYING = "test_cameraDynamicPitchBaseFovPadFlying"
+local CAM_KEEP_CENTERED = "CameraKeepCharacterCentered"
+
+-- ==============================
+-- 동작
+-- ==============================
 local function SafeSetCVar(cvar, value)
     local cur = GetCVar(cvar)
     local newVal = tostring(value)
@@ -36,138 +38,64 @@ local function SafeSetCVar(cvar, value)
     end
 end
 
--- ==============================
--- 기능 1: 카메라 시점 조절 (성능 최적화 완료)
--- ==============================
-local hasApplied = false
-local lastBase, lastDown, lastFlying, lastEnabled
+local function cameraTilt()
+    local base = dodoDB.cameraBase or cameraTiltAngle
+    local baseDown = dodoDB.cameraDown or cameraTiltAngle
+    local baseFlying = dodoDB.cameraFlying or cameraTiltAngle
 
--- CVar 조작 완료 후 이벤트 재등록 (가비지 프리: 정적 함수로 분리)
-local function register_cvar_event()
-    UIParent:RegisterEvent("EXPERIMENTAL_CVAR_CONFIRMATION_NEEDED")
-end
-
-local function camera_tilt()
-    if not dodo.DB then return end
-
-    local isEnabled = (dodo.DB.enableCameraModule ~= false)
-    local base      = dodo.DB.cameraBase    or cameraTiltAngle
-    local baseDown  = dodo.DB.cameraDown    or cameraTiltAngle
-    local baseFlying = dodo.DB.cameraFlying or cameraTiltAngle
-
-    -- 상태가 완벽히 이전과 동일하다면 엔진 API 호출 전면 차단
-    if hasApplied and lastEnabled == isEnabled and lastBase == base and lastDown == baseDown and lastFlying == baseFlying then
-        return
-    end
-
-    -- CVar 값 조정 중 경고 팝업이 발생하는 것을 차단하기 위해 임시로 이벤트 해제
-    UIParent:UnregisterEvent("EXPERIMENTAL_CVAR_CONFIRMATION_NEEDED")
-
-    if isEnabled then
+    if GetCVar(CAM_DYNAMIC_PITCH) ~= "1" then
+        UIParent:UnregisterEvent("EXPERIMENTAL_CVAR_CONFIRMATION_NEEDED")
         SafeSetCVar(CAM_DYNAMIC_PITCH, 1)
         SafeSetCVar(CAM_KEEP_CENTERED, 0)
-
-        if GetCVar(CAM_DYNAMIC_PITCH) == "1" then
-            SafeSetCVar(CAM_FOV_PAD, base)
-            SafeSetCVar(CAM_FOV_PAD_DOWN, baseDown)
-            SafeSetCVar(CAM_FOV_PAD_FLYING, baseFlying)
-        end
-    else
-        SafeSetCVar(CAM_DYNAMIC_PITCH, 0)
     end
 
-    lastEnabled  = isEnabled
-    lastBase     = base
-    lastDown     = baseDown
-    lastFlying   = baseFlying
-    hasApplied   = true
-
-    -- CVar 조작 완료 후 0.1초 뒤 이벤트를 부드럽게 재등록하여 다른 시스템 영향 방지
-    C_Timer.After(0.1, register_cvar_event)
-end
-
-dodo.Camera_Tilt = camera_tilt
-
--- ==============================
--- 모듈 On/Off 활성화 상태 제어
--- ==============================
-local function update_module_state()
-    camera_tilt()
-end
-
-dodo.UpdateCameraModuleState = update_module_state
-
--- ==============================
--- 초기화
--- ==============================
-local function initialize()
-    -- 1. DB 설정 초기값 세팅
-    if dodo.DB then
-        if dodo.DB.enableCameraModule == nil then
-            dodo.DB.enableCameraModule = true
-        end
-        if dodo.DB.cameraBase == nil then
-            dodo.DB.cameraBase = cameraTiltAngle
-        end
-        if dodo.DB.cameraDown == nil then
-            dodo.DB.cameraDown = cameraTiltAngle
-        end
-        if dodo.DB.cameraFlying == nil then
-            dodo.DB.cameraFlying = cameraTiltAngle
-        end
+    if GetCVar(CAM_DYNAMIC_PITCH) == "1" then
+        SafeSetCVar(CAM_FOV_PAD, base)
+        SafeSetCVar(CAM_FOV_PAD_DOWN, baseDown)
+        SafeSetCVar(CAM_FOV_PAD_FLYING, baseFlying)
     end
 end
 
 -- ==============================
--- 모듈 생명주기
+-- 이벤트 핸들러 (가비지 프리 정적 참조)
 -- ==============================
-local isInitialized = false
-function module:OnEnable()
-    initialize()
-    update_module_state()
-
-    -- [최적화] 중복 실행 방지 가드
-    if isInitialized then return end
-    isInitialized = true
-
-    -- 로딩 부하 분산을 위해 0.5초 뒤 지연 실행 (가비지 프리: 정적 함수 참조)
-    C_Timer.After(0.5, camera_tilt)
-
-    -- Editmode 설정창에 동적 설정 등록
-    if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("인터페이스", {
-            {
-                name = "카메라 각도 조절",
-                get = function()
-                    if dodo.DB and dodo.DB.enableCameraModule ~= nil then
-                        return dodo.DB.enableCameraModule
-                    end
-                    return true -- 기본 활성화
-                end,
-                set = function(checked)
-                    if dodo.DB then dodo.DB.enableCameraModule = checked end
-                    if dodo.UpdateCameraModuleState then dodo.UpdateCameraModuleState() end
-                end
-            },
-            {
-                name = "카메라 시점 각도",
-                type = "slider",
-                get = function() return dodo.DB and dodo.DB.cameraBase or cameraTiltAngle end,
-                set = function(val)
-                    if dodo.DB then
-                        dodo.DB.cameraBase   = val
-                        dodo.DB.cameraDown   = val
-                        dodo.DB.cameraFlying = val
-                    end
-                    camera_tilt()
-                end,
-                minVal = 0.3,
-                maxVal = 1.0,
-                step = 0.05,
-                disabled = function()
-                    return dodo.DB and dodo.DB.enableCameraModule == false
-                end
-            }
-        })
+local function on_event(self, event, arg1)
+    if event == "ADDON_LOADED" and arg1 == addonName then
+        dodoDB = dodoDB or {}
+        self:RegisterEvent("PLAYER_LOGIN")
+        self:UnregisterEvent("ADDON_LOADED")
+    elseif event == "PLAYER_LOGIN" then
+        cameraTilt()
+        self:UnregisterAllEvents()
+        self:SetScript("OnEvent", nil)
     end
 end
+
+-- ==============================
+-- 초기화 및 등록
+-- ==============================
+local initCamera = CreateFrame("Frame")
+initCamera:RegisterEvent("ADDON_LOADED")
+initCamera:SetScript("OnEvent", on_event)
+
+-- 외부 노출 (Option.lua용)
+dodo.CameraTilt = cameraTilt
+
+-- ==============================
+-- 설정 동적 등록 (Option.lua 연동)
+-- ==============================
+local SettingsPanel = SettingsPanel
+local CreateSettingsListSectionHeaderInitializer = CreateSettingsListSectionHeaderInitializer
+local Slider = Slider
+
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["general"] = dodo.OptionRegistrations["general"] or {}
+table.insert(dodo.OptionRegistrations["general"], function(category)
+    local layoutGeneral = SettingsPanel:GetLayout(category)
+    if not layoutGeneral then return end
+
+    layoutGeneral:AddInitializer(CreateSettingsListSectionHeaderInitializer("카메라 시점"))
+    Slider(category, "cameraBase", "기본 시점", "기본시점 각도를 조절합니다. \n\n|cffaaffaa추천 : 0.55|r", 0.3, 1.0, 0.05, 0.1, "Decimal2", dodo.CameraTilt)
+    Slider(category, "cameraDown", "탑다운 뷰", "수직으로 내렸을 때 각도를 조절합니다. \n\n|cffaaffaa추천 : 0.55|r", 0.3, 1.0, 0.05, 0.1, "Decimal2", dodo.CameraTilt)
+    Slider(category, "cameraFlying", "하늘비행 탈것 시점", "하늘비행 탈것 탑승 시 각도를 조절합니다. \n\n|cffaaffaa추천 : 0.55|r", 0.3, 1.0, 0.05, 0.1, "Decimal2", dodo.CameraTilt)
+end)

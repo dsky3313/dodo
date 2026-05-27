@@ -8,56 +8,40 @@
 
 # 2020.11.23 제작
 
-Libs\LibEditMode\LibStub\LibStub.lua
-Libs\LibEditMode\embed.xml
-Libs\LibOpenRaid\lib.xml
 Libs\oUF\oUF.xml
-
-UI/Widgets.lua
+UI/OptionUI.xml
+UI/OptionUI.lua
 UI/Icon.lua
-
-Core/Engine.lua
-Core/Utils.lua
-Core/Colors.lua
-Core/Modules.lua
-
 UI/ActionBar.xml
 UI/Debuff.xml
 UI/ResourceBar.xml
 
 Module\Audio.lua
 Module\BloodBrez.lua
-##Module\BuffReminder.lua
 Module\BrowseGroup.lua
 Module\Camera.lua
 Module\ChatBubble.lua
 Module\ChatFrame.lua
-Module\Profiles.lua
-#Module\Quests.lua
-#Module\ReadyCheck.lua
+Module\CVar.lua
 Module\DamageMeter.lua
 Module\Debuff.lua
 Module\DeleteNow.lua
-Module\Editmode.lua
-#Module\EncounterAchievements.lua
 Module\ExpFilter.lua
-Module\FrameOption.lua
 Module\Friends.lua
+Module\FrameOption.lua
 Module\InsDifficulty.lua
 Module\Item.lua
-Module\Keystone.lua
 Module\Merchant.lua
 Module\Minimap.lua
-Module\NewLFG.lua
-###Module\PartyClass.lua
+Module\NewLFG.lua  
+Module\PartyClass.lua
 Module\QuickBobber.lua
 Module\ResourceBar.lua
 Module\Slash.lua
-Module\Teleport.lua
-##Module\Timeline.lua
 Module\Tooltip.lua
+Module\Teleport.lua 
 Module\Unitframe.lua
-#Module\WMarker.lua
-Module\WowheadLink.lua
+Module\WMarker.lua 
+Module\WowheadLink.lua 
 
-#Option.lua
+Option.lua

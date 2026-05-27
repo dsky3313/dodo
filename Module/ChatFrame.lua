@@ -9,10 +9,7 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-local module = {}
-dodo:RegisterModule("Chat", module)
-
-local LibEditMode = LibStub and LibStub("LibEditMode", true)
+dodoDB = dodoDB or {}
 
 -- ==============================
 -- 캐싱
@@ -443,161 +440,100 @@ end
 dodo.UpdateChatModuleState = update_chat_module_state
 
 -- ==============================
--- 모듈 생명주기
+-- 이벤트 및 자동 초기화
 -- ==============================
 local isInitialized = false
-function module:OnEnable()
-    update_feature()
-    update_module_state()
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("ADDON_LOADED")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self, event, arg1)
+    if event == "ADDON_LOADED" and arg1 == addonName then
+        dodoDB = dodoDB or {}
+        dodo.DB = dodo.DB or dodoDB
+    elseif event == "PLAYER_LOGIN" then
+        dodo.DB = dodo.DB or dodoDB or {}
 
-    if isInitialized then return end
-    isInitialized = true
+        initialize()
+        update_feature()
+        update_module_state()
 
-    initialize()
+        if isInitialized then return end
+        isInitialized = true
 
-    if dodo.DB.enableChatModule then
-        local events = {
-            "CHAT_MSG_CHANNEL",
-            "CHAT_MSG_GUILD",
-            "CHAT_MSG_OFFICER",
-            "CHAT_MSG_PARTY",
-            "CHAT_MSG_PARTY_LEADER",
-            "CHAT_MSG_RAID",
-            "CHAT_MSG_RAID_LEADER",
-            "CHAT_MSG_INSTANCE_CHAT",
-            "CHAT_MSG_INSTANCE_CHAT_LEADER",
-            "CHAT_MSG_SAY",
-            "CHAT_MSG_YELL",
-            "CHAT_MSG_WHISPER",
-            "CHAT_MSG_BN_WHISPER",
-        }
-        for _, event in ipairs(events) do
-            ChatFrame_AddMessageEventFilter(event, FilterMessage)
-        end
-
-        -- 마우스휠 스크롤 추가 (가비지 프리: 정적 함수로 분리)
-        local function on_mouse_wheel(self, delta)
-            if delta > 0 then
-                if IsControlKeyDown() then self:ScrollToTop() else self:ScrollUp() end
-            else
-                if IsControlKeyDown() then self:ScrollToBottom() else self:ScrollDown() end
-            end
-        end
-        for i = 1, NUM_CHAT_WINDOWS do
-            local frame = _G["ChatFrame"..i]
-            if frame then
-                frame:SetScript("OnMouseWheel", on_mouse_wheel)
-                frame:EnableMouseWheel(true)
-            end
-        end
-    end
-
-    -- 순정 대화창 편집 모드 설정 패널에 세부 설정 추가
-    if LibEditMode then
-        local systemID = Enum.EditModeSystem.ChatFrame or 1
-        LibEditMode:AddSystemSettings(systemID, {
-            {
-                kind = LibEditMode.SettingType.Checkbox,
-                name = "길드 버튼 활성화",
-                desc = "길드원 현황 및 길드창 바로가기 버튼을 추가합니다.",
-                default = true,
-                get = function()
-                    return (dodo and dodo.DB and dodo.DB.useGuildButton ~= false)
-                end,
-                set = function(_, newValue)
-                    if dodo and dodo.DB then
-                        dodo.DB.useGuildButton = newValue
-                    end
-                    update_module_state()
-                end,
-                disabled = function()
-                    return (dodo and dodo.DB and dodo.DB.enableChatModule == false)
-                end,
-            },
-            {
-                kind = LibEditMode.SettingType.Checkbox,
-                name = "채널명 축약",
-                desc = "대화창 채널명을 숫자로 축약합니다 (예: [1. 공개] -> [1]).",
-                default = true,
-                get = function()
-                    return (dodo and dodo.DB and dodo.DB.useShortenChannels ~= false)
-                end,
-                set = function(_, newValue)
-                    if dodo and dodo.DB then
-                        dodo.DB.useShortenChannels = newValue
-                    end
-                    channelCache = {}
-                end,
-                disabled = function()
-                    return (dodo and dodo.DB and dodo.DB.enableChatModule == false)
-                end,
-            },
-            {
-                kind = LibEditMode.SettingType.Checkbox,
-                name = "URL 링크화",
-                desc = "채팅창에 웹 주소가 나오면 클릭해서 복사할 수 있는 링크 형식으로 변환합니다.",
-                default = true,
-                get = function()
-                    return (dodo and dodo.DB and dodo.DB.useLinkURLs ~= false)
-                end,
-                set = function(_, newValue)
-                    if dodo and dodo.DB then
-                        dodo.DB.useLinkURLs = newValue
-                    end
-                end,
-                disabled = function()
-                    return (dodo and dodo.DB and dodo.DB.enableChatModule == false)
-                end,
-            },
-            {
-                kind = LibEditMode.SettingType.Checkbox,
-                name = "글씨 외곽선 적용",
-                desc = "채팅창 폰트에 외곽선을 입혀 더 선명하고 뚜렷하게 만듭니다.",
-                default = true,
-                get = function()
-                    return (dodo and dodo.DB and dodo.DB.useFontOutline ~= false)
-                end,
-                set = function(_, newValue)
-                    if dodo and dodo.DB then
-                        dodo.DB.useFontOutline = newValue
-                    end
-                    update_feature()
-                end,
-                disabled = function()
-                    return (dodo and dodo.DB and dodo.DB.enableChatModule == false)
-                end,
-            },
-            {
-                kind = LibEditMode.SettingType.Checkbox,
-                name = "글씨 그림자 적용",
-                desc = "채팅창 폰트 밑에 은은한 폰트 그림자를 적용하여 가독성을 높입니다.",
-                default = false,
-                get = function()
-                    return (dodo and dodo.DB and dodo.DB.useFontShadow == true)
-                end,
-                set = function(_, newValue)
-                    if dodo and dodo.DB then
-                        dodo.DB.useFontShadow = newValue
-                    end
-                    update_feature()
-                end,
-                disabled = function()
-                    return (dodo and dodo.DB and dodo.DB.enableChatModule == false)
-                end,
+        if dodo.DB.enableChatModule then
+            local events = {
+                "CHAT_MSG_CHANNEL",
+                "CHAT_MSG_GUILD",
+                "CHAT_MSG_OFFICER",
+                "CHAT_MSG_PARTY",
+                "CHAT_MSG_PARTY_LEADER",
+                "CHAT_MSG_RAID",
+                "CHAT_MSG_RAID_LEADER",
+                "CHAT_MSG_INSTANCE_CHAT",
+                "CHAT_MSG_INSTANCE_CHAT_LEADER",
+                "CHAT_MSG_SAY",
+                "CHAT_MSG_YELL",
+                "CHAT_MSG_WHISPER",
+                "CHAT_MSG_BN_WHISPER",
             }
-        })
-    end
+            for _, eventName in ipairs(events) do
+                ChatFrame_AddMessageEventFilter(eventName, FilterMessage)
+            end
 
-    if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("인터페이스", {
-            {
-                name = "대화창",
-                get = function() return dodo.DB and dodo.DB.enableChatModule ~= false end,
-                set = function(checked)
-                    if dodo.DB then dodo.DB.enableChatModule = checked end
-                    update_chat_module_state()
+            -- 마우스휠 스크롤 추가 (가비지 프리: 정적 함수로 분리)
+            local function on_mouse_wheel(selfScroll, delta)
+                if delta > 0 then
+                    if IsControlKeyDown() then selfScroll:ScrollToTop() else selfScroll:ScrollUp() end
+                else
+                    if IsControlKeyDown() then selfScroll:ScrollToBottom() else selfScroll:ScrollDown() end
                 end
-            }
-        })
+            end
+            for i = 1, NUM_CHAT_WINDOWS do
+                local frame = _G["ChatFrame"..i]
+                if frame then
+                    frame:SetScript("OnMouseWheel", on_mouse_wheel)
+                    frame:EnableMouseWheel(true)
+                end
+            end
+        end
+
+
+
+        if dodo.RegisterEditModeSetting then
+            dodo.RegisterEditModeSetting("인터페이스", {
+                {
+                    name = "대화창",
+                    get = function() return dodo.DB and dodo.DB.enableChatModule ~= false end,
+                    set = function(checked)
+                        if dodo.DB then dodo.DB.enableChatModule = checked end
+                        update_chat_module_state()
+                    end
+                }
+            })
+        end
     end
-end
+end)
+
+-- ==============================
+-- 외부 노출 및 설정 동적 등록 (Option.lua 연동)
+-- ==============================
+local SettingsPanel = SettingsPanel
+local CreateSettingsListSectionHeaderInitializer = CreateSettingsListSectionHeaderInitializer
+local Checkbox = Checkbox
+local Slider = Slider
+
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["interface"] = dodo.OptionRegistrations["interface"] or {}
+table.insert(dodo.OptionRegistrations["interface"], function(category)
+    local layout = SettingsPanel:GetLayout(category)
+    if not layout then return end
+
+    layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("대화창 설정"))
+    Checkbox(category, "enableChatModule", "대화창 모듈 활성화", "채널명 단축, 링크 복사, 길드원 버튼 등 대화창 편의 기능을 활성화합니다.", true, dodo.UpdateChatModuleState)
+    Checkbox(category, "useShortenChannels", "채널명 축약", "대화창 채널명을 숫자로 축약합니다 (예: [1. 공개] -> [1]).", true, dodo.UpdateChatModuleState)
+    Checkbox(category, "useLinkURLs", "URL 링크화", "채팅창에 웹 주소가 나오면 클릭해서 복사할 수 있는 링크로 변환합니다.", true, dodo.UpdateChatModuleState)
+    Checkbox(category, "useGuildButton", "길드 버튼 표시", "길드원 현황 및 길드창 바로가기 버튼을 추가합니다.", true, dodo.UpdateChatModuleState)
+    Checkbox(category, "useFontOutline", "글씨 외곽선 적용", "채팅창 폰트에 외곽선을 입혀 가독성을 높입니다.", true, dodo.UpdateChatModuleState)
+    Checkbox(category, "useFontShadow", "글씨 그림자 적용", "채팅창 폰트에 그림자를 적용합니다.", false, dodo.UpdateChatModuleState)
+    Slider(category, "fontSize", "글씨 크기", "채팅창 글씨 크기를 설정합니다.", 10, 18, 1, 13, "Integer", dodo.UpdateChatModuleState)
+end)

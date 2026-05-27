@@ -8,34 +8,33 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-local module = {}
-dodo:RegisterModule("Merchant", module)
+dodoDB = dodoDB or {}
 
 -- ==============================
 -- 캐싱
 -- ==============================
-local C_CurrencyInfo = C_CurrencyInfo
-local C_MerchantFrame = C_MerchantFrame
 local CanGuildBankRepair = CanGuildBankRepair
 local CanMerchantRepair = CanMerchantRepair
 local format = string.format
-local GetGuildBankMoney = GetGuildBankMoney
 local GetGuildBankWithdrawMoney = GetGuildBankWithdrawMoney
+local GetGuildBankMoney = GetGuildBankMoney
 local GetMoney = GetMoney
 local GetRepairAllCost = GetRepairAllCost
-local hooksecurefunc = hooksecurefunc
 local RepairAllItems = RepairAllItems
+local hooksecurefunc = hooksecurefunc
 
+local C_CurrencyInfo = C_CurrencyInfo
+local C_MerchantFrame = C_MerchantFrame
 local PREFIX = "[|cff00ff00dodo|r]"
 
 -- ==============================
--- 기능 1: 상점 자동화
+-- 동작 (EQOL 훅 방식)
 -- ==============================
-local function on_merchant_show()
-    if not dodo.DB or dodo.DB.enableMerchantModule == false then return end
+local function OnMerchantShow()
+    if not dodoDB then return end
 
     -- 1. 자동 수리
-    if CanMerchantRepair() then
+    if dodoDB.useAutoRepair ~= false and CanMerchantRepair() then
         local repairCost = GetRepairAllCost()
         if repairCost > 0 then
             local costString = C_CurrencyInfo.GetCoinTextureString(repairCost)
@@ -67,44 +66,32 @@ local function on_merchant_show()
     end
 
     -- 2. 잡템 자동 판매
-    if C_MerchantFrame.IsSellAllJunkEnabled() then
+    if dodoDB.useSellJunk ~= false and C_MerchantFrame.IsSellAllJunkEnabled() then
         C_MerchantFrame.SellAllJunkItems()
     end
 end
 
 -- ==============================
--- 초기화
+-- 초기화 훅 설정 (EQOL 초경량 최적화)
 -- ==============================
-local function initialize()
-    if dodo.DB and dodo.DB.enableMerchantModule == nil then
-        dodo.DB.enableMerchantModule = false
-    end
-end
+-- 불필요한 프레임 생성 및 이벤트 감시를 제거하고 창이 열릴 때만 즉각 반응하도록 수정
+hooksecurefunc(MerchantFrame, "Show", OnMerchantShow)
 
 -- ==============================
--- 모듈 생명주기
+-- 외부 노출 및 설정 동적 등록 (Option.lua 연동)
 -- ==============================
-local isInitialized = false
-function module:OnEnable()
-    initialize()
+dodo.AutoRepair = function() end 
+dodo.SellJunk   = function() end
 
-    if isInitialized then return end
-    isInitialized = true
+local SettingsPanel = SettingsPanel
+local Checkbox = Checkbox
 
-    hooksecurefunc(MerchantFrame, "Show", on_merchant_show)
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["general"] = dodo.OptionRegistrations["general"] or {}
+table.insert(dodo.OptionRegistrations["general"], function(category)
+    local layout = SettingsPanel:GetLayout(category)
+    if not layout then return end
 
-    -- dodoEditModePanel 내부에 세부 설정 주입 (비시각적 상점 설정)
-    if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("편의기능", {
-            {
-                name = "자동 수리/판매",
-                get = function() return dodo.DB and dodo.DB.enableMerchantModule or false end,
-                set = function(checked)
-                    if dodo.DB then 
-                        dodo.DB.enableMerchantModule = checked 
-                    end
-                end
-            }
-        })
-    end
-end
+    Checkbox(category, "useAutoRepair", "자동 수리", "상인을 만났을 때 장비를 자동으로 수리합니다.", true, dodo.AutoRepair)
+    Checkbox(category, "useSellJunk", "잡템 자동 판매", "상인을 만났을 때 가방 속 회색(잡템) 아이템을 자동으로 판매합니다.", true, dodo.SellJunk)
+end)

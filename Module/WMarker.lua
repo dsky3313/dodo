@@ -1,70 +1,30 @@
--- ==============================
--- Inspired
--- ==============================
--- dodo WMarker Module
-
--- ==============================
--- 설정 및 테이블
--- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
-local addonName, dodo = ...
-local module = {}
-dodo:RegisterModule("WMarker", module)
 
+local CreateFrame  = CreateFrame
 local CURSOR_LABEL = "Cursor"
+local format       = format
 
--- ==============================
--- 캐싱
--- ==============================
-local CreateFrame = CreateFrame
-local format = format
-local _G = _G
+-- 설정창 제목 (XML의 header="WMB"와 매칭)
+_G["BINDING_HEADER_WMB"] = "dodo WMarker"
 
--- ==============================
--- 프레임 및 이벤트
--- ==============================
-local secureButtons = {}
-
--- ==============================
--- 기능 1: 키바인딩 및 보안 버튼 생성
--- ==============================
-local function actual_create_binding_button(name, label, macrotext)
+local function Binding(name, label, macrotext)
+    -- XML의 name 문자열과 정확히 일치해야 설정창에 이름이 뜹니다.
     _G["BINDING_NAME_CLICK " .. name .. ":LeftButton"] = label
     
+    -- 보안 버튼 생성 (name은 WMB_WM1CURSOR 형식이 됩니다)
     local btn = CreateFrame("Button", name, nil, "SecureActionButtonTemplate")
     btn:SetAttribute("type", "macro")
     btn:SetAttribute("macrotext", macrotext)
     btn:RegisterForClicks("AnyUp", "AnyDown")
+end
+
+-- 1번부터 8번까지 반복 생성
+for i = 1, 8 do
+    local internalName = "WMB_WM" .. i .. "CURSOR"
+    local markerName = _G["WORLD_MARKER" .. i] or ("마커 " .. i)
     
-    secureButtons[name] = btn
-end
-
-local function create_binding_button(name, label, macrotext)
-    dodo.Profile("WMarker_create_binding_button", actual_create_binding_button, name, label, macrotext)
-end
-
--- ==============================
--- 초기화
--- ==============================
-local function create_ui()
-    _G["BINDING_HEADER_WMB"] = "dodo WMarker"
-
-    for i = 1, 8 do
-        local internalName = "WMB_WM" .. i .. "CURSOR"
-        local markerName = _G["WORLD_MARKER" .. i] or ("마커 " .. i)
-        local macrotext = format("/wm [@cursor] %d", i)
-        
-        create_binding_button(internalName, markerName .. " @ " .. CURSOR_LABEL, macrotext)
-    end
-end
-
-local function initialize()
-    create_ui()
-end
-
--- ==============================
--- 모듈 생명주기
--- ==============================
-function module:OnEnable()
-    initialize()
+    -- 직접 /wm [@cursor] 번호 매크로 작성
+    Binding(internalName, 
+            markerName .. " @ " .. CURSOR_LABEL, 
+            format("/wm [@cursor] %d", i))
 end

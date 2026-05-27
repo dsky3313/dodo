@@ -8,8 +8,7 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-local module = {}
-dodo:RegisterModule("Unitframe", module)
+dodoDB = dodoDB or {}
 
 local oUF = dodo.oUF or _G.oUF
 
@@ -735,84 +734,82 @@ local function update_feature()
 end
 
 -- ==============================
--- 모듈 생명주기
+-- 이벤트 및 자동 초기화
 -- ==============================
-function module:OnEnable()
-	initialize()
-	update_feature()
-	update_module_state()
+local isInitialized = false
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("ADDON_LOADED")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self, event, arg1)
+	if event == "ADDON_LOADED" and arg1 == addonName then
+		dodoDB = dodoDB or {}
+		dodo.DB = dodo.DB or dodoDB
+	elseif event == "PLAYER_LOGIN" then
+		dodo.DB = dodo.DB or dodoDB or {}
 
-	-- LibEditMode 등록
-	if LibEditMode then
-		local systemID = Enum.EditModeSystem.UnitFrame or 1
-		local playerSubSystemID = Enum.EditModeUnitFrameSystemIndices.Player or 1
-		local targetSubSystemID = Enum.EditModeUnitFrameSystemIndices.Target or 2
+		initialize()
+		update_feature()
+		update_module_state()
 
-		LibEditMode:AddSystemSettings(systemID, {
-			{
-				kind = LibEditMode.SettingType.Checkbox,
-				name = "자원바",
-				desc = "플레이어 프레임의 자원바(마나/기력 등)를 표시합니다.",
-				default = true,
-				get = function()
-					return (dodo and dodo.DB and dodo.DB.unitframePower ~= false)
-				end,
-				set = function(_, newValue)
-					if dodo and dodo.DB then
-						dodo.DB.unitframePower = newValue
+		if isInitialized then return end
+		isInitialized = true
+
+		if dodo.RegisterEditModeSetting then
+			dodo.RegisterEditModeSetting("전투", {
+				{
+					name = "유닛프레임",
+					get = function() return dodo.DB and dodo.DB.enableUnitframeModule ~= false end,
+					set = function(checked)
+						if dodo.DB then dodo.DB.enableUnitframeModule = checked end
+						update_module_state()
 					end
-					if playerFrame and playerFrame.Power then
-						playerFrame.Power:ForceUpdate()
-					end
-				end,
-			},
-			{
-				kind = LibEditMode.SettingType.Checkbox,
-				name = "보조자원이 마나일때만 활성화",
-				desc = "자원바가 마나(또는 보조 마나)일 때만 표시되도록 제한합니다.",
-				default = true,
-				get = function()
-					return (dodo and dodo.DB and dodo.DB.unitframePowerOnlyMana ~= false)
-				end,
-				set = function(_, newValue)
-					if dodo and dodo.DB then
-						dodo.DB.unitframePowerOnlyMana = newValue
-					end
-					if playerFrame and playerFrame.Power then
-						playerFrame.Power:ForceUpdate()
-					end
-				end,
-				disabled = function()
-					return (dodo and dodo.DB and dodo.DB.unitframePower == false)
-				end,
-			}
-		}, playerSubSystemID)
+				}
+			})
+		end
 	end
-
-	if dodo.RegisterEditModeSetting then
-		dodo.RegisterEditModeSetting("전투", {
-			{
-				name = "유닛프레임",
-				get = function() return dodo.DB and dodo.DB.enableUnitframeModule ~= false end,
-				set = function(checked)
-					if dodo.DB then dodo.DB.enableUnitframeModule = checked end
-					update_module_state()
-				end
-			}
-		})
-	end
-end
+end)
 
 -- ==============================
 -- 이벤트 및 미리보기 연동
 -- ==============================
-if EventRegistry then
-	EventRegistry:RegisterCallback("EditMode.Enter", function()
-		C_Timer.After(0.2, function()
-			toggle_boss_debug(true)
-		end)
-	end)
-	EventRegistry:RegisterCallback("EditMode.Exit", function()
-		toggle_boss_debug(false)
-	end)
+local function on_edit_mode_enter()
+	toggle_boss_debug(true)
 end
+
+local function on_edit_mode_exit()
+	toggle_boss_debug(false)
+end
+
+if EventRegistry then
+	EventRegistry:RegisterCallback("EditMode.Enter", on_edit_mode_enter)
+	EventRegistry:RegisterCallback("EditMode.Exit", on_edit_mode_exit)
+end
+
+-- ==============================
+-- 외부 노출 및 설정 동적 등록 (Option.lua 연동)
+-- ==============================
+local SettingsPanel = SettingsPanel
+local CreateSettingsListSectionHeaderInitializer = CreateSettingsListSectionHeaderInitializer
+local Checkbox = Checkbox
+
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["combat"] = dodo.OptionRegistrations["combat"] or {}
+table.insert(dodo.OptionRegistrations["combat"], function(category)
+	local layout = SettingsPanel:GetLayout(category)
+	if not layout then return end
+
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("유닛프레임"))
+	Checkbox(category, "enableUnitframeModule", "유닛프레임 활성화", "Blizzard 순정 프레임을 대체하는 심플 유닛프레임을 활성화합니다.", true, dodo.UpdateUnitframeModuleState)
+	Checkbox(category, "unitframePower", "플레이어 자원바", "플레이어 프레임의 자원바(마나/기력 등)를 표시합니다.", true, function()
+		if playerFrame and playerFrame.Power then playerFrame.Power:ForceUpdate() end
+	end)
+	Checkbox(category, "unitframePowerOnlyMana", "보조자원이 마나일 때만 활성화", "자원바가 마나(또는 보조 마나)일 때만 표시되도록 제한합니다.", true, function()
+		if playerFrame and playerFrame.Power then playerFrame.Power:ForceUpdate() end
+	end)
+	Checkbox(category, "unitframeTargetPower", "대상 자원바", "대상 유닛프레임의 자원바를 표시합니다.", true, function()
+		if targetFrame and targetFrame.Power then targetFrame.Power:ForceUpdate() end
+	end)
+	Checkbox(category, "unitframeTargetBuffs", "대상 버프 표시", "대상 유닛프레임 상단에 주요 버프를 표시합니다.", true, function()
+		if targetFrame and targetFrame.Buffs then targetFrame.Buffs:ForceUpdate() end
+	end)
+end)

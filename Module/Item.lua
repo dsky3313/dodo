@@ -2,7 +2,6 @@
 -- Inspired
 -- ==============================
 -- Chonky Character Sheet (https://www.curseforge.com/wow/addons/chonky-character-sheet)
--- Enhanced QOL (ahttps://www.curseforge.com/wow/addons/fex)
 -- Fex (https://www.curseforge.com/wow/addons/fex)
 
 -- ==============================
@@ -10,13 +9,13 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-local module = {}
-dodo:RegisterModule("Item", module)
+dodoDB = dodoDB or {}
 
-local Colors = dodo.Colors -- 엔진
-
--- API 로컬 캐싱
+-- ============================================================
+-- 캐싱 (가나다 순)
+-- ============================================================
 local _G = _G
+local C_AddOns = C_AddOns
 local C_Container = C_Container
 local C_Item = C_Item
 local C_Timer = C_Timer
@@ -27,13 +26,16 @@ local GetInventoryItemID = GetInventoryItemID
 local GetInventoryItemLink = GetInventoryItemLink
 local GetItemInfo = GetItemInfo
 local GetItemInfoInstant = GetItemInfoInstant
-local PaperDollFrame = PaperDollFrame
+local hooksecurefunc = hooksecurefunc
 local ipairs = ipairs
 local match = string.match
 local pairs = pairs
+local PaperDollFrame = PaperDollFrame
 local select = select
 local table_insert = table.insert
 local tonumber = tonumber
+local wipe = wipe
+
 local NUM_CONTAINER_FRAMES = NUM_CONTAINER_FRAMES or 13
 
 local configs = {
@@ -64,17 +66,17 @@ local SLOT_LIST = {
     { frame = "CharacterSecondaryHandSlot", slotID = 17, dir = "RIGHT", enchant = false },
 }
 
--- ============================================================
--- 캐싱
--- ============================================================
 local fexSlotData = {}
 local fexInspectSlotData = {}
+local fexCompCharacterData = {}
+local fexCompInspectData = {}
 local fexSlotBuilt = false
 local fexInspectBuilt = false
+local fexCompCharacterBuilt = false
+local fexCompInspectBuilt = false
 local fexOriginalHeight = nil
 local inspectUnit = nil
 
-local MAX_GEMS = 4
 local OUTLINE_FONT = "Fonts\\2002.TTF"
 
 -- ============================================================
@@ -169,16 +171,13 @@ local function hide_character_backgrounds()
     end
 end
 
--- get_gems_string removed
-
 local ilvlCache = {}
 local ilvlColorCache = {}
 
 local function update_slots(unit, slotData)
     if not unit then return end
-    if not (dodo.DB and dodo.DB.useItemLevel) then return end
-    if unit == "player" and not PaperDollFrame:IsShown() then return end
-    if unit ~= "player" and (not InspectFrame or not InspectFrame:IsShown()) then return end
+    if unit == "player" and not (PaperDollFrame:IsShown() or (CCS_InspectCompare and CCS_InspectCompare:IsShown())) then return end
+    if unit ~= "player" and (not InspectFrame or not InspectFrame:IsShown()) and not (CCS_InspectCompare and CCS_InspectCompare:IsShown()) then return end
 
     for _, data in ipairs(slotData) do
         local link = GetInventoryItemLink(unit, data.slotID)
@@ -192,7 +191,7 @@ local function update_slots(unit, slotData)
             local hasGems = (gemString and gemString ~= "")
 
             -- 배경 그라데이션 및 마법부여
-            if dodo.DB and dodo.DB.useItemLevel and data.tex then
+            if dodoDB.useEnhancedCharFrame and data.tex then
                 local r, g, b = 1, 1, 1
 
                 if data.isEnchantSlot then
@@ -227,7 +226,7 @@ local function update_slots(unit, slotData)
             end
 
             -- 아이템 레벨
-            if dodo.DB and dodo.DB.useItemLevel then
+            if dodoDB.useItemLevel then
                 local ilvl = ilvlCache[link]
                 local color = ilvlColorCache[link]
 
@@ -236,8 +235,8 @@ local function update_slots(unit, slotData)
                     if ilvl and ilvl > 0 then
                         ilvlCache[link] = ilvl
                         local quality = C_Item.GetItemQualityByID(link)
-                        local qColor = (Colors and Colors.Quality[quality or 1]) or { r = 1, g = 1, b = 1 }
-                        color = { r = qColor.r, g = qColor.g, b = qColor.b }
+                        local r, g, b = C_Item.GetItemQualityColor(quality or 1)
+                        color = { r = r, g = g, b = b }
                         ilvlColorCache[link] = color
                     end
                 end
@@ -254,7 +253,7 @@ local function update_slots(unit, slotData)
             end
 
             -- 보석 아이콘 표시
-            if dodo.DB and dodo.DB.useItemLevel and data.gemText then
+            if dodoDB.useEnhancedCharFrame and data.gemText then
                 if hasGems then
                     data.gemText:SetText(gemString)
                     data.gemText:Show()
@@ -271,9 +270,13 @@ end
 local function build_slots(prefix, slotData)
     if prefix == "Character" and fexSlotBuilt then return end
     if prefix == "Inspect" and fexInspectBuilt then return end
+    if prefix == "CompCharacter" and fexCompCharacterBuilt then return end
+    if prefix == "CompInspect" and fexCompInspectBuilt then return end
     
     if prefix == "Character" then fexSlotBuilt = true 
-    elseif prefix == "Inspect" then fexInspectBuilt = true end
+    elseif prefix == "Inspect" then fexInspectBuilt = true 
+    elseif prefix == "CompCharacter" then fexCompCharacterBuilt = true
+    elseif prefix == "CompInspect" then fexCompInspectBuilt = true end
 
     for _, info in ipairs(SLOT_LIST) do
         local slotName = info.frame:gsub("Character", prefix)
@@ -339,34 +342,24 @@ local function build_slots(prefix, slotData)
 end
 
 local function reset_layout()
-    if CharacterFrame and CharacterFrame.Collapse then
-        CharacterFrame:Collapse()
-    else
-        if CharacterFrame then
-            CharacterFrame:SetWidth(configs.normal_width)
-            if fexOriginalHeight then
-                CharacterFrame:SetHeight(fexOriginalHeight)
-            end
-        end
+    CharacterFrame:SetWidth(configs.normal_width)
+    if fexOriginalHeight then
+        CharacterFrame:SetHeight(fexOriginalHeight)
     end
 end
 
 local function apply_wide_layout()
     if not PaperDollFrame or not PaperDollFrame:IsShown() then return end
-    if not (dodo.DB and dodo.DB.useItemLevel) then return end
+    if not dodoDB.useEnhancedCharFrame then return end
 
-    if CharacterFrame then
-        if not fexOriginalHeight then
-            fexOriginalHeight = CharacterFrame:GetHeight()
-        end
-        CharacterFrame:SetWidth(configs.wide_width)
+    if not fexOriginalHeight then
+        fexOriginalHeight = CharacterFrame:GetHeight()
     end
+    CharacterFrame:SetWidth(configs.wide_width)
     
-    if CharacterFrameInset then
-        CharacterFrameInset:ClearAllPoints()
-        CharacterFrameInset:SetPoint("TOPLEFT", CharacterFrame, "TOPLEFT", 4, -60)
-        CharacterFrameInset:SetPoint("BOTTOMRIGHT", CharacterFrame, "BOTTOMLEFT", configs.wide_width - 206, 4)
-    end
+    CharacterFrameInset:ClearAllPoints()
+    CharacterFrameInset:SetPoint("TOPLEFT", CharacterFrame, "TOPLEFT", 4, -60)
+    CharacterFrameInset:SetPoint("BOTTOMRIGHT", CharacterFrame, "BOTTOMLEFT", configs.wide_width - 206, 4)
 
     if CharacterMainHandSlot then
         CharacterMainHandSlot:SetPoint("BOTTOMLEFT", PaperDollItemsFrame, "BOTTOMLEFT", 185, 14)
@@ -415,7 +408,7 @@ local function update_bag_slot(button)
     end
 
     local ilvlFS = bagSlotCache[button].ilvlFS
-    if not (dodo.DB and dodo.DB.useItemLevel) then
+    if not dodoDB.useItemLevel then
         ilvlFS:Hide()
         return
     end
@@ -428,8 +421,7 @@ local function update_bag_slot(button)
         if isEquip then
             local itemLevel = C_Item.GetDetailedItemLevelInfo(info.hyperlink)
             if itemLevel and itemLevel > 1 then
-                local qColor = (Colors and Colors.Quality[quality or 1]) or { r = 1, g = 1, b = 1 }
-                local r, g, b = qColor.r, qColor.g, qColor.b
+                local r, g, b = C_Item.GetItemQualityColor(quality or 1)
                 ilvlFS:SetTextColor(r, g, b)
                 ilvlFS:SetText(itemLevel)
                 ilvlFS:Show()
@@ -452,40 +444,52 @@ end
 -- ==============================
 -- 동작
 -- ==============================
-local updateSlotsTimer = nil
+local isPendingUpdate = false
 
-local function on_update_slots_timer()
-    updateSlotsTimer = nil
-    if PaperDollFrame and PaperDollFrame:IsShown() then
+local function try_update_slots()
+    local allReady = true
+    for slot = 1, 19 do
+        local link = GetInventoryItemLink("player", slot)
+        if link then
+            local itemID = tonumber(match(link, "item:(%d+)"))
+            if itemID and not C_Item.IsItemDataCachedByID(itemID) then
+                allReady = false
+                break
+            end
+        end
+    end
+
+    if allReady then
+        isPendingUpdate = false
         update_slots("player", fexSlotData)
+    else
+        C_Timer.After(0.05, try_update_slots)
     end
 end
 
 local function request_update_slots()
-    if not (dodo.DB and dodo.DB.useItemLevel) then return end
-    if updateSlotsTimer then return end
-    
-    updateSlotsTimer = C_Timer.NewTimer(0.2, on_update_slots_timer)
+    if isPendingUpdate then return end
+    isPendingUpdate = true
+    try_update_slots()
 end
 
 local function update_feature()
-    if not (dodo.DB and dodo.DB.useItemLevel) then return end
-
     request_update_slots()
     if InspectFrame and InspectFrame:IsShown() then
         update_slots(inspectUnit or "target", fexInspectSlotData)
     end
-
-    apply_wide_layout()
-
+    -- ChonkyCharacterSheet 지원
+    if _G["CompInspectHeadSlot"] then
+        update_slots(inspectUnit or "target", fexCompInspectData)
+    end
+    if _G["CompCharacterHeadSlot"] then
+        update_slots("player", fexCompCharacterData)
+    end
     -- 가방 업데이트
     for i = 1, NUM_CONTAINER_FRAMES do
-        local cf = _G["ContainerFrame" .. i]
-        update_bag_frame(cf)
+        update_bag_frame(_G["ContainerFrame" .. i])
     end
-    if ContainerFrameCombinedBags then
-        update_bag_frame(ContainerFrameCombinedBags)
-    end
+    if ContainerFrameCombinedBags then update_bag_frame(ContainerFrameCombinedBags) end
 end
 
 dodo.ItemLevelDisplay = function(value)
@@ -493,35 +497,37 @@ dodo.ItemLevelDisplay = function(value)
 end
 
 dodo.EnhancedCharFrame = function(value)
+    if value then
+        apply_wide_layout()
+    else
+        reset_layout()
+    end
     update_feature()
 end
 
 local function on_event(self, event, ...)
-    if not (dodo.DB and dodo.DB.useItemLevel) then return end
-
-    if not fexSlotBuilt then
-        C_AddOns.LoadAddOn("Blizzard_CharacterFrame")
-        hide_character_backgrounds()
-        build_slots("Character", fexSlotData)
-    end
-    if C_AddOns.IsAddOnLoaded("Blizzard_InspectUI") and not fexInspectBuilt then
-        build_slots("Inspect", fexInspectSlotData)
-    end
-
     if event == "PLAYER_LOGIN" then
-        request_update_slots()
+        C_AddOns.LoadAddOn("Blizzard_CharacterFrame")
+        C_Timer.After(0.5, function()
+            hide_character_backgrounds()
+            build_slots("Character", fexSlotData)
+            request_update_slots()
+        end)
+        
+        if C_AddOns.IsAddOnLoaded("Blizzard_InspectUI") then
+            build_slots("Inspect", fexInspectSlotData)
+        end
     elseif event == "PLAYER_ENTERING_WORLD" then
         for slot = 1, 19 do
             local link = GetInventoryItemLink("player", slot)
             if link then
+                GetItemInfo(link)
                 local itemID = GetInventoryItemID("player", slot)
                 if itemID then
                     C_Item.RequestLoadItemDataByID(itemID)
                 end
             end
         end
-        request_update_slots()
-    elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "SOCKET_INFO_ACCEPT" then
         request_update_slots()
     elseif event == "ADDON_LOADED" then
         local addon = ...
@@ -531,173 +537,84 @@ local function on_event(self, event, ...)
     elseif event == "INSPECT_READY" then
         local unit = inspectUnit or "target"
         update_slots(unit, fexInspectSlotData)
+        
+        -- ChonkyCharacterSheet 지원
+        if _G["CompInspectHeadSlot"] then
+            build_slots("CompInspect", fexCompInspectData)
+            update_slots(unit, fexCompInspectData)
+        end
+        if _G["CompCharacterHeadSlot"] then
+            build_slots("CompCharacter", fexCompCharacterData)
+            update_slots("player", fexCompCharacterData)
+        end
     elseif event == "BAG_UPDATE_DELAYED" then
         for i = 1, NUM_CONTAINER_FRAMES do
-            local cf = _G["ContainerFrame" .. i]
-            update_bag_frame(cf)
+            update_bag_frame(_G["ContainerFrame" .. i])
         end
-        if ContainerFrameCombinedBags then
-            update_bag_frame(ContainerFrameCombinedBags)
-        end
+        if ContainerFrameCombinedBags then update_bag_frame(ContainerFrameCombinedBags) end
     else
         request_update_slots()
     end
 end
 
 -- ==============================
--- 모듈 On/Off 활성화 상태 제어
+-- 이벤트 및 훅 설정
 -- ==============================
 local event_frame = CreateFrame("Frame")
+event_frame:RegisterEvent("PLAYER_LOGIN")
+event_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+event_frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+event_frame:RegisterEvent("UNIT_INVENTORY_CHANGED")
+event_frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+event_frame:RegisterEvent("ENCHANT_SPELL_COMPLETED")
+event_frame:RegisterEvent("WEAPON_ENCHANT_CHANGED")
+event_frame:RegisterEvent("BAG_UPDATE_DELAYED")
+event_frame:RegisterEvent("INSPECT_READY")
+event_frame:RegisterEvent("ADDON_LOADED")
+event_frame:SetScript("OnEvent", on_event)
 
-local function update_module_state()
-    local enabled = true
-    if dodo.DB and dodo.DB.useItemLevel ~= nil then
-        enabled = dodo.DB.useItemLevel
-    end
+hooksecurefunc("NotifyInspect", function(unit)
+    inspectUnit = unit
+end)
 
-    if not enabled then
-        event_frame:UnregisterAllEvents()
-        reset_layout()
-        -- 가방 UI 템렙 숨김
-        for _, container in pairs(bagSlotCache) do
-            if container.ilvlFS then container.ilvlFS:Hide() end
-        end
-        -- 캐릭터 슬롯 상태 리셋
-        for _, data in ipairs(fexSlotData) do
-            if data.tex then data.tex:Hide() end
-            if data.enchantText then data.enchantText:Hide() end
-            if data.ilvlText then data.ilvlText:Hide() end
-            if data.gemText then data.gemText:Hide() end
-        end
-    else
-        if not fexSlotBuilt then
-            C_AddOns.LoadAddOn("Blizzard_CharacterFrame")
-            hide_character_backgrounds()
-            build_slots("Character", fexSlotData)
-        end
-        if C_AddOns.IsAddOnLoaded("Blizzard_InspectUI") and not fexInspectBuilt then
-            build_slots("Inspect", fexInspectSlotData)
-        end
-
-        event_frame:RegisterEvent("PLAYER_LOGIN")
-        event_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        event_frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
-        event_frame:RegisterEvent("SOCKET_INFO_ACCEPT")
-        event_frame:RegisterEvent("UNIT_INVENTORY_CHANGED")
-        event_frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
-        event_frame:RegisterEvent("ENCHANT_SPELL_COMPLETED")
-        event_frame:RegisterEvent("WEAPON_ENCHANT_CHANGED")
-        event_frame:RegisterEvent("BAG_UPDATE_DELAYED")
-        event_frame:RegisterEvent("INSPECT_READY")
-        event_frame:RegisterEvent("ADDON_LOADED")
-        
-        if PaperDollFrame:IsShown() then
-            apply_wide_layout()
-        end
-        update_feature()
-    end
+local function on_character_frame_show()
+    hide_character_backgrounds()
+    apply_wide_layout()
+    request_update_slots()
 end
 
-dodo.UpdateItemModuleState = update_module_state
-dodo.ItemApplyFeature = update_feature
+CharacterFrame:HookScript("OnShow", on_character_frame_show)
 
--- ==============================
--- 초기화
--- ==============================
-local function initialize()
-    if dodo.DB then
-        if dodo.DB.useItemLevel == nil then
-            dodo.DB.useItemLevel = true
-        end
+hooksecurefunc(CharacterFrame, "Expand", apply_wide_layout)
+hooksecurefunc(CharacterFrame, "UpdateSize", apply_wide_layout)
+hooksecurefunc(CharacterFrame, "Collapse", reset_layout)
+
+local function on_bag_update_items(self)
+    update_bag_frame(self)
+end
+
+for i = 1, NUM_CONTAINER_FRAMES do
+    local cf = _G["ContainerFrame" .. i]
+    if cf then
+        hooksecurefunc(cf, "UpdateItems", on_bag_update_items)
     end
-
-    local function on_notify_inspect(unit)
-        inspectUnit = unit
-    end
-
-    -- Hook 설정 (중복 훅 방지 적용)
-    dodo.HookOnce("NotifyInspect", on_notify_inspect)
-
-    if CharacterFrame then
-        local function on_character_frame_show()
-            if not (dodo.DB and dodo.DB.useItemLevel) then return end
-            if not fexSlotBuilt then
-                C_AddOns.LoadAddOn("Blizzard_CharacterFrame")
-                hide_character_backgrounds()
-                build_slots("Character", fexSlotData)
-            end
-            hide_character_backgrounds()
-            apply_wide_layout()
-
-            for slot = 1, 19 do
-                local link = GetInventoryItemLink("player", slot)
-                if link then
-                    local itemID = GetInventoryItemID("player", slot)
-                    if itemID then
-                        C_Item.RequestLoadItemDataByID(itemID)
-                    end
-                end
-            end
-            request_update_slots()
-        end
-
-        local function on_character_frame_collapse()
-            if not (dodo.DB and dodo.DB.useItemLevel) then return end
-            CharacterFrame:SetWidth(configs.normal_width)
-            if fexOriginalHeight then
-                CharacterFrame:SetHeight(fexOriginalHeight)
-            end
-        end
-
-        if not CharacterFrame.dodoHookedOnShow then
-            CharacterFrame.dodoHookedOnShow = true
-            CharacterFrame:HookScript("OnShow", on_character_frame_show)
-        end
-
-        dodo.HookOnce(CharacterFrame, "Expand", apply_wide_layout)
-        dodo.HookOnce(CharacterFrame, "UpdateSize", apply_wide_layout)
-        dodo.HookOnce(CharacterFrame, "Collapse", on_character_frame_collapse)
-    end
-
-    local function on_bag_update_items(self)
-        update_bag_frame(self)
-    end
-
-    for i = 1, NUM_CONTAINER_FRAMES do
-        local cf = _G["ContainerFrame" .. i]
-        if cf then
-            dodo.HookOnce(cf, "UpdateItems", on_bag_update_items)
-        end
-    end
-    if ContainerFrameCombinedBags then
-        dodo.HookOnce(ContainerFrameCombinedBags, "UpdateItems", on_bag_update_items)
-    end
+end
+if ContainerFrameCombinedBags then
+    hooksecurefunc(ContainerFrameCombinedBags, "UpdateItems", on_bag_update_items)
 end
 
 -- ==============================
--- 모듈 생명주기
+-- 외부 노출 및 설정 동적 등록 (Option.lua 연동)
 -- ==============================
-local isInitialized = false
-function module:OnEnable()
-    initialize()
-    update_module_state()
+local SettingsPanel = SettingsPanel
+local Checkbox = Checkbox
 
-    if isInitialized then return end
-    isInitialized = true
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["interface"] = dodo.OptionRegistrations["interface"] or {}
+table.insert(dodo.OptionRegistrations["interface"], function(category)
+    local layout = SettingsPanel:GetLayout(category)
+    if not layout then return end
 
-    event_frame:SetScript("OnEvent", on_event)
-
-    -- dodoEditModePanel 내부에 세부 설정 동적 주입 등록
-    if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("인터페이스", {
-            {
-                name = "아이템 레벨 표시",
-                get = function() return dodo.DB and dodo.DB.useItemLevel or false end,
-                set = function(checked)
-                    if dodo.DB then dodo.DB.useItemLevel = checked end
-                    update_module_state()
-                end
-            }
-        })
-    end
-end
+    Checkbox(category, "useItemLevel", "아이템 레벨 표시", "장비창 및 가방 아이템에 아이템 레벨을 표시합니다.", true, dodo.ItemLevelDisplay)
+    Checkbox(category, "useEnhancedCharFrame", "장비창+", "장비창에 마법부여, 보석 정보를 표시하고 창 크기를 넓힙니다.", true, dodo.EnhancedCharFrame)
+end)

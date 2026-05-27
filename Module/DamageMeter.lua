@@ -1,5 +1,5 @@
 -- ==============================
--- Inspired damageMeterEnabled 0 / 1
+-- Inspired
 -- ==============================
 -- DamageMeterTools 暴雪傷害統計增強 (https://www.curseforge.com/wow/addons/damagemetertools)
 -- Default DamageMeter Tweaks (https://www.curseforge.com/wow/addons/default-damagemeter-tweaks)
@@ -9,11 +9,9 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-local module = {}
-dodo:RegisterModule("DamageMeter", module)
+dodoDB = dodoDB or {}
 
-local LibEditMode = LibStub and LibStub("LibEditMode", true)
-
+-- 스냅 설정 (수정 가능)
 local snapConfig = {
     point = "BOTTOM",       -- 2번 창의 기준점
     relativePoint = "TOP",  -- 1번 창의 기준점
@@ -24,29 +22,27 @@ local snapConfig = {
 local MAX_DAMAGE_WINDOWS = 3 -- 블리자드 지원 최대 개수
 
 -- ==============================
--- 프레임 및 이벤트 핸들러 정의
+-- 캐싱 (가나다 순 정렬)
 -- ==============================
-local win1
-local winCache = {}    -- 모든 세션 윈도우 캐싱
-
--- ==============================
--- 캐싱
--- ==============================
-local abs = math.abs
 local CreateFrame = CreateFrame
-local C_DamageMeter = C_DamageMeter
 local DamageMeter = DamageMeter
 local GameTooltip = GameTooltip
-local hooksecurefunc = hooksecurefunc
 local InCombatLockdown = InCombatLockdown
-local ipairs = ipairs
-local issecretvalue = issecretvalue or function() return false end
 local PlaySound = PlaySound
+local ResetAllCombatSessions = C_DamageMeter.ResetAllCombatSessions
 local SOUNDKIT = SOUNDKIT
 local UIParent = UIParent
 local _G = _G
+local abs = math.abs
+local hooksecurefunc = hooksecurefunc
+local ipairs = ipairs
+local issecretvalue = issecretvalue
+local type = type
 
-local function get_session_window(i)
+local win1, win2, win3 -- 윈도우 캐싱용 변수
+local winCache = {}    -- 모든 세션 윈도우 캐싱
+
+local function GetSessionWindow(i)
     if winCache[i] then return winCache[i] end
     local win = (i == 1 and DamageMeterSessionWindow1) or
                 (i == 2 and DamageMeterSessionWindow2) or
@@ -57,11 +53,11 @@ local function get_session_window(i)
 end
 
 -- ==============================
--- 기능 1: 창 크기 동기화 및 스냅
+-- 동작
 -- ==============================
-local function apply_window_settings(i, win1, isSyncEnabled, isSnapEnabled)
+local function ApplyWindowSettings(i, win1, isSyncEnabled, isSnapEnabled)
     if InCombatLockdown() then return end
-    local win = get_session_window(i)
+    local win = GetSessionWindow(i)
     if not win then return end
 
     -- 1. 크기 조절 및 버튼 잠금
@@ -79,7 +75,7 @@ local function apply_window_settings(i, win1, isSyncEnabled, isSnapEnabled)
 
     -- 2. 스냅 및 크기 동기화
     if isSnapEnabled and win:IsShown() then
-        local prevWin = get_session_window(i-1)
+        local prevWin = GetSessionWindow(i-1)
         if prevWin then
             -- 위치 고정
             local point, relativeTo = win:GetPoint()
@@ -113,7 +109,7 @@ local function apply_window_settings(i, win1, isSyncEnabled, isSnapEnabled)
         end
 
         local point, relativeTo = win:GetPoint()
-        if relativeTo and relativeTo == get_session_window(i-1) then
+        if relativeTo and relativeTo == GetSessionWindow(i-1) then
             local left, bottom = win:GetLeft(), win:GetBottom()
             win:ClearAllPoints()
             if left and bottom then
@@ -128,41 +124,63 @@ local function apply_window_settings(i, win1, isSyncEnabled, isSnapEnabled)
 end
 
 -- 크기 동기화
-local function sync_all_window_sizes()
-    local win1 = get_session_window(1)
+local function SyncAllWindowSizes()
+    local win1 = GetSessionWindow(1)
     if not win1 then return end
 
-    local isModuleEnabled = dodo.DB and dodo.DB.enableDamageMeterModule ~= false
-    local isSyncEnabled = isModuleEnabled and (dodo.DB and dodo.DB.useDmgMeterSyncSize ~= false)
-    local isSnapEnabled = isModuleEnabled and (dodo.DB and dodo.DB.useDmgMeterSnap ~= false)
+    local isSyncEnabled = dodoDB and dodoDB.dmgMeterSyncSize ~= false
+    local isSnapEnabled = dodoDB and dodoDB.dmgMeterSnap ~= false
 
     -- 2~3번 창까지 공통 로직 적용
     for i = 2, MAX_DAMAGE_WINDOWS do
-        apply_window_settings(i, win1, isSyncEnabled, isSnapEnabled)
+        ApplyWindowSettings(i, win1, isSyncEnabled, isSnapEnabled)
     end
 end
 
-local function on_size_changed()
-    if dodo.DB and dodo.DB.enableDamageMeterModule ~= false then
-        sync_all_window_sizes()
-    end
+-- 메인 창 크기 실시간 동기화 정적 핸들러
+local function on_main_size_changed()
+    SyncAllWindowSizes()
 end
 
--- 메인 창 크기 실시간 동기화
-local function hook_main_size()
+local function HookMainSize()
     if win1 or DamageMeterSessionWindow1 then
         win1 = win1 or DamageMeterSessionWindow1
-        if not win1.dodoHookedOnSize then
-            win1.dodoHookedOnSize = true
-            win1:HookScript("OnSizeChanged", on_size_changed)
-        end
+        win1:HookScript("OnSizeChanged", on_main_size_changed)
     end
 end
 
 -- ==============================
--- 기능 2: 피해량 초기화 버튼
+-- 초기화 버튼 정적 핸들러 (가비지 프리)
 -- ==============================
-local function create_reset_button(win)
+local function on_reset_down(self)
+    self:GetNormalTexture():SetAlpha(0)
+    self:GetHighlightTexture():SetAlpha(0)
+end
+
+local function on_reset_up(self)
+    self:GetNormalTexture():SetAlpha(1)
+    self:GetHighlightTexture():SetAlpha(1)
+end
+
+local function on_reset_click()
+    ResetAllCombatSessions()
+    PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+end
+
+local function on_reset_enter(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText("피해량 초기화", 1, 1, 1)
+    GameTooltip:Show()
+end
+
+local function on_reset_leave()
+    GameTooltip:Hide()
+end
+
+-- ==============================
+-- 초기화 버튼 생성
+-- ==============================
+local function CreateResetButton(win)
     if not win or win.dodoResetBtn then return end
 
     local resetBtn = CreateFrame("Button", nil, win)
@@ -178,14 +196,8 @@ local function create_reset_button(win)
     resetBtn:GetNormalTexture():SetDrawLayer("BACKGROUND", 0)
     resetBtn:GetPushedTexture():SetDrawLayer("BACKGROUND", 1)
 
-    resetBtn:SetScript("OnMouseDown", function()
-        resetBtn:GetNormalTexture():SetAlpha(0)
-        resetBtn:GetHighlightTexture():SetAlpha(0)
-    end)
-    resetBtn:SetScript("OnMouseUp", function()
-        resetBtn:GetNormalTexture():SetAlpha(1)
-        resetBtn:GetHighlightTexture():SetAlpha(1)
-    end)
+    resetBtn:SetScript("OnMouseDown", on_reset_down)
+    resetBtn:SetScript("OnMouseUp", on_reset_up)
 
     -- atlas hover
     local highlight = resetBtn:GetHighlightTexture()
@@ -210,29 +222,22 @@ local function create_reset_button(win)
     end
 
     -- 클릭 이벤트
-    resetBtn:SetScript("OnClick", function()
-        C_DamageMeter.ResetAllCombatSessions()
-        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
-    end)
+    resetBtn:SetScript("OnClick", on_reset_click)
 
     -- 툴팁
-    resetBtn:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText("피해량 초기화", 1, 1, 1)
-        GameTooltip:Show()
-    end)
-    resetBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    resetBtn:SetScript("OnEnter", on_reset_enter)
+    resetBtn:SetScript("OnLeave", on_reset_leave)
 
     win.dodoResetBtn = resetBtn
 end
 
-local function apply_reset_buttons()
-    local isEnabled = dodo.DB and dodo.DB.enableDamageMeterModule ~= false and dodo.DB.useDmgMeterResetButton ~= false
+local function ApplyResetButtons()
+    local isEnabled = dodoDB and dodoDB.dmgMeterResetButton ~= false
     for i = 1, MAX_DAMAGE_WINDOWS do
-        local win = get_session_window(i)
+        local win = GetSessionWindow(i)
         if win then
             if isEnabled then
-                create_reset_button(win)
+                CreateResetButton(win)
                 if win.dodoResetBtn then win.dodoResetBtn:Show() end
             else
                 if win.dodoResetBtn then win.dodoResetBtn:Hide() end
@@ -241,116 +246,68 @@ local function apply_reset_buttons()
     end
 end
 
+dodo.UpdateDamageMeterResetButtons = ApplyResetButtons
+
 -- ==============================
--- 기능 3: 모듈 적용
+-- 이벤트 핸들러 (가비지 프리 정적 참조)
 -- ==============================
-local function update_feature()
-    sync_all_window_sizes()
-    apply_reset_buttons()
+local function on_secondary_session_shown()
+    SyncAllWindowSizes()
+    ApplyResetButtons()
 end
 
--- ==============================
--- 모듈 On/Off 활성화 상태 제어
--- ==============================
-local function update_module_state()
-    update_feature()
-end
+local function on_event(self, event, arg1)
+    if event == "ADDON_LOADED" and arg1 == addonName then
+        self:UnregisterEvent("ADDON_LOADED")
 
-dodo.UpdateDamageMeterModuleState = update_module_state
-
--- ==============================
--- 초기화
--- ==============================
-local function initialize()
-    hook_main_size()
-end
-
--- ==============================
--- 모듈 생명주기
--- ==============================
-local isInitialized = false
-function module:OnEnable()
-    update_feature()
-    update_module_state()
-
-    if isInitialized then return end
-    isInitialized = true
-
-    initialize()
-
-    local function on_show_secondary_window()
-        if dodo.DB and dodo.DB.enableDamageMeterModule ~= false then
-            sync_all_window_sizes()
-            apply_reset_buttons()
+        if dodoDB.dmgMeterSyncSize == nil then
+            dodoDB.dmgMeterSyncSize = true
         end
-    end
+        if dodoDB.dmgMeterSnap == nil then
+            dodoDB.dmgMeterSnap = true
+        end
+        if dodoDB.dmgMeterResetButton == nil then
+            dodoDB.dmgMeterResetButton = true
+        end
 
-    dodo.HookOnce(DamageMeter, "ShowNewSecondarySessionWindow", on_show_secondary_window)
+        hooksecurefunc(DamageMeter, "ShowNewSecondarySessionWindow", on_secondary_session_shown)
 
-    -- LibEditMode 등록
-    if LibEditMode then
-        local settingType = LibEditMode.SettingType
-        local damageMeterSystem = Enum.EditModeSystem.DamageMeter or 10
-
-        LibEditMode:AddSystemSettings(damageMeterSystem, {
-            {
-                kind = settingType.Checkbox,
-                name = "창 크기 동기화",
-                desc = "보조 창들의 크기를 메인 창과 동일하게 맞춥니다.",
-                default = true,
-                get = function()
-                    return (dodo.DB and dodo.DB.useDmgMeterSyncSize ~= false)
-                end,
-                set = function(_, newValue)
-                    if dodo.DB then dodo.DB.useDmgMeterSyncSize = newValue end
-                    if dodo.DB and dodo.DB.enableDamageMeterModule ~= false then
-                        sync_all_window_sizes()
-                    end
-                end,
-            },
-            {
-                kind = settingType.Checkbox,
-                name = "창 붙이기",
-                desc = "보조 창을 메인 창 상단에 붙입니다.",
-                default = true,
-                get = function()
-                    return (dodo.DB and dodo.DB.useDmgMeterSnap ~= false)
-                end,
-                set = function(_, newValue)
-                    if dodo.DB then dodo.DB.useDmgMeterSnap = newValue end
-                    if dodo.DB and dodo.DB.enableDamageMeterModule ~= false then
-                        sync_all_window_sizes()
-                    end
-                end,
-            },
-            {
-                kind = settingType.Checkbox,
-                name = "초기화 버튼 생성",
-                desc = "미터기 상단에 데이터 초기화(Reset) 버튼을 생성합니다.",
-                default = true,
-                get = function()
-                    return (dodo.DB and dodo.DB.useDmgMeterResetButton ~= false)
-                end,
-                set = function(_, newValue)
-                    if dodo.DB then dodo.DB.useDmgMeterResetButton = newValue end
-                    if dodo.DB and dodo.DB.enableDamageMeterModule ~= false then
-                        apply_reset_buttons()
-                    end
-                end,
-            },
-        })
-    end
-
-    if dodo.RegisterEditModeSetting then
-        dodo.RegisterEditModeSetting("전투", {
-            {
-                name = "피해량 측정기",
-                get = function() return dodo.DB and dodo.DB.enableDamageMeterModule ~= false end,
-                set = function(checked)
-                    if dodo.DB then dodo.DB.enableDamageMeterModule = checked end
-                    update_module_state()
-                end
-            }
-        })
+    elseif event == "PLAYER_ENTERING_WORLD" then
+        HookMainSize()
+        SyncAllWindowSizes()
+        ApplyResetButtons()
+        self:UnregisterEvent("PLAYER_ENTERING_WORLD")
     end
 end
+
+-- ==============================
+-- 이벤트 등록
+-- ==============================
+local frame = CreateFrame("Frame")
+frame:RegisterEvent("ADDON_LOADED")
+frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+frame:SetScript("OnEvent", on_event)
+
+-- ==============================
+-- 외부 노출 (Option.lua용)
+-- ==============================
+dodo.SyncDamageMeterSize = SyncAllWindowSizes
+
+-- ==============================
+-- 설정 동적 등록 (Option.lua 연동)
+-- ==============================
+local SettingsPanel = SettingsPanel
+local CreateSettingsListSectionHeaderInitializer = CreateSettingsListSectionHeaderInitializer
+local Checkbox = Checkbox
+
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["combat"] = dodo.OptionRegistrations["combat"] or {}
+table.insert(dodo.OptionRegistrations["combat"], function(category)
+    local layoutCombat = SettingsPanel:GetLayout(category)
+    if not layoutCombat then return end
+
+    layoutCombat:AddInitializer(CreateSettingsListSectionHeaderInitializer("피해량 측정기 (미터기)"))
+    Checkbox(category, "dmgMeterSyncSize", "창 크기 동기화", "보조 창들의 크기를 메인 창과 동일하게 맞춥니다.", true, dodo.SyncDamageMeterSize)
+    Checkbox(category, "dmgMeterSnap", "창 붙이기", "보조 창을 메인 창 상단에 붙입니다.", true, dodo.SyncDamageMeterSize)
+    Checkbox(category, "dmgMeterResetButton", "초기화 버튼 생성", "미터기 상단에 데이터 초기화(Reset) 버튼을 생성합니다.", true, dodo.UpdateDamageMeterResetButtons)
+end)

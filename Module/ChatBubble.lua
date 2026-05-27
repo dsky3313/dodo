@@ -8,8 +8,7 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-local module = {}
-dodo:RegisterModule("ChatBubble", module)
+dodoDB = dodoDB or {}
 
 local chatbubbleFontSize = 10
 
@@ -25,117 +24,40 @@ dodo.chatbubbleFontTable = {
 -- ==============================
 -- 캐싱
 -- ==============================
+-- 함수
+local CreateFrame = CreateFrame
 local ChatBubbleFont = ChatBubbleFont
-local ipairs = ipairs
-local table_insert = table.insert
-local originalFontPath, originalFontSize, originalFontFlag
 
 -- ==============================
--- 동작 및 라이프사이클 헬퍼
+-- 동작
 -- ==============================
-local function update_feature()
-    if not ChatBubbleFont then return end
-    
-    local defaultPath, defaultSize, defaultFlag = ChatBubbleFont:GetFont()
-    local targetPath = (dodo.DB and dodo.DB.useChatBubbleFont ~= false) and (dodo.DB.chatbubbleFontPath or "Fonts\\2002.TTF") or (originalFontPath or defaultPath)
-    local targetSize = (dodo.DB and dodo.DB.useChatBubbleFontSize ~= false) and (dodo.DB.chatbubbleFontSize or chatbubbleFontSize) or (originalFontSize or defaultSize)
-    local targetFlag = "OUTLINE"
+local function chatBubble()
+    if not dodoDB or not ChatBubbleFont then return end
 
-    if defaultPath ~= targetPath or defaultSize ~= targetSize or defaultFlag ~= targetFlag then
-        ChatBubbleFont:SetFont(targetPath, targetSize, targetFlag)
-    end
-end
+    local fontPath = dodoDB.chatbubbleFontPath or "Fonts\\2002.TTF"
+    local fontSize = dodoDB.chatbubbleFontSize or chatbubbleFontSize
+    local fontFlag = "OUTLINE"
 
-local function initialize()
-    if ChatBubbleFont and not originalFontPath then
-        originalFontPath, originalFontSize, originalFontFlag = ChatBubbleFont:GetFont()
-    end
-    -- DB 설정 초기값 세팅
-    if dodo.DB then
-        if dodo.DB.chatbubbleFontPath == nil then
-            dodo.DB.chatbubbleFontPath = "Fonts\\2002.TTF"
-        end
-        if dodo.DB.chatbubbleFontSize == nil then
-            dodo.DB.chatbubbleFontSize = chatbubbleFontSize
-        end
-        if dodo.DB.useChatBubbleFont == nil then
-            dodo.DB.useChatBubbleFont = true
-        end
-        if dodo.DB.useChatBubbleFontSize == nil then
-            dodo.DB.useChatBubbleFontSize = true
-        end
+    local curPath, curSize, curFlag = ChatBubbleFont:GetFont()
+    if curPath ~= fontPath or curSize ~= fontSize or curFlag ~= fontFlag then
+        ChatBubbleFont:SetFont(fontPath, fontSize, fontFlag)
     end
 end
 
 -- ==============================
--- 모듈 생명주기
+-- 이벤트
 -- ==============================
-local isInitialized = false
-function module:OnEnable()
-    initialize()
-    update_feature()
-
-    if isInitialized then return end
-    isInitialized = true
-
-    -- 1. 모듈설정창(dodoEditModePanel)에 글꼴 드롭다운 및 글꼴 크기 슬라이더를 직접 등록
-    if dodo.RegisterEditModeSetting then
-        local dropdownValues = {}
-        for _, item in ipairs(dodo.chatbubbleFontTable) do
-            table_insert(dropdownValues, { text = item.label, value = item.value })
-        end
-
-        dodo.RegisterEditModeSetting("인터페이스", {
-            {
-                name = "말풍선 글꼴",
-                get = function()
-                    return dodo.DB and dodo.DB.useChatBubbleFont ~= false
-                end,
-                set = function(checked)
-                    if dodo.DB then dodo.DB.useChatBubbleFont = checked end
-                    update_feature()
-                    if dodoEditModePanel and dodoEditModePanel.UpdateDisabledStates then
-                        dodoEditModePanel.UpdateDisabledStates()
-                    end
-                end
-            },
-            {
-                type = "dropdown",
-                get = function()
-                    return dodo.DB and dodo.DB.chatbubbleFontPath or "Fonts\\2002.TTF"
-                end,
-                set = function(newValue)
-                    if dodo.DB then dodo.DB.chatbubbleFontPath = newValue end
-                    update_feature()
-                end,
-                values = dropdownValues
-            },
-            {
-                name = "말풍선 글꼴 크기",
-                get = function()
-                    return dodo.DB and dodo.DB.useChatBubbleFontSize ~= false
-                end,
-                set = function(checked)
-                    if dodo.DB then dodo.DB.useChatBubbleFontSize = checked end
-                    update_feature()
-                    if dodoEditModePanel and dodoEditModePanel.UpdateDisabledStates then
-                        dodoEditModePanel.UpdateDisabledStates()
-                    end
-                end
-            },
-            {
-                type = "slider",
-                minVal = 8,
-                maxVal = 14,
-                step = 1,
-                get = function()
-                    return dodo.DB and dodo.DB.chatbubbleFontSize or chatbubbleFontSize
-                end,
-                set = function(newValue)
-                    if dodo.DB then dodo.DB.chatbubbleFontSize = newValue end
-                    update_feature()
-                end
-            }
-        })
+local initChatBubble = CreateFrame("Frame")
+initChatBubble:RegisterEvent("ADDON_LOADED")
+initChatBubble:SetScript("OnEvent", function(self, event, arg1)
+    if arg1 == addonName then
+        dodoDB = dodoDB or {}
+        self:RegisterEvent("PLAYER_LOGIN")
+    elseif event == "PLAYER_LOGIN" then
+        if chatBubble then chatBubble() end
+        self:UnregisterAllEvents()
+        self:SetScript("OnEvent", nil)
     end
-end
+end)
+
+dodo.ChatBubble = chatBubble
