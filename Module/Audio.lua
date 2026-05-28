@@ -10,16 +10,21 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
--- 보스전 진입
-dodo.soundEncounterStartTable = {
-    { label = "돌격", value = "16971" },
+---@class AudioSoundItem
+---@field text string 표시될 사운드 한글 이름
+---@field value string 실제 재생될 사운드 ID 문자열
+
+-- 모듈 내부 정적 상태 변수 (물리 격리)
+---@type AudioSoundItem[]
+local soundEncounterStartTable = {
+    { text = "돌격", value = "16971" },
 }
 
--- 보스전 승리
-dodo.soundEncounterVictoryTable = {
-    { label = "PVP 얼라이언스", value = "38352" },
-    { label = "퀘스트 추가", value = "618" },
-    { label = "PVP 승리", value = "34091" },
+---@type AudioSoundItem[]
+local soundEncounterVictoryTable = {
+    { text = "PVP 얼라이언스", value = "38352" },
+    { text = "퀘스트 추가", value = "618" },
+    { text = "PVP 승리", value = "34091" },
 }
 
 -- ==============================
@@ -34,21 +39,30 @@ local PlaySound = PlaySound
 local SetCVar = SetCVar
 local Sound_GameSystem_RestartSoundSystem = Sound_GameSystem_RestartSoundSystem
 local UIErrorsFrame = UIErrorsFrame
-local ipairs = ipairs
+local string_format = string.format
 local tonumber = tonumber
-local type = type
 
 -- ==============================
--- 동작
+-- 기능 1: 로컬 상태 및 설정
 -- ==============================
 local lastSync = 0
-local function audioSync(isManual)
-    -- 옵션이 꺼져있거나, 방금 체크를 해제한 경우 리턴
-    if (isManual == false) or (isManual == nil and (not dodoDB or dodoDB.useAudioSync == false)) then 
-        return 
+local audioFrame = nil
+
+-- dodo.Colors에서 피드백용 정적 헥스 코드 직접 가져오기 (치환 연산 배제)
+local colors = dodo.Colors
+local softGreenHex = (colors and colors.SoftGreen and colors.SoftGreen.hex) or "ffb2ffb2"
+local softRedHex = (colors and colors.SoftRed and colors.SoftRed.hex) or "ffffb2b2"
+
+-- ==============================
+-- 기능 2: 상태 업데이트 및 오디오 동작
+-- ==============================
+---@param isManual boolean|nil 수동 실행 여부
+---@return nil
+local function sync_audio(isManual)
+    if (isManual == false) or (isManual == nil and (not dodoDB or dodoDB.useAudioSync == false)) then
+        return
     end
-    
-    -- 자동 동기화(이벤트) 시 5초 이내 재실행 방지
+
     local now = GetTime()
     if isManual ~= true and now - lastSync < 5 then return end
     lastSync = now
@@ -57,40 +71,39 @@ local function audioSync(isManual)
     local movieShown = MovieFrame and MovieFrame:IsShown()
 
     if not cinemaShown and not movieShown then
-        -- 현재 설정이 이미 '0'이더라도 다시 설정하고 재시작해야 OS의 오디오 변경사항을 감지함
         SetCVar("Sound_OutputDriverIndex", "0")
         Sound_GameSystem_RestartSoundSystem()
-        
+
         if isManual == true then
-            UIErrorsFrame:AddMessage("|cffaaffaa[dodo]|r 오디오 동기화 완료", 1.0, 1.0, 1.0, 5.0)
+            print("|c" .. softGreenHex .. "[dodo]|r 오디오 동기화 완료")
         end
     end
 end
 
--- 옵션창 콜백 or 보스전 시작 이벤트
-local function EncounterSoundStart()
+--- 보스전 진입 사운드
+local function play_encounter_start_sound()
     if not dodoDB then return end
     local soundID = tonumber(dodoDB.useSoundEncounterStart_soundID) or 16971
-    PlaySound(soundID, "Master") -- 미리듣기: 체크박스 상태 무관하게 재생
+    PlaySound(soundID, "Master")
 end
 
--- 옵션창 콜백 or 보스전 승리 이벤트
-local function EncounterSoundVictory()
+--- 보스전 승리 사운드
+local function play_encounter_victory_sound()
     if not dodoDB then return end
     local soundID = tonumber(dodoDB.useSoundEncounterVictory_soundID) or 38352
-    PlaySound(soundID, "Master") -- 미리듣기: 체크박스 상태 무관하게 재생
+    PlaySound(soundID, "Master")
 end
 
--- 이벤트에서 호출하는 래퍼 (배경음 제어 + isEnabled 체크 포함)
-local function EncounterSound(event, ...)
+--- 보스전 상태 변경 대응 핸들러
+local function on_encounter_state_changed(event, ...)
     if not dodoDB then return end
 
     if event == "ENCOUNTER_START" then
         if GetCVar("Sound_EnableMusic") ~= "0" then
             SetCVar("Sound_EnableMusic", 0)
         end
-        if dodoDB.useSoundEncounterStart ~= false then 
-            EncounterSoundStart() 
+        if dodoDB.useSoundEncounterStart ~= false then
+            play_encounter_start_sound()
         end
     elseif event == "ENCOUNTER_END" then
         if GetCVar("Sound_EnableMusic") ~= "1" then
@@ -98,13 +111,13 @@ local function EncounterSound(event, ...)
         end
         local _, _, _, _, success = ...
         if success == 1 and dodoDB.useSoundEncounterVictory ~= false then
-            EncounterSoundVictory()
+            play_encounter_victory_sound()
         end
     end
 end
 
 -- ==============================
--- 이벤트 핸들러 (가비지 프리 정적 참조)
+-- 기능 3: UI 생성
 -- ==============================
 local function on_event(self, event, ...)
     local arg1 = ...
@@ -115,48 +128,62 @@ local function on_event(self, event, ...)
         self:RegisterEvent("VOICE_CHAT_OUTPUT_DEVICES_UPDATED")
         self:RegisterEvent("PLAYER_ENTERING_WORLD")
     elseif event == "VOICE_CHAT_OUTPUT_DEVICES_UPDATED" or event == "PLAYER_ENTERING_WORLD" then
-        audioSync()
+        sync_audio()
     elseif event == "ENCOUNTER_START" or event == "ENCOUNTER_END" then
-        EncounterSound(event, ...)
+        on_encounter_state_changed(event, ...)
     end
 end
 
--- ==============================
--- 이벤트 등록
--- ==============================
-local initAudioSync = CreateFrame("Frame")
-initAudioSync:RegisterEvent("ADDON_LOADED")
-initAudioSync:RegisterEvent("ENCOUNTER_START")
-initAudioSync:RegisterEvent("ENCOUNTER_END")
-initAudioSync:SetScript("OnEvent", on_event)
+audioFrame = CreateFrame("Frame")
+audioFrame:RegisterEvent("ADDON_LOADED")
+audioFrame:RegisterEvent("ENCOUNTER_START")
+audioFrame:RegisterEvent("ENCOUNTER_END")
+audioFrame:SetScript("OnEvent", on_event)
 
 -- ==============================
--- 외부 노출 (Option.lua용)
+-- 설정 등록
 -- ==============================
-dodo.audioSync = audioSync
-dodo.EncounterSoundStart = EncounterSoundStart
-dodo.EncounterSoundVictory = EncounterSoundVictory
+-- 1. dodoEditModePanel (모듈 편집창) 등록
+if dodo.RegisterEditModeSetting then
+    dodo.RegisterEditModeSetting("음성", {
+        -- 1. 출력장치 동기화
+        {
+            name = "출력장치 동기화",
+            get = function() return dodoDB.useAudioSync ~= false end,
+            set = function(val)
+                dodoDB.useAudioSync = val
+                if val then
+                    sync_audio(true)
+                else
+                    print("|c" .. softRedHex .. "[dodo]|r 오디오 동기화 비활성화")
+                end
+            end,
+        },
 
--- ==============================
--- 설정 동적 등록 (Option.lua 연동)
--- ==============================
-local SettingsPanel = SettingsPanel
-local CreateSettingsListSectionHeaderInitializer = CreateSettingsListSectionHeaderInitializer
-local Checkbox = Checkbox
-local CheckBoxDropDown = CheckBoxDropDown
+        -- 2. 보스전 시작 효과음
+        {
+            name = "보스전 시작",
+            get = function() return dodoDB.useSoundEncounterStart ~= false end,
+            set = function(val) dodoDB.useSoundEncounterStart = val end,
+        },
+        {
+            type = "dropdown",
+            get = function() return dodoDB.useSoundEncounterStart_soundID or "16971" end,
+            set = function(val) dodoDB.useSoundEncounterStart_soundID = val; play_encounter_start_sound() end,
+            values = soundEncounterStartTable,
+        },
 
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["sound"] = dodo.OptionRegistrations["sound"] or {}
-table.insert(dodo.OptionRegistrations["sound"], function(category)
-    local layoutSound = SettingsPanel:GetLayout(category)
-    if not layoutSound then return end
-
-    -- 출력 장치 동기화
-    layoutSound:AddInitializer(CreateSettingsListSectionHeaderInitializer("출력장치"))
-    Checkbox(category, "useAudioSync", "출력장치 동기화", "출력장치 동기화.", true, dodo.audioSync)
-
-    -- 효과음
-    layoutSound:AddInitializer(CreateSettingsListSectionHeaderInitializer("효과음"))
-    CheckBoxDropDown(category, "useSoundEncounterStart", "useSoundEncounterStart_soundID", "보스전 시작", "전투 시작 사운드를 변경합니다.", dodo.soundEncounterStartTable, true, dodo.soundEncounterStartTable[1].value, dodo.EncounterSoundStart)
-    CheckBoxDropDown(category, "useSoundEncounterVictory", "useSoundEncounterVictory_soundID", "보스전 승리", "전투 승리 사운드를 변경합니다.", dodo.soundEncounterVictoryTable, true, dodo.soundEncounterVictoryTable[1].value, dodo.EncounterSoundVictory)
-end)
+        -- 3. 보스전 승리 효과음
+        {
+            name = "보스전 승리",
+            get = function() return dodoDB.useSoundEncounterVictory ~= false end,
+            set = function(val) dodoDB.useSoundEncounterVictory = val end,
+        },
+        {
+            type = "dropdown",
+            get = function() return dodoDB.useSoundEncounterVictory_soundID or "38352" end,
+            set = function(val) dodoDB.useSoundEncounterVictory_soundID = val; play_encounter_victory_sound() end,
+            values = soundEncounterVictoryTable,
+        }
+    })
+end

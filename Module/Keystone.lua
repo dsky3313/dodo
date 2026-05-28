@@ -151,13 +151,13 @@ local type = type
 local wipe = wipe
 
 -- ==============================
--- 모듈 내부 전역 변수
+-- 모듈 내부 정적 상태 변수 (캡슐화)
 -- ==============================
-dodo.Prefix = "WA-KeyStGrList"
-dodo.PartyData = {}
-dodo.IsChallengeActive = false
-dodo.NeedUpdate = false
-dodo.NeedVisibilityUpdate = false
+local PREFIX = "WA-KeyStGrList"
+local partyData = {}
+local isChallengeActive = false
+local needUpdate = false
+local needVisibilityUpdate = false
 
 local openRaidLib = nil
 local libKeystone = nil
@@ -206,13 +206,13 @@ end
 -- ==============================
 local function update_visibility_condition()
     if InCombatLockdown() then
-        dodo.NeedVisibilityUpdate = true
+        needVisibilityUpdate = true
         return
     end
-    dodo.NeedVisibilityUpdate = false
+    needVisibilityUpdate = false
 
     local condition = "[combat] hide; [group:raid] hide; "
-    if dodo.IsChallengeActive then
+    if isChallengeActive then
         condition = condition .. "hide;"
     else
         local showSolo = dodoDB and dodoDB.useSoloKeystone ~= false
@@ -244,7 +244,7 @@ local function read_from_details()
                 local mapID = info.challengeMapID or 0
                 local level = info.level or 0
                 if mapID > 0 and level > 0 then
-                    dodo.PartyData[unitName] = { unit = "party" .. i, name = unitName, mapID = mapID, level = level }
+                    partyData[unitName] = { unit = "party" .. i, name = unitName, mapID = mapID, level = level }
                 end
             end
         end
@@ -256,10 +256,10 @@ end
 -- ==============================
 local function render_party_ui()
     if InCombatLockdown() then
-        dodo.NeedUpdate = true
+        needUpdate = true
         return
     end
-    dodo.NeedUpdate = false
+    needUpdate = false
 
     local showSolo = dodoDB and dodoDB.useSoloKeystone ~= false
     if IsInRaid() then return end
@@ -269,7 +269,7 @@ local function render_party_ui()
     local numMembers = GetNumSubgroupMembers()
     local isInGroup = IsInGroup()
 
-    for keyName, data in pairs(dodo.PartyData) do
+    for keyName, data in pairs(partyData) do
         local inParty = false
 
         if isInGroup then
@@ -292,7 +292,7 @@ local function render_party_ui()
         if inParty then
             table_insert(uiList, data)
         else
-            dodo.PartyData[keyName] = nil
+            partyData[keyName] = nil
         end
     end
 
@@ -356,7 +356,7 @@ local function render_party_ui()
             end
 
             local _, class = UnitClass(data.unit or data.name)
-            local classColor = class and ((Colors and Colors.Class[class]) or RAID_CLASS_COLORS[class]) or NORMAL_FONT_COLOR
+            local classColor = class and ((Colors and Colors.Class and Colors.Class[class]) or RAID_CLASS_COLORS[class]) or NORMAL_FONT_COLOR
             row.name:SetText(data.name)
             row.name:SetTextColor(classColor.r, classColor.g, classColor.b)
             row:Show()
@@ -417,10 +417,10 @@ local function update_my_keystone()
 
     if mapID and level then
         local myName = UnitName("player")
-        dodo.PartyData[myName] = { unit = "player", name = myName, mapID = mapID, level = level }
+        partyData[myName] = { unit = "player", name = myName, mapID = mapID, level = level }
         local msg = "KSGL:Send:" .. mapID .. ":" .. level .. ":0:0"
         if IsInGroup() then
-            C_ChatInfo.SendAddonMessage(dodo.Prefix, msg, "PARTY")
+            C_ChatInfo.SendAddonMessage(PREFIX, msg, "PARTY")
         end
     end
     render_party_ui()
@@ -482,39 +482,30 @@ dodo.UpdateKeystoneModuleState = update_module_state
 dodo.KeystoneApplyFeature = update_feature
 
 -- ==============================
--- 초기화 및 UI 생성 (드래깅 기능 포함)
+-- 초기화 및 UI 생성 (EditMode 연동)
 -- ==============================
 local function create_ui()
     if MainFrame then return end
+
+    local anchorFrame
+    if dodo.EditMode then
+        anchorFrame = dodo.EditMode:GetSystem("Keystone")
+    end
 
     MainFrame = CreateFrame("Frame", "dodo_KeystoneMainFrame", UIParent, "BackdropTemplate")
     MainFrame:SetSize(200, 220)
     MainFrame:SetFrameStrata(Config.frameStrata)
 
-    -- 마우스 드래그 기능 구현
-    MainFrame:SetMovable(true)
-    MainFrame:EnableMouse(true)
-    MainFrame:RegisterForDrag("LeftButton")
-    MainFrame:SetScript("OnDragStart", function(self)
-        if not InCombatLockdown() then
-            self:StartMoving()
-        end
-    end)
-    MainFrame:SetScript("OnDragStop", function(self)
-        self:StopMovingOrSizing()
-        local point, _, _, x, y = self:GetPoint()
-        if dodoDB then
-            dodoDB.keystonePoint = point
-            dodoDB.keystoneX = x
-            dodoDB.keystoneY = y
-        end
-    end)
-
-    -- 위치 불러오기
-    local savedX = (dodoDB and dodoDB.keystoneX) or Config.defaultX
-    local savedY = (dodoDB and dodoDB.keystoneY) or Config.defaultY
-    local savedPoint = (dodoDB and dodoDB.keystonePoint) or Config.defaultPoint
-    MainFrame:SetPoint(savedPoint, UIParent, savedPoint, savedX, savedY)
+    -- EditMode 앵커 프레임에 종속되도록 위치 설정
+    MainFrame:ClearAllPoints()
+    if anchorFrame then
+        MainFrame:SetPoint("CENTER", anchorFrame, "CENTER", 0, 0)
+    else
+        local savedX = (dodoDB and dodoDB.keystoneX) or Config.defaultX
+        local savedY = (dodoDB and dodoDB.keystoneY) or Config.defaultY
+        local savedPoint = (dodoDB and dodoDB.keystonePoint) or Config.defaultPoint
+        MainFrame:SetPoint(savedPoint, UIParent, savedPoint, savedX, savedY)
+    end
 
     for i = 1, 5 do
         local row = CreateFrame("Frame", "dodo_KeystoneRow"..i, MainFrame, "BackdropTemplate")
@@ -561,8 +552,8 @@ local function initialize()
 
     create_ui()
 
-    if not C_ChatInfo.IsAddonMessagePrefixRegistered(dodo.Prefix) then
-        C_ChatInfo.RegisterAddonMessagePrefix(dodo.Prefix)
+    if not C_ChatInfo.IsAddonMessagePrefixRegistered(PREFIX) then
+        C_ChatInfo.RegisterAddonMessagePrefix(PREFIX)
     end
     if not C_ChatInfo.IsAddonMessagePrefixRegistered("AstralKeys") then
         C_ChatInfo.RegisterAddonMessagePrefix("AstralKeys")
@@ -577,7 +568,7 @@ local function initialize()
             read_from_details()
             render_party_ui_throttled()
         else
-            dodo.NeedUpdate = true
+            needUpdate = true
         end
     end
 
@@ -591,8 +582,8 @@ local function initialize()
             if channel == "PARTY" then
                 local charName = playerName:match("([^%-]+)") or playerName
                 if keyMap and keyLevel and keyMap > 0 and keyLevel > 0 then
-                    dodo.PartyData[charName] = { unit = charName, name = charName, mapID = keyMap, level = keyLevel }
-                    dodo.NeedUpdate = true
+                    partyData[charName] = { unit = charName, name = charName, mapID = keyMap, level = keyLevel }
+                    needUpdate = true
                     if not InCombatLockdown() then
                         render_party_ui_throttled()
                     end
@@ -627,8 +618,8 @@ local function delayed_roster_update()
     for i = 1, numMembers do
         local name = UnitName("party" .. i)
         if name then
-            if not dodo.PartyData[name] then
-                dodo.PartyData[name] = { unit = "party" .. i, name = name, mapID = 0, level = 0 }
+            if not partyData[name] then
+                partyData[name] = { unit = "party" .. i, name = name, mapID = 0, level = 0 }
             end
         end
     end
@@ -670,7 +661,7 @@ local function OnEvent(self, event, ...)
 
     elseif event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA" then
         local activeLevel = C_ChallengeMode.GetActiveKeystoneInfo()
-        dodo.IsChallengeActive = (activeLevel and activeLevel > 0)
+        isChallengeActive = (activeLevel and activeLevel > 0)
         update_visibility_condition()
         if not IsInRaid() then
             C_Timer.After(0.5, delayed_entering_world)
@@ -684,10 +675,10 @@ local function OnEvent(self, event, ...)
             C_Timer.After(0.5, delayed_roster_update)
         else
             local myName = UnitName("player")
-            local myData = dodo.PartyData[myName]
-            wipe(dodo.PartyData)
+            local myData = partyData[myName]
+            wipe(partyData)
             if myData then
-                dodo.PartyData[myName] = myData
+                partyData[myName] = myData
             end
             render_party_ui()
         end
@@ -695,7 +686,7 @@ local function OnEvent(self, event, ...)
     elseif event == "CHAT_MSG_ADDON" then
         local prefix, text, channel, sender = ...
 
-        if prefix == dodo.Prefix and sender ~= GetPlayerFullName("player") then
+        if prefix == PREFIX and sender ~= GetPlayerFullName("player") then
             local msgType = text:match("KSGL:(%a+):")
             if msgType == "Send" then
                 local mapID = tonumber(text:match("KSGL:.-:(%d+):"))
@@ -704,7 +695,7 @@ local function OnEvent(self, event, ...)
                 if mapID and level then
                     local data = { unit = senderName, name = senderName, mapID = mapID, level = level }
                     if channel == "PARTY" then
-                        dodo.PartyData[senderName] = data
+                        partyData[senderName] = data
                         render_party_ui_throttled()
                     end
                 end
@@ -725,8 +716,8 @@ local function OnEvent(self, event, ...)
                         if mapID and level and mapID > 0 and level > 0 then
                             local data = { unit = charName, name = charName, mapID = mapID, level = level, source = "Astral" }
                             if channel == "PARTY" or channel == "RAID" then
-                                dodo.PartyData[charName] = data
-                                dodo.NeedUpdate = true
+                                partyData[charName] = data
+                                needUpdate = true
                                 if not InCombatLockdown() then
                                     render_party_ui_throttled()
                                 end
@@ -738,11 +729,11 @@ local function OnEvent(self, event, ...)
         end
 
     elseif event == "CHALLENGE_MODE_START" then
-        dodo.IsChallengeActive = true
+        isChallengeActive = true
         update_visibility_condition()
 
     elseif event == "CHALLENGE_MODE_COMPLETED" or event == "CHALLENGE_MODE_RESET" then
-        dodo.IsChallengeActive = false
+        isChallengeActive = false
         update_visibility_condition()
         C_Timer.After(2, update_my_keystone)
 
@@ -764,17 +755,26 @@ end
 -- 독립형 모듈 구동 및 로그인 이벤트 리스너
 -- ==============================
 local initKeystoneFrame = CreateFrame("Frame")
+initKeystoneFrame:RegisterEvent("ADDON_LOADED")
 initKeystoneFrame:RegisterEvent("PLAYER_LOGIN")
-initKeystoneFrame:SetScript("OnEvent", function(self, event)
-    if event == "PLAYER_LOGIN" then
+initKeystoneFrame:SetScript("OnEvent", function(self, event, arg1)
+    if event == "ADDON_LOADED" and arg1 == addonName then
+        dodoDB = dodoDB or {}
+        self:UnregisterEvent("ADDON_LOADED")
+    elseif event == "PLAYER_LOGIN" then
+        if dodo.EditMode then
+            dodo.EditMode:CreateSystem("Keystone", "쐐기돌 목록", "쐐기돌 목록 창의 위치를 이동합니다.", UIParent, 200, 220, { point = "TOPLEFT", relativeTo = "UIParent", relativePoint = "TOPLEFT", xOfs = 20, yOfs = -140 })
+        end
         initialize()
         update_module_state()
         MainFrame:SetScript("OnEvent", OnEvent)
+        self:UnregisterEvent("PLAYER_LOGIN")
     end
 end)
 
 -- dodoEditModePanel 내 세부 설정 주입
 if dodo.RegisterEditModeSetting then
+    -- 편의기능 카테고리
     dodo.RegisterEditModeSetting("편의기능", {
         {
             name = "쐐기돌 목록 표시",
@@ -789,5 +789,20 @@ if dodo.RegisterEditModeSetting then
             end
         },
         { isSpacer = true }
+    })
+
+    -- 파티 카테고리
+    dodo.RegisterEditModeSetting("파티", {
+        {
+            name = "쐐기돌 굴림 알림",
+            get = function()
+                return dodoDB and dodoDB.useKeyRoll ~= false
+            end,
+            set = function(checked)
+                if dodoDB then
+                    dodoDB.useKeyRoll = checked
+                end
+            end
+        }
     })
 end

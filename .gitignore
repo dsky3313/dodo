@@ -1,9 +1,11 @@
+_temp
 .git/
 .agents/
+.antigravitycli/
 .claude/
 .vscode/
 .github/
-temp/
+1.png
 AGENTS.md
 CLAUDE.md
 skills-lock.json

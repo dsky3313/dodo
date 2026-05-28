@@ -410,7 +410,7 @@ local function UpdateBar1()
         if pToken == "ESSENCE" then
             c = (RAID_CLASS_COLORS and RAID_CLASS_COLORS["EVOKER"]) or { r = 0.20, g = 0.58, b = 0.50 }
         else
-            c = (Colors and Colors.Power[pToken]) or PowerBarColor[pToken] or PowerBarColor[pType] or { r = 1, g = 1, b = 1 }
+            c = (Colors and Colors.Power and Colors.Power[pToken]) or PowerBarColor[pToken] or PowerBarColor[pType] or { r = 1, g = 1, b = 1 }
         end
         bar1Frame:SetStatusBarColor(c.r, c.g, c.b)
     end

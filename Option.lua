@@ -104,7 +104,6 @@ function dodoCreateOptions()
             end
         end
     end
-    Checkbox(subCategoryParty, "useKeyRoll", "쐐기돌 굴림 알림", "쐐기 완료 후, 파티원의 돌목록과 돌변경 알림을 띄웁니다.", true, dodo.KeyRoll)
 
 
 

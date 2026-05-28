@@ -1,14 +1,17 @@
 ## Interface: 120000
-## Title: dodo
 ## Version: 12.0.0
+## Title: dodo
 ## Author: dodo
+## DefaultState: enabled
 ## Notes: dodo QoL
 ## IconTexture: Interface\AddOns\dodo\Media\Texture\Logo
 ## SavedVariables: dodoDB
+## X-Curse-Project-ID: 9999999
 
 # 2020.11.23 제작
 
 Libs/oUF/oUF.xml
+UI/Colors.lua
 UI/OptionUI.xml
 UI/Widgets.lua
 UI/OptionUI.lua
