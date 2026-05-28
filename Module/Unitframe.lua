@@ -570,6 +570,113 @@ local function create_style(self, unit)
 		self.Buffs = buffs
 	end
 
+	-- ==============================
+	-- 캐스팅바 (self.Castbar)
+	-- ==============================
+	if unit == 'target' or isBoss then
+		local castbar = CreateFrame('StatusBar', nil, self, 'BackdropTemplate')
+		castbar:SetSize(uWidth - 22, 16)
+		castbar:SetStatusBarTexture(config.barTexture)
+		castbar:SetStatusBarColor(1, 0.7, 0) -- 캐스팅바 기본 색상 (주황색)
+
+		-- 옵션 설정
+		castbar.timeToHold = 0.5
+		castbar.hideTradeSkills = true
+		castbar.smoothing = Enum.StatusBarInterpolation.ExponentialEaseOut
+
+		-- 배경
+		castbar.bg = castbar:CreateTexture(nil, 'BACKGROUND')
+		castbar.bg:SetAllPoints()
+		castbar.bg:SetColorTexture(0.1, 0.1, 0.1, 0.8)
+
+		-- 테두리 (NineSlice)
+		castbar.NineSlice = CreateFrame('Frame', nil, castbar, 'NineSliceCodeTemplate')
+		castbar.NineSlice:SetPoint('TOPLEFT',     castbar, 'TOPLEFT',     -4,  3)
+		castbar.NineSlice:SetPoint('BOTTOMRIGHT', castbar, 'BOTTOMRIGHT',  7, -6)
+		castbar.NineSlice:SetFrameLevel(castbar:GetFrameLevel() + 3)
+		castbar.NineSlice:SetScale(0.6)
+		NineSliceUtil.ApplyUniqueCornersLayout(castbar.NineSlice, 'UI-HUD-ActionBar-Frame')
+
+		-- 아이콘 (Icon)
+		local icon = castbar:CreateTexture(nil, 'ARTWORK')
+		icon:SetSize(16, 16)
+		icon:SetPoint('LEFT', health, 'BOTTOMLEFT', 0, -22)
+		icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- 둥글거나 꽉 찬 아이콘을 위한 테두리 깎기
+		castbar.Icon = icon
+
+		-- 아이콘 테두리 (NineSlice)
+		local iconFrame = CreateFrame('Frame', nil, castbar)
+		iconFrame:SetAllPoints(icon)
+		iconFrame.NineSlice = CreateFrame('Frame', nil, iconFrame, 'NineSliceCodeTemplate')
+		iconFrame.NineSlice:SetPoint('TOPLEFT',     iconFrame, 'TOPLEFT',     -4,  3)
+		iconFrame.NineSlice:SetPoint('BOTTOMRIGHT', iconFrame, 'BOTTOMRIGHT',  7, -6)
+		iconFrame.NineSlice:SetFrameLevel(iconFrame:GetFrameLevel() + 3)
+		iconFrame.NineSlice:SetScale(0.6)
+		NineSliceUtil.ApplyUniqueCornersLayout(iconFrame.NineSlice, 'UI-HUD-ActionBar-Frame')
+
+		-- 스킬 이름 텍스트 (Text)
+		local text = castbar:CreateFontString(nil, 'OVERLAY', 'SystemFont_Outline_Small')
+		text:SetPoint('LEFT', castbar, 'LEFT', 5, 0)
+		text:SetPoint('RIGHT', castbar, 'RIGHT', -40, 0) -- 시간 텍스트와 안 겹치게
+		text:SetJustifyH('LEFT')
+		local fontPath, _, fontFlags = text:GetFont()
+		text:SetFont(fontPath, 9, fontFlags) -- 글자 크기를 아담하게 9pt로 줄여 잘림 방지
+		castbar.Text = text
+
+		-- 캐스팅 시간 텍스트 (Time)
+		local time = castbar:CreateFontString(nil, 'OVERLAY', 'SystemFont_Outline')
+		time:SetPoint('RIGHT', castbar, 'RIGHT', -5, 0)
+		time:SetJustifyH('RIGHT')
+		castbar.Time = time
+
+		-- 배치 위치
+		-- 아이콘 오른쪽에 캐스팅바 배치
+		castbar:SetPoint('LEFT', icon, 'RIGHT', 6, 0) 
+
+		-- 차단 여부에 따른 색상 변경을 위한 PostUpdate 함수들
+		castbar.PostCastStart = function(element, unit)
+			local isNotInterruptible = element.notInterruptible
+			if issecretvalue and issecretvalue(isNotInterruptible) then
+				isNotInterruptible = true
+			end
+			if isNotInterruptible then
+				element:SetStatusBarColor(0.6, 0.6, 0.6) -- 차단 불가 시 회색
+			else
+				element:SetStatusBarColor(1, 0.7, 0) -- 차단 가능 시 주황색
+			end
+		end
+
+		castbar.PostChannelStart = function(element, unit)
+			local isNotInterruptible = element.notInterruptible
+			if issecretvalue and issecretvalue(isNotInterruptible) then
+				isNotInterruptible = true
+			end
+			if isNotInterruptible then
+				element:SetStatusBarColor(0.6, 0.6, 0.6)
+			else
+				element:SetStatusBarColor(1, 0.7, 0)
+			end
+		end
+
+		castbar.PostCastNotInterruptible = function(element, unit)
+			element:SetStatusBarColor(0.6, 0.6, 0.6)
+		end
+
+		castbar.PostCastInterruptible = function(element, unit)
+			element:SetStatusBarColor(1, 0.7, 0)
+		end
+
+		castbar.PostCastFailed = function(element, unit)
+			if element.Text then element.Text:SetText("실패") end
+		end
+
+		castbar.PostCastInterrupted = function(element, unit)
+			if element.Text then element.Text:SetText("차단됨") end
+		end
+
+		self.Castbar = castbar
+	end
+
 	self:SetSize(uWidth, uHeight + (showPower and pHeight or 0) + 10)
 end
 
@@ -708,7 +815,7 @@ local function create_ui()
 	targetFrame:SetPoint('TOPLEFT', TargetFrame, 'TOPLEFT', 20, -18)
 
 	targettargetFrame = oUF:Spawn('targettarget', 'dodoTargetTargetFrame')
-	targettargetFrame:SetPoint('TOPLEFT', targetFrame, 'BOTTOMRIGHT', -100, -15)
+	targettargetFrame:SetPoint('TOPLEFT', targetFrame, 'BOTTOMRIGHT', -100, -36)
 
 	focusFrame = oUF:Spawn('focus', 'dodoFocusFrame')
 	focusFrame:SetPoint('TOPLEFT', FocusFrame, 'TOPLEFT', 20, -23)

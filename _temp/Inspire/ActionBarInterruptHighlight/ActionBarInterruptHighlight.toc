@@ -1,0 +1,15 @@
+## Interface: 120005
+## Title: ActionBar Interrupt Highlight
+## Notes: Highlight interrupts on action bars for target casts
+## IconTexture: Interface\Icons\ability_kick
+## Version: 12.0.5-4
+## Author: Xodiv-Nagrand
+## Email: mib@post.com
+## X-Curse-Project-ID: 1454492
+## SavedVariables: ActionBarInterruptHighlightDB
+
+embeds.xml
+
+Options.lua
+Overlay.xml
+Controller.xml

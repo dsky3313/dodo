@@ -17,6 +17,12 @@ local barConfigs = {
     { name = "ResourceBar2", width = 272, height = 7, y = -4, level = 3001, template = "ResourceBar2Template" }
 }
 
+---@class ResourceBarPowerConfig
+---@field powerType number 파워 타입 ID (마나=0, 기적=12, 기력=3 등)
+---@field powerToken string 파워 토큰 문자열 ("ENERGY", "MANA", "FURY" 등)          
+---@field isTickPower boolean|nil 연계점수나 버블처럼 틱 단위로 표시할지 여부       
+---@field ticks number|nil 최대 틱 개수 (풍운 기=5, 흑마 영조=5 등)
+---@type table<string, ResourceBarPowerConfig|table<number, ResourceBarPowerConfig>>
 local bar1ClassConfig = {
     ["DEMONHUNTER"] = { powerType = 17, powerToken = "FURY" }, -- 악사 분노 (전 스펙)
     ["DRUID"] = {
@@ -37,7 +43,19 @@ local bar1ClassConfig = {
     ["WARLOCK"] = { powerType = 7, powerToken = "SOUL_SHARDS", isTickPower = true, ticks = 5 }, -- 흑마 영혼 조각
 }
 
-
+---@class ResourceBarColor
+---@class ResourceBar2ConfigItem
+---@field barMode string 바 작동 모드 ("rune", "soulfragments", "ironfur", "duration", "power", "stagger", "stack")
+---@field color ResourceBarColor 바의 색상 테이블 {r, g, b}
+---@field spellID number|nil 추적할 주문 ID (무쇠가죽 등)
+---@field maxStack number|nil 최대 중첩 제한수
+---@field requiredSpell number|nil 이 주문을 배웠을 때만 표시 (필수 특성 제한용)    
+---@field excludedSpell number|nil 이 주문을 배우지 않았을 때만 표시 (제외 특성 제한용)
+---@field powerType number|nil 파워 타입 ID (비법 비전 충전물 등)
+---@field powerToken string|nil 파워 토큰 명칭
+---@field isTickPower boolean|nil 버블/틱 형태로 쪼개어 표시할지 여부
+---@field ticks number|nil 최대 틱 개수
+---@type table<string, table<number, ResourceBar2ConfigItem[]> | ResourceBar2ConfigItem[]>
 local bar2ClassConfig = {
     ["DEATHKNIGHT"] = { [1] = {{barMode = "rune", color = { r = 1, g = 0, b = 0 }}},
                         [2] = {{barMode = "rune", color = { r = 0, g = 0.8, b = 1 }}},
@@ -45,6 +63,7 @@ local bar2ClassConfig = {
                         [3] = {{barMode = "rune", color = { r = 0.3, g = 0.9, b = 0.3 }}} },
     ["DEMONHUNTER"] = { [2] = {{barMode = "soulfragments", maxStack = 5, color = { r = 0.8, g = 0.6, b = 1 }}} },
     ["DRUID"] = { [3] = {{spellID = 192081, barMode = "ironfur", color = { r = 0, g = 0.8, b = 1 }}} },
+    ["EVOKER"] = { [3] = {{spellID = 395296, barMode = "duration", color = { r = 1, g = 0.5, b = 0.2 }}} },
     ["MAGE"] = { [1] = {{barMode = "power", powerType = 16, powerToken = "ARCANE_CHARGES", isTickPower = true, ticks = 4, color = { r = 0.6, g = 0.2, b = 0.9 }}} }, -- 비전 충전물
     ["MONK"] = { [1] = {{barMode = "stagger", color = { r = 0.0, g = 1.0, b = 0.5 }}} },
     ["ROGUE"] = { {barMode = "power", powerType = 4, powerToken = "COMBO_POINTS", isTickPower = true, color = { r = 1.0, g = 0.8, b = 0.0 }} }, -- 전 스펙
@@ -797,7 +816,7 @@ function ResourceBar2Mixin:Update()
     local c = (self.buffConfig and self.buffConfig.color) or self:GetSpecColor()
     self:SetStatusBarColor(c.r, c.g, c.b)
 
-    if not self.viewerItem or not self.viewerItem.auraInstanceID then
+    if not self.viewerItem or not self.viewerItem.auraInstanceID or not self.viewerItem.auraDataUnit then
         if self.countStack then self.countStack:SetText("") end
         if self.countDuration then self.countDuration:SetText("0") end
         self:SetValue(0, Enum.StatusBarInterpolation.ExponentialEaseOut)

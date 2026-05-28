@@ -145,15 +145,12 @@ initOptionFrame:SetScript("OnEvent", function(self, event, arg1)
     if arg1 == addonName then
         dodoDB = dodoDB or {}
         dodo.DB = dodoDB
+        
+        -- 리로드/로그인 시점에 모든 설정 변수를 블리자드 시스템에 즉시 동기화 및 로드
+        if dodoCreateOptions then dodoCreateOptions() end
+        self:UnregisterEvent("ADDON_LOADED")
     end
 end)
-
--- 설정창을 열 때 최초 1회만 옵션 UI를 생성합니다. (로딩 스파이크 제거의 핵심)
-if SettingsPanel then
-    SettingsPanel:HookScript("OnShow", function()
-        if dodoCreateOptions then dodoCreateOptions() end
-    end)
-end
 
 -- ==============================
 -- 명령어

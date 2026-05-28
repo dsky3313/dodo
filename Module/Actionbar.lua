@@ -21,8 +21,8 @@ local FeatureBars = {
         ["MultiBarLeft"]        = false,
         ["MultiBar5"]           = false,
         ["MultiBar6"]           = false,
-        ["MultiBar7"]           = false,
-        ["StanceBar"]           = false,
+        ["MultiBar7"]           = true,
+        ["StanceBar"]           = true,
         ["PetActionBar"]        = false,
     },
     textHide = {
@@ -308,27 +308,15 @@ local function UpdateIconColor(btn)
 
     local barName = get_bar_name_by_button(btn)
     if not barName or not FeatureBars.color[barName] then
-        if btn.__lastR ~= 1 or btn.__lastG ~= 1 or btn.__lastB ~= 1 then
-            btn.icon:SetVertexColor(1, 1, 1)
-            btn.__lastR, btn.__lastG, btn.__lastB = 1, 1, 1
-        end
-        if btn.__lastDesat ~= 0 then
-            btn.icon:SetDesaturation(0)
-            btn.__lastDesat = 0
-        end
+        btn.icon:SetVertexColor(1, 1, 1)
+        btn.icon:SetDesaturation(0)
         return
     end
 
     local useColor = (dodoDB and dodoDB.useActionbarColor ~= false)
     if not useColor then
-        if btn.__lastR ~= 1 or btn.__lastG ~= 1 or btn.__lastB ~= 1 then
-            btn.icon:SetVertexColor(1, 1, 1)
-            btn.__lastR, btn.__lastG, btn.__lastB = 1, 1, 1
-        end
-        if btn.__lastDesat ~= 0 then
-            btn.icon:SetDesaturation(0)
-            btn.__lastDesat = 0
-        end
+        btn.icon:SetVertexColor(1, 1, 1)
+        btn.icon:SetDesaturation(0)
         return
     end
 
@@ -348,19 +336,8 @@ local function UpdateIconColor(btn)
         end
     end
 
-    if r ~= btn.__lastR or g ~= btn.__lastG or b ~= btn.__lastB then
-        btn.icon:SetVertexColor(r, g, b)
-        btn.__lastR, btn.__lastG, btn.__lastB = r, g, b
-    end
-    if issecretvalue(desat) then
-        btn.icon:SetDesaturation(desat)
-        btn.__lastDesat = nil
-    else
-        if desat ~= btn.__lastDesat then
-            btn.icon:SetDesaturation(desat)
-            btn.__lastDesat = desat
-        end
-    end
+    btn.icon:SetVertexColor(r, g, b)
+    btn.icon:SetDesaturation(desat)
 end
 
 local function UpdateState(btn)
@@ -435,67 +412,30 @@ end
 -- ==============================
 -- 기능 3: 강화효과 오버레이 (CDM)
 -- ==============================
-local cdmUpdateFrame = CreateFrame("Frame")
-local elapsedSinceLastUpdate = 0
 
-local function cdm_updateframe_onupdate(self, elapsed)
-    elapsedSinceLastUpdate = elapsedSinceLastUpdate + elapsed
-    local interval = inCombat and 0.1 or 1.0
-    if elapsedSinceLastUpdate < interval then return end
-    elapsedSinceLastUpdate = 0
-
-    local hasActive = false
-    local now = GetTime()
-    for overlay in pairs(activeOverlays) do
-        if overlay.customCDMSpellID and overlay.customCDMEndTime then
-            hasActive = true
-            local remaining = overlay.customCDMEndTime - now
-            if remaining > -0.5 then
-                local intVal = math.floor(remaining > 0 and remaining or 0)
-                if intVal ~= overlay._lastRemainingInt then
-                    overlay.Timer:SetFormattedText("%.0f", intVal)
-                    overlay.Timer:Show()
-                    overlay._lastRemainingInt = intVal
-                end
-                overlay.InnerGlow:Show()
-                overlay:Show()
-            else
-                customCDMAuras[overlay.customCDMSpellID] = nil
-                overlay:StopCustomCDM()
+local function CustomizeCooldownText(cooldown)
+    if not cooldown or cooldown.__textHooked then return end
+    local region = cooldown:GetCountdownFontString()
+    if region then
+        local parent = cooldown:GetParent()
+        region:SetParent(parent)
+        region:ClearAllPoints()
+        region:SetPoint("TOPLEFT", parent, "TOPLEFT", 5, -5)
+        region:SetTextColor(0, 1, 0, 1)
+        
+        hooksecurefunc(region, "SetTextColor", function(self, r, g, b, a)
+            if r ~= 0 or g ~= 1 or b ~= 0 then
+                self:SetTextColor(0, 1, 0, 1)
             end
-        else
-            local item = overlay.viewerItem
-            local auraInstanceID = item and rawget(item, "auraInstanceID")
-            local auraDataUnit   = item and rawget(item, "auraDataUnit")
-            if auraInstanceID and auraDataUnit then
-                hasActive = true
-                local durObj = C_UnitAuras.GetAuraDuration(auraDataUnit, auraInstanceID)
-                if durObj then
-                    local remaining = durObj:GetRemainingDuration()
-                    local isSecret = issecretvalue(remaining)
-                    if isSecret then
-                        overlay.Timer:SetFormattedText("%.0f", remaining)
-                        overlay.Timer:Show()
-                        overlay._lastRemainingInt = nil
-                    else
-                        local intVal = math.floor(remaining)
-                        if intVal ~= overlay._lastRemainingInt then
-                            overlay.Timer:SetFormattedText("%.0f", intVal)
-                            overlay.Timer:Show()
-                            overlay._lastRemainingInt = intVal
-                        end
-                    end
-                else
-                    overlay:StopTicker()
-                end
-            else
-                overlay:StopTicker()
+        end)
+        hooksecurefunc(region, "SetPoint", function(self, point, relativeTo, relativePoint, x, y)
+            if relativeTo ~= parent or point ~= "TOPLEFT" or x ~= 5 or y ~= -5 then
+                self:SetParent(parent)
+                self:ClearAllPoints()
+                self:SetPoint("TOPLEFT", parent, "TOPLEFT", 5, -5)
             end
-        end
-    end
-
-    if not hasActive then
-        self:SetScript("OnUpdate", nil)
+        end)
+        cooldown.__textHooked = true
     end
 end
 
@@ -505,62 +445,54 @@ CDMOverlayMixin = {}
 function CDMOverlayMixin:OnLoad()
     local parent = self:GetParent()
     self:SetSize(parent:GetSize())
-    self:SetFrameLevel(parent:GetFrameLevel() + 1)
     self.InnerGlow:SetVertexColor(0, 1, 0, 1)
-    self.Timer:SetTextColor(0, 1, 0)
     self.Count:SetTextColor(1, 1, 0)
+    
+    if parent.cooldown then
+        self:SetFrameLevel(parent.cooldown:GetFrameLevel() + 1)
+    end
+
+    self.Cooldown:SetPoint("TOPLEFT", parent.icon, "LEFT", 5, 0)
+    self.Cooldown:SetPoint("BOTTOMRIGHT", parent.icon, "BOTTOM", 0, 3)
+    self.Cooldown:SetDrawSwipe(false)
+    self.Cooldown:SetUseAuraDisplayTime(true)
+    self.Cooldown:SetCountdownFont("NumberFontNormal")
+    self.Cooldown:SetCountdownAbbrevThreshold(60)
+    self.Cooldown:SetScript('OnCooldownDone', function () self:Update() end)
     self:Hide()
 end
 
-function CDMOverlayMixin:StartTicker()
-    activeOverlays[self] = true
-    if not cdmUpdateFrame:GetScript("OnUpdate") then
-        cdmUpdateFrame:SetScript("OnUpdate", cdm_updateframe_onupdate)
-    end
-end
-
-function CDMOverlayMixin:StopTicker()
-    activeOverlays[self] = nil
-    self._lastRemaining = nil
-    self._lastRemainingInt = nil
-    self.Timer:Hide()
-    self.Count:Hide()
-    self.InnerGlow:Hide()
-    self:Hide()
-    if not next(activeOverlays) then
-        cdmUpdateFrame:SetScript("OnUpdate", nil)
-    end
-end
-
-function CDMOverlayMixin:StartCustomCDM(spellID, duration)
+function CDMOverlayMixin:StartCustomCDM(spellID, duration, startTime)
     self.customCDMSpellID = spellID
-    self.customCDMEndTime = GetTime() + duration
+    self.customCDMEndTime = startTime + duration
+    
     self.InnerGlow:Show()
-    self.Timer:Show()
+    self.Cooldown:SetCooldown(startTime, duration)
+    self.Cooldown:Show()
     self:Show()
-
-    activeOverlays[self] = true
-    if not cdmUpdateFrame:GetScript("OnUpdate") then
-        cdmUpdateFrame:SetScript("OnUpdate", cdm_updateframe_onupdate)
-    end
+    
+    CustomizeCooldownText(self.Cooldown)
 end
 
 function CDMOverlayMixin:StopCustomCDM()
     self.customCDMSpellID = nil
     self.customCDMEndTime = nil
-    self._lastRemainingInt = nil
-    self:StopTicker()
+    self.Cooldown:Clear()
+    self.Cooldown:Hide()
+    self.InnerGlow:Hide()
+    self.Count:Hide()
+    self:Hide()
 end
 
 function CDMOverlayMixin:Update()
     local isEnabled = (dodoDB and dodoDB.useActionbarCDM ~= false)
-    if not isEnabled then self:StopTicker(); return end
+    if not isEnabled then self:StopCustomCDM(); return end
 
     local parent = self:GetParent()
     if not parent then return end
     
     local barName = get_bar_name_by_button(parent)
-    if not barName or not FeatureBars.cdm[barName] then self:StopTicker(); return end
+    if not barName or not FeatureBars.cdm[barName] then self:StopCustomCDM(); return end
     
     if FeatureBars.potion[barName] and parent.action then
         local actionType, id = GetActionInfo(parent.action)
@@ -579,7 +511,7 @@ function CDMOverlayMixin:Update()
         if activeFake and matchedSpellID then
             local remaining = activeFake.duration - (GetTime() - activeFake.startTime)
             if remaining > 0 then
-                self:StartCustomCDM(matchedSpellID, remaining)
+                self:StartCustomCDM(matchedSpellID, activeFake.duration, activeFake.startTime)
                 return
             else
                 customCDMAuras[matchedSpellID] = nil
@@ -610,11 +542,20 @@ function CDMOverlayMixin:Update()
             self.Count:Hide()
         end
 
+        local duration = C_UnitAuras.GetAuraDuration(auraDataUnit, auraInstanceID)
+        if duration then
+            self.Cooldown:SetCooldownFromDurationObject(duration, true)
+            self.Cooldown:Show()
+        else
+            self.Cooldown:Hide()
+        end
+
         self.InnerGlow:Show()
         self:Show()
-        self:StartTicker()
+        
+        CustomizeCooldownText(self.Cooldown)
     else
-        self:StopTicker()
+        self:StopCustomCDM()
     end
 end
 
@@ -1132,7 +1073,6 @@ f:SetScript("OnEvent", function(self, event, ...)
 
     elseif event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
         inCombat = (event == "PLAYER_REGEN_DISABLED")
-        for overlay in pairs(activeOverlays) do overlay:StartTicker() end
         update_all_potion_procs()
         if not inCombat then BuildSpecialButtonCache() end
 
@@ -1171,12 +1111,11 @@ f:SetScript("OnEvent", function(self, event, ...)
             end
             
             local updatedAura = customCDMAuras[spellID]
-            local currentRemaining = updatedAura.duration - (now - updatedAura.startTime)
             
             local buttons = get_matching_buttons(spellID, matchedItemID)
             for _, btn in ipairs(buttons) do
                 if btn.cdmOverlay then
-                    btn.cdmOverlay:StartCustomCDM(spellID, currentRemaining)
+                    btn.cdmOverlay:StartCustomCDM(spellID, updatedAura.duration, updatedAura.startTime)
                 end
             end
         end
@@ -1185,11 +1124,7 @@ f:SetScript("OnEvent", function(self, event, ...)
         local guid = ...
         if event == "PLAYER_DEAD" or (guid and not issecretvalue(guid) and guid == UnitGUID("player")) then
             wipe(customCDMAuras)
-            for overlay in pairs(activeOverlays) do
-                if overlay.customCDMSpellID then
-                    overlay:StopCustomCDM()
-                end
-            end
+            dodo.ActionbarApplyCDM()
         end
     end
 end)

@@ -159,15 +159,29 @@ end
 CreateUI = function()
     if difficultyFrame then return end
 
-    difficultyFrame = CreateFrame("Frame", "DifficultySelector", UIParent, "DefaultPanelBaseTemplate")
+    local anchorFrame
+    if dodo.EditMode then
+        anchorFrame = dodo.EditMode:GetSystem("InsDifficulty")
+    end
+
+    -- dodo.UI 표준 포트레이트 패널로 전환 (닫기 버튼 숨김 옵션 true 전달)
+    difficultyFrame = dodo.UI:CreatePortraitPanel("DifficultySelector", "인스턴스 난이도", true)
     difficultyFrame:SetSize(230, 124)
-    difficultyFrame:SetPoint("TOPLEFT", 5, -5)
+    
+    difficultyFrame:ClearAllPoints()
+    if anchorFrame then
+        difficultyFrame:SetPoint("CENTER", anchorFrame, "CENTER", 0, 0)
+    else
+        difficultyFrame:SetPoint("TOPLEFT", 5, -5)
+    end
     difficultyFrame:EnableMouse(true)
 
-    difficultyFrame.NineSlice.Text = difficultyFrame.NineSlice:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    difficultyFrame.NineSlice.Text:SetPoint("TOP", 0, -5)
-    difficultyFrame.NineSlice.Text:SetText("인스턴스 난이도 설정")
+    -- 순정 Bg 제거 (FlatPanelBackgroundTemplate을 쓸 것이므로)
+    if difficultyFrame.Bg then
+        difficultyFrame.Bg:Hide()
+    end
 
+    -- FlatPanelBackgroundTemplate 배경 설정
     difficultyFrame.Background = CreateFrame("Frame", nil, difficultyFrame, "FlatPanelBackgroundTemplate")
     difficultyFrame.Background:SetFrameLevel(difficultyFrame:GetFrameLevel() - 1)
     difficultyFrame.Background:SetPoint("TOPLEFT", 7, -18)
@@ -182,11 +196,13 @@ CreateUI = function()
     local row3 = CreateCategoryRow(difficultyFrame, -85, "낭만")
     for i, data in ipairs(dodo.difficultyTable.legacy) do CreateDifficultyButton(row3, "legacy", i, data) end
 
-    resetBtn = CreateFrame("Button", nil, difficultyFrame.NineSlice, "SquareIconButtonTemplate")
-    resetBtn:SetSize(30, 30)
-    resetBtn:SetPoint("TOPRIGHT", difficultyFrame, "TOPRIGHT", 4, 4)
+    -- 닫기 버튼이 없으므로 새로고침 버튼을 타이틀바 맨 우측 끝(TOPRIGHT, -6, -2)에 노출되게 배치 (가려짐 방지)
+    local titleContainer = difficultyFrame.TitleContainer or difficultyFrame
+    resetBtn = CreateFrame("Button", nil, titleContainer, "SquareIconButtonTemplate")
+    resetBtn:SetSize(22, 22)
+    resetBtn:SetPoint("TOPRIGHT", titleContainer, "TOPRIGHT", -6, -2)
     resetBtn.Icon:SetAtlas("UI-RefreshButton")
-    resetBtn:SetFrameLevel(difficultyFrame.NineSlice:GetFrameLevel() + 10)
+    resetBtn:SetFrameLevel(50)
 
     -- 버튼 스크립트 연결
     for _, group in pairs(buttons) do
@@ -226,7 +242,21 @@ UpdateUIStatus = function(forceCategory, forceValue)
     currentDiff.legacy = GetLegacyRaidDifficultyID()
 
     for category, group in pairs(buttons) do
-        local targetVal = (category == forceCategory) and tonumber(forceValue) or tonumber(currentDiff[category])
+        local targetVal
+        if hasPermission then
+            if category == forceCategory then
+                targetVal = tonumber(forceValue)
+            else
+                local dbKey = "InsDifficulty" .. (category == "dungeon" and "Dungeon" or category == "raid" and "Raid" or "Legacy")
+                targetVal = dodoDB and tonumber(dodoDB[dbKey])
+            end
+            if not targetVal then
+                targetVal = tonumber(currentDiff[category])
+            end
+        else
+            targetVal = tonumber(currentDiff[category])
+        end
+
         for _, btn in pairs(group) do
             -- Dirty Check: 권한 상태 변경 시에만 업데이트
             if btn._lastPermission ~= hasPermission then
@@ -257,6 +287,11 @@ OnDifficultyClick = function(self)
     local val = tonumber(self.value)
     if not val then return end
 
+    local dbKey = "InsDifficulty" .. (self.category == "dungeon" and "Dungeon" or self.category == "raid" and "Raid" or "Legacy")
+    if dodoDB then
+        dodoDB[dbKey] = val
+    end
+
     if self.category == "dungeon" then
         SetDungeonDifficultyID(val)
     elseif self.category == "raid" then
@@ -271,9 +306,8 @@ end
 -- 이벤트 등록 상태 관리: 두 기능 중 하나라도 켜있으면 이벤트 유지
 UpdateEventRegistration = function()
     if not initInsDifficulty then return end
-    local uiOn   = (dodoDB and dodoDB.useInsDifficultyFrame ~= false)
-    local autoOn = (dodoDB and dodoDB.useInsDifficulty ~= false)
-    if (uiOn or autoOn) and not isIns() then
+    local uiOn = (dodoDB and dodoDB.useInsDifficultyFrame ~= false)
+    if uiOn and not isIns() then
         initInsDifficulty:RegisterEvent("PARTY_LEADER_CHANGED")
         initInsDifficulty:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
     else
@@ -286,13 +320,13 @@ end
 InsDifficulty = function()
     if not dodoDB then return end
     UpdateEventRegistration()
-    if dodoDB.useInsDifficulty == false or not checkPermission() then
+    if dodoDB.useInsDifficultyFrame == false or not checkPermission() then
         UpdateUIStatus()
         return
     end
 
     local dungeonVal = tonumber(dodoDB.InsDifficultyDungeon)
-    if dodoDB.useInsDifficultyDungeon and dungeonVal then
+    if dungeonVal then
         local current = GetDungeonDifficultyID()
         if not issecretvalue(current) and current ~= dungeonVal then
             SetDungeonDifficultyID(dungeonVal)
@@ -300,7 +334,7 @@ InsDifficulty = function()
     end
 
     local raidVal = tonumber(dodoDB.InsDifficultyRaid)
-    if dodoDB.useInsDifficultyRaid and raidVal then
+    if raidVal then
         local current = GetRaidDifficultyID()
         if not issecretvalue(current) and current ~= raidVal then
             SetRaidDifficultyID(raidVal)
@@ -308,7 +342,7 @@ InsDifficulty = function()
     end
 
     local legacyVal = tonumber(dodoDB.InsDifficultyLegacy)
-    if dodoDB.useInsDifficultyLegacy and legacyVal then
+    if legacyVal then
         local current = GetLegacyRaidDifficultyID()
         if not issecretvalue(current) and current ~= legacyVal then
             SetLegacyRaidDifficultyID(legacyVal)
@@ -340,6 +374,11 @@ local function on_event(self, event, arg1)
             dodoDB = dodoDB or {}
             self:UnregisterEvent("ADDON_LOADED")
         end
+    elseif event == "PLAYER_LOGIN" then
+        if dodo.EditMode then
+            dodo.EditMode:CreateSystem("InsDifficulty", "인스턴스 난이도", "인스턴스 난이도 설정 창의 위치를 이동합니다.", UIParent, 230, 124, { point = "TOPLEFT", relativeTo = "UIParent", relativePoint = "TOPLEFT", xOfs = 5, yOfs = -5 })
+        end
+        self:UnregisterEvent("PLAYER_LOGIN")
     elseif event == "PLAYER_ENTERING_WORLD" then
         C_Timer.After(1, on_entering_world_timer)
     elseif event == "PARTY_LEADER_CHANGED" or event == "PLAYER_DIFFICULTY_CHANGED" then
@@ -349,65 +388,29 @@ end
 
 initInsDifficulty = CreateFrame("Frame")
 initInsDifficulty:RegisterEvent("ADDON_LOADED")
+initInsDifficulty:RegisterEvent("PLAYER_LOGIN")
 initInsDifficulty:RegisterEvent("PLAYER_ENTERING_WORLD")
 initInsDifficulty:SetScript("OnEvent", on_event)
 
--- ==============================
--- 외부 노출 (Option.lua용)
--- ==============================
-dodo.InsDifficultyUI = InsDifficultyUI
-dodo.InsDifficulty   = InsDifficulty
 
 -- ==============================
--- 외부 노출 및 설정 동적 등록 (Option.lua 연동)
+-- 외부 노출 및 모듈 설정창 등록 (dodoEditModePanel)
 -- ==============================
-local settingParentInsDifficulty
-local settingChildInsDifficulty1
-local settingChildInsDifficulty2
-local settingChildInsDifficulty3
-
-local function on_difficulty_parent_changed(_, value)
-    if value == false then
-        if settingChildInsDifficulty1 then settingChildInsDifficulty1:SetValue(false) end
-        if settingChildInsDifficulty2 then settingChildInsDifficulty2:SetValue(false) end
-        if settingChildInsDifficulty3 then settingChildInsDifficulty3:SetValue(false) end
-    end
-    if type(dodo.InsDifficulty) == "function" then dodo.InsDifficulty() end
+local function get_use_ins_difficulty_frame()
+    return dodoDB.useInsDifficultyFrame ~= false
 end
 
-local function on_difficulty_parent_active()
-    if settingParentInsDifficulty then
-        return settingParentInsDifficulty:GetValue()
-    end
-    return true
+local function set_use_ins_difficulty_frame(val)
+    dodoDB.useInsDifficultyFrame = val
+    InsDifficultyUI()
 end
 
-local SettingsPanel = SettingsPanel
-local CreateSettingsListSectionHeaderInitializer = CreateSettingsListSectionHeaderInitializer
-local Checkbox = Checkbox
-local CheckBoxDropDown = CheckBoxDropDown
-
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["party"] = dodo.OptionRegistrations["party"] or {}
-table.insert(dodo.OptionRegistrations["party"], function(category)
-    local layout = SettingsPanel:GetLayout(category)
-    if not layout then return end
-
-    layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("인스턴스 난이도"))
-    Checkbox(category, "useInsDifficultyFrame", "난이도 설정창", "인스턴스 밖에서 난이도 설정창을 표시합니다.", true, dodo.InsDifficultyUI)
-    
-    local initParentInsDifficulty
-    settingParentInsDifficulty, initParentInsDifficulty = Checkbox(category, "useInsDifficulty", "인스 난이도 고정", "솔플 혹은 파티장일 시, 던전 난이도를 자동으로 변경합니다.", true, dodo.InsDifficulty)
-    
-    local initChildInsDifficulty1, initChildInsDifficulty2, initChildInsDifficulty3
-    settingChildInsDifficulty1, _, initChildInsDifficulty1 = CheckBoxDropDown(category, "useInsDifficultyDungeon", "InsDifficultyDungeon", "던전 난이도", "던전 난이도를 고정합니다.", dodo.difficultyTable.dungeon, true, dodo.difficultyTable.dungeon[3].value, dodo.InsDifficulty)
-    settingChildInsDifficulty2, _, initChildInsDifficulty2 = CheckBoxDropDown(category, "useInsDifficultyRaid", "InsDifficultyRaid", "공격대 난이도", "공격대 난이도를 고정합니다.", dodo.difficultyTable.raid, true, dodo.difficultyTable.raid[3].value, dodo.InsDifficulty)
-    settingChildInsDifficulty3, _, initChildInsDifficulty3 = CheckBoxDropDown(category, "useInsDifficultyLegacy", "InsDifficultyLegacy", "낭만 난이도", "낭만 난이도를 고정합니다.", dodo.difficultyTable.legacy, true, dodo.difficultyTable.legacy[2].value, dodo.InsDifficulty)
-    
-    if settingParentInsDifficulty then
-        settingParentInsDifficulty:SetValueChangedCallback(on_difficulty_parent_changed)
-        if initChildInsDifficulty1 then initChildInsDifficulty1:SetParentInitializer(initParentInsDifficulty, on_difficulty_parent_active) end
-        if initChildInsDifficulty2 then initChildInsDifficulty2:SetParentInitializer(initParentInsDifficulty, on_difficulty_parent_active) end
-        if initChildInsDifficulty3 then initChildInsDifficulty3:SetParentInitializer(initParentInsDifficulty, on_difficulty_parent_active) end
-    end
-end)
+if dodo.RegisterEditModeSetting then
+    dodo.RegisterEditModeSetting("편의기능", {
+        {
+            name = "인스턴스 난이도",
+            get = get_use_ins_difficulty_frame,
+            set = set_use_ins_difficulty_frame,
+        }
+    })
+end

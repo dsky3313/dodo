@@ -9,12 +9,12 @@
     <Frame name="CDMOverlayTemplate" mixin="CDMOverlayMixin" virtual="true">
         <Size x="1" y="1"/>
         <Anchors><Anchor point="CENTER"/></Anchors>
+        <Frames>
+            <Cooldown parentKey="Cooldown" />
+        </Frames>
         <Layers>
             <Layer level="OVERLAY">
                 <Texture parentKey="InnerGlow" atlas="UI-HUD-ActionBar-IconFrame-Mouseover" setAllPoints="true" alphaMode="BLEND" />
-                <FontString parentKey="Timer" inherits="NumberFontNormal">
-                    <Anchors><Anchor point="TOPLEFT" x="5" y="-5"/></Anchors>
-                </FontString>
                 <FontString parentKey="Count" inherits="NumberFontNormal" justifyH="RIGHT">
                     <Anchors><Anchor point="BOTTOMRIGHT" x="-2" y="2"/></Anchors>
                 </FontString>

@@ -1,0 +1,12 @@
+<Ui>
+
+  <Script file="Controller.lua" />
+
+  <Frame name="CDMButtonAurasController" mixin="CDMButtonAurasControllerMixin">
+    <Scripts>
+      <OnLoad method="OnLoad" />
+      <OnEvent method="OnEvent" />
+    </Scripts>
+  </Frame>
+
+</Ui>

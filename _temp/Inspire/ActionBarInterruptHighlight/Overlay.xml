@@ -1,0 +1,30 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+
+  <Script file="Overlay.lua"/>
+
+  <!-- Flipbook animation from ActionButtonSpellAlertTemplate -->
+
+  <Frame name="ABIHOverlayTemplate" mixin="ABIHOverlayMixin" hidden="true" virtual="true">
+    <Layers>
+      <Layer level="ARTWORK">
+        <Texture parentKey="ProcLoopFlipbook" atlas="UI-HUD-ActionBar-Proc-Loop-Flipbook">
+          <Anchors> <Anchor point="CENTER" /> </Anchors>
+        </Texture>
+      </Layer>
+      <Layer level="OVERLAY">
+        <FontString parentKey="Timer" justifyH="LEFT" inherits="NumberFontNormal" hidden="true">
+          <Anchors> <Anchor point="BOTTOMLEFT" x="5" y="5" /> </Anchors>
+        </FontString>
+      </Layer>
+    </Layers>
+    <Animations>
+      <AnimationGroup parentKey="ProcLoop" looping="REPEAT">
+        <FlipBook parentKey="FlipAnim" childKey="ProcLoopFlipbook" duration="1" order="0" flipBookRows="6" flipBookColumns="5" flipBookFrames="30" flipBookFrameWidth="0" flipBookFrameHeight="0" />
+      </AnimationGroup>
+    </Animations>
+    <Scripts>
+      <OnHide method="OnHide" />
+    </Scripts>
+  </Frame>
+
+</Ui>
