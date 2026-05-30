@@ -110,11 +110,11 @@ dodo.UpdateMinimapFPSState = update_fps_display
 local function initialize()
     local Colors = dodo.Colors
     if Colors then
-        text_green  = Colors.SoftGreen and Colors.SoftGreen.hex:sub(3) or "b2ffb2"
-        text_red    = Colors.SoftRed and Colors.SoftRed.hex:sub(3) or "ffb2b2"
-        text_yellow = Colors.LemonYellow and Colors.LemonYellow.hex:sub(3) or "ffffb2"
+        text_green  = Colors.Green and Colors.Green.hex:sub(3) or "00ff00"
+        text_red    = Colors.Red and Colors.Red.hex:sub(3) or "ff0000"
+        text_yellow = Colors.Gold and Colors.Gold.hex:sub(3) or "ffd100"
     else
-        text_green, text_red, text_yellow = "b2ffb2", "ffb2b2", "ffffb2"
+        text_green, text_red, text_yellow = "00ff00", "ff0000", "ffd100"
     end
 
     if dodoDB.useFPSFrame == nil then dodoDB.useFPSFrame = true end
