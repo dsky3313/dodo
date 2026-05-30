@@ -16,12 +16,12 @@ dodoDB = dodoDB or {}
 
 -- 모듈 내부 정적 상태 변수 (물리 격리)
 ---@type AudioSoundItem[]
-local soundEncounterStartTable = {
+local sound_encounter_start_table = {
     { text = "돌격", value = "16971" },
 }
 
 ---@type AudioSoundItem[]
-local soundEncounterVictoryTable = {
+local sound_encounter_victory_table = {
     { text = "PVP 얼라이언스", value = "38352" },
     { text = "퀘스트 추가", value = "618" },
     { text = "PVP 승리", value = "34091" },
@@ -36,22 +36,24 @@ local GetCVar = GetCVar
 local GetTime = GetTime
 local MovieFrame = MovieFrame
 local PlaySound = PlaySound
+local print = print
 local SetCVar = SetCVar
 local Sound_GameSystem_RestartSoundSystem = Sound_GameSystem_RestartSoundSystem
-local UIErrorsFrame = UIErrorsFrame
 local string_format = string.format
 local tonumber = tonumber
+local UIErrorsFrame = UIErrorsFrame
 
 -- ==============================
 -- 기능 1: 로컬 상태 및 설정
 -- ==============================
-local lastSync = 0
-local audioFrame = nil
+local last_sync = 0
+---@type Frame
+local audio_frame = nil
 
 -- dodo.Colors에서 피드백용 정적 헥스 코드 직접 가져오기 (치환 연산 배제)
 local colors = dodo.Colors
-local softGreenHex = (colors and colors.SoftGreen and colors.SoftGreen.hex) or "ffb2ffb2"
-local softRedHex = (colors and colors.SoftRed and colors.SoftRed.hex) or "ffffb2b2"
+local soft_green_hex = (colors and colors.SoftGreen and colors.SoftGreen.hex) or "ffb2ffb2"
+local soft_red_hex = (colors and colors.SoftRed and colors.SoftRed.hex) or "ffffb2b2"
 
 -- ==============================
 -- 기능 2: 상태 업데이트 및 오디오 동작
@@ -64,8 +66,8 @@ local function sync_audio(isManual)
     end
 
     local now = GetTime()
-    if isManual ~= true and now - lastSync < 5 then return end
-    lastSync = now
+    if isManual ~= true and now - last_sync < 5 then return end
+    last_sync = now
 
     local cinemaShown = CinematicFrame and CinematicFrame:IsShown()
     local movieShown = MovieFrame and MovieFrame:IsShown()
@@ -75,7 +77,7 @@ local function sync_audio(isManual)
         Sound_GameSystem_RestartSoundSystem()
 
         if isManual == true then
-            print("|c" .. softGreenHex .. "[dodo]|r 오디오 동기화 완료")
+            print("|c" .. soft_green_hex .. "[dodo]|r 오디오 동기화 완료")
         end
     end
 end
@@ -95,6 +97,9 @@ local function play_encounter_victory_sound()
 end
 
 --- 보스전 상태 변경 대응 핸들러
+---@param event string 이벤트명
+---@vararg any
+---@return nil
 local function on_encounter_state_changed(event, ...)
     if not dodoDB then return end
 
@@ -119,6 +124,10 @@ end
 -- ==============================
 -- 기능 3: UI 생성
 -- ==============================
+---@param self Frame
+---@param event string 이벤트명
+---@vararg any
+---@return nil
 local function on_event(self, event, ...)
     local arg1 = ...
 
@@ -134,18 +143,18 @@ local function on_event(self, event, ...)
     end
 end
 
-audioFrame = CreateFrame("Frame")
-audioFrame:RegisterEvent("ADDON_LOADED")
-audioFrame:RegisterEvent("ENCOUNTER_START")
-audioFrame:RegisterEvent("ENCOUNTER_END")
-audioFrame:SetScript("OnEvent", on_event)
+audio_frame = CreateFrame("Frame")
+audio_frame:RegisterEvent("ADDON_LOADED")
+audio_frame:RegisterEvent("ENCOUNTER_START")
+audio_frame:RegisterEvent("ENCOUNTER_END")
+audio_frame:SetScript("OnEvent", on_event)
 
 -- ==============================
 -- 설정 등록
 -- ==============================
 -- 1. dodoEditModePanel (모듈 편집창) 등록
-if dodo.RegisterEditModeSetting then
-    dodo.RegisterEditModeSetting("음성", {
+if dodo.RegisterEditModeModuleSetting then
+    dodo.RegisterEditModeModuleSetting("음성", {
         -- 1. 출력장치 동기화
         {
             name = "출력장치 동기화",
@@ -155,7 +164,7 @@ if dodo.RegisterEditModeSetting then
                 if val then
                     sync_audio(true)
                 else
-                    print("|c" .. softRedHex .. "[dodo]|r 오디오 동기화 비활성화")
+                    print("|c" .. soft_red_hex .. "[dodo]|r 오디오 동기화 비활성화")
                 end
             end,
         },
@@ -170,7 +179,7 @@ if dodo.RegisterEditModeSetting then
             type = "dropdown",
             get = function() return dodoDB.useSoundEncounterStart_soundID or "16971" end,
             set = function(val) dodoDB.useSoundEncounterStart_soundID = val; play_encounter_start_sound() end,
-            values = soundEncounterStartTable,
+            values = sound_encounter_start_table,
         },
 
         -- 3. 보스전 승리 효과음
@@ -183,7 +192,7 @@ if dodo.RegisterEditModeSetting then
             type = "dropdown",
             get = function() return dodoDB.useSoundEncounterVictory_soundID or "38352" end,
             set = function(val) dodoDB.useSoundEncounterVictory_soundID = val; play_encounter_victory_sound() end,
-            values = soundEncounterVictoryTable,
+            values = sound_encounter_victory_table,
         }
     })
 end
