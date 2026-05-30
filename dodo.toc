@@ -8,46 +8,108 @@
 ## SavedVariables: dodoDB
 ## X-Curse-Project-ID: 9999999
 
-# 2020.11.23 제작
+# Since : 2020.11.23
 
+# Libs
 Libs/oUF/oUF.xml
-UI/Colors.lua
-UI/OptionUI.xml
-UI/Widgets.lua
-UI/OptionUI.lua
-UI/EditMode.lua
+
+UI/Color.lua
 UI/Icon.lua
-UI/ActionBar.xml
-UI/Debuff.xml
-UI/ResourceBar.xml
+UI/OptionUI.xml
+UI/OptionUI.lua
+UI/Widgets.lua
 
-Module/Audio.lua
-Module/BloodBrez.lua
-Module/BrowseGroup.lua
-Module/Camera.lua
-Module/ChatBubble.lua
-Module/ChatFrame.lua
-Module/CVar.lua
-Module/DamageMeter.lua
-Module/Debuff.lua
-Module/DeleteNow.lua
-Module/ExpFilter.lua
-Module/Friends.lua
-Module/FrameOption.lua
-Module/InsDifficulty.lua
-Module/Item.lua
-Module/Merchant.lua
-Module/Minimap.lua
-Module/NewLFG.lua  
+# Editmode
+Module/Editmode/ModuleSettings.lua
+Module/Editmode/SystemSettings.lua
+
+# Actionbar
+Module/Actionbar/ActionBar.xml
+Module/Actionbar/ActionbarCore.lua
+Module/Actionbar/IconColor.lua
+Module/Actionbar/IconText.lua
+Module/Actionbar/IconPadding.lua
+Module/Actionbar/OverlayCDM.lua
+Module/Actionbar/OverlayInterrupt.lua
+Module/Actionbar/OverlayPotion.lua
+
+
+# Combat
+Module/Combat/Debuff.lua
+Module/Combat/Debuff.xml
+Module/Combat/ResourceBar.xml
+Module/Combat/ResourceBar.lua
+Module/Combat/BloodBrez.lua
+
+# ChatFrame
+Module/ChatFrame/ChatframeCore.lua
+Module/ChatFrame/ChatframeFont.lua
+Module/ChatFrame/ChatframeURL.lua
+Module/ChatFrame/ChatframeShort.lua
+Module/ChatFrame/ChatFrameGuildButton.lua
+
+# DamageMeter
+Module/DamageMeter/DamageMeterCore.lua
+Module/DamageMeter/DamageMeterSync.lua
+Module/DamageMeter/DamageMeterReset.lua
+
+# CharacterFrame
+Module/CharacterFrame/CharacterFrameCore.lua
+Module/CharacterFrame/CharacterFrameLayout.lua
+Module/CharacterFrame/CharacterFrameIlvl.lua
+Module/CharacterFrame/CharacterFrameIlvlBag.lua
+Module/CharacterFrame/CharacterFrameEnchant.lua
+Module/CharacterFrame/CharacterFrameGem.lua
+
+# Minimap
+Module/Minimap/MinimapCore.lua
+Module/Minimap/Minimap.lua
+Module/Minimap/MinimapSquare.lua
+Module/Minimap/MinimapZoom.lua
+Module/Minimap/MinimapFPS.lua
+Module/Minimap/MinimapCoord.lua
+
 Module/PartyClass.lua
-Module/QuickBobber.lua
-Module/ResourceBar.lua
-Module/Slash.lua
-Module/Tooltip.lua
-Module/Teleport.lua 
-Module/Keystone.lua
-Module/Unitframe.lua
-Module/WMarker.lua 
-Module/WowheadLink.lua 
 
+# Tooltip
+Module/Tooltip/TooltipCore.lua
+Module/Tooltip/TooltipStatusBar.lua
+Module/Tooltip/TooltipID.lua
+Module/Tooltip/TooltipIcon.lua
+Module/Tooltip/TooltipColor.lua
+Module/Tooltip/TooltipVehicle.lua
+
+# Unitframe
+Module/Unitframe/UnitframeCore.lua
+Module/Unitframe/UnitframeCastbar.lua
+Module/Unitframe/UnitframeAuras.lua
+Module/Unitframe/UnitframePlayer.lua
+Module/Unitframe/UnitframeTarget.lua
+Module/Unitframe/UnitframeBoss.lua
+Module/Unitframe/UnitframeETC.lua
+#Module/Unitframe/RaidFrameAnchor.lua
+
+
+# QoL Modules
+Module/QoL/Audio.lua
+Module/QoL/BrowseGroup.lua
+Module/QoL/Camera.lua
+Module/QoL/ChatBubble.lua
+Module/QoL/DeleteNow.lua
+Module/QoL/ExpFilter.lua
+Module/QoL/FrameOption.lua
+Module/QoL/Friends.lua
+Module/QoL/InsDifficulty.lua
+Module/QoL/Keystone.lua
+Module/QoL/Merchant.lua
+Module/QoL/NewLFG.lua
+Module/QoL/QuickBobber.lua
+Module/QoL/Teleport.lua
+Module/QoL/WMarker.lua
+Module/QoL/WowheadLink.lua
+
+# Configurations & Layout Anchoring (Last Load)
+Module/CVar.lua
+Module/Slash.lua
 Option.lua
+Module/Editmode/EditModePos.lua

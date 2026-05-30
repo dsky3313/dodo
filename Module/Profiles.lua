@@ -159,9 +159,9 @@ function module:OnEnable()
     isInitialized = true
 
     -- dodoEditModePanel 내부에 설정 주입
-    if dodo.RegisterEditModeSetting then
+    if dodo.RegisterEditModeModuleSetting then
         -- 인터페이스 카테고리
-        dodo.RegisterEditModeSetting("인터페이스", {
+        dodo.RegisterEditModeModuleSetting("인터페이스", {
             {
                 name = "아군 이름표 자동 설정",
                 get = function() return dodo.DB and dodo.DB.useNameplateFriendly ~= false end,
@@ -173,7 +173,7 @@ function module:OnEnable()
         })
 
         -- 설정 & 프로필 카테고리
-        dodo.RegisterEditModeSetting("설정 & 프로필", {
+        dodo.RegisterEditModeModuleSetting("설정 & 프로필", {
             {
                 type = "button",
                 name = "HUD 레이아웃",

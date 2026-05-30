@@ -9,7 +9,7 @@
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
-local IconLib = dodo.IconLib
+local LibIcon = dodo.LibIcon
 
 local ClassTable = {
     -- { id = 6, name = "죽기", iconID = 625998, dispell = { curse = false, disease = false, magic = false, poison = false }, bl = false, br = true, buff = false },
@@ -97,7 +97,7 @@ local function CreateIconsIfNeeded()
     for i, data in ipairs(UtilTable) do
         local col, row = math.floor((i - 1) / maxRow), (i - 1) % maxRow
         local utilName = "PartyUtilIcon_" .. data.key
-        local partyUtilityIcon = IconLib:Create(utilName, partyClassFrame, { iconsize = { iconSize, iconSize } })
+        local partyUtilityIcon = LibIcon:Create(utilName, partyClassFrame, { iconsize = { iconSize, iconSize } })
         
         partyUtilityIcon:SetPoint("TOPLEFT", partyClassFrame, "TOPLEFT", startX + (col * xGap), startY - (row * (iconSize + 12)))
         partyUtilityIcon:ApplyConfig({
@@ -107,6 +107,7 @@ local function CreateIconsIfNeeded()
             fontsize = 10,
             fontposition = { "TOP", partyUtilityIcon, "BOTTOM", 0, 3 },
             useTooltip = false,
+            framestrata = "MEDIUM",
         })
 
         local count = 0
@@ -115,7 +116,7 @@ local function CreateIconsIfNeeded()
                                  (data.type ~= "dispell" and classInfo[data.key])
             if actualSpellID then
                 local classIconName = "PartyClassIcon_" .. data.key .. "_" .. classInfo.id
-                local partyClassIcon = IconLib:Create(classIconName, partyUtilityIcon, { iconsize = { iconSize, iconSize } })
+                local partyClassIcon = LibIcon:Create(classIconName, partyUtilityIcon, { iconsize = { iconSize, iconSize } })
                 
                 partyClassIcon:SetPoint("LEFT", partyUtilityIcon, "RIGHT", 10 + (count * (iconSize + 5)), 0)
                 partyClassIcon:ApplyConfig({
@@ -126,6 +127,7 @@ local function CreateIconsIfNeeded()
                     fontsize = 10,
                     fontposition = { "TOP", partyClassIcon, "BOTTOM", 0, 3 },
                     useTooltip = true,
+                    framestrata = "MEDIUM",
                 })
 
                 partyClassIcon.classID = classInfo.id

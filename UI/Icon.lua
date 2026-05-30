@@ -3,8 +3,8 @@
 -- ==============================
 ---@diagnostic disable: undefined-field
 local addonName, dodo = ...
-local IconLib = {}
-dodo.IconLib = IconLib
+local LibIcon = {}
+dodo.LibIcon = LibIcon
 
 local function RescaleIcon(self)
     local width = self:GetWidth()
@@ -32,7 +32,7 @@ local fontColorTable = {
 -- ==============================
 -- 동작
 -- ==============================
-function IconLib:Create(name, parent, config)
+function LibIcon:Create(name, parent, config)
     local isAction = config and config.isAction or false
     local template = isAction and "SecureActionButtonTemplate" or nil
     local frameType = isAction and "CheckButton" or "Frame"
@@ -245,7 +245,7 @@ function IconLib:Create(name, parent, config)
             end
         end
 
-        self:SetFrameStrata(data.framestrata or "HIGH")
+        self:SetFrameStrata(data.framestrata or "LOW")
         self:UpdateStatus()
     end
     return frame

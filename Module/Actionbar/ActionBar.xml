@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Ui xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.blizzard.com/wow/ui/" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
+..\FrameXML\UI.xsd">
+    <!-- UI 템플릿 정의 -->
+
+    <!-- ============================== -->
+    <!-- CDM Overlay Template           -->
+    <!-- ============================== -->
+    <Frame name="CDMOverlayTemplate" mixin="CDMOverlayMixin" virtual="true">
+        <Size x="1" y="1"/>
+        <Anchors><Anchor point="CENTER"/></Anchors>
+        <Frames>
+            <Cooldown parentKey="Cooldown" />
+        </Frames>
+        <Layers>
+            <Layer level="OVERLAY">
+                <Texture parentKey="InnerGlow" atlas="UI-HUD-ActionBar-IconFrame-Mouseover" setAllPoints="true" alphaMode="BLEND" />
+                <FontString parentKey="Count" inherits="NumberFontNormal" justifyH="RIGHT">
+                    <Anchors><Anchor point="BOTTOMRIGHT" x="-2" y="2"/></Anchors>
+                </FontString>
+            </Layer>
+        </Layers>
+        <Scripts><OnLoad method="OnLoad"/></Scripts>
+    </Frame>
+
+    <!-- ============================== -->
+    <!-- Interrupt Overlay Template     -->
+    <!-- ============================== -->
+    <Frame name="InterruptOverlayTemplate" mixin="InterruptOverlayMixin" hidden="true" virtual="true">
+        <Layers>
+            <Layer level="ARTWORK">
+                <Texture parentKey="ProcReady" atlas="UI-HUD-ActionBar-Proc-Loop-Flipbook">
+                    <Anchors><Anchor point="CENTER"/></Anchors>
+                </Texture>
+            </Layer>
+            <Layer level="ARTWORK">
+                <Texture parentKey="ProcCooldown" atlas="UI-HUD-ActionBar-Proc-Loop-Flipbook" desaturated="true">
+                    <Anchors><Anchor point="CENTER"/></Anchors>
+                    <Color r="0.6" g="0.6" b="0.6"/>
+                </Texture>
+            </Layer>
+            <Layer level="OVERLAY">
+                <FontString parentKey="TimerReady" justifyH="LEFT" inherits="NumberFontNormal" hidden="true">
+                    <Anchors><Anchor point="TOPLEFT" x="5" y="-5"/></Anchors>
+                </FontString>
+            </Layer>
+            <Layer level="OVERLAY">
+                <FontString parentKey="TimerCooldown" justifyH="LEFT" inherits="NumberFontNormal" hidden="true">
+                    <Anchors><Anchor point="TOPLEFT" x="5" y="-5"/></Anchors>
+                    <Color r="0.6" g="0.6" b="0.6"/>
+                </FontString>
+            </Layer>
+        </Layers>
+        <Animations>
+            <AnimationGroup parentKey="ProcLoop" looping="REPEAT">
+                <FlipBook parentKey="Flip1" childKey="ProcReady"   duration="1" order="0" flipBookRows="6" flipBookColumns="5" flipBookFrames="30" flipBookFrameWidth="0" flipBookFrameHeight="0"/>
+                <FlipBook parentKey="Flip2" childKey="ProcCooldown" duration="1" order="0" flipBookRows="6" flipBookColumns="5" flipBookFrames="30" flipBookFrameWidth="0" flipBookFrameHeight="0"/>
+            </AnimationGroup>
+        </Animations>
+        <Scripts>
+            <OnHide method="OnHide"/>
+        </Scripts>
+    </Frame>
+
+    <!-- ============================== -->
+    <!-- Potion Overlay Template        -->
+    <!-- ============================== -->
+    <Frame name="PotionOverlayTemplate" mixin="PotionOverlayMixin" hidden="true" virtual="true">
+        <Layers>
+            <Layer level="ARTWORK">
+                <Texture parentKey="Proc" atlas="UI-HUD-ActionBar-Proc-Loop-Flipbook">
+                    <Anchors><Anchor point="CENTER"/></Anchors>
+                </Texture>
+            </Layer>
+        </Layers>
+        <Animations>
+            <AnimationGroup parentKey="ProcLoop" looping="REPEAT">
+                <FlipBook parentKey="Flip" childKey="Proc" duration="1" order="0" flipBookRows="6" flipBookColumns="5" flipBookFrames="30" flipBookFrameWidth="0" flipBookFrameHeight="0"/>
+            </AnimationGroup>
+        </Animations>
+    </Frame>
+
+</Ui>
