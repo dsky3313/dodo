@@ -75,6 +75,60 @@ function dodo.UnitframeCreateCastbar(self, uWidth)
 
 		castbar:SetPoint('LEFT', icon, 'RIGHT', 6, 0)
 
+		-- oUF UpdatePips 안전한 오버라이드 (비밀값 및 nil stages 에러 우회)
+		castbar.Pips = castbar.Pips or {}
+		castbar.UpdatePips = function(element, stages)
+			if not stages then return end
+
+			local isHoriz = element:GetOrientation() == 'HORIZONTAL'
+			local elementSize = isHoriz and element:GetWidth() or element:GetHeight()
+
+			if issecretvalue and issecretvalue(elementSize) then
+				elementSize = isHoriz and (uWidth - 22) or 16
+			end
+
+			local lastOffset = 0
+			for stage, stageSection in ipairs(stages) do
+				local offset = lastOffset + (elementSize * stageSection)
+				lastOffset = offset
+
+				local pip = element.Pips[stage]
+				if not pip then
+					pip = CreateFrame('Frame', nil, element, 'CastingBarFrameStagePipTemplate')
+					element.Pips[stage] = pip
+				end
+
+				pip:ClearAllPoints()
+				pip:Show()
+
+				if isHoriz then
+					if pip.RotateTextures then
+						pip:RotateTextures(0)
+					end
+
+					if element:GetReverseFill() then
+						pip:SetPoint('TOP', element, 'TOPRIGHT', -offset, 0)
+						pip:SetPoint('BOTTOM', element, 'BOTTOMRIGHT', -offset, 0)
+					else
+						pip:SetPoint('TOP', element, 'TOPLEFT', offset, 0)
+						pip:SetPoint('BOTTOM', element, 'BOTTOMLEFT', offset, 0)
+					end
+				else
+					if pip.RotateTextures then
+						pip:RotateTextures(1.5708)
+					end
+
+					if element:GetReverseFill() then
+						pip:SetPoint('LEFT', element, 'TOPLEFT', 0, -offset)
+						pip:SetPoint('RIGHT', element, 'TOPRIGHT', 0, -offset)
+					else
+						pip:SetPoint('LEFT', element, 'BOTTOMLEFT', 0, offset)
+						pip:SetPoint('RIGHT', element, 'BOTTOMRIGHT', 0, offset)
+					end
+				end
+			end
+		end
+
 		-- 차단 속성 훅
 		castbar.PostCastStart = function(element, unit)
 			local isNotInterruptible = element.notInterruptible

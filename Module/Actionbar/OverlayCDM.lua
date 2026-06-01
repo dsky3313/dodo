@@ -25,9 +25,12 @@ local CustomCDMConfigs = {
     [1236616] = { matchIDs = { 241308, 241309 }, duration = 30, type = 3 },
 }
 
-local CDMMapping = {
+local enableCDMADebug = false
+
+local CDMMapping = { -- CDM SpellID - Actionabar SpellID
     [386634] = 12294, -- 집행자의 정밀함  - 필사의 일격 (무전)
-    [12950] = 190411, 6343 -- 소용돌이 연마  - 소용돌이 (분전)
+    [184361] = 1464, -- 격노  - 광란 (분전)
+    [12950] = 190411, -- 소용돌이 연마  - 소용돌이 (분전)
 }
 
 -- ==============================
@@ -223,9 +226,16 @@ local function build_button_cache()
                 if actionSpellID then
                     local baseSpellID = C_Spell.GetBaseSpell(actionSpellID)
                     local spellName = C_Spell.GetSpellName(baseSpellID)
+                    local rawSpellName = C_Spell.GetSpellName(actionSpellID)
+                    
                     if spellName then
                         dodo.buttonCache[spellName] = dodo.buttonCache[spellName] or {}
                         table.insert(dodo.buttonCache[spellName], btn)
+                    end
+                    
+                    if rawSpellName and rawSpellName ~= spellName then
+                        dodo.buttonCache[rawSpellName] = dodo.buttonCache[rawSpellName] or {}
+                        table.insert(dodo.buttonCache[rawSpellName], btn)
                     end
                 end
             end
@@ -240,17 +250,24 @@ local function update_cdm_from_item(item)
     local cdInfo = C_CooldownViewer.GetCooldownViewerCooldownInfo(item.cooldownID)
     if not cdInfo or not cdInfo.spellID then return end
     local baseSpellID = C_Spell.GetBaseSpell(cdInfo.spellID)
+    if enableCDMADebug then
+        local debugName = C_Spell.GetSpellName(baseSpellID)
+        if debugName then
+            print("[dodo CDM Debug] 검지된 버프 ID: " .. tostring(baseSpellID) .. " (" .. tostring(debugName) .. ")")
+        end
+    end
     
     local targetSpellID = CDMMapping[baseSpellID] or baseSpellID
-    local spellName = C_Spell.GetSpellName(targetSpellID)
-
-    local buttons = spellName and dodo.buttonCache and dodo.buttonCache[spellName]
-    if buttons then
-        for _, btn in ipairs(buttons) do
-            if btn.cdmOverlay then
-                local hasAuraData = rawget(item, "auraDataUnit") ~= nil and rawget(item, "auraInstanceID") ~= nil
-                btn.cdmOverlay.viewerItem = hasAuraData and item or nil
-                btn.cdmOverlay:Update()
+    local success, spellName = pcall(C_Spell.GetSpellName, targetSpellID)
+    if success and spellName then
+        local buttons = dodo.buttonCache and dodo.buttonCache[spellName]
+        if buttons then
+            for _, btn in ipairs(buttons) do
+                if btn.cdmOverlay then
+                    local hasAuraData = rawget(item, "auraDataUnit") ~= nil and rawget(item, "auraInstanceID") ~= nil
+                    btn.cdmOverlay.viewerItem = hasAuraData and item or nil
+                    btn.cdmOverlay:Update()
+                end
             end
         end
     end
@@ -449,4 +466,38 @@ if dodo.RegisterEditModeSystemSetting then
             disabled = function() return dodoDB and dodoDB.enableActionbar == false end
         }
     })
+end
+
+if enableCDMADebug then
+    -- ==============================
+    -- 디버그용 슬래시 명령어 등록
+    -- ==============================
+    SLASH_DODOCDM1 = "/dodocdm"
+    SlashCmdList["DODOCDM"] = function()
+        print("[dodo CDM] 단축바 실시간 감지 디버그 시작")
+        local groups = {
+            "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton",
+            "MultiBarRightButton", "MultiBarLeftButton", "MultiBar5Button", "MultiBar6Button", "MultiBar7Button",
+            "StanceButton"
+        }
+        local count = 0
+        for _, group in ipairs(groups) do
+            for i = 1, 12 do
+                local btn = _G[group .. i]
+                if btn and btn.action then
+                    local actionType, actionSpellID = GetActionInfo(btn.action)
+                    if actionSpellID then
+                        local baseSpellID = C_Spell.GetBaseSpell(actionSpellID) or actionSpellID
+                        local spellName = C_Spell.GetSpellName(baseSpellID)
+                        if spellName then
+                            print(string.format("[%s%d] 타입: %s | 원래 ID: %s | Base ID: %s | 이름: %s", 
+                                group, i, tostring(actionType), tostring(actionSpellID), tostring(baseSpellID), tostring(spellName)))
+                            count = count + 1
+                        end
+                    end
+                end
+            end
+        end
+        print("[dodo CDM] 단축바 실시간 감지 디버그 완료 (총 " .. count .. "개 감지)")
+    end
 end

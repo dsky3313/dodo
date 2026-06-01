@@ -213,8 +213,8 @@ local function update_visibility_condition()
     need_visibility_update = false
 
     -- 챌린지 모드 활성화 여부 실시간 자가 보정 (전투 중 이벤트 누락 방어)
-    local activeMapID = C_ChallengeMode and C_ChallengeMode.GetActiveChallengeMapID and C_ChallengeMode.GetActiveChallengeMapID()
-    local isChallengeReallyActive = (activeMapID and activeMapID > 0) or is_challenge_active
+    local activeLevel = C_ChallengeMode and C_ChallengeMode.GetActiveKeystoneInfo and C_ChallengeMode.GetActiveKeystoneInfo()
+    local isChallengeReallyActive = (activeLevel and activeLevel > 0) or is_challenge_active
 
     local condition = "[combat] hide; [group:raid] hide; "
     if isChallengeReallyActive then
