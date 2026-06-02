@@ -29,7 +29,7 @@ local BL_DEBUFFS = {
 }
 
 -- ==============================
--- 캐싱 (ABC 순)
+-- 캐싱
 -- ==============================
 local C_SpellBook      = C_SpellBook
 local C_Timer          = C_Timer

@@ -69,34 +69,6 @@ local function match_border_to_name_color(tooltip, r, g, b)
     end
 end
 
-local function get_ouf_color(class)
-    local oUF = _G.oUF
-    if oUF and oUF.colors and oUF.colors.class then
-        local color = oUF.colors.class[class]
-        if color then
-            return color.r or color[1], color.g or color[2], color.b or color[3]
-        end
-    end
-    local color = RAID_CLASS_COLORS[class]
-    if color then
-        return color.r, color.g, color.b
-    end
-end
-
-local function get_ouf_reaction_color(reaction)
-    local oUF = _G.oUF
-    if oUF and oUF.colors and oUF.colors.reaction then
-        local color = oUF.colors.reaction[reaction]
-        if color then
-            return color.r or color[1], color.g or color[2], color.b or color[3]
-        end
-    end
-    local color = FACTION_BAR_COLORS[reaction]
-    if color then
-        return color.r, color.g, color.b
-    end
-end
-
 -- ==============================
 -- 콜백 핸들러
 -- ==============================
@@ -118,19 +90,22 @@ local function on_unit_tooltip(self, data)
     if not name_line then return end
 
     local r, g, b
+    local oUF = _G.oUF
     if UnitIsPlayer(unit) then
         local _, class = UnitClass(unit)
         if class then
-            r, g, b = get_ouf_color(class)
-            if r then
+            local color = (oUF and oUF.colors and oUF.colors.class and oUF.colors.class[class]) or RAID_CLASS_COLORS[class]
+            if color then
+                r, g, b = color.r or color[1], color.g or color[2], color.b or color[3]
                 name_line:SetTextColor(r, g, b)
             end
         end
     else
         local reaction = UnitReaction(unit, "player")
         if reaction then
-            r, g, b = get_ouf_reaction_color(reaction)
-            if r then
+            local color = (oUF and oUF.colors and oUF.colors.reaction and oUF.colors.reaction[reaction]) or FACTION_BAR_COLORS[reaction]
+            if color then
+                r, g, b = color.r or color[1], color.g or color[2], color.b or color[3]
                 name_line:SetTextColor(r, g, b)
             end
         end
@@ -146,7 +121,12 @@ end
 
 local function on_spell_tooltip(self, data)
     if dodoDB.enableTooltip == false or dodoDB.useTooltipColor == false then return end
-    apply_border_color(self, 1, 0.82, 0)
+    local gold = dodo.Colors.Primary.Gold
+    if gold then
+        apply_border_color(self, gold.r, gold.g, gold.b)
+    else
+        apply_border_color(self, 1, 0.82, 0)
+    end
 end
 
 -- ==============================

@@ -27,7 +27,7 @@ local Config = {
     mapYOffset  = 2,
 }
 
-local dungeon_ports = {
+local dungeon_list = {
     -- WoL
     [556] = 1254555, -- 사론의 구덩이
 
@@ -117,15 +117,13 @@ local dungeon_ports = {
 }
 
 -- ==============================
--- 캐싱 (알파벳 순 정렬)
+-- 캐싱
 -- ==============================
 local C_ChallengeMode = C_ChallengeMode
-local C_ChatInfo = C_ChatInfo
 local C_MythicPlus = C_MythicPlus
 local C_Timer = C_Timer
 local CreateFrame = CreateFrame
 local GetNumSubgroupMembers = GetNumSubgroupMembers
-local GetRealmName = GetRealmName
 local InCombatLockdown = InCombatLockdown
 local IsInGroup = IsInGroup
 local IsInRaid = IsInRaid
@@ -144,25 +142,19 @@ local _G = _G
 local ipairs = ipairs
 local issecretvalue = issecretvalue
 local pairs = pairs
-local string_sub = string.sub
 local table_insert = table.insert
 local table_sort = table.sort
-local tonumber = tonumber
 local type = type
 local wipe = wipe
 
 -- ==============================
 -- 모듈 내부 정적 상태 변수 (캡슐화)
 -- ==============================
-local PREFIX = "WA-KeyStGrList"
 local party_data = {}
 local is_challenge_active = false
-local need_update = false
-local need_visibility_update = false
+local is_preview_active = false
 
 local open_raid_lib = nil
-local lib_keystone = nil
-local lib_keystone_table = {}
 
 local main_frame = nil
 local rows = {}
@@ -188,18 +180,11 @@ local function sort_by_level(a, b)
 end
 
 local function get_faction_port_id(map_id)
-    local port = dungeon_ports[map_id]
+    local port = dungeon_list[map_id]
     if type(port) == "table" then
         return UnitFactionGroup("player") == "Horde" and port[2] or port[1]
     end
     return port
-end
-
-local function get_player_full_name(unit)
-    local name, realm = UnitName(unit)
-    if not name then return nil end
-    if not realm or realm == "" then realm = GetRealmName() end
-    return name .. "-" .. realm
 end
 
 -- ==============================
@@ -207,14 +192,10 @@ end
 -- ==============================
 local function update_visibility_condition()
     if InCombatLockdown() then
-        need_visibility_update = true
         return
     end
-    need_visibility_update = false
 
-    -- 챌린지 모드 활성화 여부 실시간 자가 보정 (전투 중 이벤트 누락 방어)
-    local activeLevel = C_ChallengeMode and C_ChallengeMode.GetActiveKeystoneInfo and C_ChallengeMode.GetActiveKeystoneInfo()
-    local isChallengeReallyActive = (activeLevel and activeLevel > 0) or is_challenge_active
+    local isChallengeReallyActive = is_challenge_active
 
     local condition = "[combat] hide; [group:raid] hide; "
     if isChallengeReallyActive then
@@ -260,11 +241,10 @@ end
 -- 파티원 UI 렌더링 (비밀값 예외 가드 적용)
 -- ==============================
 local function render_party_ui()
+    if is_preview_active then return end
     if InCombatLockdown() then
-        need_update = true
         return
     end
-    need_update = false
 
     local show_solo = dodoDB and dodoDB.useSoloKeystone ~= false
     if IsInRaid() then return end
@@ -421,10 +401,6 @@ local function update_my_keystone()
     if mapID and level then
         local myName = UnitName("player")
         party_data[myName] = { unit = "player", name = myName, mapID = mapID, level = level }
-        local msg = "KSGL:Send:" .. mapID .. ":" .. level .. ":0:0"
-        if IsInGroup() then
-            C_ChatInfo.SendAddonMessage(PREFIX, msg, "PARTY")
-        end
     end
     render_party_ui()
 end
@@ -455,7 +431,19 @@ end
 -- ==============================
 -- 모듈 On/Off 활성화 상태 제어
 -- ==============================
+local need_module_state_update = false
+
 local function update_module_state()
+    if InCombatLockdown() then
+        need_module_state_update = true
+        if main_frame then
+            main_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+        end
+        return
+    end
+
+    need_module_state_update = false
+
     local enabled = (dodoDB and dodoDB.enableKeystoneModule ~= false)
 
     if not enabled then
@@ -463,18 +451,29 @@ local function update_module_state()
         main_frame:UnregisterAllEvents()
     else
         main_frame:Show()
+        main_frame:UnregisterAllEvents()
 
-        main_frame:RegisterEvent("BAG_UPDATE_DELAYED")
-        main_frame:RegisterEvent("SPELL_UPDATE_COOLDOWN")
-        main_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        main_frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-        main_frame:RegisterEvent("GROUP_ROSTER_UPDATE")
-        main_frame:RegisterEvent("CHAT_MSG_ADDON")
-        main_frame:RegisterEvent("CHALLENGE_MODE_START")
-        main_frame:RegisterEvent("CHALLENGE_MODE_COMPLETED")
-        main_frame:RegisterEvent("CHALLENGE_MODE_RESET")
-        main_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
-        main_frame:RegisterEvent("PLAYER_REGEN_DISABLED")
+        -- 실시간 챌린지 상태 체크하여 이벤트 등록 분기
+        local activeLevel = C_ChallengeMode and C_ChallengeMode.GetActiveKeystoneInfo and C_ChallengeMode.GetActiveKeystoneInfo()
+        is_challenge_active = (activeLevel and activeLevel > 0)
+
+        if is_challenge_active then
+            main_frame:RegisterEvent("CHALLENGE_MODE_COMPLETED")
+            main_frame:RegisterEvent("CHALLENGE_MODE_RESET")
+            main_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+            main_frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+        else
+            main_frame:RegisterEvent("BAG_UPDATE_DELAYED")
+            main_frame:RegisterEvent("SPELL_UPDATE_COOLDOWN")
+            main_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+            main_frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+            main_frame:RegisterEvent("GROUP_ROSTER_UPDATE")
+            main_frame:RegisterEvent("CHALLENGE_MODE_START")
+            main_frame:RegisterEvent("CHALLENGE_MODE_COMPLETED")
+            main_frame:RegisterEvent("CHALLENGE_MODE_RESET")
+            main_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+            main_frame:RegisterEvent("PLAYER_REGEN_DISABLED")
+        end
 
         update_feature()
         update_visibility_condition()
@@ -483,6 +482,47 @@ end
 
 dodo.UpdateKeystoneModuleState = update_module_state
 dodo.KeystoneApplyFeature = update_feature
+
+local function show_preview_data()
+    local enabled = (dodoDB and dodoDB.enableKeystoneModule ~= false)
+    if not enabled then return end
+
+    is_preview_active = true
+    main_frame:Show()
+
+    for i = 1, 5 do
+        local row = rows[i]
+        row.portBtn:ApplyConfig({
+            type = "spell",
+            id = 159898,
+            icon = 1042079,
+            isAction = false,
+            label = "",
+            useTooltip = false,
+            outline = true,
+            cooldownSize = 12,
+            framestrata = Config.frameStrata,
+        })
+        row.portBtn.Count:SetText("10")
+        row.portBtn.icon:SetDesaturated(false)
+        row.noPort:Hide()
+        row.noLib:Hide()
+        row.mapName:SetText("하늘탑 (테스트)")
+        row.name:SetText("파티원" .. i)
+        row.name:SetTextColor(1, 0.82, 0)
+        row:Show()
+    end
+end
+
+local function hide_preview_data()
+    is_preview_active = false
+    local enabled = (dodoDB and dodoDB.enableKeystoneModule ~= false)
+    if enabled then
+        render_party_ui()
+    else
+        main_frame:Hide()
+    end
+end
 
 -- ==============================
 -- 초기화 및 UI 생성 (EditMode 연동)
@@ -555,23 +595,13 @@ local function initialize()
 
     create_ui()
 
-    if not C_ChatInfo.IsAddonMessagePrefixRegistered(PREFIX) then
-        C_ChatInfo.RegisterAddonMessagePrefix(PREFIX)
-    end
-    if not C_ChatInfo.IsAddonMessagePrefixRegistered("AstralKeys") then
-        C_ChatInfo.RegisterAddonMessagePrefix("AstralKeys")
-    end
-
     -- 라이브러리 연결
     open_raid_lib = _G.LibStub and _G.LibStub("LibOpenRaid-1.0", true)
-    lib_keystone = _G.LibStub and _G.LibStub("LibKeystone", true)
 
     local function on_openraid_keystone_update()
         if not InCombatLockdown() then
             read_from_details()
             render_party_ui_throttled()
-        else
-            need_update = true
         end
     end
 
@@ -580,20 +610,10 @@ local function initialize()
         open_raid_lib.RegisterCallback(cbHandle, "KeystoneUpdate", on_openraid_keystone_update)
     end
 
-    if lib_keystone then
-        local function on_lib_keystone_update(keyLevel, keyMap, playerRating, playerName, channel)
-            if channel == "PARTY" then
-                local charName = playerName:match("([^%-]+)") or playerName
-                if keyMap and keyLevel and keyMap > 0 and keyLevel > 0 then
-                    party_data[charName] = { unit = charName, name = charName, mapID = keyMap, level = keyLevel }
-                    need_update = true
-                    if not InCombatLockdown() then
-                        render_party_ui_throttled()
-                    end
-                end
-            end
-        end
-        lib_keystone.Register(lib_keystone_table, on_lib_keystone_update)
+    local anchorFrame = _G.dodoEditModeKeystone
+    if anchorFrame then
+        anchorFrame:HookScript("OnShow", show_preview_data)
+        anchorFrame:HookScript("OnHide", hide_preview_data)
     end
 end
 
@@ -627,13 +647,6 @@ local function delayed_roster_update()
         end
     end
 
-    if open_raid_lib and open_raid_lib.RequestKeystoneDataFromParty then
-        open_raid_lib.RequestKeystoneDataFromParty()
-    end
-    if lib_keystone then
-        lib_keystone.Request("PARTY")
-    end
-
     read_from_details()
     render_party_ui()
 
@@ -663,9 +676,16 @@ local function on_event(self, event, ...)
         end
 
     elseif event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA" then
-        local activeLevel = C_ChallengeMode.GetActiveKeystoneInfo()
+        local activeLevel = C_ChallengeMode and C_ChallengeMode.GetActiveKeystoneInfo and C_ChallengeMode.GetActiveKeystoneInfo()
+        local was_active = is_challenge_active
         is_challenge_active = (activeLevel and activeLevel > 0)
-        update_visibility_condition()
+        
+        if is_challenge_active ~= was_active then
+            update_module_state()
+        else
+            update_visibility_condition()
+        end
+
         if not IsInRaid() then
             C_Timer.After(0.5, delayed_entering_world)
         end
@@ -686,58 +706,13 @@ local function on_event(self, event, ...)
             render_party_ui()
         end
 
-    elseif event == "CHAT_MSG_ADDON" then
-        local prefix, text, channel, sender = ...
-
-        if prefix == PREFIX and sender ~= get_player_full_name("player") then
-            local msgType = text:match("KSGL:(%a+):")
-            if msgType == "Send" then
-                local mapID = tonumber(text:match("KSGL:.-:(%d+):"))
-                local level = tonumber(text:match("KSGL:.-:%d+:(%d+):"))
-                local senderName = sender:match("([^%-]+)") or sender
-                if mapID and level then
-                    local data = { unit = senderName, name = senderName, mapID = mapID, level = level }
-                    if channel == "PARTY" then
-                        party_data[senderName] = data
-                        render_party_ui_throttled()
-                    end
-                end
-            elseif msgType == "Request" then
-                update_my_keystone()
-            end
-
-        elseif prefix == "AstralKeys" and sender ~= get_player_full_name("player") then
-            local msgType, content = text:match("^(%w+)%s+(.+)")
-            if msgType and (string_sub(msgType, 1, 7) == "updateV" or string_sub(msgType, 1, 4) == "sync") then
-                for chunk in content:gmatch("[^_]+") do
-                    local fullName, mapID, level = chunk:match("^([^:]+):[^:]+:(%d+):(%d+)")
-                    if fullName and mapID and level then
-                        local charName = fullName:match("([^%-]+)") or fullName
-                        mapID = tonumber(mapID)
-                        level = tonumber(level)
-
-                        if mapID and level and mapID > 0 and level > 0 then
-                            local data = { unit = charName, name = charName, mapID = mapID, level = level, source = "Astral" }
-                            if channel == "PARTY" or channel == "RAID" then
-                                party_data[charName] = data
-                                need_update = true
-                                if not InCombatLockdown() then
-                                    render_party_ui_throttled()
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-
     elseif event == "CHALLENGE_MODE_START" then
         is_challenge_active = true
-        update_visibility_condition()
+        update_module_state()
 
     elseif event == "CHALLENGE_MODE_COMPLETED" or event == "CHALLENGE_MODE_RESET" then
         is_challenge_active = false
-        update_visibility_condition()
+        update_module_state()
         C_Timer.After(2, update_my_keystone)
 
         if event == "CHALLENGE_MODE_COMPLETED" and dodoDB and dodoDB.useKeyRoll ~= false then

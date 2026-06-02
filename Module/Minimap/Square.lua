@@ -11,12 +11,16 @@ local addonName, dodo = ...
 dodoDB = dodoDB or {}
 dodo.DB = dodo.DB or dodoDB
 
-local function get_minimap_shape_square() return "SQUARE" end
+local Config = {
+    squareMask = "Interface\\BUTTONS\\WHITE8X8",
+    roundMask  = "Interface\\CharacterFrame\\TempPortraitAlphaMask",
+}
+
+local function get_minimap_shape_square()
+    return "SQUARE"
+end
 
 local original_get_minimap_shape = _G.GetMinimapShape
-local square_mask = "Interface\\BUTTONS\\WHITE8X8"
-local round_mask  = "Interface\\CharacterFrame\\TempPortraitAlphaMask"
-
 local minimap_border = nil
 
 -- ==============================
@@ -36,9 +40,9 @@ local function create_ui()
     if minimap_border then return end
 
     minimap_border = CreateFrame("Frame", nil, Minimap, "NineSliceCodeTemplate")
-    local mapSize = Minimap:GetWidth()
-    if mapSize == 0 then mapSize = 198 end
-    minimap_border:SetSize(mapSize, mapSize)
+    local map_size = Minimap:GetWidth()
+    if map_size == 0 then map_size = 198 end
+    minimap_border:SetSize(map_size, map_size)
     minimap_border:SetPoint("CENTER", Minimap, "CENTER", 0, 0)
     minimap_border:SetFrameLevel(Minimap:GetFrameLevel() + 5)
 
@@ -65,8 +69,8 @@ local function create_ui()
         end
     end
 
-    local hEdges = { "TopEdge", "BottomEdge" }
-    for _, key in ipairs(hEdges) do
+    local h_edges = { "TopEdge", "BottomEdge" }
+    for _, key in ipairs(h_edges) do
         local piece = minimap_border[key]
         if piece then
             local _, h = piece:GetSize()
@@ -74,8 +78,8 @@ local function create_ui()
         end
     end
 
-    local vEdges = { "LeftEdge", "RightEdge" }
-    for _, key in ipairs(vEdges) do
+    local v_edges = { "LeftEdge", "RightEdge" }
+    for _, key in ipairs(v_edges) do
         local piece = minimap_border[key]
         if piece then
             local w = piece:GetWidth()
@@ -95,7 +99,7 @@ local function apply_minimap_square()
 
     local is_enabled = (dodoDB and dodoDB.useMinimap ~= false and dodoDB.useMinimapSquare ~= false)
     if is_enabled then
-        Minimap:SetMaskTexture(square_mask)
+        Minimap:SetMaskTexture(Config.squareMask)
         _G.GetMinimapShape = get_minimap_shape_square
         if _G.MinimapBorder then _G.MinimapBorder:Hide() end
         if _G.MinimapBorderTop then _G.MinimapBorderTop:Hide() end
@@ -104,10 +108,10 @@ local function apply_minimap_square()
         if _G.MinimapBackdrop then _G.MinimapBackdrop:Hide() end
 
         local hm = _G.HybridMinimap
-        if hm and hm.CircleMask then hm.CircleMask:SetTexture(square_mask) end
+        if hm and hm.CircleMask then hm.CircleMask:SetTexture(Config.squareMask) end
         if not minimap_border:IsShown() then minimap_border:Show() end
     else
-        Minimap:SetMaskTexture(round_mask)
+        Minimap:SetMaskTexture(Config.roundMask)
         _G.GetMinimapShape = original_get_minimap_shape
         if _G.MinimapBorder then _G.MinimapBorder:Show() end
         if _G.MinimapBorderTop then _G.MinimapBorderTop:Show() end
@@ -116,7 +120,7 @@ local function apply_minimap_square()
         if _G.MinimapBackdrop then _G.MinimapBackdrop:Show() end
 
         local hm = _G.HybridMinimap
-        if hm and hm.CircleMask then hm.CircleMask:SetTexture(round_mask) end
+        if hm and hm.CircleMask then hm.CircleMask:SetTexture(Config.roundMask) end
         if minimap_border:IsShown() then minimap_border:Hide() end
     end
 end
@@ -127,10 +131,7 @@ dodo.MinimapSquare = apply_minimap_square
 -- ==============================
 -- 이벤트 핸들러
 -- ==============================
-local initFrame = CreateFrame("Frame")
-initFrame:RegisterEvent("ADDON_LOADED")
-initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:SetScript("OnEvent", function(self, event, arg1)
+local function on_event(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
         if dodoDB.useMinimapSquare == nil then dodoDB.useMinimapSquare = true end
         create_ui()
@@ -142,7 +143,7 @@ initFrame:SetScript("OnEvent", function(self, event, arg1)
                 hm:SetFrameStrata("BACKGROUND")
                 hm:SetFrameLevel(100)
                 hm.MapCanvas:SetUseMaskTexture(false)
-                hm.CircleMask:SetTexture(square_mask)
+                hm.CircleMask:SetTexture(Config.squareMask)
                 hm.MapCanvas:SetUseMaskTexture(true)
             end
             self:UnregisterEvent("ADDON_LOADED")
@@ -153,14 +154,19 @@ initFrame:SetScript("OnEvent", function(self, event, arg1)
             hm:SetFrameStrata("BACKGROUND")
             hm:SetFrameLevel(100)
             hm.MapCanvas:SetUseMaskTexture(false)
-            hm.CircleMask:SetTexture(square_mask)
+            hm.CircleMask:SetTexture(Config.squareMask)
             hm.MapCanvas:SetUseMaskTexture(true)
         end
         self:UnregisterEvent("ADDON_LOADED")
     elseif event == "PLAYER_LOGIN" then
         apply_minimap_square()
     end
-end)
+end
+
+local init_frame = CreateFrame("Frame")
+init_frame:RegisterEvent("ADDON_LOADED")
+init_frame:RegisterEvent("PLAYER_LOGIN")
+init_frame:SetScript("OnEvent", on_event)
 
 -- ==============================
 -- 설정 등록

@@ -15,14 +15,19 @@ dodoDB = dodoDB or {}
 dodo.ResourceBar = dodo.ResourceBar or {}
 local RB = dodo.ResourceBar
 
+RB.Modes = {}
+function RB:RegisterMode(name, modeTable)
+    self.Modes[name] = modeTable
+end
+
 RB.bar1Frame = nil
 RB.bar2Frame = nil
 RB.isArcaneOrHealer = false
-RB.cachedSpecColor = { r = 1, g = 1, b = 1 }
-RB.fallbackSpecColor = { r = 1, g = 1, b = 1 }
+RB.cachedSpecColor = { r = 1.00, g = 0.59, b = 0.20 }
+RB.fallbackSpecColor = { r = 1.00, g = 0.59, b = 0.20 }
 
 RB.barConfigs = {
-    { name = "ResourceBar1", width = 272, height = 10, y = -224, template = "ResourceBar1Template" },
+    { name = "ResourceBar1", width = 272, height = 10, y = -227, template = "ResourceBar1Template" },
     { name = "ResourceBar2", width = 272, height = 7, y = -4, template = "ResourceBar2Template" }
 }
 
@@ -53,18 +58,18 @@ local function update_spec_config()
     RB.cachedSpecColor = (Colors and Colors.Spec and Colors.Spec[englishClass] and Colors.Spec[englishClass][spec]) or RB.fallbackSpecColor
 
     -- 하위 모듈 설정 갱신 유도
-    if RB.UpdateResourceSpec then
-        RB.UpdateResourceSpec(englishClass, spec)
+    if RB.UpdatePowerSpec then
+        RB.UpdatePowerSpec(englishClass, spec)
     end
-    if RB.UpdateBuffSpec then
-        RB.UpdateBuffSpec(englishClass, spec)
+    if RB.UpdateTrackingSpec then
+        RB.UpdateTrackingSpec(englishClass, spec)
     end
 end
 
 RB.UpdateSpecConfig = update_spec_config
 
 -- ==============================
--- 크기 및 위치 업데이트 (EditMode 연동)
+-- 크기 및 위치 업데이트
 -- ==============================
 local function update_option()
     if not RB.bar1Frame or not RB.bar2Frame then return end
@@ -110,7 +115,7 @@ local function update_option()
     else
         -- 폴백 고정 배치
         local savedX = db and db.resourceBarX or 0
-        local savedY = db and db.resourceBarY or -220
+        local savedY = db and db.resourceBarY or RB.barConfigs[1].y
         local savedPoint = db and db.resourceBarPoint or "CENTER"
         RB.bar1Frame:ClearAllPoints()
         RB.bar1Frame:SetPoint(savedPoint, UIParent, savedPoint, savedX, savedY)
@@ -134,8 +139,8 @@ local function update_visibility()
     if not isEnabled then
         RB.bar1Frame:Hide()
         RB.bar2Frame:Hide()
-        if RB.ToggleResourceEvents then RB.ToggleResourceEvents(false) end
-        if RB.ToggleBuffEvents then RB.ToggleBuffEvents(false) end
+        if RB.TogglePowerEvents then RB.TogglePowerEvents(false) end
+        if RB.ToggleTrackingEvents then RB.ToggleTrackingEvents(false) end
         if RB.CancelTickers then RB.CancelTickers() end
         return
     end
@@ -143,21 +148,21 @@ local function update_visibility()
     -- 자원바1 활성화 제어
     if db and db.useResourceBar1 ~= false then
         RB.bar1Frame:Show()
-        if RB.ToggleResourceEvents then RB.ToggleResourceEvents(true) end
+        if RB.TogglePowerEvents then RB.TogglePowerEvents(true) end
         if RB.UpdateBar1 then RB.UpdateBar1() end
     else
         RB.bar1Frame:Hide()
-        if RB.ToggleResourceEvents then RB.ToggleResourceEvents(false) end
+        if RB.TogglePowerEvents then RB.TogglePowerEvents(false) end
     end
 
     -- 버프바2 활성화 제어
     if db and db.useResourceBar2 ~= false then
         RB.bar2Frame:Show()
-        if RB.ToggleBuffEvents then RB.ToggleBuffEvents(true) end
+        if RB.ToggleTrackingEvents then RB.ToggleTrackingEvents(true) end
         update_spec_config()
     else
         RB.bar2Frame:Hide()
-        if RB.ToggleBuffEvents then RB.ToggleBuffEvents(false) end
+        if RB.ToggleTrackingEvents then RB.ToggleTrackingEvents(false) end
         if RB.CancelTickers then RB.CancelTickers() end
     end
 end
@@ -215,7 +220,7 @@ local function on_event(self, event, arg1)
 
         -- EditMode 시스템 가상 앵커 등록 (2dodo 9번 규칙)
         if dodo.EditMode then
-            dodo.EditMode:CreateSystem("ResourceBar", "자원바", "자원바와 버프 추적바의 위치를 조정합니다.", UIParent, 272, 21, { point = "CENTER", relativeTo = "UIParent", relativePoint = "CENTER", xOfs = 0, yOfs = -220 })
+            dodo.EditMode:CreateSystem("ResourceBar", "자원바", "자원바와 버프 추적바의 위치를 조정합니다.", UIParent, 272, 21, { point = "CENTER", relativeTo = "UIParent", relativePoint = "CENTER", xOfs = 0, yOfs = RB.barConfigs[1].y })
         end
 
         initialize()
@@ -223,8 +228,8 @@ local function on_event(self, event, arg1)
         if not isInitialized then
             isInitialized = true
             -- 하위 모듈 OnLoad 트리거 (믹스인 및 훅 선제 적용)
-            if RB.OnLoadResource then RB.OnLoadResource() end
-            if RB.OnLoadBuff then RB.OnLoadBuff() end
+            if RB.OnLoadPower then RB.OnLoadPower() end
+            if RB.OnLoadTracking then RB.OnLoadTracking() end
         end
 
         update_option()

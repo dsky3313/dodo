@@ -1,14 +1,15 @@
--- ==============================
--- 설정 및 테이블
--- ==============================
----@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
+-- ============================================================================
+-- dodo: ChatFrame Core (대화창 코어)
+-- License: GPLv3 (배포 가능 자유 라이선스)
+-- ============================================================================
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 dodo.DB = dodo.DB or dodoDB
 
--- ==============================
--- 상태 업데이트 라우터
--- ==============================
+-- 캐싱
+local CreateFrame = CreateFrame
+
+-- 1. 대화창 모듈별 독립적 업데이트 함수 호출
 local function update_chat_module_state()
     if dodo.UpdateChatFontState then dodo.UpdateChatFontState() end
     if dodo.UpdateChatURLState then dodo.UpdateChatURLState() end
@@ -18,9 +19,7 @@ end
 
 dodo.UpdateChatModuleState = update_chat_module_state
 
--- ==============================
--- 초기화
--- ==============================
+-- 2. 초기화 및 PLAYER_LOGIN 이벤트
 local function initialize()
     if dodo.DB.enableChatModule == nil then dodo.DB.enableChatModule = true end
     if dodo.DB.useFontOutline == nil then dodo.DB.useFontOutline = true end
@@ -38,9 +37,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     self:UnregisterAllEvents()
 end)
 
--- ==============================
--- 설정 등록
--- ==============================
+-- 3. 게임 내 설정 및 편집 모드 연동
 if dodo.RegisterEditModeModuleSetting then
     dodo.RegisterEditModeModuleSetting("인터페이스", {
         {
@@ -92,7 +89,7 @@ if dodo.RegisterEditModeSystemSetting then
                 update_chat_module_state()
             end,
             minVal = 10,
-            maxVal = 18,
+            maxVal = 20,
             step = 1,
             disabled = function() return dodo.DB and (dodo.DB.enableChatModule == false or dodo.DB.useFontSize == false) end,
         }

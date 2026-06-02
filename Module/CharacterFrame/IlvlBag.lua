@@ -1,78 +1,103 @@
 -- ==============================
+-- Inspired
+-- ==============================
+-- 
+
+-- ==============================
 -- 설정 및 테이블
 -- ==============================
----@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
+
+local NUM_CONTAINER_FRAMES = NUM_CONTAINER_FRAMES or 13
+local OUTLINE_FONT = "Fonts\\2002.TTF"
 
 -- ==============================
 -- 캐싱
 -- ==============================
 local C_Container = C_Container
 local C_Item = C_Item
+local ContainerFrameCombinedBags = ContainerFrameCombinedBags
 local CreateFrame = CreateFrame
 local hooksecurefunc = hooksecurefunc
 local _G = _G
 
-local NUM_CONTAINER_FRAMES = NUM_CONTAINER_FRAMES or 13
-local OUTLINE_FONT = "Fonts\\2002.TTF"
-
 -- ==============================
--- 가방 슬롯 업데이트
+-- 기능 1: 로컬 상태 및 설정
 -- ==============================
 local bag_slot_cache = {}
 
-local function update_bag_slot(button)
-    if not button then return end
-    local bagID, slotID
-    if button.GetBagID then
-        bagID = button:GetBagID()
-        slotID = button:GetID()
-    else
-        local parent = button:GetParent()
-        if parent and parent.GetID then
-            bagID = parent:GetID()
-            slotID = button:GetID()
-        end
-    end
-    if not bagID or not slotID then return end
-
+-- ==============================
+-- 기능 2: 상태 업데이트
+-- ==============================
+-- 1. 각 가방 슬롯 버튼별 아이템 레벨 글자 객체 가져오거나 생성 (Lazy load)
+local function get_or_create_bag_ilvl_fs(button)
     if not bag_slot_cache[button] then
+        -- 프레임 레벨 겹침 방지를 위해 단독 컨테이너 생성
         local container = CreateFrame("Frame", nil, button)
         container:SetFrameLevel(button:GetFrameLevel() + 5)
         container:SetAllPoints(button)
-        local ilvlFS = container:CreateFontString(nil, "OVERLAY")
-        ilvlFS:SetFont(OUTLINE_FONT, 12, "OUTLINE")
-        ilvlFS:SetPoint("TOPLEFT", 2, -2)
-        container.ilvlFS = ilvlFS
+        
+        local fs = container:CreateFontString(nil, "OVERLAY")
+        fs:SetFont(OUTLINE_FONT, 12, "OUTLINE")
+        fs:SetPoint("TOPLEFT", 2, -2)
+        fs:Hide()
+        
+        container.fs = fs
         bag_slot_cache[button] = container
     end
+    return bag_slot_cache[button].fs
+end
 
-    local ilvlFS = bag_slot_cache[button].ilvlFS
+-- 2. 단일 가방 버튼의 아이템 레벨 갱신
+local function update_bag_slot(button)
+    if not button then return end
+
+    -- 가방 및 슬롯 ID 안전 획득
+    local bag_id, slot_id
+    if button.GetBagID then
+        bag_id = button:GetBagID()
+        slot_id = button:GetID()
+    else
+        local parent = button:GetParent()
+        if parent and parent.GetID then
+            bag_id = parent:GetID()
+            slot_id = button:GetID()
+        end
+    end
+    if not bag_id or not slot_id then return end
+
+    local ilvl_fs = get_or_create_bag_ilvl_fs(button)
+
+    -- 애드온 전체 또는 가방 템렙 설정 비활성화 시 감추기 처리
     if dodoDB.enableCharacterFrame == false or not dodoDB.useItemLevel then
-        ilvlFS:Hide()
+        ilvl_fs:Hide()
         return
     end
 
-    local info = C_Container.GetContainerItemInfo(bagID, slotID)
+    -- 가방 정보 획득
+    local info = C_Container.GetContainerItemInfo(bag_id, slot_id)
     if info and info.hyperlink then
         local _, _, quality, _, _, _, _, _, equipLoc, _, _, classID = C_Item.GetItemInfo(info.hyperlink)
-        local isEquip = (classID == 2 or classID == 4) and equipLoc and equipLoc ~= "" and equipLoc ~= "INVTYPE_NON_EQUIP"
+        -- 장비(무기 = classID 2, 방어구 = classID 4) 유형 검사
+        local is_equip = (classID == 2 or classID == 4) and equipLoc and equipLoc ~= "" and equipLoc ~= "INVTYPE_NON_EQUIP"
 
-        if isEquip then
-            local itemLevel = C_Item.GetDetailedItemLevelInfo(info.hyperlink)
-            if itemLevel and itemLevel > 1 then
+        if is_equip then
+            local item_level = C_Item.GetDetailedItemLevelInfo(info.hyperlink)
+            if item_level and item_level > 1 then
+                -- 아이템 레벨 텍스트 지정 및 품질 색상 도포
                 local r, g, b = C_Item.GetItemQualityColor(quality or 1)
-                ilvlFS:SetTextColor(r, g, b)
-                ilvlFS:SetText(itemLevel)
-                ilvlFS:Show()
+                ilvl_fs:SetTextColor(r, g, b)
+                ilvl_fs:SetText(item_level)
+                ilvl_fs:Show()
                 return
             end
         end
     end
-    ilvlFS:Hide()
+    ilvl_fs:Hide()
 end
 
+-- 3. 가방 프레임에 소속된 모든 버튼 순회 갱신
 local function update_bag_frame(frame)
     if not frame or not frame:IsShown() then return end
     if frame.EnumerateValidItems then
@@ -82,18 +107,24 @@ local function update_bag_frame(frame)
     end
 end
 
+-- 외부 호출용 함수 매핑
 function dodo.UpdateCharacterFrameIlvlBag()
     for i = 1, NUM_CONTAINER_FRAMES do
         update_bag_frame(_G["ContainerFrame" .. i])
     end
-    if ContainerFrameCombinedBags then update_bag_frame(ContainerFrameCombinedBags) end
+    if ContainerFrameCombinedBags then
+        update_bag_frame(ContainerFrameCombinedBags)
+    end
 end
 
--- 가방 아이템 슬롯 훅
+-- ==============================
+-- 이벤트 핸들러
+-- ==============================
 local function on_bag_update_items(self)
     update_bag_frame(self)
 end
 
+-- 각 기본 가방 13개와 통합 가방에 훅 설치
 for i = 1, NUM_CONTAINER_FRAMES do
     local cf = _G["ContainerFrame" .. i]
     if cf then

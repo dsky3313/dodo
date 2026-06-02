@@ -1,4 +1,10 @@
 -- ==============================
+-- Inspired
+-- ==============================
+-- DamageMeterTools 暴雪傷害統計增強 (https://www.curseforge.com/wow/addons/damagemetertools)
+-- Damage Meter Anchored (https://www.curseforge.com/wow/addons/damage-meter-anchored)
+
+-- ==============================
 -- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global

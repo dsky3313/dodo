@@ -1,7 +1,7 @@
 -- ==============================
 -- Inspired
 -- ==============================
--- [Midnight] Quickselect Dungeons by Yukero (WeakAuras)
+-- [Midnight] Quickselect Dungeons by Yukero (https://wago.io/BEYrOCKMG)
 
 -- ==============================
 -- 설정 및 테이블

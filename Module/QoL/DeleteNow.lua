@@ -2,7 +2,6 @@
 -- Inspired
 -- ==============================
 -- Leatrix Plus (https://www.curseforge.com/wow/addons/leatrix-plus)
--- EnhanceQoL
 
 -- ==============================
 -- 설정 및 테이블

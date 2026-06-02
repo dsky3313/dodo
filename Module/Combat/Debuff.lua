@@ -37,16 +37,23 @@ local Options_Default = {
     ypoint  = 0,
 }
 
--- [에러 해결]: 전역 DEBUFF_TYPE_*_COLOR가 존재하지 않아 nil 오류 유발되는 문제를 CreateColor 직접 생성으로 해결
-local debuffinfo = {
-    [0]  = CreateColor(0.8, 0.8, 0.8), -- 일반 디버프
-    [1]  = CreateColor(0.2, 0.6, 1.0), -- Magic (파랑)
-    [2]  = CreateColor(0.6, 0.0, 1.0), -- Curse (보라)
-    [3]  = CreateColor(0.6, 0.4, 0.0), -- Disease (노랑/갈색)
-    [4]  = CreateColor(0.0, 0.6, 0.0), -- Poison (녹색)
-    [9]  = CreateColor(0.4, 0.2, 0.0), -- Bleed (붉은 갈색)
-    [11] = CreateColor(0.4, 0.2, 0.0), -- Bleed (붉은 갈색)
-}
+-- dodo.Colors.Debuffn 데이터베이스 동적 참조 매핑 (중앙화 지원)
+local debuffinfo = {}
+if dodo.Colors and dodo.Colors.Debuffn then
+    for dispeltype, v in pairs(dodo.Colors.Debuffn) do
+        debuffinfo[dispeltype] = CreateColor(v.r, v.g, v.b)
+    end
+else
+    debuffinfo = {
+        [0]  = CreateColor(0.8, 0.8, 0.8), -- 일반 디버프
+        [1]  = CreateColor(0.2, 0.6, 1.0), -- Magic (파랑)
+        [2]  = CreateColor(0.6, 0.0, 1.0), -- Curse (보라)
+        [3]  = CreateColor(0.6, 0.4, 0.0), -- Disease (노랑/갈색)
+        [4]  = CreateColor(0.0, 0.6, 0.0), -- Poison (녹색)
+        [9]  = CreateColor(0.4, 0.2, 0.0), -- Bleed (붉은 갈색)
+        [11] = CreateColor(0.4, 0.2, 0.0), -- Bleed (붉은 갈색)
+    }
+end
 
 local filterList = {
     [26013]  = true, -- 탈영병 (Deserter)
@@ -61,7 +68,7 @@ local filterList = {
 }
 
 -- ==============================
--- 캐싱 (가나다 순 정렬)
+-- 캐싱
 -- ==============================
 local CopyTable = CopyTable
 local CreateFrame = CreateFrame

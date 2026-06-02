@@ -1,7 +1,8 @@
 -- ==============================
 -- Inspired
 -- ==============================
--- LegionRemixHelper (EditModeUtils.lua)
+-- LegionRemixHelper (https://www.curseforge.com/wow/addons/legion-remix-helper)
+-- LibEditMode (https://www.curseforge.com/wow/addons/libeditmode)
 
 -- ==============================
 -- 설정 및 테이블

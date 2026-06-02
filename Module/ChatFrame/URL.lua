@@ -1,11 +1,26 @@
--- ==============================
--- 설정 및 테이블
--- ==============================
----@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
+-- ============================================================================
+-- dodo: ChatFrame URL (대화창 웹 주소 링크화 및 복사 지원)
+-- License: GPLv3 (배포 가능 자유 라이선스)
+-- ============================================================================
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 dodo.DB = dodo.DB or dodoDB
 
+-- 캐싱 및 와우 API 단축
+local C_Timer = C_Timer
+local ChatFrame_AddMessageEventFilter = ChatFrame_AddMessageEventFilter
+local ChatFrame_RemoveMessageEventFilter = ChatFrame_RemoveMessageEventFilter
+local CreateFrame = CreateFrame
+local IsControlKeyDown = IsControlKeyDown
+local IsInInstance = IsInInstance
+local issecretvalue = issecretvalue
+local UIParent = UIParent
+local hooksecurefunc = hooksecurefunc
+local ipairs = ipairs
+local tostring = tostring
+local type = type
+
+-- URL 감지 정규식 패턴 리스트
 local Config = {
     urlPatterns = {
         "^(%a[%w+.-]+://[^%s|]+)",
@@ -26,25 +41,7 @@ local Config = {
     }
 }
 
--- ==============================
--- 캐싱
--- ==============================
-local ButtonFrameTemplate_HidePortrait = ButtonFrameTemplate_HidePortrait
-local C_Timer = C_Timer
-local ChatFrame_AddMessageEventFilter = ChatFrame_AddMessageEventFilter
-local ChatFrame_RemoveMessageEventFilter = ChatFrame_RemoveMessageEventFilter
-local CreateFrame = CreateFrame
-local IsControlKeyDown = IsControlKeyDown
-local UIParent = UIParent
-local hooksecurefunc = hooksecurefunc
-local ipairs = ipairs
-local issecretvalue = issecretvalue or function() return false end
-local tostring = tostring
-local type = type
-
--- ==============================
--- URL 파싱 및 복사 프레임 제어
--- ==============================
+-- 1. URL 뒤쪽에 붙은 부적절한 문장부호 제거
 local function split_trailing_url_punctuation(url)
     url = tostring(url or "")
     local trailing = ""
@@ -60,53 +57,63 @@ local function split_trailing_url_punctuation(url)
     return url, trailing
 end
 
+-- 2. URL 문자열을 하이퍼링크 포맷으로 마크업
 local function format_url(url)
     local actual_url, trailing = split_trailing_url_punctuation(url)
-    actual_url = actual_url:gsub("%%", "%%%%")
+    actual_url = actual_url:gsub("%%", "%%%%") -- 퍼센트 기호 안전 이스케이프
     return "|cff149bfd|Hurl:" .. actual_url .. "|h[" .. actual_url .. "]|h|r" .. trailing
 end
 
-local function create_url_copy_frame()
-    if dodo.URLCopyFrame then return dodo.URLCopyFrame end
-    local f = CreateFrame("Frame", "dodoChatURLCopyFrame", UIParent, "PortraitFrameTemplate")
-    ButtonFrameTemplate_HidePortrait(f)
+-- 3. 헬퍼 함수를 사용한 순정 디자인 복사 팝업 프레임 생성 (Lazy load)
+local function get_or_create_url_popup()
+    if not dodo.URLCopyFrame then
+        -- dodo UI 팩토리의 포트레이트 패널 생성 헬퍼 호출
+        local f = dodo.UI:CreatePortraitPanel("dodoChatURLCopyFrame", "URL 복사 (Ctrl+C)")
+        f:SetSize(300, 80)
+        f:SetPoint("TOP", UIParent, "TOP", 0, -150)
+        f:SetFrameStrata("DIALOG")
+        f:Hide()
 
-    f:SetSize(300, 80)
-    f:SetPoint("TOP", UIParent, "TOP", 0, -150)
-    f:SetFrameStrata("DIALOG")
-    f:Hide()
+        -- 주소 복사용 에디트박스
+        local eb = CreateFrame("EditBox", nil, f, "InputBoxTemplate")
+        eb:SetPoint("BOTTOMLEFT", 25, 15)
+        eb:SetPoint("BOTTOMRIGHT", -15, 15)
+        eb:SetHeight(24)
+        eb:SetAutoFocus(true)
+        eb:SetScript("OnEscapePressed", function() f:Hide() end)
+        eb:SetScript("OnEnterPressed", function() f:Hide() end)
+        eb:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
 
-    f.TitleContainer.TitleText:SetText("URL 복사 (Ctrl+C)")
+        -- 복사 단축키(Ctrl+C) 입력 완료 즉시 창 숨김 딜레이
+        local function hide_popup() f:Hide() end
+        eb:SetScript("OnKeyDown", function(self, key)
+            if IsControlKeyDown() and key == "C" then
+                C_Timer.After(0.1, hide_popup)
+            end
+        end)
 
-    local eb = CreateFrame("EditBox", nil, f, "InputBoxTemplate")
-    eb:SetPoint("BOTTOMLEFT", 25, 15)
-    eb:SetPoint("BOTTOMRIGHT", -15, 15)
-    eb:SetHeight(24)
-    eb:SetAutoFocus(true)
-    eb:SetScript("OnEscapePressed", function() f:Hide() end)
-    eb:SetScript("OnEnterPressed", function() f:Hide() end)
-    eb:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
-
-    local function hide_frame() f:Hide() end
-    eb:SetScript("OnKeyDown", function(self, key)
-        if IsControlKeyDown() and key == "C" then
-            C_Timer.After(0.1, hide_frame)
-        end
-    end)
-    f.EditBox = eb
-
-    dodo.URLCopyFrame = f
-    return f
+        f.EditBox = eb
+        dodo.URLCopyFrame = f
+    end
+    return dodo.URLCopyFrame
 end
 
+-- 외부 노출 복사 팝업 열기 함수
+local function show_url_copy_popup(url)
+    local popup = get_or_create_url_popup()
+    popup.EditBox:SetText(url)
+    popup:Show()
+    popup.EditBox:SetFocus()
+    popup.EditBox:HighlightText()
+end
+
+dodo.ShowURLCopyPopup = show_url_copy_popup
+
+-- 4. 툴팁 링크 클릭 훅 연동
 local function handle_hyperlink_click(link, text, button, chatFrame)
     if type(link) == "string" and link:sub(1, 4) == "url:" then
         local url = link:sub(5):gsub("||", "|")
-        local f = create_url_copy_frame()
-        f.EditBox:SetText(url)
-        f:Show()
-        f.EditBox:SetFocus()
-        f.EditBox:HighlightText()
+        show_url_copy_popup(url)
         return true
     end
 end
@@ -120,13 +127,16 @@ if EventRegistry and EventRegistry.RegisterCallback then
     EventRegistry:RegisterCallback("SetItemRef", on_set_item_ref)
 end
 
--- ==============================
--- 대화 이벤트 필터링
--- ==============================
+-- 5. 대화 메시지 속 URL 감지 필터 콜백
 local function filter_message(self, event, msg, author, ...)
-    if not dodo.DB.enableChatModule or issecretvalue(msg) then return false, msg, author, ... end
+    if not dodo.DB.enableChatModule or not dodo.DB.useLinkURLs then return false, msg, author, ... end
 
-    if dodo.DB.useLinkURLs and type(msg) == "string" and not msg:find("|H") then
+    -- KString 비밀값 체크 (보안 에러 방지)
+    if issecretvalue and (issecretvalue(msg) or (author and issecretvalue(author))) then
+        return false, msg, author, ...
+    end
+
+    if type(msg) == "string" and not msg:find("|H") then
         if msg:find("%.") or msg:find("://") or msg:find("www") then
             for _, pattern in ipairs(Config.urlPatterns) do
                 msg = msg:gsub(pattern, format_url)
@@ -137,14 +147,16 @@ local function filter_message(self, event, msg, author, ...)
     return false, msg, author, ...
 end
 
+-- 6. 메시지 이벤트별 링크화 필터 등록/해제 제어
+local FILTER_EVENTS = {
+    "CHAT_MSG_CHANNEL", "CHAT_MSG_GUILD", "CHAT_MSG_OFFICER", "CHAT_MSG_PARTY",
+    "CHAT_MSG_PARTY_LEADER", "CHAT_MSG_RAID", "CHAT_MSG_RAID_LEADER",
+    "CHAT_MSG_INSTANCE_CHAT", "CHAT_MSG_INSTANCE_CHAT_LEADER", "CHAT_MSG_SAY",
+    "CHAT_MSG_YELL", "CHAT_MSG_WHISPER", "CHAT_MSG_BN_WHISPER",
+}
+
 local function apply_chat_filters(enabled)
-    local filterEvents = {
-        "CHAT_MSG_CHANNEL", "CHAT_MSG_GUILD", "CHAT_MSG_OFFICER", "CHAT_MSG_PARTY",
-        "CHAT_MSG_PARTY_LEADER", "CHAT_MSG_RAID", "CHAT_MSG_RAID_LEADER",
-        "CHAT_MSG_INSTANCE_CHAT", "CHAT_MSG_INSTANCE_CHAT_LEADER", "CHAT_MSG_SAY",
-        "CHAT_MSG_YELL", "CHAT_MSG_WHISPER", "CHAT_MSG_BN_WHISPER",
-    }
-    for _, eventName in ipairs(filterEvents) do
+    for _, eventName in ipairs(FILTER_EVENTS) do
         if enabled then
             ChatFrame_AddMessageEventFilter(eventName, filter_message)
         else
@@ -153,11 +165,10 @@ local function apply_chat_filters(enabled)
     end
 end
 
--- ==============================
--- 상태 업데이트 및 초기화
--- ==============================
+-- 7. 모듈 갱신 라우팅 연동
 local function update_state()
-    local is_enabled = (dodo.DB and dodo.DB.enableChatModule ~= false and dodo.DB.useLinkURLs ~= false)
+    local in_instance = IsInInstance()
+    local is_enabled = (dodo.DB and dodo.DB.enableChatModule ~= false and dodo.DB.useLinkURLs ~= false and not in_instance)
     apply_chat_filters(is_enabled)
 end
 
@@ -165,15 +176,18 @@ dodo.UpdateChatURLState = update_state
 
 local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 initFrame:SetScript("OnEvent", function(self, event)
-    if dodo.DB.useLinkURLs == nil then dodo.DB.useLinkURLs = true end
-    update_state()
-    self:UnregisterAllEvents()
+    if event == "PLAYER_LOGIN" then
+        if dodo.DB.useLinkURLs == nil then dodo.DB.useLinkURLs = true end
+        update_state()
+        self:UnregisterEvent("PLAYER_LOGIN")
+    elseif event == "PLAYER_ENTERING_WORLD" then
+        update_state()
+    end
 end)
 
--- ==============================
--- 설정 등록
--- ==============================
+-- 8. 설정 UI 연결
 if dodo.RegisterEditModeSystemSetting then
     dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.ChatFrame, {
         {

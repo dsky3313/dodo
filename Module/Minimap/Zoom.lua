@@ -11,8 +11,8 @@ local addonName, dodo = ...
 dodoDB = dodoDB or {}
 dodo.DB = dodo.DB or dodoDB
 
-local init_minimap = nil
-local is_zoom_timer_running = false
+local init_frame = nil
+local zoom_timer = nil
 
 -- ==============================
 -- 캐싱
@@ -28,7 +28,7 @@ local issecretvalue = issecretvalue or function() return false end
 -- 줌 초기화 로직
 -- ==============================
 local function on_zoom_timer_tick()
-    is_zoom_timer_running = false
+    zoom_timer = nil
     local _, i_type, d_id = GetInstanceInfo()
     if not (d_id == 8 or i_type == "raid") then
         local current_zoom = Minimap:GetZoom()
@@ -43,22 +43,25 @@ local function reset_minimap_zoom()
     if not dodoDB or dodoDB.useResetMinimapZoom == false then return end
     local _, instance_type, difficulty_id = GetInstanceInfo()
     if difficulty_id == 8 or instance_type == "raid" then return end
-    if is_zoom_timer_running then return end
+    if zoom_timer then return end
 
-    is_zoom_timer_running = true
-    C_Timer.After(10, on_zoom_timer_tick)
+    zoom_timer = C_Timer.NewTimer(10, on_zoom_timer_tick)
 end
 
 local function update_minimap_zoom_reset()
-    if not init_minimap then return end
+    if not init_frame then return end
     local is_enabled = (dodoDB and dodoDB.useMinimap ~= false and dodoDB.useResetMinimapZoom ~= false)
     local _, instance_type, difficulty_id = GetInstanceInfo()
     local in_instance = (difficulty_id == 8 or instance_type == "raid")
 
     if is_enabled and not in_instance then
-        init_minimap:RegisterEvent("MINIMAP_UPDATE_ZOOM")
+        init_frame:RegisterEvent("MINIMAP_UPDATE_ZOOM")
     else
-        init_minimap:UnregisterEvent("MINIMAP_UPDATE_ZOOM")
+        init_frame:UnregisterEvent("MINIMAP_UPDATE_ZOOM")
+        if zoom_timer then
+            zoom_timer:Cancel()
+            zoom_timer = nil
+        end
     end
 end
 
@@ -68,24 +71,21 @@ dodo.useResetMinimapZoom = update_minimap_zoom_reset
 -- ==============================
 -- 이벤트 핸들러
 -- ==============================
-local function on_event(self, event)
+local function on_event(self, event, arg1)
     if event == "MINIMAP_UPDATE_ZOOM" then
         reset_minimap_zoom()
     elseif event == "PLAYER_ENTERING_WORLD" then
         update_minimap_zoom_reset()
+    elseif event == "PLAYER_LOGIN" then
+        if dodoDB.useResetMinimapZoom == nil then dodoDB.useResetMinimapZoom = true end
+        update_minimap_zoom_reset()
     end
 end
 
-init_minimap = CreateFrame("Frame")
-init_minimap:RegisterEvent("PLAYER_LOGIN")
-init_minimap:RegisterEvent("PLAYER_ENTERING_WORLD")
-init_minimap:SetScript("OnEvent", function(self, event, arg1)
-    if event == "PLAYER_LOGIN" then
-        if dodoDB.useResetMinimapZoom == nil then dodoDB.useResetMinimapZoom = true end
-        update_minimap_zoom_reset()
-        self:SetScript("OnEvent", on_event)
-    end
-end)
+init_frame = CreateFrame("Frame")
+init_frame:RegisterEvent("PLAYER_LOGIN")
+init_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+init_frame:SetScript("OnEvent", on_event)
 
 -- ==============================
 -- 설정 등록

@@ -1,7 +1,12 @@
 -- ==============================
+-- Inspired
+-- ==============================
+-- ArmoryUtils (https://www.curseforge.com/wow/addons/armoryutils)
+-- Fex (https://www.curseforge.com/wow/addons/fex)
+
+-- ==============================
 -- 설정 및 테이블
 -- ==============================
----@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
@@ -24,235 +29,100 @@ dodo.CharacterFrameSLOT_LIST = {
     { frame = "CharacterSecondaryHandSlot", slotID = 17, dir = "RIGHT", enchant = false },
 }
 
-dodo.CharacterFrameSlotData = {}
-dodo.CharacterFrameInspectSlotData = {}
-dodo.CharacterFrameCompCharacterData = {}
-dodo.CharacterFrameCompInspectData = {}
-dodo.CharacterFrameBuildSlotsCallbacks = {}
-
 -- ==============================
 -- 캐싱
 -- ==============================
-local C_AddOns = C_AddOns
-local C_Item = C_Item
 local C_Timer = C_Timer
 local CreateFrame = CreateFrame
-local GetInventoryItemID = GetInventoryItemID
-local GetInventoryItemLink = GetInventoryItemLink
-local GetItemInfo = GetItemInfo
 local hooksecurefunc = hooksecurefunc
-local ipairs = ipairs
-local match = string.match
-local pairs = pairs
 local PaperDollFrame = PaperDollFrame
-local table_insert = table.insert
-local tonumber = tonumber
-local _G = _G
-
-local NUM_CONTAINER_FRAMES = NUM_CONTAINER_FRAMES or 13
 
 -- ==============================
--- 슬롯 빌드 컨트롤러
+-- 기능 1: 로컬 상태 및 설정
 -- ==============================
-local slot_built = { Character = false, Inspect = false, CompCharacter = false, CompInspect = false }
-
-local function build_slots(prefix, slot_data)
-    if slot_built[prefix] then return end
-    slot_built[prefix] = true
-
-    for _, info in ipairs(dodo.CharacterFrameSLOT_LIST) do
-        local slot_name = info.frame:gsub("Character", prefix)
-        local slot_frame = _G[slot_name]
-        if slot_frame then
-            local entry = { slotID = info.slotID, dir = info.dir, isEnchantSlot = info.enchant, slotFrame = slot_frame }
-
-            for _, callback in ipairs(dodo.CharacterFrameBuildSlotsCallbacks) do
-                callback(slot_frame, entry, info)
-            end
-
-            table_insert(slot_data, entry)
-        end
-    end
-end
+local event_frame = CreateFrame("Frame")
 
 -- ==============================
--- 업데이트 제어
+-- 기능 2: 상태 업데이트
 -- ==============================
-local is_pending_update = false
-
-local function try_update_slots()
-    local all_ready = true
-    for slot = 1, 19 do
-        local link = GetInventoryItemLink("player", slot)
-        if link then
-            local item_id = tonumber(match(link, "item:(%d+)"))
-            if item_id and not C_Item.IsItemDataCachedByID(item_id) then
-                all_ready = false
-                break
-            end
-        end
-    end
-
-    if all_ready then
-        is_pending_update = false
-        if dodo.UpdateCharacterFrameIlvl then dodo.UpdateCharacterFrameIlvl("player", dodo.CharacterFrameSlotData) end
-        if dodo.UpdateCharacterFrameEnchant then dodo.UpdateCharacterFrameEnchant("player", dodo.CharacterFrameSlotData) end
-        if dodo.UpdateCharacterFrameGem then dodo.UpdateCharacterFrameGem("player", dodo.CharacterFrameSlotData) end
-    else
-        C_Timer.After(0.05, try_update_slots)
-    end
-end
-
-function dodo.RequestUpdateCharacterSlots()
-    if is_pending_update then return end
-    is_pending_update = true
-    try_update_slots()
-end
-
-function dodo.UpdateCharacterFrameAll()
+-- 캐릭터창 및 살펴보기창 통합 갱신 제어 허브
+local function update_all_character_slots()
     if dodoDB.enableCharacterFrame == false then
-        if dodo.ResetCharacterFrameLayout then dodo.ResetCharacterFrameLayout() end
-        if dodo.UpdateCharacterFrameIlvl then dodo.UpdateCharacterFrameIlvl("player", dodo.CharacterFrameSlotData) end
-        if dodo.UpdateCharacterFrameIlvlBag then dodo.UpdateCharacterFrameIlvlBag() end
-        if dodo.UpdateCharacterFrameEnchant then dodo.UpdateCharacterFrameEnchant("player", dodo.CharacterFrameSlotData) end
-        if dodo.UpdateCharacterFrameGem then dodo.UpdateCharacterFrameGem("player", dodo.CharacterFrameSlotData) end
+        -- 비활성화 시 모든 오버레이 숨김 처리 유도
+        if dodo.UpdateCharacterFrameIlvl then dodo.UpdateCharacterFrameIlvl("player", dodo.CharacterFrameSLOT_LIST) end
+        if dodo.UpdateCharacterFrameEnchant then dodo.UpdateCharacterFrameEnchant("player", dodo.CharacterFrameSLOT_LIST) end
+        if dodo.UpdateCharacterFrameGem then dodo.UpdateCharacterFrameGem("player", dodo.CharacterFrameSLOT_LIST) end
         return
     end
 
-    if dodo.UpdateCharacterFrameLayout then dodo.UpdateCharacterFrameLayout() end
-    dodo.RequestUpdateCharacterSlots()
-
-    if InspectFrame and InspectFrame:IsShown() then
-        local unit = dodo.CharacterFrameInspectUnit or "target"
-        if dodo.UpdateCharacterFrameIlvl then dodo.UpdateCharacterFrameIlvl(unit, dodo.CharacterFrameInspectSlotData) end
-        if dodo.UpdateCharacterFrameEnchant then dodo.UpdateCharacterFrameEnchant(unit, dodo.CharacterFrameInspectSlotData) end
-        if dodo.UpdateCharacterFrameGem then dodo.UpdateCharacterFrameGem(unit, dodo.CharacterFrameInspectSlotData) end
+    -- 모듈별 독립적 업데이트 트리거
+    if dodo.UpdateCharacterFrameIlvl then
+        dodo.UpdateCharacterFrameIlvl("player", dodo.CharacterFrameSLOT_LIST)
     end
-
-    if _G["CompInspectHeadSlot"] and dodo.UpdateCharacterFrameIlvl then
-        local unit = dodo.CharacterFrameInspectUnit or "target"
-        dodo.UpdateCharacterFrameIlvl(unit, dodo.CharacterFrameCompInspectData)
-        dodo.UpdateCharacterFrameEnchant(unit, dodo.CharacterFrameCompInspectData)
-        dodo.UpdateCharacterFrameGem(unit, dodo.CharacterFrameCompInspectData)
+    if dodo.UpdateCharacterFrameEnchant then
+        dodo.UpdateCharacterFrameEnchant("player", dodo.CharacterFrameSLOT_LIST)
     end
-    if _G["CompCharacterHeadSlot"] and dodo.UpdateCharacterFrameIlvl then
-        dodo.UpdateCharacterFrameIlvl("player", dodo.CharacterFrameCompCharacterData)
-        dodo.UpdateCharacterFrameEnchant("player", dodo.CharacterFrameCompCharacterData)
-        dodo.UpdateCharacterFrameGem("player", dodo.CharacterFrameCompCharacterData)
+    if dodo.UpdateCharacterFrameGem then
+        dodo.UpdateCharacterFrameGem("player", dodo.CharacterFrameSLOT_LIST)
     end
-
-    if dodo.UpdateCharacterFrameIlvlBag then dodo.UpdateCharacterFrameIlvlBag() end
+    if dodo.UpdateCharacterFrameLayout then
+        dodo.UpdateCharacterFrameLayout()
+    end
 end
 
+dodo.UpdateAllCharacterSlots = update_all_character_slots
+
 -- ==============================
--- 초기화 및 이벤트 라우팅
+-- 이벤트 핸들러
 -- ==============================
 local function on_event(self, event, ...)
     if event == "PLAYER_LOGIN" then
-        C_AddOns.LoadAddOn("Blizzard_CharacterFrame")
-        C_Timer.After(0.5, function()
-            if dodo.HideCharacterFrameBackgrounds then dodo.HideCharacterFrameBackgrounds() end
-            build_slots("Character", dodo.CharacterFrameSlotData)
-            dodo.UpdateCharacterFrameAll()
-        end)
-        
-        if C_AddOns.IsAddOnLoaded("Blizzard_InspectUI") then
-            build_slots("Inspect", dodo.CharacterFrameInspectSlotData)
-        end
-    elseif event == "PLAYER_ENTERING_WORLD" then
-        for slot = 1, 19 do
-            local link = GetInventoryItemLink("player", slot)
-            if link then
-                GetItemInfo(link)
-                local itemID = GetInventoryItemID("player", slot)
-                if itemID then
-                    C_Item.RequestLoadItemDataByID(itemID)
-                end
+        -- DB 변수 기본값 셋팅
+        if dodoDB.enableCharacterFrame == nil then dodoDB.enableCharacterFrame = true end
+        if dodoDB.useItemLevel == nil then dodoDB.useItemLevel = true end
+
+        -- 활성화 상태인 경우에만 감지 이벤트 등록
+        if dodoDB.enableCharacterFrame then
+            event_frame:RegisterEvent("UNIT_INVENTORY_CHANGED")
+            if dodo.UpdateCharacterFrameLayout then
+                dodo.UpdateCharacterFrameLayout()
             end
         end
-        dodo.RequestUpdateCharacterSlots()
-    elseif event == "ADDON_LOADED" then
-        local addon = ...
-        if addon == "Blizzard_InspectUI" then
-            build_slots("Inspect", dodo.CharacterFrameInspectSlotData)
+
+        -- 캐릭터창 켜질 때 1회 갱신 훅
+        if PaperDollFrame then
+            hooksecurefunc(PaperDollFrame, "Show", update_all_character_slots)
         end
-    elseif event == "INSPECT_READY" then
-        local unit = dodo.CharacterFrameInspectUnit or "target"
-        build_slots("Inspect", dodo.CharacterFrameInspectSlotData)
-        
-        if dodo.UpdateCharacterFrameIlvl then dodo.UpdateCharacterFrameIlvl(unit, dodo.CharacterFrameInspectSlotData) end
-        if dodo.UpdateCharacterFrameEnchant then dodo.UpdateCharacterFrameEnchant(unit, dodo.CharacterFrameInspectSlotData) end
-        if dodo.UpdateCharacterFrameGem then dodo.UpdateCharacterFrameGem(unit, dodo.CharacterFrameInspectSlotData) end
-        
-        if _G["CompInspectHeadSlot"] then
-            build_slots("CompInspect", dodo.CharacterFrameCompInspectData)
-            if dodo.UpdateCharacterFrameIlvl then dodo.UpdateCharacterFrameIlvl(unit, dodo.CharacterFrameCompInspectData) end
-            if dodo.UpdateCharacterFrameEnchant then dodo.UpdateCharacterFrameEnchant(unit, dodo.CharacterFrameCompInspectData) end
-            if dodo.UpdateCharacterFrameGem then dodo.UpdateCharacterFrameGem(unit, dodo.CharacterFrameCompInspectData) end
+    elseif event == "UNIT_INVENTORY_CHANGED" then
+        local unit = ...
+        if unit == "player" then
+            -- 렉 방지를 위한 미세한 시간차 갱신
+            C_Timer.After(0.1, update_all_character_slots)
         end
-        if _G["CompCharacterHeadSlot"] then
-            build_slots("CompCharacter", dodo.CharacterFrameCompCharacterData)
-            if dodo.UpdateCharacterFrameIlvl then dodo.UpdateCharacterFrameIlvl("player", dodo.CharacterFrameCompCharacterData) end
-            if dodo.UpdateCharacterFrameEnchant then dodo.UpdateCharacterFrameEnchant("player", dodo.CharacterFrameCompCharacterData) end
-            if dodo.UpdateCharacterFrameGem then dodo.UpdateCharacterFrameGem("player", dodo.CharacterFrameCompCharacterData) end
-        end
-    elseif event == "BAG_UPDATE_DELAYED" then
-        if dodo.UpdateCharacterFrameIlvlBag then dodo.UpdateCharacterFrameIlvlBag() end
-    else
-        dodo.RequestUpdateCharacterSlots()
     end
 end
 
-local event_frame = CreateFrame("Frame")
 event_frame:RegisterEvent("PLAYER_LOGIN")
-event_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-event_frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
-event_frame:RegisterEvent("UNIT_INVENTORY_CHANGED")
-event_frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
-event_frame:RegisterEvent("ENCHANT_SPELL_COMPLETED")
-event_frame:RegisterEvent("WEAPON_ENCHANT_CHANGED")
-event_frame:RegisterEvent("BAG_UPDATE_DELAYED")
-event_frame:RegisterEvent("INSPECT_READY")
-event_frame:RegisterEvent("ADDON_LOADED")
 event_frame:SetScript("OnEvent", on_event)
 
-hooksecurefunc("NotifyInspect", function(unit)
-    dodo.CharacterFrameInspectUnit = unit
-end)
-
--- 외부 공개 API 매핑
-dodo.ItemLevelDisplay = function() dodo.UpdateCharacterFrameAll() end
-dodo.EnhancedCharFrame = function() dodo.UpdateCharacterFrameAll() end
-
 -- ==============================
--- 초기화
--- ==============================
-local function initialize()
-    if dodoDB.enableCharacterFrame == nil then dodoDB.enableCharacterFrame = true end
-    if dodoDB.useItemLevel == nil then dodoDB.useItemLevel = true end
-    if dodoDB.useEnhancedCharFrame == nil then dodoDB.useEnhancedCharFrame = true end
-
-    dodo.UpdateCharacterFrameAll()
-end
-
-local init_frame = CreateFrame("Frame")
-init_frame:RegisterEvent("PLAYER_LOGIN")
-init_frame:SetScript("OnEvent", function(self)
-    initialize()
-    self:UnregisterAllEvents()
-end)
-
--- ==============================
--- 설정 등록 (마스터토글)
+-- 설정 등록
 -- ==============================
 if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("인터페이스", {
+    dodo.RegisterEditModeModuleSetting("편의기능", {
         {
-            name = "장비창",
+            name = "캐릭터창",
             get = function() return dodoDB and dodoDB.enableCharacterFrame ~= false end,
             set = function(checked)
                 if dodoDB then dodoDB.enableCharacterFrame = checked end
-                dodo.UpdateCharacterFrameAll()
+                if checked then
+                    event_frame:RegisterEvent("UNIT_INVENTORY_CHANGED") -- 감지 재가동
+                    if dodo.UpdateCharacterFrameLayout then dodo.UpdateCharacterFrameLayout() end
+                else
+                    event_frame:UnregisterEvent("UNIT_INVENTORY_CHANGED") -- 감지 정지 (최적화)
+                    if dodo.ResetCharacterFrameLayout then dodo.ResetCharacterFrameLayout() end
+                end
+                update_all_character_slots()
             end
         }
     })

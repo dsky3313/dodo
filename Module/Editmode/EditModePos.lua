@@ -1,7 +1,7 @@
 -- ==============================
 -- Inspired
 -- ==============================
--- EditModeMore (EditModePos Dialogue Bottom Edition)
+-- Edit Mode More (https://www.curseforge.com/wow/addons/edit-mode-more)
 
 -- ==============================
 -- 설정 및 테이블

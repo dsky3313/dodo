@@ -1,4 +1,10 @@
 -- ==============================
+-- Inspired
+-- ==============================
+-- Leatrix Plus (https://www.curseforge.com/wow/addons/leatrix-plus)
+-- Simple FPS Ping (https://www.curseforge.com/wow/addons/simple-fps-ping)
+
+-- ==============================
 -- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
@@ -36,12 +42,19 @@ local function initialize()
     update_minimap_state()
 end
 
-local initFrame = CreateFrame("Frame")
-initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:SetScript("OnEvent", function(self, event)
-    initialize()
-    self:UnregisterAllEvents()
-end)
+-- ==============================
+-- 이벤트 핸들러
+-- ==============================
+local function on_event(self, event)
+    if event == "PLAYER_LOGIN" then
+        initialize()
+        self:UnregisterAllEvents()
+    end
+end
+
+local init_frame = CreateFrame("Frame")
+init_frame:RegisterEvent("PLAYER_LOGIN")
+init_frame:SetScript("OnEvent", on_event)
 
 -- ==============================
 -- 설정 등록

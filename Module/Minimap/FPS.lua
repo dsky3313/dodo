@@ -15,6 +15,7 @@ local fps_frame = nil
 local fps_ticker = nil
 local text_green, text_red, text_yellow
 local last_text = ""
+local init_frame = nil
 
 -- ==============================
 -- 캐싱
@@ -77,26 +78,33 @@ local function update_fps_display()
     local is_enabled = (dodoDB and dodoDB.useMinimap ~= false and dodoDB.useFPSFrame ~= false)
     if is_enabled then
         fps_frame:Show()
-        
+
         local in_instance = IsInInstance()
         local interval = in_instance and 2 or 1
-        
+
         if fps_ticker then
             if fps_ticker._interval ~= interval then
                 fps_ticker:Cancel()
                 fps_ticker = nil
             end
         end
-        
+
         if not fps_ticker then
             fps_ticker = C_Timer.NewTicker(interval, update_fps_text)
             fps_ticker._interval = interval
+        end
+
+        if init_frame then
+            init_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
         end
     else
         fps_frame:Hide()
         if fps_ticker then
             fps_ticker:Cancel()
             fps_ticker = nil
+        end
+        if init_frame then
+            init_frame:UnregisterEvent("PLAYER_ENTERING_WORLD")
         end
     end
 end
@@ -108,11 +116,11 @@ dodo.UpdateMinimapFPSState = update_fps_display
 -- 이벤트 핸들러
 -- ==============================
 local function initialize()
-    local Colors = dodo.Colors
-    if Colors then
-        text_green  = Colors.Green and Colors.Green.hex:sub(3) or "00ff00"
-        text_red    = Colors.Red and Colors.Red.hex:sub(3) or "ff0000"
-        text_yellow = Colors.Gold and Colors.Gold.hex:sub(3) or "ffd100"
+    local colors = dodo.Colors
+    if colors then
+        text_green  = colors.Green and colors.Green.hex:sub(3) or "00ff00"
+        text_red    = colors.Red and colors.Red.hex:sub(3) or "ff0000"
+        text_yellow = colors.Gold and colors.Gold.hex:sub(3) or "ffd100"
     else
         text_green, text_red, text_yellow = "00ff00", "ff0000", "ffd100"
     end
@@ -121,16 +129,17 @@ local function initialize()
     update_fps_display()
 end
 
-local initFrame = CreateFrame("Frame")
-initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-initFrame:SetScript("OnEvent", function(self, event)
+local function on_event(self, event)
     if event == "PLAYER_LOGIN" then
         initialize()
     elseif event == "PLAYER_ENTERING_WORLD" then
         update_fps_display()
     end
-end)
+end
+
+init_frame = CreateFrame("Frame")
+init_frame:RegisterEvent("PLAYER_LOGIN")
+init_frame:SetScript("OnEvent", on_event)
 
 -- ==============================
 -- 설정 등록

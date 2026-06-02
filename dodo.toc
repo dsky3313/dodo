@@ -13,7 +13,7 @@
 # Libs
 Libs/oUF/oUF.xml
 
-UI/Color.lua
+UI/Colors.lua
 UI/Icon.lua
 UI/OptionUI.xml
 UI/OptionUI.lua
@@ -37,9 +37,20 @@ Module/Actionbar/OverlayPotion.lua
 # Combat
 Module/Combat/Debuff.lua
 Module/Combat/Debuff.xml
-Module/Combat/ResourceBar.xml
-Module/Combat/ResourceBar.lua
 Module/Combat/BloodBrez.lua
+
+# ResourceBar
+Module/ResourceBar/ResourceBar.xml
+Module/ResourceBar/Core.lua
+Module/ResourceBar/BarMode/Rune.lua
+Module/ResourceBar/BarMode/Stagger.lua
+Module/ResourceBar/BarMode/Ironfur.lua
+Module/ResourceBar/BarMode/SoulFragments.lua
+Module/ResourceBar/BarMode/Duration.lua
+Module/ResourceBar/BarMode/Power.lua
+Module/ResourceBar/BarMode/Stack.lua
+Module/ResourceBar/Power.lua
+Module/ResourceBar/Tracking.lua
 
 # ChatFrame
 Module/ChatFrame/Core.lua
@@ -63,7 +74,6 @@ Module/CharacterFrame/Gem.lua
 
 # Minimap
 Module/Minimap/Core.lua
-Module/Minimap/Minimap.lua
 Module/Minimap/Square.lua
 Module/Minimap/Zoom.lua
 Module/Minimap/FPS.lua
@@ -83,12 +93,12 @@ Module/Tooltip/Vehicle.lua
 
 # Unitframe
 Module/Unitframe/Core.lua
-Module/Unitframe/Castbar.lua
-Module/Unitframe/Auras.lua
-Module/Unitframe/Player.lua
-Module/Unitframe/Target.lua
-Module/Unitframe/Boss.lua
-Module/Unitframe/ETC.lua
+Module/Unitframe/Unit/Castbar.lua
+Module/Unitframe/Unit/Auras.lua
+Module/Unitframe/Unit/Player.lua
+Module/Unitframe/Unit/Target.lua
+Module/Unitframe/Unit/Boss.lua
+Module/Unitframe/Unit/ETC.lua
 Module/Unitframe/Party/Leader.lua
 #Module/Unitframe/Raid/Anchor.lua
 

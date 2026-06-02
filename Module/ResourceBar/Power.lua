@@ -1,7 +1,7 @@
 -- ==============================
 -- Inspired
 -- ==============================
--- dodo ResourceBar Player Resource (Bar1) Module
+-- dodo ResourceBar Player Power (Bar1) Module
 -- ==============================
 
 -- ==============================
@@ -14,7 +14,7 @@ dodoDB = dodoDB or {}
 local RB = dodo.ResourceBar
 local Colors = dodo.Colors
 
----@class ResourcePowerConfig
+---@class PowerConfig
 ---@field powerType number 파워 타입 ID
 ---@field powerToken string 파워 토큰 문자열
 ---@field isTickPower boolean 틱 단위 표시 여부
@@ -134,12 +134,25 @@ local function update_bar1()
     if pType ~= cachedPowerType then
         cachedPowerType = pType
         local c
-        if pToken == "ESSENCE" then
-            c = Colors.EssenceTeal or (RAID_CLASS_COLORS and RAID_CLASS_COLORS["EVOKER"]) or { r = 0.20, g = 0.58, b = 0.50 }
-        else
-            c = (Colors and Colors.Power and Colors.Power[pToken]) or PowerBarColor[pToken] or PowerBarColor[pType] or { r = 1, g = 1, b = 1 }
+        
+        -- dodo.Colors.Power의 타이틀케이스 키 매핑
+        local token = pToken
+        if token == "RUNIC_POWER" then token = "RunicPower"
+        elseif token == "HOLY_POWER" then token = "HolyPower"
+        elseif token == "SOUL_SHARDS" then token = "SoulShards"
+        elseif token then
+            token = token:sub(1, 1):upper() .. token:sub(2):lower()
         end
-        bar1Frame:SetStatusBarColor(c.r, c.g, c.b)
+        
+        local dodoRes = Colors and Colors.Power and token and Colors.Power[token]
+        
+        c = dodoRes or PowerBarColor[pToken] or PowerBarColor[pType] or { r = 1, g = 1, b = 1 }
+        
+        local r = c.r or c[1] or 1
+        local g = c.g or c[2] or 1
+        local b = c.b or c[3] or 1
+        
+        bar1Frame:SetStatusBarColor(r, g, b)
     end
 
     local current = UnitPower("player", pType)
@@ -206,7 +219,7 @@ local function toggle_bar1_combat_events(enable)
     end
 end
 
-RB.ToggleResourceEvents = toggle_bar1_combat_events
+RB.TogglePowerEvents = toggle_bar1_combat_events
 
 combat_frame:SetScript("OnEvent", function(_, event)
     on_combat_change(event == "PLAYER_REGEN_DISABLED")
@@ -215,7 +228,7 @@ end)
 -- ==============================
 -- 스펙 변경 대응 설정 갱신
 -- ==============================
-local function update_resource_spec(englishClass, spec)
+local function update_power_spec(englishClass, spec)
     overridePowerConfig = nil
     local classConf = bar1ClassConfig[englishClass]
     if classConf then
@@ -228,14 +241,14 @@ local function update_resource_spec(englishClass, spec)
     cachedPowerType = nil -- 다음 업데이트 때 색상 강제 갱신 유도
 end
 
-RB.UpdateResourceSpec = update_resource_spec
+RB.UpdatePowerSpec = update_power_spec
 
 -- ==============================
 -- OnLoad 이벤트
 -- ==============================
-local function on_load_resource()
+local function on_load_power()
     local _, englishClass = UnitClass("player")
-    update_resource_spec(englishClass, C_SpecializationInfo.GetSpecialization())
+    update_power_spec(englishClass, C_SpecializationInfo.GetSpecialization())
 end
 
-RB.OnLoadResource = on_load_resource
+RB.OnLoadPower = on_load_power

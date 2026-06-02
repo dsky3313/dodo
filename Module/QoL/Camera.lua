@@ -1,7 +1,7 @@
 -- ==============================
 -- Inspired
 -- ==============================
--- Camera Tilt Controls (https://www.curseforge.com/wow/addons/camera-tilt-controls)
+-- Camera Tilt Controls (https://wago.io/3q80hZrTK)
 
 -- ==============================
 -- 설정 및 테이블

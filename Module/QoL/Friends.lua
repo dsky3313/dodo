@@ -1,7 +1,7 @@
 -- ==============================
 -- Inspired
 -- ==============================
--- dodo_Friends (Custom Module)
+-- Enhance QoL (https://www.curseforge.com/wow/addons/eqol)
 
 -- ==============================
 -- 설정 및 테이블
