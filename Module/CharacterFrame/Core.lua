@@ -70,6 +70,20 @@ local function update_all_character_slots()
     end
 end
 
+local is_update_pending = false
+
+local function do_update()
+    is_update_pending = false
+    update_all_character_slots()
+end
+
+local function request_update()
+    if not is_update_pending then
+        is_update_pending = true
+        C_Timer.After(0.1, do_update)
+    end
+end
+
 dodo.UpdateAllCharacterSlots = update_all_character_slots
 
 -- ==============================
@@ -84,6 +98,8 @@ local function on_event(self, event, ...)
         -- 활성화 상태인 경우에만 감지 이벤트 등록
         if dodoDB.enableCharacterFrame then
             event_frame:RegisterEvent("UNIT_INVENTORY_CHANGED")
+            event_frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+            event_frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
             if dodo.UpdateCharacterFrameLayout then
                 dodo.UpdateCharacterFrameLayout()
             end
@@ -96,8 +112,13 @@ local function on_event(self, event, ...)
     elseif event == "UNIT_INVENTORY_CHANGED" then
         local unit = ...
         if unit == "player" then
-            -- 렉 방지를 위한 미세한 시간차 갱신
-            C_Timer.After(0.1, update_all_character_slots)
+            request_update()
+        end
+    elseif event == "PLAYER_EQUIPMENT_CHANGED" then
+        request_update()
+    elseif event == "GET_ITEM_INFO_RECEIVED" then
+        if CharacterFrame and CharacterFrame:IsShown() then
+            request_update()
         end
     end
 end
@@ -117,9 +138,13 @@ if dodo.RegisterEditModeModuleSetting then
                 if dodoDB then dodoDB.enableCharacterFrame = checked end
                 if checked then
                     event_frame:RegisterEvent("UNIT_INVENTORY_CHANGED") -- 감지 재가동
+                    event_frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+                    event_frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
                     if dodo.UpdateCharacterFrameLayout then dodo.UpdateCharacterFrameLayout() end
                 else
                     event_frame:UnregisterEvent("UNIT_INVENTORY_CHANGED") -- 감지 정지 (최적화)
+                    event_frame:UnregisterEvent("PLAYER_EQUIPMENT_CHANGED")
+                    event_frame:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
                     if dodo.ResetCharacterFrameLayout then dodo.ResetCharacterFrameLayout() end
                 end
                 update_all_character_slots()
