@@ -45,7 +45,7 @@ end)
 if dodo.RegisterEditModeModuleSetting then
     dodo.RegisterEditModeModuleSetting("편의기능", {
         {
-            name = "툴팁 활성화",
+            name = "툴팁",
             get = function() return dodoDB and dodoDB.enableTooltip ~= false end,
             set = function(checked)
                 if dodoDB then dodoDB.enableTooltip = checked end

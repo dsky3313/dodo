@@ -35,12 +35,15 @@ local DungeonList = {
     { name = "하늘탑", dID = "182", texture = 1002596 },
     { name = "첨탑", dID = "1542", texture = 7266215 },
 }
+-- dID 매크로. 절대 지우지 말것. (/run print("선택된 dID:", LFGListFrame.EntryCreation.selectedActivity))
 
 -- ==============================
 -- 캐싱
 -- ==============================
 local C_ChallengeMode = C_ChallengeMode
+local C_GossipInfo = C_GossipInfo
 local C_LFGList = C_LFGList
+local C_Timer = C_Timer
 local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
 local UIParent = UIParent
@@ -185,7 +188,7 @@ local function create_ui()
                 type = "macro",
                 icon = data.texture,
                 label = data.name,
-                fontsize = 9,
+                fontsize = 10,
                 outline = true,
                 useTooltip = false, -- 인게임 가독성을 위해 간결화
                 framestrata = parent_strata, -- 묻힘 방지용 스트라타 주입!
@@ -202,7 +205,7 @@ local function create_ui()
             lvlText:SetPoint("TOPLEFT", btn, "TOPLEFT", 2, -2)
             local fontPath, _, fontFlags = lvlText:GetFont()
             if fontPath then
-                lvlText:SetFont(fontPath, 10, "OUTLINE")
+                lvlText:SetFont(fontPath, 11, "OUTLINE")
             end
             local r, g, b = 1.0, 0.82, 0.0
             if dodo.Colors and dodo.Colors.Gold then
@@ -230,7 +233,7 @@ local function create_ui()
             text:SetText(data.name)
             local fontPath, _, fontFlags = text:GetFont()
             if fontPath then
-                text:SetFont(fontPath, 9, "OUTLINE")
+                text:SetFont(fontPath, 10, "OUTLINE")
             end
             btn.text = text
 
@@ -238,7 +241,7 @@ local function create_ui()
             local lvlText = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightOutline")
             lvlText:SetPoint("TOPLEFT", btn, "TOPLEFT", 2, -2)
             if fontPath then
-                lvlText:SetFont(fontPath, 10, "OUTLINE")
+                lvlText:SetFont(fontPath, 11, "OUTLINE")
             end
             local r, g, b = 1.0, 0.82, 0.0
             if dodo.Colors and dodo.Colors.Gold then
@@ -271,6 +274,12 @@ local function initialize()
     if dodoDB and dodoDB.enableQuickselect == nil then dodoDB.enableQuickselect = true end
     create_ui()
     refresh_keystones()
+
+    hooksecurefunc(C_GossipInfo, "SelectOption", function(gossipOptionID)
+        if gossipOptionID == 107597 then
+            C_Timer.After(0.5, refresh_keystones)
+        end
+    end)
 end
 
 -- ==============================
@@ -328,20 +337,7 @@ initFrame:SetScript("OnEvent", on_event)
 if dodo.RegisterEditModeModuleSetting then
     dodo.RegisterEditModeModuleSetting("편의기능", {
         {
-            name = "던전 빠른선택 활성화",
-            get = function() return dodoDB and dodoDB.enableQuickselect ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.enableQuickselect = checked end
-                update_visual()
-            end
-        }
-    })
-end
-
-if dodo.RegisterEditModeSystemSetting then
-    dodo.RegisterEditModeSystemSetting("Quickselect", {
-        {
-            name = "던전 빠른선택 활성화",
+            name = "파티만들기 빠른선택",
             get = function() return dodoDB and dodoDB.enableQuickselect ~= false end,
             set = function(checked)
                 if dodoDB then dodoDB.enableQuickselect = checked end

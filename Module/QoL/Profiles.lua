@@ -9,7 +9,6 @@
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 local module = {}
-dodo:RegisterModule("Profiles", module)
 
 local LibEditMode = LibStub and LibStub("LibEditMode", true)
 
@@ -20,6 +19,8 @@ local C_Timer = C_Timer
 local CreateFrame = CreateFrame
 local GetCVar = GetCVar
 local IsControlKeyDown = IsControlKeyDown
+local PlaySound = PlaySound
+local SOUNDKIT = SOUNDKIT
 local SetCVar = SetCVar
 local UIParent = UIParent
 local _G = _G
@@ -92,19 +93,6 @@ function dodo:SetupCVars()
     print("|cffffd200[dodo]|r 게임 설정 최적화가 완료되었습니다.")
 end
 
-local function update_friendly_nameplates()
-    if not dodo.DB then return end
-    local isEnabled = (dodo.DB.useNameplateFriendly ~= false)
-
-    if isEnabled then
-        SetCVar(NAMEPLATE_CLASS_COLOR, 1)
-        SetCVar(NAMEPLATE_ONLY_NAME, 1)
-    else
-        SetCVar(NAMEPLATE_CLASS_COLOR, 0)
-        SetCVar(NAMEPLATE_ONLY_NAME, 0)
-    end
-end
-
 local function hide_copy_popup()
     local popup = _G["dodo_LayoutCopyPopup"]
     if popup then
@@ -123,6 +111,11 @@ local function show_copy_popup(text, title)
         popup:SetSize(300, 80)
         popup:SetPoint("CENTER")
         popup:SetFrameStrata("DIALOG")
+        popup:SetMovable(true)
+        popup:EnableMouse(true)
+        popup:RegisterForDrag("LeftButton")
+        popup:SetScript("OnDragStart", popup.StartMoving)
+        popup:SetScript("OnDragStop", popup.StopMovingOrSizing)
 
         local eb = CreateFrame("EditBox", nil, popup, "InputBoxTemplate")
         eb:SetPoint("BOTTOMLEFT", 25, 15)
@@ -135,6 +128,7 @@ local function show_copy_popup(text, title)
 
         eb:SetScript("OnKeyDown", function(self, key)
             if IsControlKeyDown() and key == "C" then
+                PlaySound(SOUNDKIT.TELL_MESSAGE)
                 C_Timer.After(0.1, hide_copy_popup)
             end
         end)
@@ -153,24 +147,11 @@ end
 -- ==============================
 local isInitialized = false
 function module:OnEnable()
-    update_friendly_nameplates()
-
     if isInitialized then return end
     isInitialized = true
 
     -- dodoEditModePanel 내부에 설정 주입
     if dodo.RegisterEditModeModuleSetting then
-        -- 인터페이스 카테고리
-        dodo.RegisterEditModeModuleSetting("인터페이스", {
-            {
-                name = "아군 이름표 자동 설정",
-                get = function() return dodo.DB and dodo.DB.useNameplateFriendly ~= false end,
-                set = function(checked)
-                    if dodo.DB then dodo.DB.useNameplateFriendly = checked end
-                    update_friendly_nameplates()
-                end
-            }
-        })
 
         -- 설정 & 프로필 카테고리
         dodo.RegisterEditModeModuleSetting("설정 & 프로필", {
@@ -201,3 +182,15 @@ function module:OnEnable()
         })
     end
 end
+
+-- ==============================
+-- 초기화
+-- ==============================
+local init_frame = CreateFrame("Frame")
+init_frame:RegisterEvent("PLAYER_LOGIN")
+init_frame:SetScript("OnEvent", function(self, event)
+    if event == "PLAYER_LOGIN" then
+        module:OnEnable()
+        self:UnregisterEvent("PLAYER_LOGIN")
+    end
+end)

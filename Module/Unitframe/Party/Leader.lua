@@ -1,8 +1,8 @@
 -- ==============================
 -- Inspired / Heavily Optimised & Rewritten
 -- ==============================
--- GroupLeaderAssistantIcons (GLAI)의 아이디어를 바탕으로 
--- 프레임 탐색 루프와 이벤트를 모두 제거하고 Blizzard FrameXML 훅 기반으로 100% 재작성.
+-- GroupLeaderAssistantIcons
+
 -- ==============================
 
 local addonName, dodo = ...
@@ -20,7 +20,6 @@ local TEX_LEADER    = "Interface\\GroupFrame\\UI-Group-LeaderIcon"
 local TEX_ASSISTANT = "Interface\\GroupFrame\\UI-Group-AssistantIcon"
 
 local icon_by_frame = {}
-local hooked_frames = {}
 
 local function apply_defaults()
 	if dodoDB.partyframeLeaderSize == nil then dodoDB.partyframeLeaderSize = Config.defaultSize end
@@ -30,24 +29,13 @@ local function apply_defaults()
 	if dodoDB.partyframeLeaderFrameAnchor == nil then dodoDB.partyframeLeaderFrameAnchor = Config.defaultFrameAnchor end
 end
 
--- 프레임의 커스텀 아이콘 배치 및 갱신
-local function update_frame_icon(frame)
+-- 단일 프레임에 아이콘 적용
+local function apply_icon(frame)
 	if not frame or frame:IsForbidden() then return end
 
-	local is_enabled = (dodoDB and dodoDB.enablePartyframeLeader ~= false)
-	local tex = icon_by_frame[frame]
-
-	if not is_enabled then
-		if tex then tex:Hide() end
-		if frame.leaderIcon then frame.leaderIcon:SetAlpha(1) end
-		if frame.assistantIcon then frame.assistantIcon:SetAlpha(1) end
-		if frame.LeaderIcon then frame.LeaderIcon:SetAlpha(1) end
-		if frame.AssistantIcon then frame.AssistantIcon:SetAlpha(1) end
-		return
-	end
-
-	local unit = frame.displayedUnit or frame.unit
+	local unit = frame.unit
 	if not unit or not UnitExists(unit) then
+		local tex = icon_by_frame[frame]
 		if tex then tex:Hide() end
 		return
 	end
@@ -58,6 +46,8 @@ local function update_frame_icon(frame)
 	elseif IsInRaid() and UnitIsGroupAssistant(unit) then
 		texture = TEX_ASSISTANT
 	end
+
+	local tex = icon_by_frame[frame]
 
 	if texture then
 		if not tex then
@@ -84,89 +74,199 @@ local function update_frame_icon(frame)
 		if frame.AssistantIcon then frame.AssistantIcon:SetAlpha(0) end
 	else
 		if tex then tex:Hide() end
+		-- 순정 아이콘 복원
+		if frame.leaderIcon then frame.leaderIcon:SetAlpha(1) end
+		if frame.assistantIcon then frame.assistantIcon:SetAlpha(1) end
+		if frame.LeaderIcon then frame.LeaderIcon:SetAlpha(1) end
+		if frame.AssistantIcon then frame.AssistantIcon:SetAlpha(1) end
 	end
 end
 
--- 설정이 바뀔 때 모든 활성 프레임의 크기/위치 리셋용
-local function update_visual()
-	for frame in pairs(icon_by_frame) do
-		update_frame_icon(frame)
+local function clear_all_icons()
+	for _, tex in pairs(icon_by_frame) do
+		tex:Hide()
 	end
 end
 
--- 새 프레임 셋업 시 호출되는 훅 함수
-local function on_compact_frame_setup(frame)
-	if not frame or frame:IsForbidden() then return end
-	if hooked_frames[frame] then return end
-	hooked_frames[frame] = true
+-- ==============================
+-- 프레임 열거 (원본 방식)
+-- ==============================
 
-	-- 프레임의 이벤트가 실행될 때 우리 아이콘도 업데이트
-	frame:HookScript("OnEvent", function(self, event, ...)
-		if event == "PLAYER_ENTERING_WORLD" or event == "GROUP_ROSTER_UPDATE" or event == "PARTY_LEADER_CHANGED" or event == "PLAYER_ROLES_ASSIGNED" then
-			update_frame_icon(self)
+local function enumerate_from_pool(pool)
+	local frames = {}
+	if pool and pool.EnumerateActive then
+		for frame in pool:EnumerateActive() do
+			frames[#frames + 1] = frame
 		end
-	end)
-
-	-- 프레임이 보여지거나 유닛이 설정될 때 업데이트 연동을 위해 OnShow 훅
-	frame:HookScript("OnShow", function(self)
-		update_frame_icon(self)
-	end)
-
-	update_frame_icon(frame)
+	end
+	return frames
 end
 
--- 순정 파티 프레임 (PartyMemberFrame)에 직접 훅
-local function hook_default_party_frames()
-	for i = 1, 4 do
-		local frame = _G["PartyMemberFrame" .. i]
-		if frame and not hooked_frames[frame] then
-			hooked_frames[frame] = true
-			
-			frame:HookScript("OnEvent", function(self, event, ...)
-				if event == "PARTY_LEADER_CHANGED" or event == "GROUP_ROSTER_UPDATE" then
-					update_frame_icon(self)
+local function enumerate_party_frames()
+	-- CompactPartyFrame (레이드스타일 파티)
+	if CompactPartyFrame then
+		if CompactPartyFrame.memberFramePool and CompactPartyFrame.memberFramePool.EnumerateActive then
+			return enumerate_from_pool(CompactPartyFrame.memberFramePool)
+		end
+		local frames = {}
+		for i = 1, 5 do
+			local f = _G["CompactPartyFrameMember" .. i]
+			if f then frames[#frames + 1] = f end
+		end
+		if #frames > 0 then return frames end
+	end
+
+	-- 순정 PartyFrame BFS
+	local root = _G.PartyFrame
+	if not root then return {} end
+
+	local frames = {}
+	local seen = {}
+	local queue = { root }
+	local MAX_DEPTH = 6
+	local depths = { [root] = 0 }
+
+	while #queue > 0 do
+		local obj = table.remove(queue, 1)
+		if obj and not seen[obj] then
+			seen[obj] = true
+			local depth = depths[obj] or 0
+
+			if obj.unit and type(obj.unit) == "string" then
+				local u = obj.unit
+				if u == "player" or u:match("^party%d$") then
+					frames[#frames + 1] = obj
 				end
-			end)
-			frame:HookScript("OnShow", function(self)
-				update_frame_icon(self)
-			end)
-			update_frame_icon(frame)
+			end
+
+			if depth < MAX_DEPTH and obj.GetChildren then
+				for _, child in ipairs({ obj:GetChildren() }) do
+					depths[child] = depth + 1
+					queue[#queue + 1] = child
+				end
+			end
 		end
+	end
+	return frames
+end
+
+local function enumerate_raid_frames()
+	if not CompactRaidFrameContainer then return {} end
+
+	if CompactRaidFrameContainer.memberFramePool and CompactRaidFrameContainer.memberFramePool.EnumerateActive then
+		return enumerate_from_pool(CompactRaidFrameContainer.memberFramePool)
+	end
+	if CompactRaidFrameContainer.framePool and CompactRaidFrameContainer.framePool.EnumerateActive then
+		return enumerate_from_pool(CompactRaidFrameContainer.framePool)
+	end
+
+	-- fallback BFS
+	local frames = {}
+	local seen = {}
+	local seenUnit = {}
+	local queue = { CompactRaidFrameContainer }
+	local MAX_DEPTH = 8
+	local depths = { [CompactRaidFrameContainer] = 0 }
+
+	while #queue > 0 do
+		local obj = table.remove(queue, 1)
+		if obj and not seen[obj] then
+			seen[obj] = true
+			local depth = depths[obj] or 0
+			local unit = obj.unit
+
+			if type(unit) == "string" and unit:match("^raid%d+$") and not seenUnit[unit] then
+				seenUnit[unit] = true
+				frames[#frames + 1] = obj
+			end
+
+			if depth < MAX_DEPTH and obj.GetChildren then
+				for _, child in ipairs({ obj:GetChildren() }) do
+					depths[child] = depth + 1
+					queue[#queue + 1] = child
+				end
+			end
+		end
+	end
+	return frames
+end
+
+-- ==============================
+-- 전체 업데이트
+-- ==============================
+
+local function update_all()
+	local is_enabled = (dodoDB and dodoDB.enablePartyframeLeader ~= false)
+	if not is_enabled then
+		clear_all_icons()
+		return
+	end
+
+	if not IsInGroup() then
+		clear_all_icons()
+		return
+	end
+
+	clear_all_icons()
+
+	local frames
+	if IsInRaid() then
+		frames = enumerate_raid_frames()
+	else
+		frames = enumerate_party_frames()
+	end
+
+	for _, frame in ipairs(frames) do
+		apply_icon(frame)
 	end
 end
 
 -- ==============================
--- Blizzard FrameXML 훅 바인딩 및 동적 지연 탐지
+-- 설정 바뀔 때 레이아웃 재적용
 -- ==============================
-local is_compact_hooked = false
 
-local function try_hooks()
-	if not is_compact_hooked and _G["DefaultCompactUnitFrameSetup"] then
-		hooksecurefunc("DefaultCompactUnitFrameSetup", on_compact_frame_setup)
-		is_compact_hooked = true
+local function reapply_layout()
+	local size = dodoDB.partyframeLeaderSize or Config.defaultSize
+	local x = dodoDB.partyframeLeaderX or Config.defaultX
+	local y = dodoDB.partyframeLeaderY or Config.defaultY
+	local icon_anchor = dodoDB.partyframeLeaderIconAnchor or Config.defaultIconAnchor
+	local frame_anchor = dodoDB.partyframeLeaderFrameAnchor or Config.defaultFrameAnchor
+
+	for frame, tex in pairs(icon_by_frame) do
+		if tex and frame and tex:IsShown() then
+			tex:ClearAllPoints()
+			tex:SetSize(size, size)
+			tex:SetPoint(icon_anchor, frame, frame_anchor, x, y)
+		end
 	end
+end
 
-	hook_default_party_frames()
+local function update_visual()
+	reapply_layout()
+	update_all()
 end
 
 -- ==============================
 -- 초기화 및 이벤트 등록
 -- ==============================
+
 local init_frame = CreateFrame("Frame")
 init_frame:RegisterEvent("ADDON_LOADED")
 init_frame:RegisterEvent("PLAYER_LOGIN")
+init_frame:RegisterEvent("GROUP_ROSTER_UPDATE")
+init_frame:RegisterEvent("PARTY_LEADER_CHANGED")
+init_frame:RegisterEvent("PLAYER_ROLES_ASSIGNED")
 init_frame:SetScript("OnEvent", function(self, event, arg1)
 	if event == "ADDON_LOADED" then
 		if arg1 == addonName then
 			dodoDB = dodoDB or {}
 			if dodoDB.enablePartyframeLeader == nil then dodoDB.enablePartyframeLeader = true end
 			apply_defaults()
-			try_hooks()
-		elseif arg1 == "Blizzard_CompactRaidFrames" then
-			try_hooks()
 		end
 	elseif event == "PLAYER_LOGIN" then
-		try_hooks()
+		update_all()
+	else
+		update_all()
 	end
 end)
 

@@ -2,18 +2,29 @@
 -- Inspired
 -- ==============================
 -- dodo ResourceBar - Stack Buff Tracker Mode
--- ==============================
 
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 local addonName, dodo = ...
 local RB = dodo.ResourceBar
-local Colors = dodo.Colors
 
+-- ==============================
+-- 캐싱
+-- ==============================
 local C_UnitAuras = C_UnitAuras
-local CreateFrame = CreateFrame
 local Enum = Enum
 local ipairs = ipairs
 local issecretvalue = issecretvalue
 
+-- ==============================
+-- 기능 1: 로컬 상태 및 설정
+-- ==============================
+-- (상태 변수 없음)
+
+-- ==============================
+-- 기능 2: 상태 업데이트
+-- ==============================
 local function update_stack_ticks(bar2Frame, maxStack)
     if not bar2Frame.ticks then bar2Frame.ticks = {} end
 
@@ -52,7 +63,7 @@ local function update_stack_ticks(bar2Frame, maxStack)
 end
 
 -- ==============================
--- Stack Mode 인터페이스 정의
+-- 기능 3: UI 및 이벤트 핸들러 등록
 -- ==============================
 local Mode = {}
 

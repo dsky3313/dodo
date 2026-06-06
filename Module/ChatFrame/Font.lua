@@ -93,6 +93,23 @@ local function style_chat_frames()
                 frame.dodoHyperlinkClickHooked = true
                 frame:HookScript("OnHyperlinkClick", on_hyperlink_click)
             end
+
+            -- 채널명 축약 및 URL 링크화 AddMessage 훅킹 (구버전 롤백 방식)
+            if not frame.dodoAddMessageHooked then
+                frame.dodoAddMessageHooked = true
+                frame.OldAddMessage = frame.AddMessage
+                frame.AddMessage = function(self, text, ...)
+                    if type(text) == "string" then
+                        if dodo.ShortenChannels then
+                            text = dodo.ShortenChannels(text)
+                        end
+                        if dodo.FormatURLsInText then
+                            text = dodo.FormatURLsInText(text)
+                        end
+                    end
+                    return self:OldAddMessage(text, ...)
+                end
+            end
         end
     end
 end

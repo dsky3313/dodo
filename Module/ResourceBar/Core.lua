@@ -1,15 +1,13 @@
 -- ==============================
 -- Inspired
 -- ==============================
--- dodo ResourceBar Core Module
--- ==============================
+-- dodo
 
 -- ==============================
 -- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-dodoDB = dodoDB or {}
 
 -- 공유 네임스페이스 정의
 dodo.ResourceBar = dodo.ResourceBar or {}

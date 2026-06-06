@@ -1,13 +1,17 @@
 -- ==============================
 -- Inspired
 -- ==============================
--- dodo ResourceBar - Druid Ironfur Mode
--- ==============================
+-- dodo ResourceBar - Ironfur Buff Tracker Mode
 
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 local addonName, dodo = ...
 local RB = dodo.ResourceBar
-local Colors = dodo.Colors
 
+-- ==============================
+-- 캐싱
+-- ==============================
 local C_SpellBook = C_SpellBook
 local C_Timer = C_Timer
 local CreateFrame = CreateFrame
@@ -18,14 +22,19 @@ local math = math
 local table = table
 local UnitAffectingCombat = UnitAffectingCombat
 
+-- ==============================
+-- 기능 1: 로컬 상태 및 설정
+-- ==============================
 local ironfurTicker = nil
-
 local ironfurExpiries = {}
 local ironfurDurations = {}
 local goeExpiry = 0
 local ironfurBaseDuration = 7
 local hasGoeTalent = false
 
+-- ==============================
+-- 기능 2: 상태 업데이트
+-- ==============================
 local function get_update_interval()
     return UnitAffectingCombat("player") and 0.1 or 0.5
 end
@@ -74,7 +83,7 @@ local function update_ironfur_ticks(bar2Frame, stackCount, longestIdx, fillPct, 
 end
 
 -- ==============================
--- Ironfur Mode 인터페이스 정의
+-- 기능 3: UI 및 이벤트 핸들러 등록
 -- ==============================
 local Mode = {}
 

@@ -90,14 +90,14 @@ dodo.Colors = {
     Reaction8    = { r = 0.10, g = 0.60, b = 0.10, hex = "ff1a991a" },
     },
 
-    Debuffn = {
+    Debuff = {
         [0]  = { r = 0.80, g = 0.80, b = 0.80, hex = "ffcccccc" }, -- 일반 디버프
-        [1]  = { r = 0.20, g = 0.60, b = 1.00, hex = "ff3399ff" }, -- Magic
-        [2]  = { r = 0.60, g = 0.00, b = 1.00, hex = "ff9900ff" }, -- Curse
-        [3]  = { r = 0.60, g = 0.40, b = 0.00, hex = "ff996600" }, -- Disease
-        [4]  = { r = 0.00, g = 0.60, b = 0.00, hex = "ff009900" }, -- Poison
-        [9]  = { r = 0.40, g = 0.20, b = 0.00, hex = "FFFF4B2C" }, -- Bleed / Enrage
-        [11] = { r = 1.00, g = 0.00, b = 0.00, hex = "FFFF0000" }, -- Bleed
+        [1]  = { r = 0.32, g = 0.66, b = 1.00, hex = "FF52A8FF" }, -- Magic
+        [2]  = { r = 0.67, g = 0.16, b = 1.00, hex = "FFAA29FF" }, -- Curse
+        [3]  = { r = 0.70, g = 0.47, b = 0.00, hex = "FFB37700" }, -- Disease
+        [4]  = { r = 0.00, g = 1.00, b = 0.00, hex = "FF00FF00" }, -- Poison
+        [9]  = { r = 1.00, g = 0.29, b = 0.17, hex = "FFFF4B2C" }, -- Bleed / Enrage
+        [11] = { r = 1.00, g = 0.16, b = 0.16, hex = "FFFF2828" }, -- Bleed
     },
 
     ETC = {

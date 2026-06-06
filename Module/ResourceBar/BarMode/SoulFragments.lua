@@ -2,18 +2,29 @@
 -- Inspired
 -- ==============================
 -- dodo ResourceBar - Demon Hunter Soul Fragments Mode
--- ==============================
 
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 local addonName, dodo = ...
 local RB = dodo.ResourceBar
-local Colors = dodo.Colors
 
+-- ==============================
+-- 캐싱
+-- ==============================
 local C_Spell = C_Spell
-local CreateFrame = CreateFrame
 local Enum = Enum
 local ipairs = ipairs
 local math = math
 
+-- ==============================
+-- 기능 1: 로컬 상태 및 설정
+-- ==============================
+-- (상태 변수 없음)
+
+-- ==============================
+-- 기능 2: 상태 업데이트
+-- ==============================
 local function get_bar2_size()
     local db = dodo.DB or dodoDB
     local width = (db and db.resourceBarWidth) or RB.barConfigs[1].width or 272
@@ -60,7 +71,7 @@ local function update_stack_ticks(bar2Frame, maxStack)
 end
 
 -- ==============================
--- Soul Fragments Mode 인터페이스 정의
+-- 기능 3: UI 및 이벤트 핸들러 등록
 -- ==============================
 local Mode = {}
 

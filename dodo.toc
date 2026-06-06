@@ -49,6 +49,7 @@ Module/ResourceBar/BarMode/SoulFragments.lua
 Module/ResourceBar/BarMode/Duration.lua
 Module/ResourceBar/BarMode/Power.lua
 Module/ResourceBar/BarMode/Stack.lua
+Module/ResourceBar/BarMode/Whirlwind.lua
 Module/ResourceBar/Power.lua
 Module/ResourceBar/Tracking.lua
 
@@ -103,6 +104,9 @@ Module/Unitframe/Party/Leader.lua
 #Module/Unitframe/Raid/Anchor.lua
 
 
+# GossipFrame
+Module/GossipFrame/KeystoneLindormi.lua
+
 # QoL Modules
 Module/QoL/Audio.lua
 Module/QoL/BrowseGroup.lua
@@ -123,7 +127,6 @@ Module/QoL/WowheadLink.lua
 
 
 # Configurations & Layout Anchoring (Last Load)
-Module/CVar.lua
 Module/Slash.lua
 Option.lua
 Module/Editmode/EditModePos.lua

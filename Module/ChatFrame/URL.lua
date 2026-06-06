@@ -8,8 +8,6 @@ dodo.DB = dodo.DB or dodoDB
 
 -- 캐싱 및 와우 API 단축
 local C_Timer = C_Timer
-local ChatFrame_AddMessageEventFilter = ChatFrame_AddMessageEventFilter
-local ChatFrame_RemoveMessageEventFilter = ChatFrame_RemoveMessageEventFilter
 local CreateFrame = CreateFrame
 local IsControlKeyDown = IsControlKeyDown
 local IsInInstance = IsInInstance
@@ -127,49 +125,30 @@ if EventRegistry and EventRegistry.RegisterCallback then
     EventRegistry:RegisterCallback("SetItemRef", on_set_item_ref)
 end
 
--- 5. 대화 메시지 속 URL 감지 필터 콜백
-local function filter_message(self, event, msg, author, ...)
-    if not dodo.DB.enableChatModule or not dodo.DB.useLinkURLs then return false, msg, author, ... end
-
-    -- KString 비밀값 체크 (보안 에러 방지)
-    if issecretvalue and (issecretvalue(msg) or (author and issecretvalue(author))) then
-        return false, msg, author, ...
+-- 5. 대화 메시지 속 URL 감지 포맷 함수 (AddMessage 훅에서 호출됨)
+local function format_urls_in_text(text)
+    if not text or not dodo.DB.enableChatModule or not dodo.DB.useLinkURLs or type(text) ~= "string" or (issecretvalue and issecretvalue(text)) then
+        return text
     end
 
-    if type(msg) == "string" and not msg:find("|H") then
-        if msg:find("%.") or msg:find("://") or msg:find("www") then
+    if not text:find("|H") then
+        if text:find("%.") or text:find("://") or text:find("www") then
             for _, pattern in ipairs(Config.urlPatterns) do
-                msg = msg:gsub(pattern, format_url)
+                text = text:gsub(pattern, format_url)
             end
         end
     end
 
-    return false, msg, author, ...
+    return text
 end
 
--- 6. 메시지 이벤트별 링크화 필터 등록/해제 제어
-local FILTER_EVENTS = {
-    "CHAT_MSG_CHANNEL", "CHAT_MSG_GUILD", "CHAT_MSG_OFFICER", "CHAT_MSG_PARTY",
-    "CHAT_MSG_PARTY_LEADER", "CHAT_MSG_RAID", "CHAT_MSG_RAID_LEADER",
-    "CHAT_MSG_INSTANCE_CHAT", "CHAT_MSG_INSTANCE_CHAT_LEADER", "CHAT_MSG_SAY",
-    "CHAT_MSG_YELL", "CHAT_MSG_WHISPER", "CHAT_MSG_BN_WHISPER",
-}
+dodo.FormatURLsInText = format_urls_in_text
 
-local function apply_chat_filters(enabled)
-    for _, eventName in ipairs(FILTER_EVENTS) do
-        if enabled then
-            ChatFrame_AddMessageEventFilter(eventName, filter_message)
-        else
-            ChatFrame_RemoveMessageEventFilter(eventName, filter_message)
-        end
-    end
-end
-
--- 7. 모듈 갱신 라우팅 연동
+-- 6. 모듈 갱신 라우팅 연동
 local function update_state()
-    local in_instance = IsInInstance()
-    local is_enabled = (dodo.DB and dodo.DB.enableChatModule ~= false and dodo.DB.useLinkURLs ~= false and not in_instance)
-    apply_chat_filters(is_enabled)
+    if dodo.UpdateChatFontState then
+        dodo.UpdateChatFontState()
+    end
 end
 
 dodo.UpdateChatURLState = update_state
@@ -187,7 +166,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     end
 end)
 
--- 8. 설정 UI 연결
+-- 7. 설정 UI 연결
 if dodo.RegisterEditModeSystemSetting then
     dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.ChatFrame, {
         {

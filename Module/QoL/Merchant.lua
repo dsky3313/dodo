@@ -84,7 +84,7 @@ hooksecurefunc(MerchantFrame, "Show", on_merchant_show)
 if dodo.RegisterEditModeModuleSetting then
     dodo.RegisterEditModeModuleSetting("편의기능", {
         {
-            name = "상인 편의 기능",
+            name = "자동 판매 & 수리",
             get = function() return dodoDB and dodoDB.enableMerchant ~= false end,
             set = function(checked)
                 if dodoDB then dodoDB.enableMerchant = checked end

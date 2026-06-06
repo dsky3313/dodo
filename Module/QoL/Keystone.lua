@@ -610,6 +610,40 @@ local function initialize()
         open_raid_lib.RegisterCallback(cbHandle, "KeystoneUpdate", on_openraid_keystone_update)
     end
 
+    -- LibKeystone 연결
+    local lib_keystone = _G.LibStub and _G.LibStub("LibKeystone", true)
+    if lib_keystone then
+        local keystone_cb_handle = {}
+        lib_keystone.Register(keystone_cb_handle, function(keyLevel, keyMapID, playerRating, playerName, channel)
+            if InCombatLockdown() then return end
+            if not playerName then return end
+
+            local name = playerName
+            local dashIndex = playerName:find("-")
+            if dashIndex then
+                name = playerName:sub(1, dashIndex - 1)
+            end
+
+            local numMembers = GetNumSubgroupMembers()
+            local unit = nil
+            if UnitIsUnit("player", name) then
+                unit = "player"
+            else
+                for i = 1, numMembers do
+                    if UnitName("party" .. i) == name then
+                        unit = "party" .. i
+                        break
+                    end
+                end
+            end
+
+            if unit and keyMapID and keyLevel and keyMapID > 0 and keyLevel > 0 then
+                party_data[name] = { unit = unit, name = name, mapID = keyMapID, level = keyLevel }
+                render_party_ui_throttled()
+            end
+        end)
+    end
+
     local anchorFrame = _G.dodoEditModeKeystone
     if anchorFrame then
         anchorFrame:HookScript("OnShow", show_preview_data)
@@ -624,12 +658,20 @@ local function delayed_entering_world()
     update_my_keystone()
     if IsInGroup() then
         read_from_details()
+        local lib_keystone = _G.LibStub and _G.LibStub("LibKeystone", true)
+        if lib_keystone then
+            lib_keystone.Request("PARTY")
+        end
     end
     render_party_ui()
 end
 
 local function delayed_roster_retry()
     read_from_details()
+    local lib_keystone = _G.LibStub and _G.LibStub("LibKeystone", true)
+    if lib_keystone then
+        lib_keystone.Request("PARTY")
+    end
     render_party_ui()
 end
 
@@ -648,6 +690,12 @@ local function delayed_roster_update()
     end
 
     read_from_details()
+
+    local lib_keystone = _G.LibStub and _G.LibStub("LibKeystone", true)
+    if lib_keystone then
+        lib_keystone.Request("PARTY")
+    end
+
     render_party_ui()
 
     C_Timer.After(2, delayed_roster_retry)

@@ -2,16 +2,20 @@
 -- Inspired
 -- ==============================
 -- dodo ResourceBar - Monk Stagger Mode
--- ==============================
 
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 local addonName, dodo = ...
 local RB = dodo.ResourceBar
 local Colors = dodo.Colors
 
+-- ==============================
+-- 캐싱
+-- ==============================
 local C_PaperDollInfo = C_PaperDollInfo
 local C_Timer = C_Timer
 local C_UnitAuras = C_UnitAuras
-local CreateFrame = CreateFrame
 local Enum = Enum
 local issecretvalue = issecretvalue
 local math = math
@@ -19,8 +23,14 @@ local UnitAffectingCombat = UnitAffectingCombat
 local UnitHealthMax = UnitHealthMax
 local UnitStagger = UnitStagger
 
+-- ==============================
+-- 기능 1: 로컬 상태 및 설정
+-- ==============================
 local staggerTicker = nil
 
+-- ==============================
+-- 기능 2: 상태 업데이트
+-- ==============================
 local function get_update_interval()
     return UnitAffectingCombat("player") and 0.1 or 0.5
 end
@@ -34,7 +44,7 @@ local function stagger_tick()
 end
 
 -- ==============================
--- Stagger Mode 인터페이스 정의
+-- 기능 3: UI 및 이벤트 핸들러 등록
 -- ==============================
 local Mode = {}
 

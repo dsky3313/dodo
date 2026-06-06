@@ -2,21 +2,29 @@
 -- Inspired
 -- ==============================
 -- dodo ResourceBar - Death Knight Rune Mode
--- ==============================
 
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 local addonName, dodo = ...
 local RB = dodo.ResourceBar
-local Colors = dodo.Colors
 
-local GetRuneCooldown = GetRuneCooldown
-local GetTime = GetTime
+-- ==============================
+-- 캐싱
+-- ==============================
 local C_Timer = C_Timer
 local CreateFrame = CreateFrame
 local Enum = Enum
+local GetRuneCooldown = GetRuneCooldown
+local GetTime = GetTime
 local ipairs = ipairs
 local math = math
 local table = table
+local UnitAffectingCombat = UnitAffectingCombat
 
+-- ==============================
+-- 기능 1: 로컬 상태 및 설정
+-- ==============================
 local runeTicker = nil
 
 -- 죽음의 기사 룬 정렬 캐싱
@@ -32,6 +40,9 @@ for i = 1, 6 do
 end
 local runeSortOrder = { 1, 2, 3, 4, 5, 6 }
 
+-- ==============================
+-- 기능 2: 상태 업데이트
+-- ==============================
 local function compare_rune_order(a, b)
     local runeA = runeDataCache[a]
     local runeB = runeDataCache[b]
@@ -95,7 +106,7 @@ local function get_bar2_size()
 end
 
 -- ==============================
--- Rune Mode 인터페이스 정의
+-- 기능 3: UI 및 이벤트 핸들러 등록
 -- ==============================
 local Mode = {}
 

@@ -37,21 +37,21 @@ local Options_Default = {
     ypoint  = 0,
 }
 
--- dodo.Colors.Debuffn 데이터베이스 동적 참조 매핑 (중앙화 지원)
+-- dodo.Colors.Debuff 데이터베이스 동적 참조 매핑 (중앙화 지원)
 local debuffinfo = {}
-if dodo.Colors and dodo.Colors.Debuffn then
-    for dispeltype, v in pairs(dodo.Colors.Debuffn) do
+if dodo.Colors and dodo.Colors.Debuff then
+    for dispeltype, v in pairs(dodo.Colors.Debuff) do
         debuffinfo[dispeltype] = CreateColor(v.r, v.g, v.b)
     end
 else
     debuffinfo = {
-        [0]  = CreateColor(0.8, 0.8, 0.8), -- 일반 디버프
-        [1]  = CreateColor(0.2, 0.6, 1.0), -- Magic (파랑)
-        [2]  = CreateColor(0.6, 0.0, 1.0), -- Curse (보라)
-        [3]  = CreateColor(0.6, 0.4, 0.0), -- Disease (노랑/갈색)
-        [4]  = CreateColor(0.0, 0.6, 0.0), -- Poison (녹색)
-        [9]  = CreateColor(0.4, 0.2, 0.0), -- Bleed (붉은 갈색)
-        [11] = CreateColor(0.4, 0.2, 0.0), -- Bleed (붉은 갈색)
+        [0]  = CreateColor(0.80, 0.80, 0.80), -- 일반 디버프
+        [1]  = CreateColor(0.32, 0.66, 1.00), -- Magic (파랑)
+        [2]  = CreateColor(0.67, 0.16, 1.00), -- Curse (보라)
+        [3]  = CreateColor(0.70, 0.47, 0.00), -- Disease (노랑/갈색)
+        [4]  = CreateColor(0.00, 1.00, 0.00), -- Poison (녹색)
+        [9]  = CreateColor(1.00, 0.29, 0.17), -- Bleed (붉은 갈색)
+        [11] = CreateColor(1.00, 0.16, 0.16), -- Bleed (붉은 갈색)
     }
 end
 
@@ -82,8 +82,11 @@ local next = next
 local pairs = pairs
 local type = type
 
+local GetTime = GetTime
+
 local activeDebuffs = {}
 local activeDebuffsCache = {}
+local is_preview_active = false
 local bsetupprivate = false
 local debuff_frame
 local debufffilter = AuraUtil.CreateFilterString(AuraUtil.AuraFilters.Harmful)
@@ -218,6 +221,7 @@ local function create_debuff_frames(parent)
         frame.border:SetPoint("CENTER", frame, "CENTER", 0, 0)
         frame.border:SetSize(w, h)
 
+        frame.count:SetParent(frame.cooldown)
         frame.count:SetFont(STANDARD_TEXT_FONT, configs.count_fontsize, "OUTLINE")
         frame.count:ClearAllPoints()
         frame.count:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", configs.count_x, configs.count_y)
@@ -365,6 +369,7 @@ local function update_debuff_frames()
 end
 
 local function update_auras(updateInfo)
+    if is_preview_active then return end
     if not updateInfo or updateInfo.isFullUpdate then
         -- 전체 재스캔
         local auras = C_UnitAuras.GetUnitAuras("player", debufffilter)
@@ -417,6 +422,138 @@ local function update_auras(updateInfo)
 
     activeDebuffs["player"] = activeDebuffsCache
     update_debuff_frames()
+end
+
+local function show_preview_data()
+    is_preview_active = true
+
+    local fake_debuffs = {
+        { icon = 135900, count = 1, dispel = "Magic", color = debuffinfo[1], duration = 15 },
+        { icon = 136121, count = 2, dispel = "Curse", color = debuffinfo[2], duration = 10 },
+        { icon = 135869, count = 0, dispel = "Disease", color = debuffinfo[3], duration = 8 },
+        { icon = 135925, count = 5, dispel = "Poison", color = debuffinfo[4], duration = 12 },
+        { icon = 132242, count = 0, dispel = "Bleed", color = debuffinfo[9], duration = 20 },
+        { icon = 136183, count = 0, dispel = nil, color = debuffinfo[0], duration = 0 },
+    }
+
+    if debuff_frame and debuff_frame.frames then
+        for i = 1, configs.max_debuffs do
+            local frame = debuff_frame.frames[i]
+            local data = fake_debuffs[i]
+            if frame and data then
+                frame.unit = "player"
+                frame.auraid = nil
+                frame.icon:SetTexture(data.icon)
+                
+                if data.count > 0 then
+                    frame.count:SetText(data.count)
+                else
+                    frame.count:SetText("")
+                end
+
+                if data.duration > 0 then
+                    frame.cooldown:SetCooldown(GetTime(), data.duration)
+                    frame.cooldown:Show()
+                else
+                    frame.cooldown:Clear()
+                    frame.cooldown:Hide()
+                end
+
+                if data.color then
+                    frame.border:SetVertexColor(data.color.r, data.color.g, data.color.b)
+                else
+                    frame.border:SetVertexColor(0, 0, 0)
+                end
+
+                for _, name in ipairs(DISPEL_TYPE_NAMES) do
+                    local dispelIcon = frame["dispel" .. name]
+                    if dispelIcon then
+                        if name == data.dispel then
+                            dispelIcon:SetAlpha(1)
+                        else
+                            dispelIcon:SetAlpha(0)
+                        end
+                        dispelIcon:Show()
+                    end
+                end
+                frame:Show()
+            end
+        end
+    end
+
+    if private_frame and private_frame.PrivateAuraAnchors then
+        local fake_private = {
+            { icon = 136209, duration = 12 },
+        }
+
+        for i = 1, configs.max_private do
+            local frame = private_frame.PrivateAuraAnchors[i]
+            local data = (i == 1) and fake_private[1] or nil
+            if frame then
+                if data then
+                    if not frame.previewIcon then
+                        frame.previewIcon = frame:CreateTexture(nil, "BACKGROUND")
+                        frame.previewIcon:SetAllPoints(true)
+                        frame.previewIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                    end
+                    frame.previewIcon:SetTexture(data.icon)
+                    frame.previewIcon:Show()
+
+                    if not frame.previewBorder then
+                        frame.previewBorder = frame:CreateTexture(nil, "ARTWORK")
+                        frame.previewBorder:SetTexture("Interface\\Addons\\dodo\\Media\\Texture\\AuraBorder.tga")
+                        frame.previewBorder:SetAllPoints(true)
+                    end
+                    frame.previewBorder:SetVertexColor(1, 0.5, 0)
+                    frame.previewBorder:Show()
+
+                    if not frame.previewCooldown then
+                        frame.previewCooldown = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
+                        frame.previewCooldown:SetAllPoints(true)
+                        frame.previewCooldown:SetReverse(true)
+                        frame.previewCooldown:SetDrawEdge(false)
+                        frame.previewCooldown:SetHideCountdownNumbers(false)
+                    end
+                    if data.duration > 0 then
+                        frame.previewCooldown:SetCooldown(GetTime(), data.duration)
+                        frame.previewCooldown:Show()
+                    else
+                        frame.previewCooldown:Clear()
+                        frame.previewCooldown:Hide()
+                    end
+                else
+                    if frame.previewIcon then frame.previewIcon:Hide() end
+                    if frame.previewBorder then frame.previewBorder:Hide() end
+                    if frame.previewCooldown then
+                        frame.previewCooldown:Clear()
+                        frame.previewCooldown:Hide()
+                    end
+                    if frame.previewBg then frame.previewBg:Hide() end
+                end
+            end
+        end
+    end
+end
+
+local function hide_preview_data()
+    is_preview_active = false
+
+    if private_frame and private_frame.PrivateAuraAnchors then
+        for i = 1, configs.max_private do
+            local frame = private_frame.PrivateAuraAnchors[i]
+            if frame then
+                if frame.previewIcon then frame.previewIcon:Hide() end
+                if frame.previewBorder then frame.previewBorder:Hide() end
+                if frame.previewCooldown then
+                    frame.previewCooldown:Clear()
+                    frame.previewCooldown:Hide()
+                end
+                if frame.previewBg then frame.previewBg:Hide() end
+            end
+        end
+    end
+
+    update_auras()
 end
 
 -- ==============================
@@ -626,6 +763,13 @@ local function on_login_event(self)
         end, function() return dodoDB and dodoDB.useDebuff ~= false end)
     end
     init_frames()
+    
+    local anchorFrame = _G.dodoEditModeDebuff
+    if anchorFrame then
+        anchorFrame:HookScript("OnShow", show_preview_data)
+        anchorFrame:HookScript("OnHide", hide_preview_data)
+    end
+    
     self:UnregisterEvent("PLAYER_LOGIN")
 end
 
@@ -639,7 +783,7 @@ init:SetScript("OnEvent", on_login_event)
 if dodo.RegisterEditModeModuleSetting then
     dodo.RegisterEditModeModuleSetting("전투", {
         {
-            name = "디버프 표시기",
+            name = "디버프",
             get = function() return dodoDB and dodoDB.useDebuff ~= false end,
             set = function(checked)
                 if dodoDB then dodoDB.useDebuff = checked end

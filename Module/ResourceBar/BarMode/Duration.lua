@@ -2,21 +2,31 @@
 -- Inspired
 -- ==============================
 -- dodo ResourceBar - Duration Buff Tracker Mode
--- ==============================
 
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 local addonName, dodo = ...
 local RB = dodo.ResourceBar
-local Colors = dodo.Colors
 
+-- ==============================
+-- 캐싱
+-- ==============================
 local C_Timer = C_Timer
 local C_UnitAuras = C_UnitAuras
+local ipairs = ipairs
 local issecretvalue = issecretvalue
 local math = math
-local ipairs = ipairs
 local UnitAffectingCombat = UnitAffectingCombat
 
+-- ==============================
+-- 기능 1: 로컬 상태 및 설정
+-- ==============================
 local durationTicker = nil
 
+-- ==============================
+-- 기능 2: 상태 업데이트
+-- ==============================
 local function get_update_interval()
     return UnitAffectingCombat("player") and 0.1 or 0.5
 end
@@ -30,7 +40,7 @@ local function duration_tick()
 end
 
 -- ==============================
--- Duration Mode 인터페이스 정의
+-- 기능 3: UI 및 이벤트 핸들러 등록
 -- ==============================
 local Mode = {}
 

@@ -61,7 +61,7 @@ local bar2ClassConfig = {
     ["WARRIOR"]     = {
         [1] = { { barMode = "duration",      spellID   = 167105, color = Colors.Spec.WARRIOR[1] } },
         [2] = {
-            { barMode = "stack",             spellID   = 12950,  maxStack   = 4,            requiredSpell = 12950, color = Colors.Spec.WARRIOR[2] },
+            { barMode = "whirlwind",         spellID   = 12950,  maxStack   = 4,            requiredSpell = 12950, color = Colors.Spec.WARRIOR[2] },
             { barMode = "duration",          spellID   = 184361, excludedSpell = 12950, color = Colors.Spec.WARRIOR[2] },
         },
         [3] = { { barMode = "stack",         spellID   = 190456, maxStack   = 100, color = Colors.Spec.WARRIOR[3] } },
@@ -125,7 +125,7 @@ function ResourceBar2Mixin:Update()
         
         local hasNormalBuffTracker = false
         for _, config in ipairs(currentSpecBuffs) do
-            if config.barMode == "duration" or config.barMode == "stack" or config.barMode == "ironfur" then
+            if config.barMode == "duration" or config.barMode == "stack" or config.barMode == "ironfur" or config.barMode == "whirlwind" then
                 hasNormalBuffTracker = true
                 break
             end

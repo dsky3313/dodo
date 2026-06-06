@@ -829,7 +829,7 @@ function EditMode:CreateSystem(system_name, system_label, system_tooltip, parent
     
     -- 마우스 클릭 보장용 레이어 및 레벨 우선순위 조정
     selection:SetFrameStrata("LOW")
-    selection:SetFrameLevel(200)
+    selection:SetFrameLevel(1000)
     selection:EnableMouse(true)
     
     system:SetSize(width or 150, height or 50)
