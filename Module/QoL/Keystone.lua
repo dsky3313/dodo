@@ -360,7 +360,10 @@ local function update_feature()
     local frameWidth = 200
     main_frame:SetSize(frameWidth, 220)
 
-    local font, _, flags = rows[1].name:GetFont()
+    local font, _, flags
+    if _G.GameFontNormal then
+        font, _, flags = _G.GameFontNormal:GetFont()
+    end
     if not font then font = _G.STANDARD_TEXT_FONT or "Fonts\\bKAI00M.ttf" end
 
     for i = 1, 5 do
@@ -386,6 +389,8 @@ local function update_feature()
         row.name:SetPoint("TOPLEFT", row.portBtn, "TOPRIGHT", Config.textXOffset, Config.nameYOffset)
         row.mapName:ClearAllPoints()
         row.mapName:SetPoint("BOTTOMLEFT", row.portBtn, "BOTTOMRIGHT", Config.textXOffset, Config.mapYOffset)
+        row.noLib:ClearAllPoints()
+        row.noLib:SetPoint("BOTTOMLEFT", row.portBtn, "BOTTOMRIGHT", Config.textXOffset, Config.mapYOffset)
     end
 
     render_party_ui()
