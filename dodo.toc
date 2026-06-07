@@ -108,6 +108,8 @@ Module/Unitframe/Party/Leader.lua
 Module/GossipFrame/KeystoneLindormi.lua
 
 # QoL Modules
+Module/ReadyCheck/Timer.lua
+Module/ReadyCheck/Consumeable.lua
 Module/QoL/Audio.lua
 Module/QoL/BrowseGroup.lua
 Module/QoL/Camera.lua

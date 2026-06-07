@@ -3,6 +3,7 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
+dodoDB = dodoDB or {}
 
 -- ==============================
 -- 캐싱
@@ -10,12 +11,19 @@ local addonName, dodo = ...
 local C_ChallengeMode = C_ChallengeMode
 local C_GossipInfo = C_GossipInfo
 local C_MythicPlus = C_MythicPlus
+local C_Timer = C_Timer
 local CreateFrame = CreateFrame
 local GossipFrame = GossipFrame
-local hooksecurefunc = hooksecurefunc
 local IsInInstance = IsInInstance
+local issecretvalue = issecretvalue
 local string = string
 local UnitName = UnitName
+
+-- ==============================
+-- 로컬 프레임 및 상태
+-- ==============================
+local info_frame = nil
+local event_frame = nil
 
 -- ==============================
 -- 기능 1: 린도르미 감지 및 쐐기돌 정보 획득
@@ -34,45 +42,126 @@ end
 local function get_keystone_text()
     local map_id = C_MythicPlus.GetOwnedKeystoneChallengeMapID()
     local level = C_MythicPlus.GetOwnedKeystoneLevel()
-    if map_id and level and level > 0 then
+    if map_id and level and not issecretvalue(level) and level > 0 then
         local dungeon_name = C_ChallengeMode.GetMapUIInfo(map_id)
         if dungeon_name then
-            return string.format("|cff00ff00[%d]|r %s", level, dungeon_name)
+            return string.format("|T4352494:14:14:0:0|t |cff00ff00[%d]|r %s", level, dungeon_name)
         end
     end
-    return "|cff888888보유 쐐기돌 없음|r"
+    return "|T4352494:14:14:0:0|t |cff888888보유 쐐기돌 없음|r"
 end
 
 -- ==============================
--- 기능 2: 가십 텍스트 업데이트 (안전한 hooksecurefunc 방식)
+-- 기능 2: 독립 정보 프레임 생성 및 표시 (투명, 좌측하단)
 -- ==============================
-local function update_gossip_text()
-    if not is_lindormi() then return end
-    
-    local text = C_GossipInfo.GetText() or ""
-    if text:find("모험 이야기") then
-        local greetingText = GossipFrame and GossipFrame.GreetingPanel and GossipFrame.GreetingPanel.GreetingText
-        if greetingText then
-            local current_text = greetingText:GetText() or ""
-            -- 이미 추가되었는지 확인하여 중복 추가 방지
-            if not current_text:find("보유 쐐기돌") then
-                local keystone_info = get_keystone_text()
-                greetingText:SetText(current_text .. "\n\n|cffffff00보유 쐐기돌|r\n" .. keystone_info)
+local function create_info_frame()
+    if info_frame then return end
+
+    info_frame = CreateFrame("Frame", nil, GossipFrame)
+    info_frame:SetSize(220, 20)
+    info_frame:SetPoint("BOTTOMLEFT", GossipFrame, "BOTTOMLEFT", 0, 0)
+
+    local content = info_frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    content:SetPoint("BOTTOMLEFT", info_frame, "BOTTOMLEFT", 0, 0)
+    content:SetJustifyH("LEFT")
+    info_frame.content = content
+end
+
+local function update_info_frame()
+    if is_lindormi() then
+        create_info_frame()
+        if info_frame then
+            info_frame.content:SetText(get_keystone_text())
+            info_frame:Show()
+        end
+    elseif info_frame then
+        info_frame:Hide()
+    end
+end
+
+local function update_info_frame_deferred()
+    if info_frame and info_frame:IsShown() then
+        update_info_frame()
+    end
+end
+
+local function trigger_deferred_updates()
+    C_Timer.After(0.2, update_info_frame_deferred)
+    C_Timer.After(0.5, update_info_frame_deferred)
+    C_Timer.After(1.0, update_info_frame_deferred)
+end
+
+local function hide_info_frame()
+    if info_frame then
+        info_frame:Hide()
+    end
+end
+
+-- ==============================
+-- 기능 3: 상태 업데이트 및 자원 제어 (자원소모 0% 실현)
+-- ==============================
+local function update_visual()
+    local is_enabled = (dodoDB and dodoDB.enableKeystoneLindormi ~= false)
+    if is_enabled then
+        if event_frame then
+            event_frame:RegisterEvent("GOSSIP_SHOW")
+            event_frame:RegisterEvent("GOSSIP_CLOSED")
+        end
+    else
+        if event_frame then
+            event_frame:UnregisterAllEvents()
+        end
+        hide_info_frame()
+    end
+end
+
+local function initialize()
+    if dodoDB and dodoDB.enableKeystoneLindormi == nil then
+        dodoDB.enableKeystoneLindormi = true
+    end
+    update_visual()
+end
+
+-- ==============================
+-- 이벤트 핸들러
+-- ==============================
+event_frame = CreateFrame("Frame")
+
+local function on_event(self, event, arg1)
+    if event == "ADDON_LOADED" and arg1 == addonName then
+        dodoDB = dodoDB or {}
+    elseif event == "PLAYER_LOGIN" then
+        initialize()
+        self:UnregisterEvent("PLAYER_LOGIN")
+    elseif event == "GOSSIP_SHOW" then
+        if is_lindormi() then
+            update_info_frame()
+            self:RegisterEvent("CHAT_MSG_LOOT")
+        end
+    elseif event == "GOSSIP_CLOSED" then
+        hide_info_frame()
+        self:UnregisterEvent("CHAT_MSG_LOOT")
+    elseif event == "CHAT_MSG_LOOT" then
+        trigger_deferred_updates()
+    end
+end
+
+event_frame:RegisterEvent("ADDON_LOADED")
+event_frame:RegisterEvent("PLAYER_LOGIN")
+event_frame:SetScript("OnEvent", on_event)
+
+-- ==============================
+-- 설정 등록
+-- ==============================
+if dodo.RegisterEditModeModuleSetting then
+    dodo.RegisterEditModeModuleSetting("편의기능", {
+        {
+            name = "린도르미 쐐기돌 표시",
+            get = function() return dodoDB and dodoDB.enableKeystoneLindormi ~= false end,
+            set = function(checked)
+                if dodoDB then dodoDB.enableKeystoneLindormi = checked end
+                update_visual()
             end
-        end
-    end
-end
-
--- GossipFrame의 Update 함수가 호출된 후에 텍스트를 업데이트하도록 안전하게 훅
-if GossipFrame then
-    hooksecurefunc(GossipFrame, "Update", update_gossip_text)
-else
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("ADDON_LOADED")
-    f:SetScript("OnEvent", function(self, event, name)
-        if name == "Blizzard_GossipFrame" or GossipFrame then
-            hooksecurefunc(GossipFrame, "Update", update_gossip_text)
-            self:UnregisterAllEvents()
-        end
-    end)
+        }
+    })
 end
