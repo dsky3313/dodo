@@ -124,6 +124,7 @@ Module/QoL/Merchant.lua
 Module/QoL/NewLFG.lua
 Module/QoL/QuickBobber.lua
 Module/QoL/Teleport.lua
+Module/QoL/TimerLFG.lua
 Module/QoL/WMarker.lua
 Module/QoL/WowheadLink.lua
 
