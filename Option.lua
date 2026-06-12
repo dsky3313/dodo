@@ -20,7 +20,7 @@ local mainCategory = Settings.RegisterVerticalLayoutCategory("dodo")
 Settings.RegisterAddOnCategory(mainCategory)
 
 -- 하위
--- local subCategoryGeneral = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "일반")
+local subCategoryGeneral = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "명령어")
 
 -- 설정 생성
 function dodoCreateOptions()

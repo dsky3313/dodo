@@ -35,7 +35,7 @@ local fontColorTable = {
 function LibIcon:Create(name, parent, config)
     local isAction = config and config.isAction or false
     local template = isAction and "SecureActionButtonTemplate" or nil
-    local frameType = isAction and "CheckButton" or "Frame"
+    local frameType = isAction and "Button" or "Frame"
     local frame = CreateFrame(frameType, name, parent or UIParent, template)
     local size = config and config.iconsize or {40, 40}
 
@@ -62,6 +62,11 @@ function LibIcon:Create(name, parent, config)
     frame.Name = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     frame.Count = frame:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
     frame.Count:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
+    if dodo.Colors and dodo.Colors.Gold then
+        frame.Count:SetTextColor(dodo.Colors.Gold.r, dodo.Colors.Gold.g, dodo.Colors.Gold.b)
+    else
+        frame.Count:SetTextColor(1.00, 0.82, 0.00)
+    end
 
     if isAction then
         local highlight = frame:CreateTexture(nil, "HIGHLIGHT")

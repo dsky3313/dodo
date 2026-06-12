@@ -59,10 +59,10 @@ local function create_info_frame()
 
     info_frame = CreateFrame("Frame", nil, GossipFrame)
     info_frame:SetSize(220, 20)
-    info_frame:SetPoint("BOTTOMLEFT", GossipFrame, "BOTTOMLEFT", 0, 0)
+    info_frame:SetPoint("TOP", GossipFrame, "TOP", 0, -35)
 
     local content = info_frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    content:SetPoint("BOTTOMLEFT", info_frame, "BOTTOMLEFT", 0, 0)
+    content:SetPoint("CENTER", info_frame, "CENTER", 0, 0)
     content:SetJustifyH("LEFT")
     info_frame.content = content
 end

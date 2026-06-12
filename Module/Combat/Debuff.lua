@@ -65,6 +65,7 @@ local filterList = {
     [160455] = true, -- 만족함 (Insanity - 북)
     [264689] = true, -- 피로 (Fatigued - 원초적 분노)
     [390435] = true, -- 탈진 (Aspects' Benevolence - 위상의 격노)
+    [97821]  = true, -- 죽기 디버프
 }
 
 -- ==============================

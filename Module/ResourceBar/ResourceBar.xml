@@ -16,7 +16,7 @@
             <Layer level="OVERLAY">
                 <FontString parentKey="countPower" inherits="NumberFontNormal" justifyH="CENTER">
                     <Anchors>
-                        <Anchor point="CENTER" x="0" y="0"/>
+                        <Anchor point="CENTER" x="0" y="3"/>
                     </Anchors>
                 </FontString>
             </Layer>
@@ -41,12 +41,12 @@
             <Layer level="OVERLAY">
                 <FontString parentKey="countStack" inherits="NumberFontNormal" justifyH="RIGHT">
                     <Anchors>
-                        <Anchor point="RIGHT" x="-5" y="0"/>
+                        <Anchor point="RIGHT" x="-5" y="3"/>
                     </Anchors>
                 </FontString>
                 <FontString parentKey="countDuration" inherits="NumberFontNormal" justifyH="RIGHT">
                     <Anchors>
-                        <Anchor point="RIGHT" x="-5" y="0"/>
+                        <Anchor point="RIGHT" x="-5" y="3"/>
                     </Anchors>
                 </FontString>
             </Layer>
