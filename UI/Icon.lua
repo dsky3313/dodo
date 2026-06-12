@@ -54,14 +54,23 @@ function LibIcon:Create(name, parent, config)
     frame.cooldown = CreateFrame("Cooldown", name .. "Cooldown", frame, "CooldownFrameTemplate")
     frame.cooldown:SetPoint("TOPLEFT", frame.icon, "TOPLEFT", 0, 0)
     frame.cooldown:SetPoint("BOTTOMRIGHT", frame.icon, "BOTTOMRIGHT", 0, 0)
-    frame.cooldown:SetFrameLevel(frame:GetFrameLevel())
+    frame.cooldown:SetFrameLevel(frame:GetFrameLevel() + 1)
     frame.cooldown:SetDrawEdge(false)
     frame.cooldown:SetDrawSwipe(true)
     frame.cooldown:SetSwipeColor(0, 0, 0, 0.8)
 
-    frame.Name = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    frame.Count = frame:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
-    frame.Count:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
+    -- 오버레이 레이어 (border, text 전용)
+    local overlayLayer = CreateFrame("Frame", nil, frame)
+    overlayLayer:SetAllPoints(frame)
+    overlayLayer:SetFrameLevel(frame:GetFrameLevel() + 2)
+    frame.overlayLayer = overlayLayer
+
+    frame.normalTexture:SetParent(overlayLayer)
+    frame.normalTexture:SetDrawLayer("ARTWORK")
+
+    frame.Name = overlayLayer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    frame.Count = overlayLayer:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+    frame.Count:SetPoint("BOTTOMRIGHT", overlayLayer, "BOTTOMRIGHT", -2, 2)
     if dodo.Colors and dodo.Colors.Gold then
         frame.Count:SetTextColor(dodo.Colors.Gold.r, dodo.Colors.Gold.g, dodo.Colors.Gold.b)
     else
@@ -69,12 +78,12 @@ function LibIcon:Create(name, parent, config)
     end
 
     if isAction then
-        local highlight = frame:CreateTexture(nil, "HIGHLIGHT")
+        local highlight = overlayLayer:CreateTexture(nil, "HIGHLIGHT")
         highlight:SetAtlas("UI-HUD-ActionBar-IconFrame-Mouseover")
-        highlight:SetAlpha(0.5); highlight:SetBlendMode("ADD"); highlight:SetAllPoints(frame)
-        local pushed = frame:CreateTexture(nil, "OVERLAY")
+        highlight:SetAlpha(0.5); highlight:SetBlendMode("ADD"); highlight:SetAllPoints(overlayLayer)
+        local pushed = overlayLayer:CreateTexture(nil, "OVERLAY")
         pushed:SetAtlas("UI-HUD-ActionBar-IconFrame-Down")
-        pushed:SetAlpha(0.5); pushed:SetBlendMode("ADD"); pushed:SetAllPoints(frame)
+        pushed:SetAlpha(0.5); pushed:SetBlendMode("ADD"); pushed:SetAllPoints(overlayLayer)
         if frame.SetPushedTexture then frame:SetPushedTexture(pushed) end
         frame:RegisterForClicks("AnyUp", "AnyDown")
     end

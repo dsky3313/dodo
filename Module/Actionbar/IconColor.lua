@@ -90,6 +90,13 @@ dodo.ActionbarUpdateIconColor = update_icon_color
 
 local function update_state(btn)
     if not btn.action then return end
+    local barName = dodo.get_bar_name_by_button(btn)
+    if not barName or not FeatureColorBars[barName] then
+        update_icon_color(btn)
+        if dodo.ActionbarUpdateButtonText then dodo.ActionbarUpdateButtonText(btn) end
+        if dodo.ActionbarUpdatePotionProc then dodo.ActionbarUpdatePotionProc(btn) end
+        return
+    end
     local isUsable, notEnoughMana = C_ActionBar.IsUsableAction(btn.action)
     local inRange = C_ActionBar.IsActionInRange(btn.action)
     btn.__isUsable = isUsable
@@ -103,6 +110,13 @@ dodo.ActionbarUpdateState = update_state
 
 local function update_cooldown_state(btn)
     if not btn.action then return end
+    local barName = dodo.get_bar_name_by_button(btn)
+    if not barName or not FeatureColorBars[barName] then
+        btn.__cdVal = nil
+        update_icon_color(btn)
+        if dodo.ActionbarUpdatePotionProc then dodo.ActionbarUpdatePotionProc(btn) end
+        return
+    end
     local dur  = C_ActionBar.GetActionCooldownDuration(btn.action)
     local info = C_ActionBar.GetActionCooldown(btn.action)
     btn.__cdVal = (dur and info and not info.isOnGCD) and dur or nil

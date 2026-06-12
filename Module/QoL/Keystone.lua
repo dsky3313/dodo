@@ -209,6 +209,10 @@ local function update_visibility_condition()
         end
     end
     RegisterStateDriver(main_frame, "visibility", condition)
+
+    if not isChallengeReallyActive then
+        main_frame:Show()
+    end
 end
 
 -- ==============================
@@ -765,7 +769,15 @@ local function on_event(self, event, ...)
 
     elseif event == "CHALLENGE_MODE_COMPLETED" or event == "CHALLENGE_MODE_RESET" then
         is_challenge_active = false
-        update_module_state()
+        if InCombatLockdown() then
+            C_Timer.After(0.1, function()
+                if not InCombatLockdown() then
+                    update_visibility_condition()
+                end
+            end)
+        else
+            update_visibility_condition()
+        end
         C_Timer.After(2, update_my_keystone)
 
         if event == "CHALLENGE_MODE_COMPLETED" and dodoDB and dodoDB.useKeyRoll ~= false then
@@ -776,6 +788,8 @@ local function on_event(self, event, ...)
         main_frame:Hide()
         main_frame:UnregisterAllEvents()
         main_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+        main_frame:RegisterEvent("CHALLENGE_MODE_COMPLETED")
+        main_frame:RegisterEvent("CHALLENGE_MODE_RESET")
 
     elseif event == "PLAYER_REGEN_ENABLED" then
         update_module_state()

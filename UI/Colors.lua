@@ -6,6 +6,7 @@
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
+_G.dodoAPI = dodo -- dodo_Test 등 의존 addon에서 dodo.* 공유 API 접근용
 dodo.Colors = dodo.Colors or {}
 
 -- ==============================

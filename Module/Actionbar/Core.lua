@@ -130,9 +130,6 @@ f:SetScript("OnEvent", function(self, event, ...)
                 local btn = _G[group .. i]
                 if btn then
                     registeredButtons[btn] = true
-                    if btn.Update and dodo.ActionbarUpdateState then
-                        hooksecurefunc(btn, "Update", dodo.ActionbarUpdateState)
-                    end
                     if btn.UpdateUsable and dodo.ActionbarUpdateState then
                         hooksecurefunc(btn, "UpdateUsable", dodo.ActionbarUpdateState)
                     end

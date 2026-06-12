@@ -86,7 +86,7 @@ main_frame:SetAttribute("_onstate-combatstate", [=[
 ---@param tooltipType "spell"|"item" 마우스오버 툴팁 유형
 ---@param tooltipId number 툴팁에 표시할 주문 또는 아이템 ID
 ---@param macrotext string|nil 클릭 시 실행할 보안 매크로 텍스트
----@return Frame # 생성된 아이콘 프레임 객체
+---@return ReadyCheckIconFrame # 생성된 아이콘 프레임 객체
 local function create_icon(name, texture, index, tooltipType, tooltipId, macrotext)
     local hasMacro = (macrotext ~= nil)
     local f = LibIcon:Create("dodoReadyCheckIcon_" .. name, main_frame, {
@@ -163,7 +163,7 @@ local WEAPON_MACRO = "/run print('|cffffd200[dodo]|r 무기 도핑 클릭됨')\n
 ---@type ReadyCheckIcons
 local icons = {}
 icons.food = create_icon("Food", 136000, 1, "item", 242275, FOOD_MACRO)
-icons.flask = create_icon("Flask", 7548987, 2, "item", 212265, FLASK_MACRO)
+icons.flask = create_icon("Flask", 7548903, 2, "item", 241327, FLASK_MACRO)
 icons.weapon = create_icon("Weapon", 7548987, 3, "item", 243734, WEAPON_MACRO)
 icons.rune = create_icon("Rune", 3566863, 4, "spell", 393438, RUNE_MACRO)
 icons.potion = create_icon("Potion", 7548911, 5, "item", 241308, nil)

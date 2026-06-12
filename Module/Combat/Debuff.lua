@@ -218,26 +218,37 @@ local function create_debuff_frames(parent)
         frame.icon:ClearAllPoints()
         frame.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", 4, -4)
         frame.icon:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -4, 4)
-        frame.border:ClearAllPoints()
-        frame.border:SetPoint("CENTER", frame, "CENTER", 0, 0)
-        frame.border:SetSize(w, h)
-
-        frame.count:SetParent(frame.cooldown)
-        frame.count:SetFont(STANDARD_TEXT_FONT, configs.count_fontsize, "OUTLINE")
-        frame.count:ClearAllPoints()
-        frame.count:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", configs.count_x, configs.count_y)
-        frame.count:SetTextColor(1, 1, 0)
-
         frame:SetSize(w, h)
         frame:ClearAllPoints()
+
+        -- border/dispel/count 전용 오버레이 프레임 (swipe 501 위)
+        local overlayLayer = CreateFrame("Frame", nil, frame)
+        overlayLayer:SetAllPoints(frame)
+        overlayLayer:SetFrameLevel(frame:GetFrameLevel() + 2)
+        frame.overlayLayer = overlayLayer
+
+        frame.border:SetParent(overlayLayer)
+        frame.border:SetDrawLayer("ARTWORK")
+        frame.border:ClearAllPoints()
+        frame.border:SetPoint("CENTER", overlayLayer, "CENTER", 0, 0)
+        frame.border:SetSize(w, h)
+
+        frame.count:SetParent(overlayLayer)
+        frame.count:SetDrawLayer("OVERLAY")
+        frame.count:SetFont(STANDARD_TEXT_FONT, configs.count_fontsize, "OUTLINE")
+        frame.count:ClearAllPoints()
+        frame.count:SetPoint("BOTTOMRIGHT", overlayLayer, "BOTTOMRIGHT", configs.count_x, configs.count_y)
+        frame.count:SetTextColor(1, 1, 0)
 
         -- 해제 타입 아이콘 설정
         for _, name in ipairs(DISPEL_TYPE_NAMES) do
             local dispelIcon = frame["dispel" .. name]
             if dispelIcon then
+                dispelIcon:SetParent(overlayLayer)
+                dispelIcon:SetDrawLayer("OVERLAY")
                 dispelIcon:SetSize(configs.dispel_size, configs.dispel_size)
                 dispelIcon:ClearAllPoints()
-                dispelIcon:SetPoint("TOPRIGHT", frame, "TOPRIGHT", configs.dispel_x, configs.dispel_y)
+                dispelIcon:SetPoint("TOPRIGHT", overlayLayer, "TOPRIGHT", configs.dispel_x, configs.dispel_y)
             end
         end
 

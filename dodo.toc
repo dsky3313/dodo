@@ -33,25 +33,13 @@ Module/Actionbar/OverlayCDM.lua
 Module/Actionbar/OverlayInterrupt.lua
 Module/Actionbar/OverlayPotion.lua
 
-
-# Combat
-Module/Combat/Debuff.lua
-Module/Combat/Debuff.xml
-Module/Combat/BloodBrez.lua
-
-# ResourceBar
-Module/ResourceBar/ResourceBar.xml
-Module/ResourceBar/Core.lua
-Module/ResourceBar/BarMode/Rune.lua
-Module/ResourceBar/BarMode/Stagger.lua
-Module/ResourceBar/BarMode/Ironfur.lua
-Module/ResourceBar/BarMode/SoulFragments.lua
-Module/ResourceBar/BarMode/Duration.lua
-Module/ResourceBar/BarMode/Power.lua
-Module/ResourceBar/BarMode/Stack.lua
-Module/ResourceBar/BarMode/Whirlwind.lua
-Module/ResourceBar/Power.lua
-Module/ResourceBar/Tracking.lua
+# CharacterFrame
+Module/CharacterFrame/Core.lua
+Module/CharacterFrame/Layout.lua
+Module/CharacterFrame/Ilvl.lua
+Module/CharacterFrame/IlvlBag.lua
+Module/CharacterFrame/Enchant.lua
+Module/CharacterFrame/Gem.lua
 
 # ChatFrame
 Module/ChatFrame/Core.lua
@@ -60,18 +48,25 @@ Module/ChatFrame/URL.lua
 Module/ChatFrame/Short.lua
 Module/ChatFrame/GuildButton.lua
 
+# Combat
+Module/Combat/Debuff.lua
+Module/Combat/Debuff.xml
+Module/Combat/BloodBrez.lua
+
 # DamageMeter
 Module/DamageMeter/Core.lua
 Module/DamageMeter/Sync.lua
 Module/DamageMeter/Reset.lua
 
-# CharacterFrame
-Module/CharacterFrame/Core.lua
-Module/CharacterFrame/Layout.lua
-Module/CharacterFrame/Ilvl.lua
-Module/CharacterFrame/IlvlBag.lua
-Module/CharacterFrame/Enchant.lua
-Module/CharacterFrame/Gem.lua
+# EncounterJournal
+Module/EncounterJournal/Core.lua
+Module/EncounterJournal/AchievementsTabData.lua
+Module/EncounterJournal/AchievementsTabCategory.lua
+Module/EncounterJournal/AchievementsTabRowBuilder.lua
+Module/EncounterJournal/AchievementsTabUI.lua
+
+# GossipFrame
+Module/GossipFrame/KeystoneLindormi.lua
 
 # Minimap
 Module/Minimap/Core.lua
@@ -83,29 +78,6 @@ Module/Minimap/Coord.lua
 # PVEFrame
 Module/PVEFrame/PartyClass.lua
 Module/PVEFrame/QuickSelectDungeons.lua
-
-# Tooltip
-Module/Tooltip/Core.lua
-Module/Tooltip/StatusBar.lua
-Module/Tooltip/ID.lua
-Module/Tooltip/Icon.lua
-Module/Tooltip/Color.lua
-Module/Tooltip/Vehicle.lua
-
-# Unitframe
-Module/Unitframe/Core.lua
-Module/Unitframe/Unit/Castbar.lua
-Module/Unitframe/Unit/Auras.lua
-Module/Unitframe/Unit/Player.lua
-Module/Unitframe/Unit/Target.lua
-Module/Unitframe/Unit/Boss.lua
-Module/Unitframe/Unit/ETC.lua
-Module/Unitframe/Party/Leader.lua
-#Module/Unitframe/Raid/Anchor.lua
-
-
-# GossipFrame
-Module/GossipFrame/KeystoneLindormi.lua
 
 # QoL Modules
 Module/ReadyCheck/Timer.lua
@@ -128,6 +100,38 @@ Module/QoL/TimerLFG.lua
 Module/QoL/WMarker.lua
 Module/QoL/WowheadLink.lua
 
+# ResourceBar
+Module/ResourceBar/ResourceBar.xml
+Module/ResourceBar/Core.lua
+Module/ResourceBar/BarMode/Rune.lua
+Module/ResourceBar/BarMode/Stagger.lua
+Module/ResourceBar/BarMode/Ironfur.lua
+Module/ResourceBar/BarMode/SoulFragments.lua
+Module/ResourceBar/BarMode/Duration.lua
+Module/ResourceBar/BarMode/Power.lua
+Module/ResourceBar/BarMode/Stack.lua
+Module/ResourceBar/BarMode/Whirlwind.lua
+Module/ResourceBar/Power.lua
+Module/ResourceBar/Tracking.lua
+
+# Tooltip
+Module/Tooltip/Core.lua
+Module/Tooltip/StatusBar.lua
+Module/Tooltip/ID.lua
+Module/Tooltip/Icon.lua
+Module/Tooltip/Color.lua
+Module/Tooltip/Vehicle.lua
+
+# Unitframe
+Module/Unitframe/Core.lua
+Module/Unitframe/Unit/Castbar.lua
+Module/Unitframe/Unit/Auras.lua
+Module/Unitframe/Unit/Player.lua
+Module/Unitframe/Unit/Target.lua
+Module/Unitframe/Unit/Boss.lua
+Module/Unitframe/Unit/ETC.lua
+Module/Unitframe/Party/Leader.lua
+#Module/Unitframe/Raid/Anchor.lua
 
 # Configurations & Layout Anchoring (Last Load)
 Module/Slash.lua
