@@ -10,7 +10,9 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local FeatureColorBars = {
+local BAR_INDEX_MAP = dodo.BAR_INDEX_MAP
+
+local COLOR_DEFAULTS = {
     ["MainActionBar"]       = true,
     ["MultiBarBottomLeft"]  = true,
     ["MultiBarBottomRight"] = true,
@@ -19,14 +21,19 @@ local FeatureColorBars = {
     ["MultiBar5"]           = false,
     ["MultiBar6"]           = false,
     ["MultiBar7"]           = true,
-    ["StanceBar"]           = true,
+    ["StanceBar"]           = false,
     ["PetActionBar"]        = false,
 }
 
-local Colors = {
-    range  = { r = 0.9, g = 0.1, b = 0.1 },
-    mana   = { r = 0.1, g = 0.3, b = 1.0 },
-    normal = { r = 1.0, g = 1.0, b = 1.0 }
+local COLOR_DB_KEYS = {
+    ["MainActionBar"]       = "useActionbarColorBar1",
+    ["MultiBarBottomLeft"]  = "useActionbarColorBar2",
+    ["MultiBarBottomRight"] = "useActionbarColorBar3",
+    ["MultiBarRight"]       = "useActionbarColorBar4",
+    ["MultiBarLeft"]        = "useActionbarColorBar5",
+    ["MultiBar5"]           = "useActionbarColorBar6",
+    ["MultiBar6"]           = "useActionbarColorBar7",
+    ["MultiBar7"]           = "useActionbarColorBar8",
 }
 
 -- ==============================
@@ -37,6 +44,7 @@ local C_CurveUtil = C_CurveUtil
 local Enum = Enum
 local pairs = pairs
 
+local dodoColors = dodo.Colors
 local registeredButtons = dodo.registeredButtons
 
 local DesatCurve = C_CurveUtil.CreateCurve()
@@ -47,6 +55,18 @@ DesatCurve:AddPoint(0.001, 1)
 -- ==============================
 -- 기능 구현
 -- ==============================
+local function is_bar_color_enabled(barName)
+    if not barName then return false end
+    local dbKey = COLOR_DB_KEYS[barName]
+    if not dbKey then
+        return COLOR_DEFAULTS[barName] or false
+    end
+    if not dodoDB then return COLOR_DEFAULTS[barName] or false end
+    local val = dodoDB[dbKey]
+    if val == nil then return COLOR_DEFAULTS[barName] or false end
+    return val
+end
+
 local function update_icon_color(btn)
     if not btn.icon then return end
 
@@ -54,14 +74,7 @@ local function update_icon_color(btn)
     if not isEnabled then return end
 
     local barName = dodo.get_bar_name_by_button(btn)
-    if not barName or not FeatureColorBars[barName] then
-        btn.icon:SetVertexColor(1, 1, 1)
-        btn.icon:SetDesaturation(0)
-        return
-    end
-
-    local useColor = (dodoDB and dodoDB.useActionbarColor ~= false)
-    if not useColor then
+    if not barName or not is_bar_color_enabled(barName) then
         btn.icon:SetVertexColor(1, 1, 1)
         btn.icon:SetDesaturation(0)
         return
@@ -69,11 +82,13 @@ local function update_icon_color(btn)
 
     local r, g, b, desat = 1, 1, 1, 0
     if btn.__isOutOfRange then
-        r, g, b, desat = Colors.range.r, Colors.range.g, Colors.range.b, 1
+        local c = dodoColors.ActionbarIconColor.Range
+        r, g, b, desat = c.r, c.g, c.b, 1
     elseif btn.__isNotEnoughMana then
-        r, g, b, desat = Colors.mana.r, Colors.mana.g, Colors.mana.b, 1
+        local c = dodoColors.ActionbarIconColor.Mana
+        r, g, b, desat = c.r, c.g, c.b, 1
     else
-        r, g, b = Colors.normal.r, Colors.normal.g, Colors.normal.b
+        r, g, b = 1, 1, 1
         if btn.__isUsable == false then
             desat = 1
         elseif btn.__cdVal then
@@ -91,7 +106,7 @@ dodo.ActionbarUpdateIconColor = update_icon_color
 local function update_state(btn)
     if not btn.action then return end
     local barName = dodo.get_bar_name_by_button(btn)
-    if not barName or not FeatureColorBars[barName] then
+    if not barName or not is_bar_color_enabled(barName) then
         update_icon_color(btn)
         if dodo.ActionbarUpdateButtonText then dodo.ActionbarUpdateButtonText(btn) end
         if dodo.ActionbarUpdatePotionProc then dodo.ActionbarUpdatePotionProc(btn) end
@@ -111,7 +126,7 @@ dodo.ActionbarUpdateState = update_state
 local function update_cooldown_state(btn)
     if not btn.action then return end
     local barName = dodo.get_bar_name_by_button(btn)
-    if not barName or not FeatureColorBars[barName] then
+    if not barName or not is_bar_color_enabled(barName) then
         btn.__cdVal = nil
         update_icon_color(btn)
         if dodo.ActionbarUpdatePotionProc then dodo.ActionbarUpdatePotionProc(btn) end
@@ -129,7 +144,7 @@ dodo.ActionbarApplyColor = function()
     for btn in pairs(registeredButtons) do
         local isEnabled = (dodoDB and dodoDB.enableActionbar ~= false)
         if isEnabled then
-            if btn:IsVisible() then update_icon_color(btn) end
+            if btn:IsVisible() then update_state(btn) end
         else
             if btn.icon then
                 btn.icon:SetVertexColor(1, 1, 1)
@@ -143,15 +158,23 @@ end
 -- 설정 등록
 -- ==============================
 if dodo.RegisterEditModeSystemSetting then
-    dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.ActionBar, {
-        {
-            name = "아이콘: 색상",
-            get = function() return dodoDB and dodoDB.useActionbarColor ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.useActionbarColor = checked end
-                dodo.ActionbarApplyColor()
-            end,
-            disabled = function() return dodoDB and dodoDB.enableActionbar == false end
-        }
-    })
+    for idx, barName in pairs(BAR_INDEX_MAP) do
+        local sysID = string.format("%d_%d", Enum.EditModeSystem.ActionBar, idx)
+        local dbKey = COLOR_DB_KEYS[barName]
+        dodo.RegisterEditModeSystemSetting(sysID, {
+            {
+                name = "아이콘: 색상",
+                get = function()
+                    if not dodoDB then return COLOR_DEFAULTS[barName] end
+                    local val = dodoDB[dbKey]
+                    return val == nil and COLOR_DEFAULTS[barName] or val
+                end,
+                set = function(checked)
+                    if dodoDB then dodoDB[dbKey] = checked end
+                    dodo.ActionbarApplyColor()
+                end,
+                disabled = function() return dodoDB and dodoDB.enableActionbar == false end
+            }
+        })
+    end
 end

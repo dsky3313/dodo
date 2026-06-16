@@ -10,18 +10,44 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local FeatureCDMBars = {
+local BAR_INDEX_MAP = dodo.BAR_INDEX_MAP
+
+local CDM_DB_KEYS = {
+    ["MainActionBar"]       = "useActionbarCDMBar1",
+    ["MultiBarBottomLeft"]  = "useActionbarCDMBar2",
+    ["MultiBarBottomRight"] = "useActionbarCDMBar3",
+    ["MultiBarRight"]       = "useActionbarCDMBar4",
+    ["MultiBarLeft"]        = "useActionbarCDMBar5",
+    ["MultiBar5"]           = "useActionbarCDMBar6",
+    ["MultiBar6"]           = "useActionbarCDMBar7",
+    ["MultiBar7"]           = "useActionbarCDMBar8",
+}
+
+local CDM_DEFAULTS = {
     ["MainActionBar"]       = true,
     ["MultiBarBottomLeft"]  = true,
-    ["MultiBarBottomRight"] = true,
-    ["MultiBar7"]           = true,
+    ["MultiBarBottomRight"] = false,
+    ["MultiBarRight"]       = false,
+    ["MultiBarLeft"]        = false,
+    ["MultiBar5"]           = false,
+    ["MultiBar6"]           = false,
+    ["MultiBar7"]           = false,
+    ["StanceBar"]           = false,
+    ["PetActionBar"]        = false,
 }
 
-local FeaturePotionBars = {
-    ["MultiBar7"]           = true,
+local ALL_CDM_GROUPS = {
+    { group = "ActionButton",              barName = "MainActionBar"       },
+    { group = "MultiBarBottomLeftButton",  barName = "MultiBarBottomLeft"  },
+    { group = "MultiBarBottomRightButton", barName = "MultiBarBottomRight" },
+    { group = "MultiBarRightButton",       barName = "MultiBarRight"       },
+    { group = "MultiBarLeftButton",        barName = "MultiBarLeft"        },
+    { group = "MultiBar5Button",           barName = "MultiBar5"           },
+    { group = "MultiBar6Button",           barName = "MultiBar6"           },
+    { group = "MultiBar7Button",           barName = "MultiBar7"           },
 }
 
-local CustomCDMConfigs = {
+local CustomCDMConfigs = { -- 물약 지속시간
     [1236616] = { matchIDs = { 241308, 241309 }, duration = 30, type = 3 },
 }
 
@@ -64,6 +90,16 @@ local custom_cdmspell_map = dodo.customCDMSpellMap
 -- ==============================
 -- 기능 구현
 -- ==============================
+local function is_bar_cdm_enabled(barName)
+    if not barName then return false end
+    local dbKey = CDM_DB_KEYS[barName]
+    if not dbKey then return CDM_DEFAULTS[barName] or false end
+    if not dodoDB then return CDM_DEFAULTS[barName] or false end
+    local val = dodoDB[dbKey]
+    if val == nil then return CDM_DEFAULTS[barName] or false end
+    return val
+end
+
 local function customize_cooldown_text(cooldown)
     if not cooldown or cooldown.__textHooked then return end
     local region = cooldown:GetCountdownFontString()
@@ -73,7 +109,7 @@ local function customize_cooldown_text(cooldown)
         region:ClearAllPoints()
         region:SetPoint("TOPLEFT", parent, "TOPLEFT", 5, -5)
         region:SetTextColor(0, 1, 0, 1)
-        
+
         hooksecurefunc(region, "SetTextColor", function(self, r, g, b, a)
             if r ~= 0 or g ~= 1 or b ~= 0 then
                 self:SetTextColor(0, 1, 0, 1)
@@ -98,7 +134,7 @@ function CDMOverlayMixin:OnLoad()
     self:SetSize(parent:GetSize())
     self.InnerGlow:SetVertexColor(0, 1, 0, 1)
     self.Count:SetTextColor(1, 1, 0)
-    
+
     if parent.cooldown then
         self:SetFrameLevel(parent.cooldown:GetFrameLevel() + 1)
     end
@@ -116,12 +152,12 @@ end
 function CDMOverlayMixin:StartCustomCDM(spellID, duration, startTime)
     self.customCDMSpellID = spellID
     self.customCDMEndTime = startTime + duration
-    
+
     self.InnerGlow:Show()
     self.Cooldown:SetCooldown(startTime, duration)
     self.Cooldown:Show()
     self:Show()
-    
+
     customize_cooldown_text(self.Cooldown)
 end
 
@@ -136,16 +172,14 @@ function CDMOverlayMixin:StopCustomCDM()
 end
 
 function CDMOverlayMixin:Update()
-    local isEnabled = (dodoDB and dodoDB.useActionbarCDM ~= false)
-    if not isEnabled then self:StopCustomCDM(); return end
-
     local parent = self:GetParent()
     if not parent then return end
-    
+
     local barName = dodo.get_bar_name_by_button(parent)
-    if not barName or not FeatureCDMBars[barName] then self:StopCustomCDM(); return end
-    
-    if FeaturePotionBars[barName] and parent.action then
+    if not barName or not is_bar_cdm_enabled(barName) then self:StopCustomCDM(); return end
+
+    -- 물약 바 CDM 처리: OverlayPotion이 로드된 경우 해당 바의 포션 여부 확인
+    if dodo.is_bar_potion_proc_enabled and dodo.is_bar_potion_proc_enabled(barName) and parent.action then
         local actionType, id = GetActionInfo(parent.action)
         local activeFake = nil
         local matchedSpellID = nil
@@ -175,7 +209,7 @@ function CDMOverlayMixin:Update()
         local item = self.viewerItem
         local auraInstanceID = rawget(item, "auraInstanceID")
         local auraDataUnit   = rawget(item, "auraDataUnit")
-        
+
         local count = C_UnitAuras.GetAuraApplicationDisplayCount(auraDataUnit, auraInstanceID)
         local hasDisplayCount = false
         if issecretvalue(count) then
@@ -203,7 +237,7 @@ function CDMOverlayMixin:Update()
 
         self.InnerGlow:Show()
         self:Show()
-        
+
         customize_cooldown_text(self.Cooldown)
     else
         self:StopCustomCDM()
@@ -227,12 +261,12 @@ local function build_button_cache()
                     local baseSpellID = C_Spell.GetBaseSpell(actionSpellID)
                     local spellName = C_Spell.GetSpellName(baseSpellID)
                     local rawSpellName = C_Spell.GetSpellName(actionSpellID)
-                    
+
                     if spellName then
                         dodo.buttonCache[spellName] = dodo.buttonCache[spellName] or {}
                         table.insert(dodo.buttonCache[spellName], btn)
                     end
-                    
+
                     if rawSpellName and rawSpellName ~= spellName then
                         dodo.buttonCache[rawSpellName] = dodo.buttonCache[rawSpellName] or {}
                         table.insert(dodo.buttonCache[rawSpellName], btn)
@@ -244,8 +278,8 @@ local function build_button_cache()
 end
 
 local function update_cdm_from_item(item)
-    local isEnabled = (dodoDB and dodoDB.useActionbarCDM ~= false)
-    if not isEnabled or not item or not item.cooldownID then return end
+    if not item or not item.cooldownID then return end
+    if not dodoDB or dodoDB.enableActionbar == false then return end
 
     local cdInfo = C_CooldownViewer.GetCooldownViewerCooldownInfo(item.cooldownID)
     if not cdInfo or not cdInfo.spellID then return end
@@ -256,7 +290,7 @@ local function update_cdm_from_item(item)
             print("[dodo CDM Debug] 검지된 버프 ID: " .. tostring(baseSpellID) .. " (" .. tostring(debugName) .. ")")
         end
     end
-    
+
     local targetSpellID = CDMMapping[baseSpellID] or baseSpellID
     local success, spellName = pcall(C_Spell.GetSpellName, targetSpellID)
     if success and spellName then
@@ -285,14 +319,13 @@ local is_cache_pending = false
 local function do_build_special_button_cache()
     is_cache_pending = false
     if InCombatLockdown() then return end
-    
-    local cdmBars = { "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton", "MultiBar7Button" }
-    for _, group in ipairs(cdmBars) do
+
+    for _, entry in ipairs(ALL_CDM_GROUPS) do
         for i = 1, 12 do
-            local btn = _G[group .. i]
+            local btn = _G[entry.group .. i]
             if btn then
                 local barName = dodo.get_bar_name_by_button(btn)
-                if btn.action and barName and FeatureCDMBars[barName] then
+                if btn.action and barName and is_bar_cdm_enabled(barName) then
                     if not btn.cdmOverlay then
                         btn.cdmOverlay = CreateFrame("Frame", nil, btn, "CDMOverlayTemplate")
                     end
@@ -334,7 +367,7 @@ local function init_custom_cdm_spells()
                 end
             end
         end
-        
+
         if type(key) == "number" and not itemConfig.matchIDs and C_Item.GetItemInfoInstant(key) then
             local item = Item:CreateFromItemID(key)
             if item and not item:IsItemEmpty() then
@@ -394,10 +427,10 @@ dodo.ActionbarOnSpellcastSucceeded = function(unitTarget, castGUID, spellID)
         local itemConfig = CustomCDMConfigs[matchedItemID]
         local duration = itemConfig and itemConfig.duration or 30
         local refreshType = itemConfig and itemConfig.type or 1
-        
+
         local now = GetTime()
         local activeAura = custom_cdmauras[spellID]
-        
+
         if activeAura then
             local remaining = activeAura.duration - (now - activeAura.startTime)
             if remaining > 0 then
@@ -414,9 +447,9 @@ dodo.ActionbarOnSpellcastSucceeded = function(unitTarget, castGUID, spellID)
         else
             custom_cdmauras[spellID] = { startTime = now, duration = duration }
         end
-        
+
         local updatedAura = custom_cdmauras[spellID]
-        
+
         local buttons = get_matching_buttons(spellID, matchedItemID)
         for _, btn in ipairs(buttons) do
             if btn.cdmOverlay then
@@ -442,12 +475,8 @@ dodo.ActionbarInitCDM = function()
 end
 
 dodo.ActionbarApplyCDM = function()
-    local cdmBars = { "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton", "MultiBar7Button" }
-    for _, group in ipairs(cdmBars) do
-        for i = 1, 12 do
-            local btn = _G[group .. i]
-            if btn and btn.cdmOverlay then btn.cdmOverlay:Update() end
-        end
+    for btn in pairs(dodo.registeredButtons) do
+        if btn.cdmOverlay then btn.cdmOverlay:Update() end
     end
 end
 
@@ -455,22 +484,31 @@ end
 -- 설정 등록
 -- ==============================
 if dodo.RegisterEditModeSystemSetting then
-    dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.ActionBar, {
-        {
-            name = "오버레이: 강화효과",
-            get = function() return dodoDB and dodoDB.useActionbarCDM ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.useActionbarCDM = checked end
-                dodo.ActionbarApplyCDM()
-            end,
-            disabled = function() return dodoDB and dodoDB.enableActionbar == false end
-        }
-    })
+    for idx, barName in pairs(BAR_INDEX_MAP) do
+        local sysID = string.format("%d_%d", Enum.EditModeSystem.ActionBar, idx)
+        local dbKey = CDM_DB_KEYS[barName]
+        dodo.RegisterEditModeSystemSetting(sysID, {
+            {
+                name = "오버레이: 강화효과",
+                get = function()
+                    if not dodoDB then return CDM_DEFAULTS[barName] or false end
+                    local val = dodoDB[dbKey]
+                    return val == nil and (CDM_DEFAULTS[barName] or false) or val
+                end,
+                set = function(checked)
+                    if dodoDB then dodoDB[dbKey] = checked end
+                    dodo.BuildSpecialButtonCache()
+                    dodo.ActionbarApplyCDM()
+                end,
+                disabled = function() return dodoDB and dodoDB.enableActionbar == false end
+            }
+        })
+    end
 end
 
 if enableCDMADebug then
     -- ==============================
-    -- 디버그용 슬래시 명령어 등록
+    -- 디버그용 슬래시 명령어 등록 (enableCDMADebug = true 로 수정해야 작동)
     -- ==============================
     SLASH_DODOCDM1 = "/dodocdm"
     SlashCmdList["DODOCDM"] = function()
@@ -490,7 +528,7 @@ if enableCDMADebug then
                         local baseSpellID = C_Spell.GetBaseSpell(actionSpellID) or actionSpellID
                         local spellName = C_Spell.GetSpellName(baseSpellID)
                         if spellName then
-                            print(string.format("[%s%d] 타입: %s | 원래 ID: %s | Base ID: %s | 이름: %s", 
+                            print(string.format("[%s%d] 타입: %s | 원래 ID: %s | Base ID: %s | 이름: %s",
                                 group, i, tostring(actionType), tostring(actionSpellID), tostring(baseSpellID), tostring(spellName)))
                             count = count + 1
                         end

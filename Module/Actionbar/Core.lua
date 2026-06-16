@@ -15,6 +15,17 @@ dodo.customCDMSpellMap = {}
 dodo.registeredButtons = {}
 dodo.inCombat = false
 
+dodo.BAR_INDEX_MAP = {
+    [1] = "MainActionBar",
+    [2] = "MultiBarBottomLeft",
+    [3] = "MultiBarBottomRight",
+    [4] = "MultiBarRight",
+    [5] = "MultiBarLeft",
+    [6] = "MultiBar5",
+    [7] = "MultiBar6",
+    [8] = "MultiBar7",
+}
+
 local registeredButtons = dodo.registeredButtons
 
 -- ==============================

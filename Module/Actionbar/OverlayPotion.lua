@@ -10,12 +10,35 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local FeaturePotionBars = {
-    ["MultiBar7"]           = true,
+local BAR_INDEX_MAP = dodo.BAR_INDEX_MAP
+
+local POTION_DB_KEYS = {
+    ["MainActionBar"]       = "useActionbarPotionProcBar1",
+    ["MultiBarBottomLeft"]  = "useActionbarPotionProcBar2",
+    ["MultiBarBottomRight"] = "useActionbarPotionProcBar3",
+    ["MultiBarRight"]       = "useActionbarPotionProcBar4",
+    ["MultiBarLeft"]        = "useActionbarPotionProcBar5",
+    ["MultiBar5"]           = "useActionbarPotionProcBar6",
+    ["MultiBar6"]           = "useActionbarPotionProcBar7",
+    ["MultiBar7"]           = "useActionbarPotionProcBar8",
 }
 
-local PotionIds = {
-    [241308] = true, [241309] = true,
+local POTION_DEFAULTS = {
+    ["MainActionBar"]       = false,
+    ["MultiBarBottomLeft"]  = false,
+    ["MultiBarBottomRight"] = false,
+    ["MultiBarRight"]       = false,
+    ["MultiBarLeft"]        = false,
+    ["MultiBar5"]           = false,
+    ["MultiBar6"]           = false,
+    ["MultiBar7"]           = true,
+    ["StanceBar"]           = false,
+    ["PetActionBar"]        = false,
+}
+
+local PotionIds = { -- 물약 사용가능 알림
+    [241308] = true,
+    [241309] = true,
 }
 
 -- ==============================
@@ -28,10 +51,22 @@ local CreateFrame = CreateFrame
 local Enum = Enum
 local GetActionInfo = GetActionInfo
 local InCombatLockdown = InCombatLockdown
+local pairs = pairs
 
 -- ==============================
 -- 기능 구현
 -- ==============================
+local function is_bar_potion_proc_enabled(barName)
+    if not barName then return false end
+    local dbKey = POTION_DB_KEYS[barName]
+    if not dbKey then return POTION_DEFAULTS[barName] or false end
+    if not dodoDB then return POTION_DEFAULTS[barName] or false end
+    local val = dodoDB[dbKey]
+    if val == nil then return POTION_DEFAULTS[barName] or false end
+    return val
+end
+dodo.is_bar_potion_proc_enabled = is_bar_potion_proc_enabled
+
 PotionOverlayMixin = {}
 function PotionOverlayMixin:Update(active)
     if active then
@@ -45,15 +80,15 @@ end
 
 local function update_potion_proc(btn)
     if not btn.action then return end
-    
-    local isEnabled = (dodoDB and dodoDB.useActionbarPotionProc ~= false)
+
+    local isEnabled = (dodoDB and dodoDB.enableActionbar ~= false)
     if not isEnabled then
         if btn.potionOverlay then btn.potionOverlay:Update(false) end
         return
     end
 
     local barName = dodo.get_bar_name_by_button(btn)
-    if not barName or not FeaturePotionBars[barName] then
+    if not barName or not is_bar_potion_proc_enabled(barName) then
         if btn.potionOverlay then btn.potionOverlay:Update(false) end
         return
     end
@@ -72,7 +107,7 @@ local function update_potion_proc(btn)
             local w, h = btn:GetSize()
             btn.potionOverlay.Proc:SetSize(w * 1.4, h * 1.4)
         end
-        
+
         local count = C_Item.GetItemCount(id)
         local start, duration = C_Container.GetItemCooldown(id)
         local isUsable = dodo.inCombat and (count > 0) and (start == 0 or duration == 0)
@@ -84,9 +119,8 @@ end
 dodo.ActionbarUpdatePotionProc = update_potion_proc
 
 local function update_all_potion_procs()
-    for i = 1, 12 do
-        local btn = _G["MultiBar7Button" .. i]
-        if btn and btn:IsVisible() then
+    for btn in pairs(dodo.registeredButtons) do
+        if btn:IsVisible() then
             update_potion_proc(btn)
         end
     end
@@ -116,15 +150,23 @@ end
 -- 설정 등록
 -- ==============================
 if dodo.RegisterEditModeSystemSetting then
-    dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.ActionBar, {
-        {
-            name = "오버레이: 물약",
-            get = function() return dodoDB and dodoDB.useActionbarPotionProc ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.useActionbarPotionProc = checked end
-                dodo.ActionbarApplyPotionProc()
-            end,
-            disabled = function() return dodoDB and dodoDB.enableActionbar == false end
-        }
-    })
+    for idx, barName in pairs(BAR_INDEX_MAP) do
+        local sysID = string.format("%d_%d", Enum.EditModeSystem.ActionBar, idx)
+        local dbKey = POTION_DB_KEYS[barName]
+        dodo.RegisterEditModeSystemSetting(sysID, {
+            {
+                name = "오버레이: 물약",
+                get = function()
+                    if not dodoDB then return POTION_DEFAULTS[barName] or false end
+                    local val = dodoDB[dbKey]
+                    return val == nil and (POTION_DEFAULTS[barName] or false) or val
+                end,
+                set = function(checked)
+                    if dodoDB then dodoDB[dbKey] = checked end
+                    dodo.ActionbarApplyPotionProc()
+                end,
+                disabled = function() return dodoDB and dodoDB.enableActionbar == false end
+            }
+        })
+    end
 end

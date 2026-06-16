@@ -10,8 +10,30 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local FeatureInterruptBars = {
+local BAR_INDEX_MAP = dodo.BAR_INDEX_MAP
+
+local INTERRUPT_DB_KEYS = {
+    ["MainActionBar"]       = "useActionbarInterruptBar1",
+    ["MultiBarBottomLeft"]  = "useActionbarInterruptBar2",
+    ["MultiBarBottomRight"] = "useActionbarInterruptBar3",
+    ["MultiBarRight"]       = "useActionbarInterruptBar4",
+    ["MultiBarLeft"]        = "useActionbarInterruptBar5",
+    ["MultiBar5"]           = "useActionbarInterruptBar6",
+    ["MultiBar6"]           = "useActionbarInterruptBar7",
+    ["MultiBar7"]           = "useActionbarInterruptBar8",
+}
+
+local INTERRUPT_DEFAULTS = {
     ["MainActionBar"]       = true,
+    ["MultiBarBottomLeft"]  = false,
+    ["MultiBarBottomRight"] = false,
+    ["MultiBarRight"]       = false,
+    ["MultiBarLeft"]        = false,
+    ["MultiBar5"]           = false,
+    ["MultiBar6"]           = false,
+    ["MultiBar7"]           = false,
+    ["StanceBar"]           = false,
+    ["PetActionBar"]        = false,
 }
 
 local Interrupts = {
@@ -94,6 +116,16 @@ local watched_unit = 'target'
 -- ==============================
 -- 기능 구현
 -- ==============================
+local function is_bar_interrupt_enabled(barName)
+    if not barName then return false end
+    local dbKey = INTERRUPT_DB_KEYS[barName]
+    if not dbKey then return INTERRUPT_DEFAULTS[barName] or false end
+    if not dodoDB then return INTERRUPT_DEFAULTS[barName] or false end
+    local val = dodoDB[dbKey]
+    if val == nil then return INTERRUPT_DEFAULTS[barName] or false end
+    return val
+end
+
 InterruptOverlayMixin = {}
 
 function InterruptOverlayMixin:OnHide()
@@ -102,7 +134,7 @@ function InterruptOverlayMixin:OnHide()
 end
 
 function InterruptOverlayMixin:OnUpdate(elapsed)
-    self.timerElapsed = (self.timerElapsed or 0) + elapsed
+    self.timerElapsed = self.timerElapsed + elapsed
     if self.timerElapsed < 0.1 then return end
     self.timerElapsed = 0
     if self.duration then
@@ -143,8 +175,8 @@ function InterruptOverlayMixin:StopTimer()
 end
 
 function InterruptOverlayMixin:Update(active, notInterruptible, duration, readyVal, cooldownVal)
-    local isEnabled = (dodoDB and dodoDB.useActionbarInterrupt ~= false)
-    if not isEnabled then self:Hide(); return end
+    local barName = self.button and dodo.get_bar_name_by_button(self.button)
+    if not barName or not is_bar_interrupt_enabled(barName) then self:Hide(); return end
 
     if active then
         self:StartTimer(duration)
@@ -209,7 +241,7 @@ function dodoAB3ControllerMixin:create_overlays()
     self.overlayPool:ReleaseAll()
     for _, actionButton in pairs(ActionBarButtonEventsFrame.frames) do
         local barName = dodo.get_bar_name_by_button(actionButton)
-        if barName and FeatureInterruptBars[barName] then
+        if barName and is_bar_interrupt_enabled(barName) then
             local _, spellID = GetActionInfo(actionButton.action)
             if Interrupts[spellID] then
                 local overlay = self.overlayPool:Acquire()
@@ -237,12 +269,6 @@ function dodoAB3ControllerMixin:refresh_overlays(isActive, notInterruptible, cas
 end
 
 function dodoAB3ControllerMixin:update()
-    local isEnabled = (dodoDB and dodoDB.useActionbarInterrupt ~= false)
-    if not isEnabled then
-        self:refresh_overlays(false)
-        return
-    end
-
     local name, notInterruptible
     name, _, _, _, _, _, _, notInterruptible = UnitCastingInfo(watched_unit)
     if name then
@@ -287,6 +313,7 @@ end
 
 dodo.ActionbarApplyInterrupt = function()
     if dodoAB3ControllerMixin.controller then
+        dodoAB3ControllerMixin.controller:create_overlays()
         dodoAB3ControllerMixin.controller:update()
     end
 end
@@ -295,17 +322,25 @@ end
 -- 설정 등록
 -- ==============================
 if dodo.RegisterEditModeSystemSetting then
-    dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.ActionBar, {
-        {
-            name = "오버레이: 차단",
-            get = function() return dodoDB and dodoDB.useActionbarInterrupt ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.useActionbarInterrupt = checked end
-                dodo.ActionbarApplyInterrupt()
-            end,
-            disabled = function() return dodoDB and dodoDB.enableActionbar == false end
-        }
-    })
+    for idx, barName in pairs(BAR_INDEX_MAP) do
+        local sysID = string.format("%d_%d", Enum.EditModeSystem.ActionBar, idx)
+        local dbKey = INTERRUPT_DB_KEYS[barName]
+        dodo.RegisterEditModeSystemSetting(sysID, {
+            {
+                name = "오버레이: 차단",
+                get = function()
+                    if not dodoDB then return INTERRUPT_DEFAULTS[barName] or false end
+                    local val = dodoDB[dbKey]
+                    return val == nil and (INTERRUPT_DEFAULTS[barName] or false) or val
+                end,
+                set = function(checked)
+                    if dodoDB then dodoDB[dbKey] = checked end
+                    dodo.ActionbarApplyInterrupt()
+                end,
+                disabled = function() return dodoDB and dodoDB.enableActionbar == false end
+            }
+        })
+    end
 end
 
 -- ==============================
