@@ -65,6 +65,10 @@ Module/EncounterJournal/AchievementsTabCategory.lua
 Module/EncounterJournal/AchievementsTabRowBuilder.lua
 Module/EncounterJournal/AchievementsTabUI.lua
 
+# EncounterTimeline
+Module/EncounterTimeline/EncounterTimelineBar.lua
+Module/EncounterTimeline/EncounterTimelineColor.lua
+
 # GossipFrame
 Module/GossipFrame/KeystoneLindormi.lua
 
@@ -82,13 +86,13 @@ Module/PVEFrame/QuickSelectDungeons.lua
 # QoL Modules
 Module/ReadyCheck/Timer.lua
 Module/ReadyCheck/Consumeable.lua
+Module/QoL/ColorPicker.lua
 Module/QoL/Audio.lua
 Module/QoL/BrowseGroup.lua
 Module/QoL/Camera.lua
 Module/QoL/ChatBubble.lua
 Module/QoL/CursorSpellTracker.lua
 Module/QoL/DeleteNow.lua
-#Module/QoL/EncounterTimelineColor.lua
 Module/QoL/ExpFilter.lua
 Module/QoL/FrameOption.lua
 Module/QoL/Friends.lua

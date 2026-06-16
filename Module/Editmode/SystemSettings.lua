@@ -266,7 +266,7 @@ local function create_system_wing_panel(systemID)
             if item.isJoined then
                 -- 결합 슬라이더: 이전 체크박스 바로 옆(X=175)에 2열에 배치
                 local slider = dodo.UI:CreateSlider(f, item.get, item.set, item.minVal or 0, item.maxVal or 100, item.step or 1, nil)
-                slider:SetPoint("TOPLEFT", f, "TOPLEFT", 175, current_y - 4)
+                slider:SetPoint("TOPLEFT", f, "TOPLEFT", 175, current_y - 8)
                 if item.disabled then
                     table_insert(update_queue, { comp = slider, type = "slider", check = item.disabled })
                 end
@@ -364,12 +364,15 @@ init_frame:SetScript("OnEvent", function(self, event)
             local Enum_EditModeSystem_UnitFrame = (Enum and Enum.EditModeSystem and Enum.EditModeSystem.UnitFrame) or 3
             local Enum_EditModeUnitFrameSystem_Raid = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Raid) or 4
             local Enum_EditModeUnitFrameSystem_Party = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Party) or 3
+            local Enum_EditModeSystem_ActionBar = (Enum and Enum.EditModeSystem and Enum.EditModeSystem.ActionBar) or 0
 
             if systemFrame == _G.CompactRaidFrameContainer then
                 systemID = string.format("%d_%d", Enum_EditModeSystem_UnitFrame, Enum_EditModeUnitFrameSystem_Raid)
             elseif systemFrame == _G.PartyFrame then
                 systemID = string.format("%d_%d", Enum_EditModeSystem_UnitFrame, Enum_EditModeUnitFrameSystem_Party)
             elseif systemID == Enum_EditModeSystem_UnitFrame and systemFrame.systemIndex then
+                systemID = string.format("%d_%d", systemID, systemFrame.systemIndex)
+            elseif systemID == Enum_EditModeSystem_ActionBar and systemFrame.systemIndex then
                 systemID = string.format("%d_%d", systemID, systemFrame.systemIndex)
             end
             -- dodo 커스텀 프레임은 OnMouseDown에서 직접 처리하므로 여기서 무시

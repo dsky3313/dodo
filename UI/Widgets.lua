@@ -170,10 +170,10 @@ end
 -- ==============================
 function dodo.UI:CreateCheckbox(parent, label, get_func, set_func)
     local cb = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
-    cb:SetSize(24, 24)
+    cb:SetSize(32, 32)
 
     cb.Text = cb:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    cb.Text:SetPoint("LEFT", cb, "RIGHT", 5, 0)
+    cb.Text:SetPoint("LEFT", cb, "RIGHT", 2, 0)
     cb.Text:SetText(label)
 
     cb.set_func = set_func
@@ -188,7 +188,7 @@ end
 -- ==============================
 function dodo.UI:CreateDropdown(parent, get_func, set_func, values, label_text)
     local dropdown = CreateFrame("DropdownButton", nil, parent, "WowStyle1DropdownTemplate")
-    dropdown:SetSize(130, 22)
+    dropdown:SetSize(120, 25)
 
     dropdown.get_func = get_func
     dropdown.set_func = set_func
