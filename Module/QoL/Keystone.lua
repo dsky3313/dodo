@@ -198,20 +198,26 @@ local function update_visibility_condition()
     local isChallengeReallyActive = is_challenge_active
 
     local condition = "[combat] hide; [group:raid] hide; "
+    local should_show
     if isChallengeReallyActive then
         condition = condition .. "hide;"
+        should_show = false
     else
         local show_solo = dodoDB and dodoDB.useSoloKeystone ~= false
         if show_solo then
             condition = condition .. "[group:party] show; show;"
+            should_show = not IsInRaid()
         else
             condition = condition .. "[group:party] show; hide;"
+            should_show = not IsInRaid() and IsInGroup()
         end
     end
     RegisterStateDriver(main_frame, "visibility", condition)
 
-    if not isChallengeReallyActive then
+    if should_show then
         main_frame:Show()
+    else
+        main_frame:Hide()
     end
 end
 
@@ -769,15 +775,7 @@ local function on_event(self, event, ...)
 
     elseif event == "CHALLENGE_MODE_COMPLETED" or event == "CHALLENGE_MODE_RESET" then
         is_challenge_active = false
-        if InCombatLockdown() then
-            C_Timer.After(0.1, function()
-                if not InCombatLockdown() then
-                    update_visibility_condition()
-                end
-            end)
-        else
-            update_visibility_condition()
-        end
+        update_module_state()
         C_Timer.After(2, update_my_keystone)
 
         if event == "CHALLENGE_MODE_COMPLETED" and dodoDB and dodoDB.useKeyRoll ~= false then

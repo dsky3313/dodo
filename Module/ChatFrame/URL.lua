@@ -8,6 +8,7 @@ dodo.DB = dodo.DB or dodoDB
 
 -- 캐싱 및 와우 API 단축
 local C_Timer = C_Timer
+local ChatFrame_AddMessageEventFilter = ChatFrame_AddMessageEventFilter
 local CreateFrame = CreateFrame
 local IsControlKeyDown = IsControlKeyDown
 local IsInInstance = IsInInstance
@@ -125,7 +126,7 @@ if EventRegistry and EventRegistry.RegisterCallback then
     EventRegistry:RegisterCallback("SetItemRef", on_set_item_ref)
 end
 
--- 5. 대화 메시지 속 URL 감지 포맷 함수 (AddMessage 훅에서 호출됨)
+-- 5. 대화 메시지 속 URL 감지 포맷 함수 (CHAT_MSG_* 필터에서 호출됨)
 local function format_urls_in_text(text)
     if not text or not dodo.DB.enableChatModule or not dodo.DB.useLinkURLs or type(text) ~= "string" or (issecretvalue and issecretvalue(text)) then
         return text
@@ -144,7 +145,22 @@ end
 
 dodo.FormatURLsInText = format_urls_in_text
 
--- 6. 모듈 갱신 라우팅 연동
+-- 6. 메시지 필터 등록 (AddMessage 후킹 대신 taint 없는 정식 필터 사용)
+-- 귓속말(WHISPER/BN_WHISPER)은 SetLastTellTarget이 secret value를 다루므로 등록 제외
+local FilterEvents = {
+    "CHAT_MSG_SAY", "CHAT_MSG_YELL", "CHAT_MSG_EMOTE", "CHAT_MSG_TEXT_EMOTE",
+    "CHAT_MSG_PARTY", "CHAT_MSG_PARTY_LEADER",
+    "CHAT_MSG_RAID", "CHAT_MSG_RAID_LEADER", "CHAT_MSG_RAID_WARNING",
+    "CHAT_MSG_GUILD", "CHAT_MSG_OFFICER",
+    "CHAT_MSG_CHANNEL",
+    "CHAT_MSG_INSTANCE_CHAT", "CHAT_MSG_INSTANCE_CHAT_LEADER",
+}
+
+local function url_filter(self, event, text, ...)
+    return false, format_urls_in_text(text), ...
+end
+
+-- 7. 모듈 갱신 라우팅 연동
 local function update_state()
     if dodo.UpdateChatFontState then
         dodo.UpdateChatFontState()
@@ -159,6 +175,9 @@ initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 initFrame:SetScript("OnEvent", function(self, event)
     if event == "PLAYER_LOGIN" then
         if dodo.DB.useLinkURLs == nil then dodo.DB.useLinkURLs = true end
+        for _, evt in ipairs(FilterEvents) do
+            ChatFrame_AddMessageEventFilter(evt, url_filter)
+        end
         update_state()
         self:UnregisterEvent("PLAYER_LOGIN")
     elseif event == "PLAYER_ENTERING_WORLD" then
@@ -166,7 +185,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     end
 end)
 
--- 7. 설정 UI 연결
+-- 8. 설정 UI 연결
 if dodo.RegisterEditModeSystemSetting then
     dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.ChatFrame, {
         {

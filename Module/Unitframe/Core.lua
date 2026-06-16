@@ -383,7 +383,7 @@ initFrame:SetScript("OnEvent", function(self, event, arg1)
 		update_module_state()
 
 		if dodo.RegisterEditModeModuleSetting then
-			dodo.RegisterEditModeModuleSetting("전투", {
+			dodo.RegisterEditModeModuleSetting("인터페이스", {
 				{
 					name = "유닛프레임",
 					get = function() return dodo.DB and dodo.DB.enableUnitframeModule ~= false end,

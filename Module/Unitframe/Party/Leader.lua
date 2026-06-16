@@ -1,33 +1,50 @@
 -- ==============================
--- Inspired / Heavily Optimised & Rewritten
+-- Inspired
 -- ==============================
--- GroupLeaderAssistantIcons
+-- GroupLeaderAssistantIcons (https://www.curseforge.com/wow/addons/glai)
 
 -- ==============================
-
+-- 설정 및 테이블
+-- ==============================
+---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
 local Config = {
 	defaultSize = 16,
-	defaultX = 2,
-	defaultY = 6,
+	defaultX = 4,
+	defaultY = 8,
 	defaultIconAnchor = "TOPLEFT",
 	defaultFrameAnchor = "TOPLEFT",
 }
+
+-- WoW 에디트모드 유닛프레임 특수 고유 ID 빌드 (안전 가드 적용)
+local Enum_EditModeSystem_UnitFrame = (Enum and Enum.EditModeSystem and Enum.EditModeSystem.UnitFrame) or 3
+local Enum_EditModeUnitFrameSystem_Raid = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Raid) or 4
+local Enum_EditModeUnitFrameSystem_Party = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Party) or 3
+
+local raid_system_id = string.format("%d_%d", Enum_EditModeSystem_UnitFrame, Enum_EditModeUnitFrameSystem_Raid)
+local party_system_id = string.format("%d_%d", Enum_EditModeSystem_UnitFrame, Enum_EditModeUnitFrameSystem_Party)
 
 local TEX_LEADER    = "Interface\\GroupFrame\\UI-Group-LeaderIcon"
 local TEX_ASSISTANT = "Interface\\GroupFrame\\UI-Group-AssistantIcon"
 
 local icon_by_frame = {}
 
-local function apply_defaults()
-	if dodoDB.partyframeLeaderSize == nil then dodoDB.partyframeLeaderSize = Config.defaultSize end
-	if dodoDB.partyframeLeaderX == nil then dodoDB.partyframeLeaderX = Config.defaultX end
-	if dodoDB.partyframeLeaderY == nil then dodoDB.partyframeLeaderY = Config.defaultY end
-	if dodoDB.partyframeLeaderIconAnchor == nil then dodoDB.partyframeLeaderIconAnchor = Config.defaultIconAnchor end
-	if dodoDB.partyframeLeaderFrameAnchor == nil then dodoDB.partyframeLeaderFrameAnchor = Config.defaultFrameAnchor end
-end
+-- ==============================
+-- 캐싱
+-- ==============================
+local CreateFrame = CreateFrame
+local ipairs = ipairs
+local IsInGroup = IsInGroup
+local IsInRaid = IsInRaid
+local pairs = pairs
+local table_remove = table.remove
+local type = type
+local UnitExists = UnitExists
+local UnitIsGroupAssistant = UnitIsGroupAssistant
+local UnitIsGroupLeader = UnitIsGroupLeader
+local _G = _G
 
 -- 단일 프레임에 아이콘 적용
 local function apply_icon(frame)
@@ -55,11 +72,11 @@ local function apply_icon(frame)
 			icon_by_frame[frame] = tex
 		end
 
-		local size = dodoDB.partyframeLeaderSize or Config.defaultSize
-		local x = dodoDB.partyframeLeaderX or Config.defaultX
-		local y = dodoDB.partyframeLeaderY or Config.defaultY
-		local icon_anchor = dodoDB.partyframeLeaderIconAnchor or Config.defaultIconAnchor
-		local frame_anchor = dodoDB.partyframeLeaderFrameAnchor or Config.defaultFrameAnchor
+		local size = Config.defaultSize
+		local x = Config.defaultX
+		local y = Config.defaultY
+		local icon_anchor = Config.defaultIconAnchor
+		local frame_anchor = Config.defaultFrameAnchor
 
 		tex:ClearAllPoints()
 		tex:SetSize(size, size)
@@ -127,7 +144,7 @@ local function enumerate_party_frames()
 	local depths = { [root] = 0 }
 
 	while #queue > 0 do
-		local obj = table.remove(queue, 1)
+		local obj = table_remove(queue, 1)
 		if obj and not seen[obj] then
 			seen[obj] = true
 			local depth = depths[obj] or 0
@@ -169,7 +186,7 @@ local function enumerate_raid_frames()
 	local depths = { [CompactRaidFrameContainer] = 0 }
 
 	while #queue > 0 do
-		local obj = table.remove(queue, 1)
+		local obj = table_remove(queue, 1)
 		if obj and not seen[obj] then
 			seen[obj] = true
 			local depth = depths[obj] or 0
@@ -222,33 +239,21 @@ local function update_all()
 end
 
 -- ==============================
--- 설정 바뀔 때 레이아웃 재적용
--- ==============================
-
-local function reapply_layout()
-	local size = dodoDB.partyframeLeaderSize or Config.defaultSize
-	local x = dodoDB.partyframeLeaderX or Config.defaultX
-	local y = dodoDB.partyframeLeaderY or Config.defaultY
-	local icon_anchor = dodoDB.partyframeLeaderIconAnchor or Config.defaultIconAnchor
-	local frame_anchor = dodoDB.partyframeLeaderFrameAnchor or Config.defaultFrameAnchor
-
-	for frame, tex in pairs(icon_by_frame) do
-		if tex and frame and tex:IsShown() then
-			tex:ClearAllPoints()
-			tex:SetSize(size, size)
-			tex:SetPoint(icon_anchor, frame, frame_anchor, x, y)
-		end
-	end
-end
-
-local function update_visual()
-	reapply_layout()
-	update_all()
-end
-
--- ==============================
 -- 초기화 및 이벤트 등록
 -- ==============================
+
+local function on_event(self, event, arg1)
+	if event == "ADDON_LOADED" then
+		if arg1 == addonName then
+			dodoDB = dodoDB or {}
+			if dodoDB.enablePartyframeLeader == nil then dodoDB.enablePartyframeLeader = true end
+		end
+	elseif event == "PLAYER_LOGIN" then
+		update_all()
+	else
+		update_all()
+	end
+end
 
 local init_frame = CreateFrame("Frame")
 init_frame:RegisterEvent("ADDON_LOADED")
@@ -256,31 +261,30 @@ init_frame:RegisterEvent("PLAYER_LOGIN")
 init_frame:RegisterEvent("GROUP_ROSTER_UPDATE")
 init_frame:RegisterEvent("PARTY_LEADER_CHANGED")
 init_frame:RegisterEvent("PLAYER_ROLES_ASSIGNED")
-init_frame:SetScript("OnEvent", function(self, event, arg1)
-	if event == "ADDON_LOADED" then
-		if arg1 == addonName then
-			dodoDB = dodoDB or {}
-			if dodoDB.enablePartyframeLeader == nil then dodoDB.enablePartyframeLeader = true end
-			apply_defaults()
-		end
-	elseif event == "PLAYER_LOGIN" then
-		update_all()
-	else
-		update_all()
-	end
-end)
+init_frame:SetScript("OnEvent", on_event)
 
 -- ==============================
 -- 설정 등록
 -- ==============================
-if dodo.RegisterEditModeModuleSetting then
-	dodo.RegisterEditModeModuleSetting("유닛프레임", {
+if dodo.RegisterEditModeSystemSetting then
+	dodo.RegisterEditModeSystemSetting(raid_system_id, {
 		{
 			name = "파티장/지원 아이콘 표시",
 			get = function() return dodoDB and dodoDB.enablePartyframeLeader ~= false end,
 			set = function(checked)
 				if dodoDB then dodoDB.enablePartyframeLeader = checked end
-				update_visual()
+				update_all()
+			end
+		}
+	})
+
+	dodo.RegisterEditModeSystemSetting(party_system_id, {
+		{
+			name = "파티장/지원 아이콘 표시",
+			get = function() return dodoDB and dodoDB.enablePartyframeLeader ~= false end,
+			set = function(checked)
+				if dodoDB then dodoDB.enablePartyframeLeader = checked end
+				update_all()
 			end
 		}
 	})

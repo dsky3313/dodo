@@ -107,6 +107,15 @@ dodo.Colors = {
     LemonYellow  = { r = 1.00, g = 1.00, b = 0.70, hex = "ffffffb2" },
     ChiJade      = { r = 0.71, g = 1.00, b = 0.92, hex = "ffb5ffeb" },
     ShardPurple  = { r = 0.50, g = 0.32, b = 0.55, hex = "ff80518c" },
+    HealthColorActive   = { r = 0.20, g = 0.80, b = 0.20, hex = "ff33cc33" },
+    HealthColorExpiring = { r = 0.80, g = 0.20, b = 0.20, hex = "ffcc3333" },
+    },
+
+    EncounterRole = { -- 보스 인카운터 타임라인 색상 (EXBoss 기본 색상)
+    Tank     = { r = 0xC6/255, g = 0x9B/255, b = 0x6C/255, hex = "ffc69b6c" },
+    Heal     = { r = 0x5F/255, g = 0xFF/255, b = 0x9D/255, hex = "ff5fff9d" },
+    Other    = { r = 0xA5/255, g = 0xAF/255, b = 0xA2/255, hex = "ffa5afa2" },
+    Mechanic = { r = 0xDA/255, g = 0x5B/255, b = 0xFF/255, hex = "ffda5bff" },
     }
 }
 

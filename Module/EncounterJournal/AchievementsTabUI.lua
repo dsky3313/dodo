@@ -43,7 +43,7 @@ local selected_boss_encounter_id = nil
 local boss_filter_user_selected = false
 local achievement_ui_ready = false
 local pending_ach_ui_load = false
-local native_display_active = false
+local display_generation = 0
 local instance_overview_was_shown = false
 local previous_native_tab = nil
 local sticky_active = false
@@ -808,39 +808,40 @@ end
 -- ==============================
 -- EncounterJournal_Display* 함수는 마지막에 "현재 탭 유지" 목적으로
 -- info.tab(=4, 업적 활성 중 점유)에 해당하는 modelTab:Click()을 내부적으로 호출해
--- EncounterJournal_SetTab(4)를 재발생시킨다. 이를 사용자가 실제로 탭을 클릭한 것으로
--- 오인해 업적 탭이 강제로 비활성화되지 않도록, 실행 구간을 플래그로 표시한다.
-local function wrap_native_display(name)
-    local orig = _G[name]
-    if type(orig) ~= "function" then return end
-    _G[name] = function(...)
-        native_display_active = true
-        local ok, err = pcall(orig, ...)
-        native_display_active = false
-        if not ok then error(err, 0) end
-    end
-end
-
+-- EncounterJournal_SetTab(4)를 재발생시킨다. 이를 사용자가 실제로 모델탭(4)을
+-- 클릭한 것과 구분하기 위해, tabID==4인 경우만 다음 프레임으로 판단을 미뤄
+-- 같은 프레임에 Display*가 호출됐는지(=내부 호출) 세대 카운터로 확인한다.
+-- (전역함수 재할당 없이 hooksecurefunc + C_Timer.After만 사용 — taint 회피)
 local function install_hooks()
     if hooks_installed then return end
     hooks_installed = true
 
-    wrap_native_display("EncounterJournal_DisplayInstance")
-    wrap_native_display("EncounterJournal_DisplayEncounter")
-
-    hooksecurefunc("EncounterJournal_SetTab", function()
-        if is_active and not native_display_active then
+    hooksecurefunc("EncounterJournal_SetTab", function(tabID)
+        if not is_active then return end
+        if tabID ~= 4 then
             sticky_active = false
             deactivate_custom_tab()
+            return
+        end
+        local gen = display_generation
+        if type(_G.C_Timer) == "table" and type(_G.C_Timer.After) == "function" then
+            _G.C_Timer.After(0, function()
+                if is_active and display_generation == gen then
+                    sticky_active = false
+                    deactivate_custom_tab()
+                end
+            end)
         end
     end)
 
     hooksecurefunc("EncounterJournal_DisplayInstance", function(instanceID)
+        display_generation = display_generation + 1
         current_instance_id = instanceID
         if is_active then refresh_content() end
     end)
 
     hooksecurefunc("EncounterJournal_DisplayEncounter", function()
+        display_generation = display_generation + 1
         local journal = _G.EncounterJournal
         local iid = journal and journal.instanceID
         if type(iid) == "number" and iid > 0 then

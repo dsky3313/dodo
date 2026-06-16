@@ -13,6 +13,7 @@ dodoDB = dodoDB or {}
 -- ==============================
 -- 캐싱 및 상수
 -- ==============================
+local C_Spell = C_Spell
 local C_Timer = C_Timer
 local C_UnitAuras = C_UnitAuras
 local CreateFrame = CreateFrame
@@ -31,15 +32,14 @@ local update_consumables
 local READY_ICON = "Interface\\RaidFrame\\ReadyCheck-Ready"
 local NOT_READY_ICON = "Interface\\RaidFrame\\ReadyCheck-NotReady"
 
--- 도핑 데이터 (주문 ID)
+-- 도핑 데이터 (주문)
 local FOOD_BUFFS = {
     [1294727] = true, -- 왕실 구이
     [136000] = true,
 }
 
 local FLASK_BUFFS = {
-    [1235111] = true, -- 무너진 태양의 영약 (치명) 2성
-    [1235110] = true,
+    [1235111] = true, -- 무너진 태양의 영약 (치명)
 }
 
 local RUNE_BUFFS = {
@@ -47,6 +47,7 @@ local RUNE_BUFFS = {
     [393438] = true,
 }
 
+-- 도핑 데이터 (아이템)
 local FOOD_ITEMS = {
     242275, -- 왕실 구이
 }
@@ -56,7 +57,16 @@ local POTION_ITEMS = {
 }
 
 local WEAPON_ITEMS = {
-    243734, -- 탈라시안 불사조 기름 2성
+    243734, -- 탈라시안 불사조 기름 (2성)
+}
+
+-- 샤먼 무기 인첸트 주문 (enchant ID -> 주문ID) — 활성 시 해당 주문 아이콘/툴팁으로 표시
+local SHAMAN_IMBUE_ENCHANTS = {
+    [5400] = 318038, -- 화염전염 무기
+    [5401] = 33757,  -- 질풍 무기
+    [6498] = 382021, -- 대지생명 무기
+    [7528] = 457496, -- 해류군주의 수호
+    [7587] = 462757, -- 천둥벼락 부적
 }
 
 
@@ -104,7 +114,8 @@ local function create_icon(name, texture, index, tooltipType, tooltipId, macrote
         macrotext = macrotext,
         isAction = hasMacro,
         useTooltip = true,
-        icon = texture
+        icon = texture,
+        cooldownSize = 12
     })
 
     -- V X 상태 마크를 위한 프레임 레벨이 높은 자식 프레임 생성 (테두리 위 렌더링 보장)
@@ -122,19 +133,25 @@ local function create_icon(name, texture, index, tooltipType, tooltipId, macrote
     f.text:ClearAllPoints()
     f.text:SetPoint("BOTTOM", f, "BOTTOM", 0, -10)
 
+    f.tooltipType = tooltipType
+    f.tooltipId = tooltipId
+
     -- 툴팁 수동 재정의 (매크로 문구 대신 원래 주문/아이템 툴팁 표시)
     f:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        if tooltipType == "spell" then
-            GameTooltip:SetSpellByID(tooltipId)
-        elseif tooltipType == "item" then
-            GameTooltip:SetItemByID(tooltipId)
+        if self.tooltipType == "spell" then
+            GameTooltip:SetSpellByID(self.tooltipId)
+        elseif self.tooltipType == "item" then
+            GameTooltip:SetItemByID(self.tooltipId)
         end
         GameTooltip:Show()
     end)
     f:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
+
+    -- 스와이프(원형 음영) 끄고 카운트다운 숫자만 표시
+    f.cooldown:SetDrawSwipe(false)
 
     return f
 end
@@ -312,12 +329,24 @@ function update_consumables()
         icons.potion.text:SetText("")
 
         -- 6. 무기 도핑
-        local hasMainHandEnchant, mainHandExpiration = GetWeaponEnchantInfo()
+        local hasMainHandEnchant, mainHandExpiration, _, mainHandEnchID = GetWeaponEnchantInfo()
         local hasWeapon = not not hasMainHandEnchant
 
         local weaponCount = 0
         for i = 1, #WEAPON_ITEMS do
             weaponCount = weaponCount + GetItemCount(WEAPON_ITEMS[i], false, true)
+        end
+
+        -- 샤먼 무기 인첸트 주문이 걸려있으면 해당 주문 아이콘/툴팁으로, 아니면 기본 오일로 표시
+        local imbueSpell = hasWeapon and SHAMAN_IMBUE_ENCHANTS[mainHandEnchID]
+        if imbueSpell then
+            icons.weapon.icon:SetTexture(C_Spell.GetSpellTexture(imbueSpell))
+            icons.weapon.tooltipType = "spell"
+            icons.weapon.tooltipId = imbueSpell
+        else
+            icons.weapon.icon:SetTexture(7548987) -- 탈라시안 불사조 기름
+            icons.weapon.tooltipType = "item"
+            icons.weapon.tooltipId = 243734
         end
 
         set_status(icons.weapon, hasWeapon)

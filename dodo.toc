@@ -86,15 +86,19 @@ Module/QoL/Audio.lua
 Module/QoL/BrowseGroup.lua
 Module/QoL/Camera.lua
 Module/QoL/ChatBubble.lua
+Module/QoL/CursorSpellTracker.lua
 Module/QoL/DeleteNow.lua
+#Module/QoL/EncounterTimelineColor.lua
 Module/QoL/ExpFilter.lua
 Module/QoL/FrameOption.lua
 Module/QoL/Friends.lua
 Module/QoL/InsDifficulty.lua
 Module/QoL/Keystone.lua
+Module/QoL/KeystoneTimer.lua
 Module/QoL/Merchant.lua
 Module/QoL/NewLFG.lua
 Module/QoL/QuickBobber.lua
+#Module/QoL/RaidBuff.lua
 Module/QoL/Teleport.lua
 Module/QoL/TimerLFG.lua
 Module/QoL/WMarker.lua
@@ -125,12 +129,16 @@ Module/Tooltip/Vehicle.lua
 # Unitframe
 Module/Unitframe/Core.lua
 Module/Unitframe/Unit/Castbar.lua
+Module/Unitframe/Unit/Absorb.lua
 Module/Unitframe/Unit/Auras.lua
 Module/Unitframe/Unit/Player.lua
 Module/Unitframe/Unit/Target.lua
 Module/Unitframe/Unit/Boss.lua
 Module/Unitframe/Unit/ETC.lua
 Module/Unitframe/Party/Leader.lua
+Module/Unitframe/Party/Overshield.lua
+Module/Unitframe/Party/AurasHealthColor.lua
+#Module/Unitframe/Party/SoloMode.lua
 #Module/Unitframe/Raid/Anchor.lua
 
 # Configurations & Layout Anchoring (Last Load)
