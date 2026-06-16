@@ -10,7 +10,7 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local OUTLINE_FONT = "Fonts\\2002.TTF"
+local OUTLINE_FONT = dodo.OUTLINE_FONT
 
 -- ==============================
 -- 캐싱

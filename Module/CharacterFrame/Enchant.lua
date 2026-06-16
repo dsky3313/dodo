@@ -10,11 +10,12 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local OUTLINE_FONT = "Fonts\\2002.TTF"
+local OUTLINE_FONT = dodo.OUTLINE_FONT
 
 -- ==============================
 -- 캐싱
 -- ==============================
+local dodoColors   = dodo.Colors
 local C_TooltipInfo = C_TooltipInfo
 local CreateColor = CreateColor
 local GetInventoryItemLink = GetInventoryItemLink
@@ -116,16 +117,19 @@ function dodo.UpdateCharacterFrameEnchant(unit, slot_list)
                 -- 마법부여가 가능한 슬롯인 경우에만 갱신 처리
                 if info.enchant then
                     local name = get_enchant_name(unit, info.slotID)
-                    local r, g, b = 1, 1, 1
+                    local ce = dodoColors.CharacterFrame
+                    local r, g, b
 
                     if name then
+                        local c = ce.Enchant
                         enchant_text:SetText(name)
-                        enchant_text:SetTextColor(0, 1, 0.6, 1) -- 마부 완료: 에메랄드 녹색
-                        r, g, b = 0, 1, 0.6
+                        enchant_text:SetTextColor(c.r, c.g, c.b, 1)
+                        r, g, b = c.r, c.g, c.b
                     else
+                        local c = ce.notEnchant
                         enchant_text:SetText("마부없음!")
-                        enchant_text:SetTextColor(1, 0, 0, 1) -- 마부 누락: 빨간색 경고
-                        r, g, b = 1, 0, 0
+                        enchant_text:SetTextColor(c.r, c.g, c.b, 1)
+                        r, g, b = c.r, c.g, c.b
                     end
 
                     -- 그라데이션 그리기

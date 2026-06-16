@@ -10,6 +10,8 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
+dodo.OUTLINE_FONT = STANDARD_TEXT_FONT or "Fonts\\2002.TTF"
+
 dodo.CharacterFrameSLOT_LIST = {
     { frame = "CharacterHeadSlot",          slotID = 1,  dir = "RIGHT", enchant = true },
     { frame = "CharacterNeckSlot",          slotID = 2,  dir = "RIGHT", enchant = false },

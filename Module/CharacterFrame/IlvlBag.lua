@@ -10,7 +10,7 @@ local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
 local NUM_CONTAINER_FRAMES = NUM_CONTAINER_FRAMES or 13
-local OUTLINE_FONT = "Fonts\\2002.TTF"
+local OUTLINE_FONT = dodo.OUTLINE_FONT
 
 -- ==============================
 -- 캐싱
@@ -121,6 +121,7 @@ end
 -- 이벤트 핸들러
 -- ==============================
 local function on_bag_update_items(self)
+    if dodoDB.enableCharacterFrame == false or not dodoDB.useItemLevel then return end
     update_bag_frame(self)
 end
 

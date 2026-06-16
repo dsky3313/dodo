@@ -10,7 +10,7 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local OUTLINE_FONT = "Fonts\\2002.TTF"
+local OUTLINE_FONT = dodo.OUTLINE_FONT
 
 -- ==============================
 -- 캐싱
@@ -66,7 +66,7 @@ function dodo.UpdateCharacterFrameIlvl(unit, slot_list)
                     ilvl = C_Item.GetDetailedItemLevelInfo(link)
                     if ilvl and ilvl > 0 then
                         ilvl_cache[link] = ilvl
-                        local quality = C_Item.GetItemQualityByID(link)
+                        local _, _, quality = C_Item.GetItemInfo(link)
                         local r, g, b = C_Item.GetItemQualityColor(quality or 1)
                         color = { r = r, g = g, b = b }
                         color_cache[link] = color
