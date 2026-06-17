@@ -60,7 +60,7 @@ init_frame:SetScript("OnEvent", on_event)
 -- 설정 등록
 -- ==============================
 if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("편의기능", {
+    dodo.RegisterEditModeModuleSetting("인터페이스", {
         {
             name = "미니맵",
             get = function() return dodoDB and dodoDB.useMinimap ~= false end,

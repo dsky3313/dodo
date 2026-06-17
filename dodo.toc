@@ -69,15 +69,15 @@ Module/EncounterJournal/AchievementsTabUI.lua
 Module/EncounterTimeline/EncounterTimelineBar.lua
 #Module/EncounterTimeline/EncounterTimelineColor.lua
 
-# GossipFrame
+# GossipFrame < 이거 수정해야함
 Module/GossipFrame/KeystoneLindormi.lua
 
 # Minimap
 Module/Minimap/Core.lua
+Module/Minimap/FPS.lua
+Module/Minimap/MapCoords.lua
 Module/Minimap/Square.lua
 Module/Minimap/Zoom.lua
-Module/Minimap/FPS.lua
-Module/Minimap/Coord.lua
 
 # PVEFrame
 Module/PVEFrame/PartyClass.lua

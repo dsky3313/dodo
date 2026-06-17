@@ -54,14 +54,18 @@ local function update_minimap_zoom_reset()
     local _, instance_type, difficulty_id = GetInstanceInfo()
     local in_instance = (difficulty_id == 8 or instance_type == "raid")
 
-    if is_enabled and not in_instance then
-        init_frame:RegisterEvent("MINIMAP_UPDATE_ZOOM")
-    else
-        init_frame:UnregisterEvent("MINIMAP_UPDATE_ZOOM")
-        if zoom_timer then
-            zoom_timer:Cancel()
-            zoom_timer = nil
+    if is_enabled then
+        init_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+        if not in_instance then
+            init_frame:RegisterEvent("MINIMAP_UPDATE_ZOOM")
+        else
+            init_frame:UnregisterEvent("MINIMAP_UPDATE_ZOOM")
+            if zoom_timer then zoom_timer:Cancel() zoom_timer = nil end
         end
+    else
+        init_frame:UnregisterEvent("PLAYER_ENTERING_WORLD")
+        init_frame:UnregisterEvent("MINIMAP_UPDATE_ZOOM")
+        if zoom_timer then zoom_timer:Cancel() zoom_timer = nil end
     end
 end
 
@@ -84,7 +88,6 @@ end
 
 init_frame = CreateFrame("Frame")
 init_frame:RegisterEvent("PLAYER_LOGIN")
-init_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 init_frame:SetScript("OnEvent", on_event)
 
 -- ==============================

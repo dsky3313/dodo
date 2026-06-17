@@ -13,6 +13,7 @@ dodo.DB = dodo.DB or dodoDB
 
 local fps_frame = nil
 local fps_ticker = nil
+local fps_interval = 0
 local text_green, text_red, text_yellow
 local last_text = ""
 local init_frame = nil
@@ -82,16 +83,15 @@ local function update_fps_display()
         local in_instance = IsInInstance()
         local interval = in_instance and 2 or 1
 
-        if fps_ticker then
-            if fps_ticker._interval ~= interval then
-                fps_ticker:Cancel()
-                fps_ticker = nil
-            end
+        if fps_ticker and fps_interval ~= interval then
+            fps_ticker:Cancel()
+            fps_ticker = nil
+            fps_interval = 0
         end
 
         if not fps_ticker then
             fps_ticker = C_Timer.NewTicker(interval, update_fps_text)
-            fps_ticker._interval = interval
+            fps_interval = interval
         end
 
         if init_frame then
@@ -102,6 +102,7 @@ local function update_fps_display()
         if fps_ticker then
             fps_ticker:Cancel()
             fps_ticker = nil
+            fps_interval = 0
         end
         if init_frame then
             init_frame:UnregisterEvent("PLAYER_ENTERING_WORLD")

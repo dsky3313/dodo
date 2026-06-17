@@ -160,23 +160,21 @@ local function update_coord_display()
     local is_enabled = (dodoDB and dodoDB.useMinimap ~= false and dodoDB.useCoord ~= false)
     local in_instance = IsInInstance()
 
-    if is_enabled and not in_instance then
-        coord_frame:Show()
-        if not coord_ticker then
-            coord_ticker = C_Timer.NewTicker(0.5, update_coord_text)
-        end
-        if init_frame then
-            init_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    if is_enabled then
+        if init_frame then init_frame:RegisterEvent("PLAYER_ENTERING_WORLD") end
+        if not in_instance then
+            coord_frame:Show()
+            if not coord_ticker then
+                coord_ticker = C_Timer.NewTicker(0.5, update_coord_text)
+            end
+        else
+            coord_frame:Hide()
+            if coord_ticker then coord_ticker:Cancel() coord_ticker = nil end
         end
     else
+        if init_frame then init_frame:UnregisterEvent("PLAYER_ENTERING_WORLD") end
         coord_frame:Hide()
-        if coord_ticker then
-            coord_ticker:Cancel()
-            coord_ticker = nil
-        end
-        if init_frame then
-            init_frame:UnregisterEvent("PLAYER_ENTERING_WORLD")
-        end
+        if coord_ticker then coord_ticker:Cancel() coord_ticker = nil end
     end
 
     if world_map_coord_frame then
@@ -189,7 +187,6 @@ local function update_coord_display()
 end
 
 dodo.UpdateMinimapCoordState = update_coord_display
-dodo.UpdateCoordDisplay = update_coord_display
 
 -- ==============================
 -- 이벤트 핸들러
