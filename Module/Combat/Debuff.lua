@@ -281,7 +281,7 @@ local function create_private_frames(parent)
         return
     end
 
-    bsetuppprivate = true
+    bsetupprivate = true
 
     local w = configs.size
     local h = configs.size * configs.sizerate
@@ -305,9 +305,9 @@ local function create_private_frames(parent)
     end
 end
 
--- ============================================================
+-- ==============================
 -- 디버프 로직
--- ============================================================
+-- ==============================
 
 local function set_cooldownframe(cooldown, durationobject, enable)
     if enable and durationobject then
@@ -601,7 +601,7 @@ end
 -- ==============================
 -- 설정 업데이트 (설정창용)
 -- ==============================
-function dodoUpdateDebuffOption()
+local function update_debuff_option()
     if not main_frame or not debuff_frame then return end
 
     configs.size = dodoDB.debuffSize or 56
@@ -799,7 +799,7 @@ if dodo.RegisterEditModeModuleSetting then
             get = function() return dodoDB and dodoDB.useDebuff ~= false end,
             set = function(checked)
                 if dodoDB then dodoDB.useDebuff = checked end
-                dodoUpdateDebuffOption()
+                update_debuff_option()
             end
         }
     })
@@ -812,7 +812,7 @@ if dodo.RegisterEditModeSystemSetting then
             get = function() return dodoDB and dodoDB.debuffClickthrough ~= false end,
             set = function(checked)
                 if dodoDB then dodoDB.debuffClickthrough = checked end
-                dodoUpdateDebuffOption()
+                update_debuff_option()
             end,
             disabled = function() return dodoDB and dodoDB.useDebuff == false end,
         },
@@ -821,7 +821,7 @@ if dodo.RegisterEditModeSystemSetting then
             get = function() return dodoDB and dodoDB.debuffClickthroughTooltip ~= false end,
             set = function(checked)
                 if dodoDB then dodoDB.debuffClickthroughTooltip = checked end
-                dodoUpdateDebuffOption()
+                update_debuff_option()
             end,
             disabled = function() return dodoDB and (dodoDB.useDebuff == false or dodoDB.debuffClickthrough == false) end,
         },
@@ -831,7 +831,7 @@ if dodo.RegisterEditModeSystemSetting then
             get = function() return dodoDB and dodoDB.debuffSize or 56 end,
             set = function(val)
                 if dodoDB then dodoDB.debuffSize = val end
-                dodoUpdateDebuffOption()
+                update_debuff_option()
             end,
             minVal = 30,
             maxVal = 80,
@@ -844,7 +844,7 @@ if dodo.RegisterEditModeSystemSetting then
             get = function() return dodoDB and dodoDB.debuffMax or 6 end,
             set = function(val)
                 if dodoDB then dodoDB.debuffMax = val end
-                dodoUpdateDebuffOption()
+                update_debuff_option()
             end,
             minVal = 1,
             maxVal = 10,

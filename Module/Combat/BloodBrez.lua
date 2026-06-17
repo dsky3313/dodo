@@ -31,7 +31,6 @@ local BL_DEBUFFS = {
 -- ==============================
 -- 캐싱
 -- ==============================
-local C_SpellBook      = C_SpellBook
 local C_Timer          = C_Timer
 local CreateFrame      = CreateFrame
 local GetPlayerAuraBySpellID = C_UnitAuras.GetPlayerAuraBySpellID
@@ -289,17 +288,9 @@ local function update_ticker_and_events()
     end
 end
 
-local function on_init_delay()
-    create_ui()
-    apply_icons()
-    dodo.BloodBrez()
-end
-
 init_frame:RegisterEvent("ADDON_LOADED")
 init_frame:RegisterEvent("PLAYER_LOGIN")
 init_frame:SetScript("OnEvent", on_event)
-
-C_Timer.After(1, on_init_delay)
 
 -- ==============================
 -- 설정 등록
