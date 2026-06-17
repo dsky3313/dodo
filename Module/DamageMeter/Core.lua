@@ -44,10 +44,8 @@ local function initialize()
 end
 
 local initFrame = CreateFrame("Frame")
-initFrame:RegisterEvent("ADDON_LOADED")
-initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-initFrame:SetScript("OnEvent", function(self, event, arg1)
+
+local function on_event(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
         hooksecurefunc(DamageMeter, "ShowNewSecondarySessionWindow", on_secondary_session_shown)
     elseif event == "PLAYER_LOGIN" then
@@ -56,7 +54,12 @@ initFrame:SetScript("OnEvent", function(self, event, arg1)
         update_all_states()
         self:UnregisterEvent("PLAYER_ENTERING_WORLD")
     end
-end)
+end
+
+initFrame:RegisterEvent("ADDON_LOADED")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+initFrame:SetScript("OnEvent", on_event)
 
 -- ==============================
 -- 설정 등록

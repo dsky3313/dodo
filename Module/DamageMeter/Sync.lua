@@ -29,6 +29,8 @@ local UIParent = UIParent
 local _G = _G
 local abs = math.abs
 
+local function noop() end
+
 local win_1
 local win_cache = {}
 
@@ -84,7 +86,7 @@ local function apply_window_settings(i, main_win, is_sync_enabled, is_snap_enabl
             if not win.dodoOriginalStartMoving then
                 win.dodoOriginalStartMoving = win.StartMoving
             end
-            win.StartMoving = function() end
+            win.StartMoving = noop
             win:SetMovable(true)
             if win.SetUserPlaced then win:SetUserPlaced(false) end
         end
