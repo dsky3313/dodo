@@ -6,6 +6,8 @@ local addonName, dodo = ...
 
 local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
+local ipairs = ipairs
+local pairs = pairs
 local type = type
 local ReloadUI = ReloadUI
 local Settings = Settings
@@ -20,15 +22,27 @@ local mainCategory = Settings.RegisterVerticalLayoutCategory("dodo")
 Settings.RegisterAddOnCategory(mainCategory)
 
 -- 하위
-local subCategoryGeneral = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "명령어")
+local subCategoryQoL = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "편의기능")
+local subCategoryCommands    = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "명령어")
+
+local subCategoryMap = {
+    ["편의기능"] = subCategoryQoL,
+    ["명령어"]   = subCategoryCommands,
+}
 
 -- 설정 생성
 function dodoCreateOptions()
     if dodoOptionsCreated then return end
-
-    -- 메인
-    local layoutMain = SettingsPanel:GetLayout(mainCategory)
     dodoOptionsCreated = true
+
+    for key, funcs in pairs(dodo.OptionRegistrations or {}) do
+        local cat = subCategoryMap[key]
+        if cat then
+            for _, fn in ipairs(funcs) do
+                if type(fn) == "function" then fn(cat) end
+            end
+        end
+    end
 end
 
 -- ==============================

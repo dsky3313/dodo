@@ -13,6 +13,9 @@ local MinimalSliderWithSteppersMixin = MinimalSliderWithSteppersMixin
 local Settings = Settings
 local SettingsPanel = SettingsPanel
 
+---@alias FormatType "Percent"|"Integer"|"Decimal1"|"Decimal2"
+
+---@type table<FormatType, fun(v: number): string>
 local Formatters = {
     ["Percent"] = function(v) return string_format("%d%%", math_floor((v or 0) * 100 + 0.5)) end,
     ["Integer"] = function(v) return tostring(math_floor((v or 0) + 0.5)) end,
@@ -20,9 +23,20 @@ local Formatters = {
     ["Decimal2"] = function(v) return string_format("%.2f", v or 0) end,
 }
 
+---@class DropdownOption
+---@field value string 저장값
+---@field label string 표시 텍스트
+
 -- ==============================
 -- 체크박스
 -- ==============================
+---@param category table Settings.RegisterVerticalLayoutCategory 반환값
+---@param varName string dodoDB 키명
+---@param label string 표시 텍스트
+---@param tooltip string 툴팁 설명
+---@param default boolean 기본값
+---@param func fun(value: boolean) 값 변경 콜백
+---@return table setting, table initializer
 function Checkbox(category, varName, label, tooltip, default, func)
     local varID = "dodo_" .. varName
     local setting = Settings.GetSetting(varID) or Settings.RegisterAddOnSetting(category, varID, varName, dodoDB, Settings.VarType.Boolean, label, default)
@@ -41,6 +55,14 @@ end
 -- ==============================
 -- 드롭다운
 -- ==============================
+---@param category table Settings.RegisterVerticalLayoutCategory 반환값
+---@param varName string dodoDB 키명
+---@param label string 표시 텍스트
+---@param tooltip string 툴팁 설명
+---@param options DropdownOption[]
+---@param default string 기본 선택값 (options[n].value)
+---@param func fun(value: string) 값 변경 콜백
+---@return table setting, table initializer
 function DropDown(category, varName, label, tooltip, options, default, func)
     local varID = "dodo_" .. varName
     local setting = Settings.GetSetting(varID) or Settings.RegisterAddOnSetting(category, varID, varName, dodoDB, Settings.VarType.String, label, default or options[1].value)
@@ -65,6 +87,17 @@ end
 -- ==============================
 -- 슬라이더
 -- ==============================
+---@param category table Settings.RegisterVerticalLayoutCategory 반환값
+---@param varName string dodoDB 키명
+---@param label string 표시 텍스트
+---@param tooltip string 툴팁 설명
+---@param min number 최솟값
+---@param max number 최댓값
+---@param step number 단계
+---@param default number 기본값
+---@param formatType FormatType
+---@param func fun(value: number) 값 변경 콜백
+---@return table setting, table initializer
 function Slider(category, varName, label, tooltip, min, max, step, default, formatType, func)
     local varID = "dodo_" .. varName
     local setting = Settings.GetSetting(varID) or Settings.RegisterAddOnSetting(category, varID, varName, dodoDB, Settings.VarType.Number, label, default or min or 0)
@@ -85,6 +118,16 @@ end
 -- ==============================
 -- 체크박스 드롭다운
 -- ==============================
+---@param category table Settings.RegisterVerticalLayoutCategory 반환값
+---@param varNameCB string 체크박스 dodoDB 키명
+---@param varNameDD string 드롭다운 dodoDB 키명
+---@param label string 표시 텍스트
+---@param tooltip string 툴팁 설명
+---@param options DropdownOption[]
+---@param defaultCB boolean 체크박스 기본값
+---@param defaultDD string 드롭다운 기본값 (options[n].value)
+---@param func fun(checked: boolean) 체크박스 변경 콜백
+---@return table cbSetting, table ddSetting, table initializer
 function CheckBoxDropDown(category, varNameCB, varNameDD, label, tooltip, options, defaultCB, defaultDD, func)
     local varID_CB = "dodo_" .. varNameCB
     local varID_DD = "dodo_" .. varNameDD
@@ -119,6 +162,19 @@ end
 -- ==============================
 -- 체크박스 슬라이더
 -- ==============================
+---@param category table Settings.RegisterVerticalLayoutCategory 반환값
+---@param varNameCB string 체크박스 dodoDB 키명
+---@param varNameSlider string 슬라이더 dodoDB 키명
+---@param label string 표시 텍스트
+---@param tooltip string 툴팁 설명
+---@param min number 최솟값
+---@param max number 최댓값
+---@param step number 단계
+---@param defaultCB boolean 체크박스 기본값
+---@param defaultSlider number 슬라이더 기본값
+---@param formatType FormatType
+---@param func fun(checked: boolean) 체크박스 변경 콜백
+---@return table cbSetting, table sliderSetting, table initializer
 function CheckboxSlider(category, varNameCB, varNameSlider, label, tooltip, min, max, step, defaultCB, defaultSlider, formatType, func)
     local varID_CB = "dodo_" .. varNameCB
     local varID_Slider = "dodo_" .. varNameSlider

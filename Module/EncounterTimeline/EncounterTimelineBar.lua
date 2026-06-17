@@ -2,24 +2,32 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
--- 캐싱
 local CreateFrame = CreateFrame
 
 -- ==============================
--- 적용
+-- 방향 적용
 -- ==============================
-local function apply_settings()
-    local tv = EncounterTimeline and EncounterTimeline.TimerView
-    if not tv or not tv.SetTimerLayoutDirection then return end
-
+-- SetTimerLayoutDirection → OnTimerLayoutDirectionChanged → ReinitializeAllEventFrames
+-- → ReleaseEventFrame → EncounterTimeline:OnEventFrameReleased → MarkDirty (C_Timer taint)
+-- 이 경로를 완전히 우회: timerLayoutDirection 필드 직접 설정 + 활성 프레임 재앵커링
+-- TimerView:MarkDirty는 비트플래그만 설정, C_Timer 없음 → 안전
+local function apply_direction(tv)
     local dir = dodoDB.useEncounterTimelineBarGrowDown
         and EncounterTimelineTimerLayoutDirection.TopToBottom
         or EncounterTimelineTimerLayoutDirection.BottomToTop
-    tv:SetTimerLayoutDirection(dir)
+    if tv.timerLayoutDirection == dir then return end
+    tv.timerLayoutDirection = dir
+    -- MarkDirty 호출 제거: addon context에서 tv.dirtyFlags를 taint시키면
+    -- 이후 OnUpdate에서 tainted execution → AnimateShow chain → EncounterTimeline:MarkDirty(tainted C_Timer) → secret value 에러
+    -- 방향은 전투 진입 시 InitializeEventFrameSettings → IsFlippedVertically → GetTimerLayoutDirection에서 자동 반영됨
+end
 
-    local offsetY = dodoDB.encounterTimelineBarOffsetY or 0
-    tv:ClearAllPoints()
-    tv:SetPoint("TOPLEFT", EncounterTimeline, "TOPLEFT", 0, -offsetY)
+local function apply_settings()
+    local tv = EncounterTimeline and EncounterTimeline.TimerView
+    if not tv then return end
+    apply_direction(tv)
+    -- tv:SetPoint 제거: TimerView 위치 변경이 EncounterTimeline 콜백 → MarkDirty chain 유발 가능성
+    -- Y 오프셋은 추후 안전한 방법으로 재구현
 end
 
 -- ==============================

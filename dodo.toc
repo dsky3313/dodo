@@ -67,7 +67,7 @@ Module/EncounterJournal/AchievementsTabUI.lua
 
 # EncounterTimeline
 Module/EncounterTimeline/EncounterTimelineBar.lua
-Module/EncounterTimeline/EncounterTimelineColor.lua
+#Module/EncounterTimeline/EncounterTimelineColor.lua
 
 # GossipFrame
 Module/GossipFrame/KeystoneLindormi.lua
