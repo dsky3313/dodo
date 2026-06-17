@@ -47,6 +47,7 @@ local display_generation = 0
 local instance_overview_was_shown = false
 local previous_native_tab = nil
 local sticky_active = false
+local ef_difficulty = CreateFrame("Frame")
 
 -- forward declarations
 local activate_custom_tab
@@ -803,6 +804,14 @@ deactivate_custom_tab = function()
     show_native_content()
 end
 
+local function on_difficulty_update()
+    if is_active then
+        M.reset_caches()
+        boss_filter_options = nil
+        refresh_content()
+    end
+end
+
 -- ==============================
 -- 훅 설치
 -- ==============================
@@ -879,15 +888,7 @@ local function install_hooks()
     end
 
     -- 난이도 변경 시 새로고침
-    local ef = CreateFrame("Frame")
-    ef:RegisterEvent("EJ_DIFFICULTY_UPDATE")
-    ef:SetScript("OnEvent", function()
-        if is_active then
-            M.reset_caches()
-            boss_filter_options = nil
-            refresh_content()
-        end
-    end)
+    ef_difficulty:SetScript("OnEvent", on_difficulty_update)
 end
 
 -- ==============================
@@ -910,8 +911,10 @@ function M.SetEnabled(enabled)
     if not tab_button then return end
     if enabled then
         tab_button:Show()
+        ef_difficulty:RegisterEvent("EJ_DIFFICULTY_UPDATE")
     else
         tab_button:Hide()
+        ef_difficulty:UnregisterEvent("EJ_DIFFICULTY_UPDATE")
         if is_active then
             sticky_active = false
             deactivate_custom_tab()
@@ -947,10 +950,7 @@ end
 -- ==============================
 -- 이벤트
 -- ==============================
-local ef = CreateFrame("Frame")
-ef:RegisterEvent("ADDON_LOADED")
-ef:RegisterEvent("PLAYER_LOGIN")
-ef:SetScript("OnEvent", function(_, event, arg1)
+local function on_ej_event(_, event, arg1)
     if event == "ADDON_LOADED" then
         if arg1 == "Blizzard_EncounterJournal" then
             ensure_ui()
@@ -966,6 +966,11 @@ ef:SetScript("OnEvent", function(_, event, arg1)
     elseif event == "PLAYER_LOGIN" then
         ensure_ui()
     end
-end)
+end
+
+local ef = CreateFrame("Frame")
+ef:RegisterEvent("ADDON_LOADED")
+ef:RegisterEvent("PLAYER_LOGIN")
+ef:SetScript("OnEvent", on_ej_event)
 
 if _G.EncounterJournal then ensure_ui() end

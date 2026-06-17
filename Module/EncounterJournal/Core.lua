@@ -22,11 +22,14 @@ local function initialize()
 end
 
 local init_frame = CreateFrame("Frame")
-init_frame:RegisterEvent("PLAYER_LOGIN")
-init_frame:SetScript("OnEvent", function(self, event)
+
+local function on_event(self)
     initialize()
     self:UnregisterEvent("PLAYER_LOGIN")
-end)
+end
+
+init_frame:RegisterEvent("PLAYER_LOGIN")
+init_frame:SetScript("OnEvent", on_event)
 
 -- ==============================
 -- 설정 등록
