@@ -1,7 +1,11 @@
--- ============================================================================
--- dodo: ChatFrame Short (채널 단축 표시 설정)
--- License: GPLv3 (배포 가능 자유 라이선스)
--- ============================================================================
+-- ==============================
+-- Inspired
+-- ==============================
+-- Chattynator (https://www.curseforge.com/wow/addons/chattynator)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 dodo.DB = dodo.DB or dodoDB
@@ -20,13 +24,19 @@ local Config = {
     }
 }
 
--- 캐싱 및 와우 API 단축
+-- ==============================
+-- 캐싱
+-- ==============================
+local ChatFrame_AddMessageEventFilter = ChatFrame_AddMessageEventFilter
 local CreateFrame = CreateFrame
-local IsInInstance = IsInInstance
+local ipairs = ipairs
 local issecretvalue = issecretvalue
 local pairs = pairs
 local type = type
 
+-- ==============================
+-- 기능 구현
+-- ==============================
 -- 가벼운 메모리용 해시 캐시
 local channel_cache = {}
 
@@ -62,6 +72,19 @@ end
 
 dodo.ShortenChannels = shorten_channels
 
+local short_filter_events = {
+    "CHAT_MSG_CHANNEL",
+    "CHAT_MSG_SAY", "CHAT_MSG_YELL",
+    "CHAT_MSG_PARTY", "CHAT_MSG_PARTY_LEADER",
+    "CHAT_MSG_RAID", "CHAT_MSG_RAID_LEADER", "CHAT_MSG_RAID_WARNING",
+    "CHAT_MSG_GUILD", "CHAT_MSG_OFFICER",
+    "CHAT_MSG_INSTANCE_CHAT", "CHAT_MSG_INSTANCE_CHAT_LEADER",
+}
+
+local function short_filter(self, event, text, ...)
+    return false, shorten_channels(text), ...
+end
+
 -- 2. 업데이트 및 상태 제어
 local function update_state()
     if dodo.UpdateChatFontState then
@@ -73,18 +96,18 @@ dodo.UpdateChatShortState = update_state
 
 local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 initFrame:SetScript("OnEvent", function(self, event)
-    if event == "PLAYER_LOGIN" then
-        if dodo.DB.useShortenChannels == nil then dodo.DB.useShortenChannels = true end
-        update_state()
-        self:UnregisterEvent("PLAYER_LOGIN")
-    elseif event == "PLAYER_ENTERING_WORLD" then
-        update_state()
+    if dodo.DB.useShortenChannels == nil then dodo.DB.useShortenChannels = true end
+    for _, evt in ipairs(short_filter_events) do
+        ChatFrame_AddMessageEventFilter(evt, short_filter)
     end
+    update_state()
+    self:UnregisterAllEvents()
 end)
 
--- 3. 게임 내 설정 연결
+-- ==============================
+-- 설정 등록
+-- ==============================
 if dodo.RegisterEditModeSystemSetting then
     dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.ChatFrame, {
         {

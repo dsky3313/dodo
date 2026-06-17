@@ -1,14 +1,24 @@
--- ============================================================================
--- dodo: ChatFrame Core (대화창 코어)
--- License: GPLv3 (배포 가능 자유 라이선스)
--- ============================================================================
+-- ==============================
+-- Inspired
+-- ==============================
+-- Chattynator (https://www.curseforge.com/wow/addons/chattynator)
+-- Guild Button (https://wago.io/Cx_wsXks4)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 dodo.DB = dodo.DB or dodoDB
 
+-- ==============================
 -- 캐싱
+-- ==============================
 local CreateFrame = CreateFrame
 
+-- ==============================
+-- 기능 구현
+-- ==============================
 -- 1. 대화창 모듈별 독립적 업데이트 함수 호출
 local function update_chat_module_state()
     if dodo.UpdateChatFontState then dodo.UpdateChatFontState() end
@@ -37,7 +47,9 @@ initFrame:SetScript("OnEvent", function(self, event)
     self:UnregisterAllEvents()
 end)
 
--- 3. 게임 내 설정 및 편집 모드 연동
+-- ==============================
+-- 설정 등록
+-- ==============================
 if dodo.RegisterEditModeModuleSetting then
     dodo.RegisterEditModeModuleSetting("인터페이스", {
         {
@@ -51,47 +63,3 @@ if dodo.RegisterEditModeModuleSetting then
     })
 end
 
-if dodo.RegisterEditModeSystemSetting then
-    dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.ChatFrame, {
-        {
-            name = "글씨 외곽선 적용",
-            get = function() return dodo.DB and dodo.DB.useFontOutline ~= false end,
-            set = function(checked)
-                if dodo.DB then dodo.DB.useFontOutline = checked end
-                update_chat_module_state()
-            end,
-            disabled = function() return dodo.DB and dodo.DB.enableChatModule == false end,
-        },
-        {
-            name = "글씨 그림자 적용",
-            get = function() return dodo.DB and dodo.DB.useFontShadow == true end,
-            set = function(checked)
-                if dodo.DB then dodo.DB.useFontShadow = checked end
-                update_chat_module_state()
-            end,
-            disabled = function() return dodo.DB and dodo.DB.enableChatModule == false end,
-        },
-        {
-            name = "글씨 크기 변경",
-            get = function() return dodo.DB and dodo.DB.useFontSize ~= false end,
-            set = function(checked)
-                if dodo.DB then dodo.DB.useFontSize = checked end
-                update_chat_module_state()
-            end,
-            disabled = function() return dodo.DB and dodo.DB.enableChatModule == false end,
-        },
-        {
-            name = "글씨 크기",
-            type = "slider",
-            get = function() return dodo.DB and dodo.DB.fontSize or 13 end,
-            set = function(val)
-                if dodo.DB then dodo.DB.fontSize = val end
-                update_chat_module_state()
-            end,
-            minVal = 10,
-            maxVal = 20,
-            step = 1,
-            disabled = function() return dodo.DB and (dodo.DB.enableChatModule == false or dodo.DB.useFontSize == false) end,
-        }
-    })
-end

@@ -1,14 +1,18 @@
--- ============================================================================
--- dodo: ChatFrame GuildButton (대화창 길드 단축 버튼 위젯)
--- License: GPLv3 (배포 가능 자유 라이선스)
--- ============================================================================
+-- ==============================
+-- Inspired
+-- ==============================
+-- Guild Button (https://wago.io/Cx_wsXks4)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 dodo.DB = dodo.DB or dodoDB
 
--- ============================================================================
--- C API 로컬 캐싱 (2dodo 성능 최적화 규격)
--- ============================================================================
+-- ==============================
+-- 캐싱
+-- ==============================
 local CreateFrame = CreateFrame
 local GameTooltip = GameTooltip
 local GetClassColor = GetClassColor
@@ -27,14 +31,10 @@ local table_sort = table.sort
 local type = type
 local _G = _G
 
--- ============================================================================
--- 로컬 상태 변수
--- ============================================================================
+-- ==============================
+-- 기능 구현
+-- ==============================
 local guild_button = nil
-
--- ============================================================================
--- 기능 1: 툴팁 및 가나다 정렬 헬퍼
--- ============================================================================
 local function escape_member_note(note)
     return note == nil and "" or "(" .. note .. ")"
 end
@@ -94,9 +94,6 @@ local function show_tooltip()
     GameTooltip:Show()
 end
 
--- ============================================================================
--- 기능 2: 상태 업데이트 및 스크립트 핸들러 (2dodo 가비지 프리 반영)
--- ============================================================================
 local function set_guild_button_text()
     if not guild_button then return end
     local _, num_online = GetNumGuildMembers()
@@ -140,9 +137,6 @@ local function on_guild_button_event(self, event, ...)
     end
 end
 
--- ============================================================================
--- 기능 3: UI 생성 및 Chattynator 공존 연동
--- ============================================================================
 local function get_or_create_guild_button()
     if not guild_button then
         -- UIParent 아래에 순정 규격(32x32)으로 생성
@@ -231,9 +225,6 @@ local function get_or_create_guild_button()
     return guild_button
 end
 
--- ============================================================================
--- 기능 4: 상태 제어 및 토글 갱신
--- ============================================================================
 local function update_state()
     if dodo.DB.useGuildButton == nil then dodo.DB.useGuildButton = true end
     
@@ -270,9 +261,6 @@ end
 
 dodo.UpdateChatGuildButtonState = update_state
 
--- ============================================================================
--- 초기화 핸들러
--- ============================================================================
 local init_frame = CreateFrame("Frame")
 init_frame:RegisterEvent("PLAYER_LOGIN")
 init_frame:SetScript("OnEvent", function(self, event)
@@ -280,9 +268,9 @@ init_frame:SetScript("OnEvent", function(self, event)
     self:UnregisterAllEvents()
 end)
 
--- ============================================================================
--- 게임 내 설정 UI 등록
--- ============================================================================
+-- ==============================
+-- 설정 등록
+-- ==============================
 if dodo.RegisterEditModeSystemSetting then
     dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.ChatFrame, {
         {

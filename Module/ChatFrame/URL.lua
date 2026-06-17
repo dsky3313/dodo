@@ -1,12 +1,18 @@
--- ============================================================================
--- dodo: ChatFrame URL (대화창 웹 주소 링크화 및 복사 지원)
--- License: GPLv3 (배포 가능 자유 라이선스)
--- ============================================================================
+-- ==============================
+-- Inspired
+-- ==============================
+-- Chattynator (https://www.curseforge.com/wow/addons/chattynator)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 dodo.DB = dodo.DB or dodoDB
 
--- 캐싱 및 와우 API 단축
+-- ==============================
+-- 캐싱
+-- ==============================
 local C_Timer = C_Timer
 local ChatFrame_AddMessageEventFilter = ChatFrame_AddMessageEventFilter
 local CreateFrame = CreateFrame
@@ -40,6 +46,9 @@ local Config = {
     }
 }
 
+-- ==============================
+-- 기능 구현
+-- ==============================
 -- 1. URL 뒤쪽에 붙은 부적절한 문장부호 제거
 local function split_trailing_url_punctuation(url)
     url = tostring(url or "")
@@ -171,21 +180,18 @@ dodo.UpdateChatURLState = update_state
 
 local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 initFrame:SetScript("OnEvent", function(self, event)
-    if event == "PLAYER_LOGIN" then
-        if dodo.DB.useLinkURLs == nil then dodo.DB.useLinkURLs = true end
-        for _, evt in ipairs(FilterEvents) do
-            ChatFrame_AddMessageEventFilter(evt, url_filter)
-        end
-        update_state()
-        self:UnregisterEvent("PLAYER_LOGIN")
-    elseif event == "PLAYER_ENTERING_WORLD" then
-        update_state()
+    if dodo.DB.useLinkURLs == nil then dodo.DB.useLinkURLs = true end
+    for _, evt in ipairs(FilterEvents) do
+        ChatFrame_AddMessageEventFilter(evt, url_filter)
     end
+    update_state()
+    self:UnregisterAllEvents()
 end)
 
--- 8. 설정 UI 연결
+-- ==============================
+-- 설정 등록
+-- ==============================
 if dodo.RegisterEditModeSystemSetting then
     dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.ChatFrame, {
         {

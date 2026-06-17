@@ -1,12 +1,18 @@
--- ============================================================================
--- dodo: ChatFrame Font (대화창 글꼴 및 휠 스크롤 설정)
--- License: GPLv3 (배포 가능 자유 라이선스)
--- ============================================================================
+-- ==============================
+-- Inspired
+-- ==============================
+-- Chattynator (https://www.curseforge.com/wow/addons/chattynator)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 dodo.DB = dodo.DB or dodoDB
 
--- 캐싱 및 와우 API 단축
+-- ==============================
+-- 캐싱
+-- ==============================
 local GameTooltip = GameTooltip
 local IsControlKeyDown = IsControlKeyDown
 local issecretvalue = issecretvalue
@@ -14,6 +20,9 @@ local NUM_CHAT_WINDOWS = NUM_CHAT_WINDOWS or 10
 local type = type
 local _G = _G
 
+-- ==============================
+-- 기능 구현
+-- ==============================
 -- 1. 하이퍼링크 마우스 호버 시 툴팁 제어
 local function on_hyperlink_enter(self, linkData)
     if not linkData or (issecretvalue and issecretvalue(linkData)) then
@@ -94,22 +103,6 @@ local function style_chat_frames()
                 frame:HookScript("OnHyperlinkClick", on_hyperlink_click)
             end
 
-            -- 채널명 축약 및 URL 링크화 AddMessage 훅킹 (구버전 롤백 방식)
-            if not frame.dodoAddMessageHooked then
-                frame.dodoAddMessageHooked = true
-                frame.OldAddMessage = frame.AddMessage
-                frame.AddMessage = function(self, text, ...)
-                    if type(text) == "string" then
-                        if dodo.ShortenChannels then
-                            text = dodo.ShortenChannels(text)
-                        end
-                        if dodo.FormatURLsInText then
-                            text = dodo.FormatURLsInText(text)
-                        end
-                    end
-                    return self:OldAddMessage(text, ...)
-                end
-            end
         end
     end
 end
@@ -149,7 +142,54 @@ local function apply_mouse_wheel(enabled)
     end
 end
 
--- 4. 업데이트 트리거 외부 노출
+-- ==============================
+-- 설정 등록
+-- ==============================
+if dodo.RegisterEditModeSystemSetting then
+    dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.ChatFrame, {
+        {
+            name = "글씨 외곽선 적용",
+            get = function() return dodo.DB and dodo.DB.useFontOutline ~= false end,
+            set = function(checked)
+                if dodo.DB then dodo.DB.useFontOutline = checked end
+                dodo.UpdateChatFontState()
+            end,
+            disabled = function() return dodo.DB and dodo.DB.enableChatModule == false end,
+        },
+        {
+            name = "글씨 그림자 적용",
+            get = function() return dodo.DB and dodo.DB.useFontShadow == true end,
+            set = function(checked)
+                if dodo.DB then dodo.DB.useFontShadow = checked end
+                dodo.UpdateChatFontState()
+            end,
+            disabled = function() return dodo.DB and dodo.DB.enableChatModule == false end,
+        },
+        {
+            name = "글씨 크기 변경",
+            get = function() return dodo.DB and dodo.DB.useFontSize ~= false end,
+            set = function(checked)
+                if dodo.DB then dodo.DB.useFontSize = checked end
+                dodo.UpdateChatFontState()
+            end,
+            disabled = function() return dodo.DB and dodo.DB.enableChatModule == false end,
+        },
+        {
+            name = "글씨 크기",
+            type = "slider",
+            get = function() return dodo.DB and dodo.DB.fontSize or 13 end,
+            set = function(val)
+                if dodo.DB then dodo.DB.fontSize = val end
+                dodo.UpdateChatFontState()
+            end,
+            minVal = 10,
+            maxVal = 20,
+            step = 1,
+            disabled = function() return dodo.DB and (dodo.DB.enableChatModule == false or dodo.DB.useFontSize == false) end,
+        }
+    })
+end
+
 function dodo.UpdateChatFontState()
     local is_enabled = (dodo.DB and dodo.DB.enableChatModule ~= false)
     apply_mouse_wheel(is_enabled)
