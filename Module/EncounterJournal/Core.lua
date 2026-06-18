@@ -35,7 +35,6 @@ init_frame:SetScript("OnEvent", on_event)
 -- 설정 등록
 -- ==============================
 local SettingsPanel = SettingsPanel
-local CreateSettingsListSectionHeaderInitializer = CreateSettingsListSectionHeaderInitializer
 local Checkbox = Checkbox
 
 local function update_state()
@@ -43,11 +42,7 @@ local function update_state()
 end
 
 dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["편의기능"] = dodo.OptionRegistrations["편의기능"] or {}
-table.insert(dodo.OptionRegistrations["편의기능"], function(category)
-    local layout = SettingsPanel:GetLayout(category)
-    if not layout then return end
-
-    layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("편의기능"))
-    Checkbox(category, "enableEJAchievements", "모험안내서 업적탭", "모험안내서에서 던전과 관련된 업적을 확인할 수 있습니다.", true, update_state)
+dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
+table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
+    Checkbox(category, "enableEJAchievements", "모험안내서 업적 탭", "모험안내서에서 던전과 관련된 업적을 확인할 수 있습니다.", true, update_state)
 end)

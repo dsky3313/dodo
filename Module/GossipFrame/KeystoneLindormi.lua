@@ -22,6 +22,7 @@ local GossipFrame = GossipFrame
 local IsInInstance = IsInInstance
 local issecretvalue = issecretvalue
 local string = string
+local table = table
 local UnitName = UnitName
 
 -- ==============================
@@ -135,6 +136,7 @@ event_frame = CreateFrame("Frame")
 local function on_event(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
         dodoDB = dodoDB or {}
+        self:UnregisterEvent("ADDON_LOADED")
     elseif event == "PLAYER_LOGIN" then
         initialize()
         self:UnregisterEvent("PLAYER_LOGIN")
@@ -158,15 +160,8 @@ event_frame:SetScript("OnEvent", on_event)
 -- ==============================
 -- 설정 등록
 -- ==============================
-if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("편의기능", {
-        {
-            name = "린도르미 쐐기돌 표시",
-            get = function() return dodoDB and dodoDB.enableKeystoneLindormi ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.enableKeystoneLindormi = checked end
-                update_visual()
-            end
-        }
-    })
-end
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["인터페이스.대화창"] = dodo.OptionRegistrations["인터페이스.대화창"] or {}
+table.insert(dodo.OptionRegistrations["인터페이스.대화창"], function(category)
+    Checkbox(category, "enableKeystoneLindormi", "린도르미 현재돌", "린도르미 NPC 대화창에 보유 쐐기돌 정보를 표시합니다.", true, update_visual)
+end)

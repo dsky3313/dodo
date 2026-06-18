@@ -28,14 +28,15 @@ local ClassTable = {
     { id = 13, name = "기원사", iconID = 4574311, dispell = { poison = 365585 }, bl = 390386 },
 }
 
+local gold = "|c" .. dodo.Colors.Gold.hex
 local UtilTable = {
-    { iconID = 132108, name = "|cffffd100독해제|r", key = "poison", type = "dispell" },
-    { iconID = 136066, name = "|cffffd100마법해제|r", key = "magic", type = "dispell" },
-    { iconID = 136140, name = "|cffffd100저주해제|r", key = "curse", type = "dispell" },
-    { iconID = 132100, name = "|cffffd100질병해제|r", key = "disease", type = "dispell" },
-    { iconID = 136012, name = "|cffffd100블러드|r", key = "bl", type = "util" },
-    { iconID = 136080, name = "|cffffd100전부|r", key = "br", type = "util" },
-    { iconID = 136243, name = "|cffffd100시너지|r", key = "buff", type = "util" },
+    { iconID = 132108, name = gold .. "독해제|r", key = "poison", type = "dispell" },
+    { iconID = 136066, name = gold .. "마법해제|r", key = "magic", type = "dispell" },
+    { iconID = 136140, name = gold .. "저주해제|r", key = "curse", type = "dispell" },
+    { iconID = 132100, name = gold .. "질병해제|r", key = "disease", type = "dispell" },
+    { iconID = 136012, name = gold .. "블러드|r",   key = "bl",      type = "util" },
+    { iconID = 136080, name = gold .. "전부|r",     key = "br",      type = "util" },
+    { iconID = 136243, name = gold .. "시너지|r",   key = "buff",    type = "util" },
 }
 
 -- ==============================
@@ -196,16 +197,17 @@ local initPartyClass = CreateFrame("Frame")
 
 local function UpdateEventRegistration()
     if not initPartyClass then return end
-    
+
     local isEnabled = (dodoDB and dodoDB.usePartyClass ~= false)
 
-    -- 기능이 켜져 있을 때만 이벤트 등록
     if isEnabled then
         partyClassFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+        initPartyClass:RegisterEvent("PLAYER_ENTERING_WORLD")
     else
         partyClassFrame:UnregisterEvent("GROUP_ROSTER_UPDATE")
+        initPartyClass:UnregisterEvent("PLAYER_ENTERING_WORLD")
     end
-    PartyClass() -- 상태에 따른 즉시 업데이트
+    PartyClass()
 end
 
 -- 파티원 변경 시 UI 업데이트
@@ -229,6 +231,7 @@ local function on_init_event(self, event, arg1)
             PVEFrame:HookScript("OnShow", PartyClass)
             PVEFrame:HookScript("OnHide", PartyClass)
         end
+        self:UnregisterEvent("ADDON_LOADED")
     end
 end
 
@@ -243,10 +246,7 @@ local SettingsPanel = SettingsPanel
 local Checkbox = Checkbox
 
 dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["party"] = dodo.OptionRegistrations["party"] or {}
-table.insert(dodo.OptionRegistrations["party"], function(category)
-    local layout = SettingsPanel:GetLayout(category)
-    if not layout then return end
-
-    Checkbox(category, "usePartyClass", "클래스 현황", "파티원의 유틸 현황을 확인할 수 있습니다.", true, dodo.PartyClass)
+dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
+table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
+    Checkbox(category, "usePartyClass", "파티 직업 및 유틸", "파티찾기창에서 파티원 및 유틸 현황을 확인할 수 있습니다.", true, dodo.PartyClass)
 end)

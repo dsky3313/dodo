@@ -396,7 +396,8 @@ local function clear_current()
     local et = EncounterTimeline
     if et then et:UnregisterEvent("ENCOUNTER_TIMELINE_STATE_UPDATED") end
     for _, entry in ipairs(current_events) do
-        C_EncounterEvents.SetEventColor(entry.eventID, nil)
+        C_EncounterEvents.SetEventColor(entry.eventID, 0, nil)
+        C_EncounterEvents.SetEventColor(entry.eventID, 1, nil)
     end
     if et then et:RegisterEvent("ENCOUNTER_TIMELINE_STATE_UPDATED") end
     current_events = nil
@@ -418,7 +419,8 @@ local function update_visual()
     for _, entry in ipairs(events) do
         local role = dodo.Colors.EncounterRole and dodo.Colors.EncounterRole[entry.role]
         local color = role and CreateColor(role.r, role.g, role.b)
-        C_EncounterEvents.SetEventColor(entry.eventID, color)
+        C_EncounterEvents.SetEventColor(entry.eventID, 0, color)
+        C_EncounterEvents.SetEventColor(entry.eventID, 1, color)
     end
     if et then et:RegisterEvent("ENCOUNTER_TIMELINE_STATE_UPDATED") end
     current_events = events

@@ -5,9 +5,9 @@
 local addonName, dodo = ...
 
 local CreateFrame = CreateFrame
+local CreateSettingsListSectionHeaderInitializer = CreateSettingsListSectionHeaderInitializer
 local InCombatLockdown = InCombatLockdown
 local ipairs = ipairs
-local pairs = pairs
 local type = type
 local ReloadUI = ReloadUI
 local Settings = Settings
@@ -22,12 +22,13 @@ local mainCategory = Settings.RegisterVerticalLayoutCategory("dodo")
 Settings.RegisterAddOnCategory(mainCategory)
 
 -- 하위
-local subCategoryQoL = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "편의기능")
-local subCategoryCommands    = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "명령어")
+local subCategoryInterface = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "인터페이스")
+local subCategoryCommands  = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "명령어")
 
-local subCategoryMap = {
-    ["편의기능"] = subCategoryQoL,
-    ["명령어"]   = subCategoryCommands,
+-- 인터페이스 카테고리 섹션 순서 (헤더 관리 일괄화)
+local interface_sections = {
+    { key = "인터페이스.편의기능", header = "편의기능" },
+    { key = "인터페이스.대화창",   header = "대화창"   },
 }
 
 -- 설정 생성
@@ -35,12 +36,23 @@ function dodoCreateOptions()
     if dodoOptionsCreated then return end
     dodoOptionsCreated = true
 
-    for key, funcs in pairs(dodo.OptionRegistrations or {}) do
-        local cat = subCategoryMap[key]
-        if cat then
-            for _, fn in ipairs(funcs) do
-                if type(fn) == "function" then fn(cat) end
+    local layout = SettingsPanel:GetLayout(subCategoryInterface)
+    if layout then
+        for _, section in ipairs(interface_sections) do
+            local funcs = dodo.OptionRegistrations[section.key]
+            if funcs and #funcs > 0 then
+                layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(section.header))
+                for _, fn in ipairs(funcs) do
+                    if type(fn) == "function" then fn(subCategoryInterface) end
+                end
             end
+        end
+    end
+
+    local commands_funcs = dodo.OptionRegistrations["명령어"]
+    if commands_funcs then
+        for _, fn in ipairs(commands_funcs) do
+            if type(fn) == "function" then fn(subCategoryCommands) end
         end
     end
 end

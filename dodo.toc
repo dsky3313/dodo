@@ -66,10 +66,13 @@ Module/EncounterJournal/AchievementsTabRowBuilder.lua
 Module/EncounterJournal/AchievementsTabUI.lua
 
 # EncounterTimeline
-Module/EncounterTimeline/EncounterTimelineBar.lua
-#Module/EncounterTimeline/EncounterTimelineColor.lua
+#Module/EncounterTimeline/EncounterTimelineBar.lua
+Module/EncounterTimeline/EncounterTimelineColor.lua
 
-# GossipFrame < 이거 수정해야함
+# GossipFrame
+Module/GossipFrame/Core.lua
+Module/GossipFrame/ID.lua
+Module/GossipFrame/SelectAuto.lua
 Module/GossipFrame/KeystoneLindormi.lua
 
 # Minimap

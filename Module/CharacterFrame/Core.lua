@@ -131,26 +131,24 @@ event_frame:SetScript("OnEvent", on_event)
 -- ==============================
 -- 설정 등록
 -- ==============================
-if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("편의기능", {
-        {
-            name = "캐릭터창",
-            get = function() return dodoDB and dodoDB.enableCharacterFrame ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.enableCharacterFrame = checked end
-                if checked then
-                    event_frame:RegisterEvent("UNIT_INVENTORY_CHANGED") -- 감지 재가동
-                    event_frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
-                    event_frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
-                    if dodo.UpdateCharacterFrameLayout then dodo.UpdateCharacterFrameLayout() end
-                else
-                    event_frame:UnregisterEvent("UNIT_INVENTORY_CHANGED") -- 감지 정지 (최적화)
-                    event_frame:UnregisterEvent("PLAYER_EQUIPMENT_CHANGED")
-                    event_frame:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
-                    if dodo.ResetCharacterFrameLayout then dodo.ResetCharacterFrameLayout() end
-                end
-                update_all_character_slots()
-            end
-        }
-    })
+
+local function toggle_character_frame(checked)
+    if checked then
+        event_frame:RegisterEvent("UNIT_INVENTORY_CHANGED")
+        event_frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+        event_frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+        if dodo.UpdateCharacterFrameLayout then dodo.UpdateCharacterFrameLayout() end
+    else
+        event_frame:UnregisterEvent("UNIT_INVENTORY_CHANGED")
+        event_frame:UnregisterEvent("PLAYER_EQUIPMENT_CHANGED")
+        event_frame:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
+        if dodo.ResetCharacterFrameLayout then dodo.ResetCharacterFrameLayout() end
+    end
+    update_all_character_slots()
 end
+
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
+table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
+    Checkbox(category, "enableCharacterFrame", "아이템 레벨 및 마법부여", "캐릭터창과 가방에 아이템 레벨, 마법부여, 보석 정보를 표시합니다.", true, toggle_character_frame)
+end)
