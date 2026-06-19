@@ -29,6 +29,7 @@ end
 -- ABC 순 정렬
 local BNET_CLIENT_WOW = BNET_CLIENT_WOW
 local C_BattleNet = C_BattleNet
+local Checkbox = Checkbox
 local C_ClassColor = C_ClassColor
 local C_CreatureInfo = C_CreatureInfo
 local C_FriendList = C_FriendList
@@ -263,19 +264,12 @@ init_friends:RegisterEvent("ADDON_LOADED")
 init_friends:SetScript("OnEvent", on_event)
 
 -- ==============================
--- 외부 노출 및 설정 동적 등록 (모듈설정창 연동)
+-- 설정 등록
 -- ==============================
-dodo.UpdateFriends = refresh_friends
-
-if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("인터페이스", {
-        {
-            name = "친구창+",
-            get = function() return dodoDB and dodoDB.useFriends ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.useFriends = checked end
-                dodo.UpdateFriends()
-            end
-        }
-    })
-end
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
+table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
+    Checkbox(category, "useFriends", "친구창+", "친구 목록에 클래스 색상 및 추가 정보를 표시합니다.", true, function()
+        refresh_friends()
+    end)
+end)

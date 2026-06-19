@@ -93,7 +93,7 @@ dodo.CameraTilt = camera_tilt
 -- 설정 등록
 -- ==============================
 if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("일반", {
+    dodo.RegisterEditModeModuleSetting("인터페이스", {
         {
             name = "카메라 시점 조절",
             get = function() return dodoDB and dodoDB.useCameraTilt ~= false end,

@@ -15,6 +15,7 @@ dodoDB = dodoDB or {}
 -- ==============================
 local CanGuildBankRepair = CanGuildBankRepair
 local CanMerchantRepair = CanMerchantRepair
+local Checkbox = Checkbox
 local format = string.format
 local GetGuildBankWithdrawMoney = GetGuildBankWithdrawMoney
 local GetGuildBankMoney = GetGuildBankMoney
@@ -79,16 +80,10 @@ end
 hooksecurefunc(MerchantFrame, "Show", on_merchant_show)
 
 -- ==============================
--- 외부 노출 및 설정 동적 등록 (모듈설정창 연동)
+-- 설정 등록
 -- ==============================
-if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("편의기능", {
-        {
-            name = "자동 판매 & 수리",
-            get = function() return dodoDB and dodoDB.enableMerchant ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.enableMerchant = checked end
-            end
-        }
-    })
-end
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
+table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
+    Checkbox(category, "enableMerchant", "자동 판매 & 수리", "상인 창을 열 때 잡템 판매 및 장비 자동 수리를 진행합니다.", true, nil)
+end)

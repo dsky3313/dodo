@@ -15,9 +15,9 @@ local lib_icon = dodo.LibIcon
 -- 캐싱
 -- ==============================
 local C_SpellBook = C_SpellBook
+local Checkbox = Checkbox
 local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
-
 
 local BobberConfig = {
     isAction = true,
@@ -49,36 +49,27 @@ local function quick_bobber()
 
     local is_enabled = (dodoDB and dodoDB.useQuickBobber ~= false)
     local is_known = C_SpellBook.IsSpellKnown(131474) -- 낚시 숙련 여부
-    
-    -- [수정] 프레임 존재 여부 안전하게 확인
     local is_ui_open = (ProfessionsBookFrame and ProfessionsBookFrame:IsShown())
 
-    -- [핵심] 낚시 숙련도가 있고 활성화 상태일 때 작동
     if is_known and is_enabled and is_ui_open then
-        -- Icon.lua에서 개별 이벤트를 지웠으므로 여기서 직접 관리
         bobber_button:RegisterEvent("BAG_UPDATE_DELAYED")
         bobber_button:RegisterEvent("BAG_UPDATE_COOLDOWN")
         bobber_button:RegisterEvent("ACTIONBAR_UPDATE_COOLDOWN")
         bobber_button:RegisterEvent("SPELL_UPDATE_COOLDOWN")
-        
         bobber_button:ApplyConfig(BobberConfig)
         bobber_button:Show()
     else
-        -- 창이 닫히면 모든 이벤트 해제 및 숨김
         bobber_button:UnregisterAllEvents()
         bobber_button:Hide()
     end
 end
 
--- [수정] 이벤트 핸들러: Icon.lua의 업데이트 로직 호출
 local function on_bobber_event(self, event)
     if event == "PLAYER_REGEN_ENABLED" then
         self:UnregisterEvent("PLAYER_REGEN_ENABLED")
         quick_bobber()
     else
-        if self.UpdateStatus then 
-            self:UpdateStatus() 
-        end
+        if self.UpdateStatus then self:UpdateStatus() end
     end
 end
 
@@ -88,40 +79,52 @@ bobber_button:SetScript("OnEvent", on_bobber_event)
 -- 이벤트
 -- ==============================
 local init_quick_bobber = CreateFrame("Frame")
-init_quick_bobber:RegisterEvent("ADDON_LOADED")
-init_quick_bobber:RegisterEvent("PLAYER_ENTERING_WORLD")
+
+-- OFF시 PLAYER_ENTERING_WORLD 해제로 자원소모 0
+local function update_events()
+    local is_enabled = dodoDB and dodoDB.useQuickBobber ~= false
+    if is_enabled then
+        init_quick_bobber:RegisterEvent("PLAYER_ENTERING_WORLD")
+    else
+        init_quick_bobber:UnregisterEvent("PLAYER_ENTERING_WORLD")
+        bobber_button:UnregisterAllEvents()
+        bobber_button:Hide()
+    end
+end
 
 local function on_init_event(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == "Blizzard_ProfessionsBook" then
         ProfessionsBookFrame:HookScript("OnShow", quick_bobber)
         ProfessionsBookFrame:HookScript("OnHide", quick_bobber)
+        self:UnregisterEvent("ADDON_LOADED")
+    elseif event == "PLAYER_LOGIN" then
+        if dodoDB.useQuickBobber == nil then dodoDB.useQuickBobber = true end
+        update_events()
+        quick_bobber()
+        self:UnregisterEvent("PLAYER_LOGIN")
     elseif event == "PLAYER_ENTERING_WORLD" then
         quick_bobber()
     end
 end
 
+init_quick_bobber:RegisterEvent("ADDON_LOADED")
+init_quick_bobber:RegisterEvent("PLAYER_LOGIN")
 init_quick_bobber:SetScript("OnEvent", on_init_event)
 
--- 이미 로드되어 있을 경우를 대비한 즉시 훅 (예: 리로드 시)
+-- 리로드 시 ProfessionsBookFrame이 이미 로드된 경우 즉시 훅
 if ProfessionsBookFrame then
     ProfessionsBookFrame:HookScript("OnShow", quick_bobber)
     ProfessionsBookFrame:HookScript("OnHide", quick_bobber)
 end
 
 -- ==============================
--- 외부 노출 및 설정 동적 등록 (RegisterEditModeModuleSetting 이관)
+-- 설정 등록
 -- ==============================
-dodo.quickBobber = quick_bobber
-
-if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("편의기능", {
-        {
-            name = "낚시찌 장난감",
-            get = function() return dodoDB and dodoDB.useQuickBobber ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.useQuickBobber = checked end
-                quick_bobber()
-            end
-        }
-    })
-end
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
+table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
+    Checkbox(category, "useQuickBobber", "낚시찌 장난감", "직업 창이 열려 있을 때 낚시찌 아이템 버튼을 표시합니다.", true, function()
+        update_events()
+        quick_bobber()
+    end)
+end)

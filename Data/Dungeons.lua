@@ -1,4 +1,7 @@
----@diagnostic disable: undefined-global
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
+---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 
 ---@class DungeonExp
@@ -30,7 +33,7 @@ dodo.DungeonExps = {
 ---@field category string 확장팩 카테고리
 ---@field faction string? "Alliance" | "Horde"
 ---@field isSeason boolean? 현 시즌 M+ 던전 여부
----@field mapID number? C_ChallengeMode 맵 ID
+---@field mapID number? C_ChallengeMode 맵 ID (isSeason 항목에만 사용)
 ---@field lfgID number? LFG 활동 ID
 ---@field texture number? 던전 아이콘 텍스처
 
@@ -146,11 +149,16 @@ dodo.Dungeons = {
     { name = "마괴종",   type = "spell", id = 1239155, category = "TWW" },
 
     -- MN
-    { name = "기공",     type = "item",  id = 248485,  category = "MN" },
+    -- { name = "기공",     type = "item",  id = 248485,  category = "MN" },
+    -- { name = "골목",     type = "spell", id = 1254559, category = "MN" },
+    -- { name = "골짜기",   type = "spell", id = 1254559, category = "MN" },
     { name = "동굴",     type = "spell", id = 1254559, category = "MN", isSeason = true, mapID = 560, lfgID = 1764, texture = 7322719 },
     { name = "마정",     type = "spell", id = 1254572, category = "MN", isSeason = true, mapID = 558, lfgID = 1760, texture = 7439625 },
+    -- { name = "소굴",     type = "spell", id = 1254559, category = "MN" },
     { name = "제나스",   type = "spell", id = 1254563, category = "MN", isSeason = true, mapID = 559, lfgID = 1768, texture = 7553062 },
     { name = "첨탑",     type = "spell", id = 1254400, category = "MN", isSeason = true, mapID = 557, lfgID = 1542, texture = 7266215 },
+    -- { name = "투기장",   type = "spell", id = 1254559, category = "MN" },
+    -- { name = "투기장2",  type = "spell", id = 1254559, category = "MN" },
 
     -- ETC
     { name = "하우징",   type = "housing", id = 1263273, category = "ETC" },

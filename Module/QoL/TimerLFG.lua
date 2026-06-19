@@ -13,6 +13,7 @@ dodoDB = dodoDB or {}
 -- ==============================
 -- 캐싱
 -- ==============================
+local Checkbox = Checkbox
 local CreateFrame = CreateFrame
 local GetTime = GetTime
 local LFGDungeonReadyPopup = LFGDungeonReadyPopup
@@ -141,6 +142,7 @@ end
 local function on_event(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
         dodoDB = dodoDB or {}
+        self:UnregisterEvent("ADDON_LOADED")
     elseif event == "PLAYER_LOGIN" then
         initialize()
         update_visual()
@@ -170,15 +172,10 @@ initFrame:SetScript("OnEvent", on_event)
 -- ==============================
 -- 설정 등록
 -- ==============================
-if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("편의기능", {
-        {
-            name = "던전찾기 타이머 활성화",
-            get = function() return dodoDB and dodoDB.enableLFGTimer ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.enableLFGTimer = checked end
-                update_visual()
-            end
-        }
-    })
-end
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
+table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
+    Checkbox(category, "enableLFGTimer", "던전찾기 타이머", "던전찾기 수락 팝업에 남은 시간 타이머를 표시합니다.", true, function()
+        update_visual()
+    end)
+end)

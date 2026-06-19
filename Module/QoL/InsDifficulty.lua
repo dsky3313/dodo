@@ -68,6 +68,7 @@ local check_permission
 local update_ui_status
 local on_difficulty_click
 local ins_difficulty
+local ins_difficulty_ui
 local update_event_registration
 local create_ui
 
@@ -354,7 +355,6 @@ ins_difficulty = function()
     update_ui_status()
 end
 
--- 설정창 표시 토글 (Option.lua용)
 ins_difficulty_ui = function()
     if not dodoDB then return end
     update_event_registration()
@@ -376,9 +376,11 @@ local function on_event(self, event, arg1)
             self:UnregisterEvent("ADDON_LOADED")
         end
     elseif event == "PLAYER_LOGIN" then
+        if dodoDB.useInsDifficultyFrame == nil then dodoDB.useInsDifficultyFrame = true end
         if dodo.EditMode then
             dodo.EditMode:CreateSystem("InsDifficulty", "인스턴스 난이도", "인스턴스 난이도", UIParent, 230, 124, { point = "TOPLEFT", relativeTo = "UIParent", relativePoint = "TOPLEFT", xOfs = 5, yOfs = -5 }, nil, function() return dodoDB and dodoDB.useInsDifficultyFrame ~= false end)
         end
+        update_event_registration()
         self:UnregisterEvent("PLAYER_LOGIN")
     elseif event == "PLAYER_ENTERING_WORLD" then
         C_Timer.After(1, on_entering_world_timer)
