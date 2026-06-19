@@ -31,7 +31,7 @@ local math_abs = math.abs
 -- ==============================
 local Config = {
     iconSize = 28, -- 아이콘 크기
-    offsetX = 40,  -- 커서 기준 X 오프셋
+    offsetX = 42,  -- 커서 기준 X 오프셋
     offsetY = -34, -- 커서 기준 Y 오프셋
     iconGap = 2,   -- 아이콘 간 간격
 }
