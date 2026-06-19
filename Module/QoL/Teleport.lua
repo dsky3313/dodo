@@ -18,7 +18,6 @@ local lib_icon = dodo.LibIcon
 local C_Housing = C_Housing
 local CreateFrame = CreateFrame
 local GameMenuFrame = GameMenuFrame
-local GetInstanceInfo = GetInstanceInfo
 local InCombatLockdown = InCombatLockdown
 local ipairs = ipairs
 local math_abs = math.abs
@@ -27,7 +26,6 @@ local strlenutf8 = strlenutf8
 local table_insert = table.insert
 local UnitFactionGroup = UnitFactionGroup
 local UIParent = UIParent
-local unpack = unpack
 
 local icon_config = {
     BUTTON_SIZE = 36,   -- 아이콘 크기
@@ -38,151 +36,13 @@ local icon_config = {
     START_Y = -20,
 }
 
-local exp_table = {
-    { iconID = 135763, category = "Classic", name = "오리지널" },
-    { iconID = 135760, category = "BC", name = "불성" },
-    { iconID = 237509, category = "WoL", name = "리분" },
-    { iconID = 462340, category = "CATA", name = "대격변" },
-    { iconID = 851298, category = "MoP", name = "판다" },
-    { iconID = 1535376, category = "WoD", name = "드레노어" },
-    { iconID = 1535374, category = "Legion", name = "군단" },
-    { iconID = 2176535, category = "BfA", name = "격아" },
-    { iconID = 3847780, category = "SL", name = "어둠땅" },
-    { iconID = 4661645, category = "DF", name = "용군단" },
-    { iconID = 5901551, category = "TWW", name = "내부전쟁" },
-    { iconID = 7294993, category = "MN", name = "한밤" },
-    { iconID = 132311, category = "ETC", name = "기타" },
-}
-
-local teleport_table = {
-    -- Classic
-    { id = 18984, type = "item", category = "Classic", name = "기공 얼" },
-    { id = 18986, type = "item", category = "Classic", name = "기공 호" },
-
-    -- BC
-    { id = 151016, type = "item", category = "BC", name = "검사" },
-    { id = 30544, type = "item", category = "BC", name = "기공 얼" },
-    { id = 30542, type = "item", category = "BC", name = "기공 호" },
-
-    -- WoL
-    { id = 48933, type = "item", category = "WoL", name = "기공" },
-    { id = 1254555, type = "spell", category = "WoL", name = "사론", isSeason = true  },
-
-    -- CATA
-    { id = 410080, type = "spell", category = "CATA", name = "누각" },
-    { id = 424142, type = "spell", category = "CATA", name = "파도" },
-    { id = 445424, type = "spell", category = "CATA", name = "그림바톨" },
-
-    -- MoP
-    { id = 87215, type = "item", category = "MoP", name = "기공" },
-    { id = 131204, type = "spell", category = "MoP", name = "옥룡사" },
-    { id = 131205, type = "spell", category = "MoP", name = "양조장" },
-    { id = 131206, type = "spell", category = "MoP", name = "음영파" },
-    { id = 131222, type = "spell", category = "MoP", name = "모구샨" },
-    { id = 131225, type = "spell", category = "MoP", name = "석양문" },
-    { id = 131228, type = "spell", category = "MoP", name = "사원" },
-    { id = 131229, type = "spell", category = "MoP", name = "붉수도원" },
-    { id = 131231, type = "spell", category = "MoP", name = "전당" },
-    { id = 131232, type = "spell", category = "MoP", name = "스칼로" },
-
-    -- WoD
-    { id = 112059, type = "item", category = "WoD", name = "기공" },
-    { id = 159901, type = "spell", category = "WoD", name = "상록숲" },
-    { id = 159899, type = "spell", category = "WoD", name = "어둠달" },
-    { id = 159900, type = "spell", category = "WoD", name = "정비소" },
-    { id = 159896, type = "spell", category = "WoD", name = "선착장" },
-    { id = 159895, type = "spell", category = "WoD", name = "피망치" },
-    { id = 159897, type = "spell", category = "WoD", name = "아킨둔" },
-    { id = 159898, type = "spell", category = "WoD", name = "하늘탑", isSeason = true  },
-    { id = 159902, type = "spell", category = "WoD", name = "검바탑" },
-
-    -- Legion
-    { id = 151652, type = "item", category = "Legion", name = "기공" },
-    { id = 1254551, type = "spell", category = "Legion", name = "삼두정", isSeason = true  },
-    { id = 393764, type = "spell", category = "Legion", name = "용맹" },
-    { id = 410078, type = "spell", category = "Legion", name = "넬둥" },
-    { id = 393766, type = "spell", category = "Legion", name = "별궁" },
-    { id = 373262, type = "spell", category = "Legion", name = "카라잔" },
-    { id = 424153, type = "spell", category = "Legion", name = "검떼" },
-    { id = 424163, type = "spell", category = "Legion", name = "어숲" },
-
-    -- BfA
-    { id = 168807, type = "item", category = "BfA", name = "기공 얼" },
-    { id = 168808, type = "item", category = "BfA", name = "기공 호" },
-    { id = 410071, type = "spell", category = "BfA", name = "자유지대" },
-    { id = 410074, type = "spell", category = "BfA", name = "썩은굴" },
-    { id = 373274, type = "spell", category = "BfA", name = "메카곤" },
-    { id = 424167, type = "spell", category = "BfA", name = "저택" },
-    { id = 424187, type = "spell", category = "BfA", name = "아탈" },
-    { id = 445418, type = "spell", category = "BfA", name = "보랄", faction = "Alliance" },
-    { id = 464256, type = "spell", category = "BfA", name = "보랄", faction = "Horde" },
-    { id = 467553, type = "spell", category = "BfA", name = "왕노", faction = "Alliance" },
-    { id = 467555, type = "spell", category = "BfA", name = "왕노", faction = "Horde" },
-
-    -- SL
-    { id = 172924, type = "item", category = "SL", name = "기공" },
-    { id = 354462, type = "spell", category = "SL", name = "죽상" },
-    { id = 354463, type = "spell", category = "SL", name = "역병" },
-    { id = 354464, type = "spell", category = "SL", name = "티르너" },
-    { id = 354465, type = "spell", category = "SL", name = "속죄"},
-    { id = 354466, type = "spell", category = "SL", name = "승천" },
-    { id = 354467, type = "spell", category = "SL", name = "고투" },
-    { id = 354468, type = "spell", category = "SL", name = "저편" },
-    { id = 354469, type = "spell", category = "SL", name = "핏빛" },
-    { id = 367416, type = "spell", category = "SL", name = "타자베쉬"},
-    { id = 373190, type = "spell", category = "SL", name = "나스리아" },
-    { id = 373191, type = "spell", category = "SL", name = "지배" },
-    { id = 373192, type = "spell", category = "SL", name = "태존매" },
-
-    -- DF
-    { id = 198156, type = "item", category = "DF", name = "기공" },
-    { id = 393262, type = "spell", category = "DF", name = "노쿠드" },
-    { id = 393267, type = "spell", category = "DF", name = "담쟁이" },
-    { id = 393273, type = "spell", category = "DF", name = "대학", isSeason = true  },
-    { id = 393256, type = "spell", category = "DF", name = "루비" },
-    { id = 393276, type = "spell", category = "DF", name = "넬타" },
-    { id = 393279, type = "spell", category = "DF", name = "보관소" },
-    { id = 393283, type = "spell", category = "DF", name = "주입" },
-    { id = 393222, type = "spell", category = "DF", name = "울다만" },
-    { id = 424197, type = "spell", category = "DF", name = "여명" },
-    { id = 432254, type = "spell", category = "DF", name = "금고" },
-    { id = 432257, type = "spell", category = "DF", name = "아베루스" },
-    { id = 432258, type = "spell", category = "DF", name = "아미" },
-
-    -- TWW
-    { id = 221966, type = "item", category = "TWW", name = "기공" },
-    { id = 445269, type = "spell", category = "TWW", name = "바금" },
-    { id = 445443, type = "spell", category = "TWW", name = "부화장" },
-    { id = 445414, type = "spell", category = "TWW", name = "새인호"},
-    { id = 445444, type = "spell", category = "TWW", name = "수도원"},
-    { id = 1216786, type = "spell", category = "TWW", name = "수문"},
-    { id = 445416, type = "spell", category = "TWW", name = "실타래" },
-    { id = 445417, type = "spell", category = "TWW", name = "아라카라"},
-    { id = 445440, type = "spell", category = "TWW", name = "양조장" },
-    { id = 445441, type = "spell", category = "TWW", name = "어불동" },
-    { id = 1237215, type = "spell", category = "TWW", name = "알다니"},
-    { id = 1226482, type = "spell", category = "TWW", name = "언더마인" },
-    { id = 1239155, type = "spell", category = "TWW", name = "마괴종" },
-
-    -- MN
-    { id = 248485, type = "item", category = "MN", name = "기공" },
-    { id = 1254559, type = "spell", category = "MN", name = "동굴", isSeason = true  },
-    { id = 1254572, type = "spell", category = "MN", name = "정원", isSeason = true  },
-    { id = 1254563, type = "spell", category = "MN", name = "제나스", isSeason = true  },
-    { id = 1254400, type = "spell", category = "MN", name = "첨탑", isSeason = true  },
-
-    -- ETC
-    { id = 1263273, type = "housing", category = "ETC", name = "하우징" },
-    { id = 243056, type = "item", category = "ETC", name = "도르노갈" },
-    { id = 253629, type = "item", category = "ETC", name = "여관" },
-}
 
 local col, row = 0, -1
 local current_category = ""
 local teleport_icons = {}
 
 local exp_lookup = {}
-for _, info in ipairs(exp_table) do
+for _, info in ipairs(dodo.DungeonExps) do
     exp_lookup[info.category] = info
 end
 
@@ -200,7 +60,7 @@ end
 -- 디스플레이
 -- ==============================
 -- 동적 높이 계산
-local row_count = #exp_table
+local row_count = #dodo.DungeonExps
 local frame_height = math_abs(icon_config.START_Y) + (row_count * icon_config.ROW_HEIGHT) + 10
 
 -- 프레임 크기 적용
@@ -240,7 +100,7 @@ icon_season_title:ApplyConfig({
 })
 
 -- 아이콘 생성
-for i, data in ipairs(teleport_table) do
+for i, data in ipairs(dodo.Dungeons) do
     if not (data.faction and data.faction ~= player_faction) then
 
         -- 확장팩 아이콘
@@ -439,17 +299,11 @@ GameMenuFrame:HookScript("OnHide", esc_teleport_frame)
 dodo.ESCTeleportFrame = esc_teleport_frame
 
 -- ==============================
--- 외부 노출 및 설정 동적 등록 (RegisterEditModeModuleSetting 이관)
+-- 설정 등록
 -- ==============================
-if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("편의기능", {
-        {
-            name = "던전 텔레포트 메뉴",
-            get = function() return dodoDB and dodoDB.useTeleport ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.useTeleport = checked end
-                esc_teleport_frame()
-            end
-        }
-    })
-end
+local Checkbox = Checkbox
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
+table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
+    Checkbox(category, "useTeleport", "던전 텔레포트 메뉴", "ESC 메뉴 옆에 던전 텔레포트 버튼을 표시합니다.", true, dodo.ESCTeleportFrame)
+end)

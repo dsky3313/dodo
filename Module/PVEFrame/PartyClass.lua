@@ -242,11 +242,10 @@ dodo.PartyClass = UpdateEventRegistration
 -- ==============================
 -- 외부 노출 및 설정 동적 등록 (Option.lua 연동)
 -- ==============================
-local SettingsPanel = SettingsPanel
 local Checkbox = Checkbox
 
 dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
+dodo.OptionRegistrations["인터페이스.파티모집창"] = dodo.OptionRegistrations["인터페이스.파티모집창"] or {}
+table.insert(dodo.OptionRegistrations["인터페이스.파티모집창"], function(category)
     Checkbox(category, "usePartyClass", "파티 직업 및 유틸", "파티찾기창에서 파티원 및 유틸 현황을 확인할 수 있습니다.", true, dodo.PartyClass)
 end)

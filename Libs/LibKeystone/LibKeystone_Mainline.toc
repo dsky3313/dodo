@@ -1,0 +1,32 @@
+## Interface: 120001, 120005, 120007
+## Version: v12.0.4
+## Title: Lib: Keystone
+## Notes: A library for transmitting your keystone information to other players, that developers can embed in their addons.
+# Notes-deDE: A library for transmitting your keystone information to other players, that developers can embed in their addons.
+# Notes-esES: A library for transmitting your keystone information to other players, that developers can embed in their addons.
+# Notes-esMX: A library for transmitting your keystone information to other players, that developers can embed in their addons.
+# Notes-frFR: A library for transmitting your keystone information to other players, that developers can embed in their addons.
+# Notes-itIT: A library for transmitting your keystone information to other players, that developers can embed in their addons.
+# Notes-koKR: A library for transmitting your keystone information to other players, that developers can embed in their addons.
+# Notes-ptBR: A library for transmitting your keystone information to other players, that developers can embed in their addons.
+# Notes-ruRU: A library for transmitting your keystone information to other players, that developers can embed in their addons.
+# Notes-zhCN: A library for transmitting your keystone information to other players, that developers can embed in their addons.
+# Notes-zhTW: A library for transmitting your keystone information to other players, that developers can embed in their addons.
+## Category: Libraries
+## Category-deDE: Bibliotheken
+## Category-esES: Bibliotecas
+## Category-esMX: Bibliotecas
+## Category-frFR: Bibliothèques
+## Category-itIT: Bibliotecas
+# Category-koKR: Libraries
+## Category-ptBR: Bibliotecas
+## Category-ruRU: Библиотеки
+## Category-zhCN: 函数库
+## Category-zhTW: 函式庫
+## Author: Funkeh
+## OptionalDeps: LibStub
+## AllowLoadGameType: mainline
+## X-Curse-Project-ID: 1285016
+
+LibStub\LibStub.lua
+LibKeystone\LibKeystone.lua

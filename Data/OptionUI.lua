@@ -69,7 +69,7 @@ function DropDown(category, varName, label, tooltip, options, default, func)
 
     local function GetOptions()
         local container = Settings.CreateControlTextContainer()
-        for _, option in ipairs(options) do container:Add(option.value, option.label) end
+        for _, option in ipairs(options) do container:Add(option.value, option.text or option.label) end
         return container:GetData()
     end
 
@@ -138,7 +138,7 @@ function CheckBoxDropDown(category, varNameCB, varNameDD, label, tooltip, option
     local function GetOptions()
         local container = Settings.CreateControlTextContainer()
         if options then
-            for _, option in ipairs(options) do container:Add(option.value, option.label) end
+            for _, option in ipairs(options) do container:Add(option.value, option.text or option.label) end
         end
         return container:GetData()
     end

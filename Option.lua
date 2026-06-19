@@ -22,13 +22,15 @@ local mainCategory = Settings.RegisterVerticalLayoutCategory("dodo")
 Settings.RegisterAddOnCategory(mainCategory)
 
 -- 하위
+local subCategoryAudio     = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "음성")
 local subCategoryInterface = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "인터페이스")
 local subCategoryCommands  = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "명령어")
 
 -- 인터페이스 카테고리 섹션 순서 (헤더 관리 일괄화)
 local interface_sections = {
-    { key = "인터페이스.편의기능", header = "편의기능" },
-    { key = "인터페이스.대화창",   header = "대화창"   },
+    { key = "인터페이스.편의기능",  header = "편의기능"  },
+    { key = "인터페이스.파티모집창", header = "파티모집창" },
+    { key = "인터페이스.NPC 대화",  header = "NPC 대화"  },
 }
 
 -- 설정 생성
@@ -46,6 +48,13 @@ function dodoCreateOptions()
                     if type(fn) == "function" then fn(subCategoryInterface) end
                 end
             end
+        end
+    end
+
+    local audio_funcs = dodo.OptionRegistrations["음성"]
+    if audio_funcs then
+        for _, fn in ipairs(audio_funcs) do
+            if type(fn) == "function" then fn(subCategoryAudio) end
         end
     end
 

@@ -10,37 +10,23 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
--- 2dodo 규격에 맞춰 아이콘 크기 및 간격 변수 중앙 캐싱 관리!
 local Config = {
     defaultX = 0,
     defaultY = 0,
     defaultPoint = "CENTER",
-    iconSize = 32, -- 개별 던전 아이콘 크기 (기본: 32px)
-    spacing = 5,   -- 아이콘 사이의 간격 (기본: 6px)
+    iconSize = 32, -- 아이콘 크기
+    spacing = 5,   -- 아이콘 간격
 }
 
----@class DungeonItem
----@field name string 단축 이름
----@field dID string 던전 LFG 활동 ID
----@field texture number 던전 아이콘 텍스처 번호
-
----@type DungeonItem[]
-local DungeonList = {
-    { name = "대학", dID = "1160", texture = 4578414 },
-    { name = "마정", dID = "1760", texture = 7439625 },
-    { name = "동굴", dID = "1764", texture = 7322719 },
-    { name = "제나스", dID = "1768", texture = 7553062 },
-    { name = "사론", dID = "1770", texture = 343641 },
-    { name = "삼두정", dID = "486", texture = 1711340 },
-    { name = "하늘탑", dID = "182", texture = 1002596 },
-    { name = "첨탑", dID = "1542", texture = 7266215 },
-}
--- dID 매크로. 절대 지우지 말것. (/run print("선택된 dID:", LFGListFrame.EntryCreation.selectedActivity))
+-- dID 조회: /run print("선택된 dID:", LFGListFrame.EntryCreation.selectedActivity)
+local DungeonList = {}
+for _, d in ipairs(dodo.Dungeons) do
+    if d.isSeason then DungeonList[#DungeonList + 1] = d end
+end
 
 -- ==============================
 -- 캐싱
 -- ==============================
-local C_ChallengeMode = C_ChallengeMode
 local C_GossipInfo = C_GossipInfo
 local C_LFGList = C_LFGList
 local C_Timer = C_Timer
@@ -62,33 +48,18 @@ local dungeon_buttons = {}
 -- ==============================
 -- 기능 3: UI 생성 및 쐐기 스캔
 -- ==============================
-local function get_d_check(id)
-    local activityID = C_LFGList.GetOwnedKeystoneActivityAndGroupAndLevel()
-    return activityID and (tonumber(id) == tonumber(activityID)) or false
-end
-
-local function get_keystone_lvl(id)
-    if get_d_check(id) then 
-        local _, _, lvl = C_LFGList.GetOwnedKeystoneActivityAndGroupAndLevel()
-        return lvl or ""
-    else
-        return ""
-    end
-end
-
--- 실시간 가방/로그인 시 보유 쐐기돌 스캔 및 텍스트 갱신 (투명도 인위조정 제거!)
 local function refresh_keystones()
     if not main_frame then return end
+    local activityID, _, lvl = C_LFGList.GetOwnedKeystoneActivityAndGroupAndLevel()
 
     for i, btn in ipairs(dungeon_buttons) do
         local data = DungeonList[i]
         if data then
-            local is_mine = get_d_check(data.dID)
+            local is_mine = activityID and (tonumber(data.lfgID) == tonumber(activityID))
             btn.text:SetText(data.name) -- 던전 이름은 하단에 고정 표시
             if is_mine then
-                local lvl = get_keystone_lvl(data.dID)
                 if btn.lvlText then
-                    btn.lvlText:SetText(lvl) -- 보유 쐐기단수는 좌상단 표시
+                    btn.lvlText:SetText(lvl or "") -- 보유 쐐기단수는 좌상단 표시
                 end
                 if btn.icon then
                     btn.icon:SetDesaturated(false) -- 보유한 쐐기돌은 컬러로 강조
@@ -122,13 +93,15 @@ local function on_button_down(self)
     C_LFGList.CreateListing(listingData)
 end
 
-local function get_d_name(id)
-    local name, _, _, _ = C_ChallengeMode.GetMapUIInfo(id)
-    return name
+local function on_gossip_select(gossipOptionID)
+    if not (dodoDB and dodoDB.enableQuickselect ~= false) then return end
+    if gossipOptionID == 107597 then
+        C_Timer.After(0.5, refresh_keystones)
+    end
 end
 
--- Space Fix 레이아웃 교정용 정적 헬퍼 (익명 함수 제거 및 12.0.0+ 안전 가드 추가)
 local function apply_space_fix()
+    if not (dodoDB and dodoDB.enableQuickselect ~= false) then return end
     local ec = LFGListFrame.EntryCreation
     if not ec then return end
 
@@ -203,7 +176,7 @@ local function create_ui()
             -- 단수용 FontString 생성 (TOPLEFT)
             local lvlText = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightOutline")
             lvlText:SetPoint("TOPLEFT", btn, "TOPLEFT", 2, -2)
-            local fontPath, _, fontFlags = lvlText:GetFont()
+            local fontPath = lvlText:GetFont()
             if fontPath then
                 lvlText:SetFont(fontPath, 11, "OUTLINE")
             end
@@ -231,7 +204,7 @@ local function create_ui()
             text:SetPoint("TOP", btn, "BOTTOM", 0, -2)
             text:SetJustifyH("CENTER")
             text:SetText(data.name)
-            local fontPath, _, fontFlags = text:GetFont()
+            local fontPath = text:GetFont()
             if fontPath then
                 text:SetFont(fontPath, 10, "OUTLINE")
             end
@@ -257,12 +230,8 @@ local function create_ui()
 
         -- Config에 정의된 동적 간격(step)을 적용하여 정렬 배치!
         btn:SetPoint("LEFT", main_frame, "LEFT", (i - 1) * step, 0)
-        btn.dID = data.dID
+        btn.dID = data.lfgID
         btn:SetScript("OnMouseDown", on_button_down)
-
-        btn.getdName = get_d_name
-        btn.getdCheck = get_d_check
-        btn.getKeystoneLvl = get_keystone_lvl
 
         dungeon_buttons[i] = btn
     end
@@ -275,11 +244,7 @@ local function initialize()
     create_ui()
     refresh_keystones()
 
-    hooksecurefunc(C_GossipInfo, "SelectOption", function(gossipOptionID)
-        if gossipOptionID == 107597 then
-            C_Timer.After(0.5, refresh_keystones)
-        end
-    end)
+    hooksecurefunc(C_GossipInfo, "SelectOption", on_gossip_select)
 end
 
 -- ==============================
@@ -334,15 +299,11 @@ initFrame:SetScript("OnEvent", on_event)
 -- ==============================
 -- 설정 등록
 -- ==============================
-if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("편의기능", {
-        {
-            name = "파티만들기 빠른선택",
-            get = function() return dodoDB and dodoDB.enableQuickselect ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.enableQuickselect = checked end
-                update_visual()
-            end
-        }
-    })
-end
+dodo.QuickSelectUpdate = update_visual
+
+local Checkbox = Checkbox
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["인터페이스.파티모집창"] = dodo.OptionRegistrations["인터페이스.파티모집창"] or {}
+table.insert(dodo.OptionRegistrations["인터페이스.파티모집창"], function(category)
+    Checkbox(category, "enableQuickselect", "파티만들기 빠른선택", "파티 만들기 창에서 던전 빠른선택 버튼을 표시합니다.", true, dodo.QuickSelectUpdate)
+end)
