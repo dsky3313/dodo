@@ -11,13 +11,13 @@ local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
 local Config = {
-    defaultPoint        = "TOPRIGHT",
-    defaultRelativeTo   = "MinimapCluster",
+    defaultPoint         = "TOPRIGHT",
+    defaultRelativeTo    = "MinimapCluster",
     defaultRelativePoint = "BOTTOMRIGHT",
-    defaultX            = -4,
-    defaultY            = -1,
-    defaultPadding      = -2,
-    buttonSize          = 32,
+    defaultX             = -4,
+    defaultY             = -1,
+    defaultPadding       = -2,
+    buttonSize           = 32,
 
     sortOrder = {
         ["ExpansionLandingPageMinimapButton"] = 1,
@@ -31,12 +31,11 @@ local Config = {
         ["ThisWeeksAuras"]       = 98,
         ["BugSack"]              = 99,
     },
-    hideSet = {  -- O(1) 조회
+    hideSet = {
         ["RaiderIO"] = true,
     },
 }
 
--- 무시 목록 (정적, 매 호출마다 테이블 생성 방지)
 local IGNORE_LIST = {
     "MinimapBackdrop",
     "Minimap.ZoomIn",
@@ -47,30 +46,31 @@ local IGNORE_LIST = {
 -- ==============================
 -- 캐싱
 -- ==============================
-local C_Timer       = C_Timer
-local CreateFrame   = CreateFrame
-local ipairs        = ipairs
-local pairs         = pairs
-local table_insert  = table.insert
-local table_remove  = table.remove
-local table_sort    = table.sort
-local LibStub       = LibStub
-local UIParent      = UIParent
+local C_Timer          = C_Timer
+local CreateFrame      = CreateFrame
+local InCombatLockdown = InCombatLockdown
+local ipairs           = ipairs
+local pairs            = pairs
+local table_insert     = table.insert
+local table_remove     = table.remove
+local table_sort       = table.sort
+local LibStub          = LibStub
+local UIParent         = UIParent
 
 -- ==============================
 -- 로컬 상태
 -- ==============================
-local bar_frame          = nil
-local init_frame         = CreateFrame("Frame")
-local collected_buttons  = {}
-local buttons_by_name    = {}
-local ticker_obj         = nil
+local bar_frame         = nil
+local init_frame        = CreateFrame("Frame")
+local collected_buttons = {}
+local buttons_by_name   = {}
+local ticker_obj        = nil
+local last_child_count  = 0
 
-local original_parent        = {}
-local original_points        = {}
-local registered_in_settings = {}
-local last_child_count       = 0
+local original_parent = {}
+local original_points = {}
 
+-- 숨김 컨테이너 (hideSet 버튼용)
 local hidden_frame = CreateFrame("Frame")
 hidden_frame:Hide()
 
@@ -78,19 +78,25 @@ local ldb  = nil
 local ldbi = nil
 
 -- ==============================
--- 기능: 원래 부모로 복구
+-- 기능: 원래 위치로 복구
 -- ==============================
 local function restore_button(btn)
     if not btn then return end
     local parent = original_parent[btn]
-    if not parent then return end
-    btn:SetParent(parent)
+    if parent then btn:SetParent(parent) end
+
+    local name = btn:GetName()
+    -- LibDBIcon 버튼은 라이브러리에 위치 복구 위임 (minimapPos 각도 기반)
+    if name and name:find("LibDBIcon10_", 1, true) and ldbi then
+        btn:ClearAllPoints()
+        ldbi:Show(name:sub(13))
+        return
+    end
+    -- 비-LibDBIcon 버튼: 저장된 원래 SetPoint로 복구
     btn:ClearAllPoints()
     local pts = original_points[btn]
     if pts and pts[1] then
         btn:SetPoint(pts[1], pts[2], pts[3], pts[4], pts[5])
-    else
-        btn:SetPoint("CENTER", parent, "CENTER", 0, 0)
     end
 end
 
@@ -98,12 +104,12 @@ end
 -- 기능: 정렬 기준
 -- ==============================
 local function sort_buttons(a, b)
-    local name_a    = a:GetName() or ""
-    local name_b    = b:GetName() or ""
-    local addon_a   = name_a:find("LibDBIcon10_", 1, true) and name_a:sub(13) or name_a
-    local addon_b   = name_b:find("LibDBIcon10_", 1, true) and name_b:sub(13) or name_b
-    local order_a   = Config.sortOrder[addon_a] or 999
-    local order_b   = Config.sortOrder[addon_b] or 999
+    local name_a  = a:GetName() or ""
+    local name_b  = b:GetName() or ""
+    local addon_a = name_a:find("LibDBIcon10_", 1, true) and name_a:sub(13) or name_a
+    local addon_b = name_b:find("LibDBIcon10_", 1, true) and name_b:sub(13) or name_b
+    local order_a = Config.sortOrder[addon_a] or 999
+    local order_b = Config.sortOrder[addon_b] or 999
     if order_a ~= order_b then return order_a < order_b end
     return name_a < name_b
 end
@@ -113,6 +119,8 @@ end
 -- ==============================
 local function update_layout()
     if not bar_frame then return end
+    if InCombatLockdown() then return end
+    if dodoDB.enableHidingBar == false then return end
 
     local size    = Config.buttonSize
     local padding = Config.defaultPadding
@@ -150,7 +158,6 @@ local function update_layout()
     end
 
     if count == 0 then
-        bar_frame:SetSize(size + padding * 2, size + padding * 2)
         bar_frame:Hide()
     else
         bar_frame:Show()
@@ -206,36 +213,12 @@ local function remove_button(btn, name)
 end
 
 -- ==============================
--- 기능: 설정창 체크박스 동적 추가
--- ==============================
-local function register_addon_setting(addon_name)
-    if registered_in_settings[addon_name] then return end
-    registered_in_settings[addon_name] = true
-
-    if dodo.RegisterEditModeSystemSetting then
-        dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.Minimap, {
-            {
-                name = addon_name,
-                get  = function() return dodoDB.hidingBarSelected and dodoDB.hidingBarSelected[addon_name] ~= false end,
-                set  = function(checked)
-                    dodoDB.hidingBarSelected = dodoDB.hidingBarSelected or {}
-                    dodoDB.hidingBarSelected[addon_name] = checked
-                    update_layout()
-                end,
-                disabled = function() return dodoDB and (dodoDB.useMinimap == false or dodoDB.enableHidingBar == false) end,
-            }
-        })
-    end
-end
-
--- ==============================
 -- 기능: 버튼 수집
 -- ==============================
 local function grab_db_icon_buttons()
     if ldbi and ldbi.objects then
         for name, btn in pairs(ldbi.objects) do
             if btn then
-                register_addon_setting(name)
                 add_button(btn, "LibDBIcon10_" .. name)
             end
         end
@@ -253,7 +236,6 @@ local function scan_minimap_children()
         if name and name:find("LibDBIcon10_", 1, true) then
             local addon_key = name:sub(13)
             if addon_key and addon_key ~= "" then
-                register_addon_setting(addon_key)
                 add_button(child, name)
             end
         end
@@ -261,17 +243,14 @@ local function scan_minimap_children()
 end
 
 local function refresh_all_buttons()
+    if InCombatLockdown() then return end
+
     grab_db_icon_buttons()
     scan_minimap_children()
 
     local exp_btn = ExpansionLandingPageMinimapButton
     if exp_btn then
-        register_addon_setting("ExpansionLandingPageMinimapButton")
-        if dodoDB.hidingBarSelected and dodoDB.hidingBarSelected["ExpansionLandingPageMinimapButton"] ~= false then
-            add_button(exp_btn, "ExpansionLandingPageMinimapButton")
-        else
-            remove_button(exp_btn, "ExpansionLandingPageMinimapButton")
-        end
+        add_button(exp_btn, "ExpansionLandingPageMinimapButton")
     end
 
     update_layout()
@@ -285,6 +264,7 @@ local function create_ui()
 
     bar_frame = CreateFrame("Frame", "dodo_HidingBarFrame", UIParent)
     bar_frame:SetFrameStrata("MEDIUM")
+    bar_frame:SetSize(1, 1)
     bar_frame:EnableMouse(false)
     bar_frame:ClearAllPoints()
 
@@ -294,7 +274,6 @@ end
 
 local function initialize()
     if dodoDB.enableHidingBar == nil then dodoDB.enableHidingBar = true end
-    dodoDB.hidingBarSelected = dodoDB.hidingBarSelected or {}
     create_ui()
 end
 
@@ -304,10 +283,8 @@ end
 local function update_visual()
     local is_enabled = dodoDB.enableHidingBar ~= false
     if is_enabled then
-        if bar_frame then
-            bar_frame:Show()
-            refresh_all_buttons()
-        end
+        if bar_frame then bar_frame:Show() end
+        refresh_all_buttons()
         if not ticker_obj then
             ticker_obj = C_Timer.NewTicker(2.0, refresh_all_buttons)
         end
@@ -316,14 +293,12 @@ local function update_visual()
             ticker_obj:Cancel()
             ticker_obj = nil
         end
-        if bar_frame then
-            for _, btn in ipairs(collected_buttons) do
-                restore_button(btn)
-            end
-            collected_buttons = {}
-            buttons_by_name   = {}
-            bar_frame:Hide()
+        for _, btn in ipairs(collected_buttons) do
+            restore_button(btn)
         end
+        collected_buttons = {}
+        buttons_by_name   = {}
+        if bar_frame then bar_frame:Hide() end
     end
 end
 
@@ -348,13 +323,15 @@ local function on_event(self, event, arg1)
             ldb.RegisterCallback("dodoHidingBar", "LibDataBroker_DataObjectCreated", refresh_all_buttons)
         end
 
-        refresh_all_buttons()
         self:UnregisterEvent("PLAYER_LOGIN")
+    elseif event == "PLAYER_REGEN_ENABLED" then
+        refresh_all_buttons()
     end
 end
 
 init_frame:RegisterEvent("ADDON_LOADED")
 init_frame:RegisterEvent("PLAYER_LOGIN")
+init_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
 init_frame:SetScript("OnEvent", on_event)
 
 -- ==============================
