@@ -86,6 +86,7 @@ Module/GossipFrame/KeystoneLindormi.lua
 # Minimap
 Module/Minimap/Core.lua
 Module/Minimap/FPS.lua
+Module/Minimap/IconAddons.lua
 Module/Minimap/MapCoords.lua
 Module/Minimap/Square.lua
 Module/Minimap/Zoom.lua
@@ -124,7 +125,6 @@ Module/QoL/Teleport.lua
 Module/QoL/TimerLFG.lua
 Module/QoL/WMarker.lua
 Module/QoL/WowheadLink.lua
-Module/QoL/HidingBar.lua
 
 # ResourceBar
 Module/ResourceBar/ResourceBar.xml
