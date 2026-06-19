@@ -272,11 +272,7 @@ local function update_module_state()
     end
 end
 
-local function on_instance_event(self, event)
-    update_instance_status()
-end
-
-main_frame:SetScript("OnEvent", on_instance_event)
+main_frame:SetScript("OnEvent", update_instance_status)
 
 -- ==============================
 -- 외부 노출 및 설정 동적 등록 (RegisterEditModeModuleSetting 이관)

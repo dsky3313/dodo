@@ -163,54 +163,32 @@ audio_frame:SetScript("OnEvent", on_event)
 -- ==============================
 -- 설정 등록
 -- ==============================
--- 1. dodoEditModePanel (모듈 편집창) 등록
-if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("음성", {
-        -- 1. 출력장치 동기화
-        {
-            name = "출력장치 동기화",
-            get = function() return dodoDB.useAudioSync ~= false end,
-            set = function(val)
-                dodoDB.useAudioSync = val
-                update_event_registration()
-                if val then
-                    sync_audio(true)
-                else
-                    print("|c" .. soft_red_hex .. "[dodo]|r 오디오 동기화 비활성화")
-                end
-            end,
-        },
+local Checkbox = Checkbox
+local CheckBoxDropDown = CheckBoxDropDown
 
-        -- 2. 보스전 시작 효과음
-        {
-            name = "보스전 시작",
-            get = function() return dodoDB.useSoundEncounterStart ~= false end,
-            set = function(val)
-                dodoDB.useSoundEncounterStart = val
-                update_event_registration()
-            end,
-        },
-        {
-            type = "dropdown",
-            get = function() return dodoDB.useSoundEncounterStart_soundID or "16971" end,
-            set = function(val) dodoDB.useSoundEncounterStart_soundID = val; play_encounter_start_sound() end,
-            values = sound_encounter_start_table,
-        },
-
-        -- 3. 보스전 승리 효과음
-        {
-            name = "보스전 승리",
-            get = function() return dodoDB.useSoundEncounterVictory ~= false end,
-            set = function(val)
-                dodoDB.useSoundEncounterVictory = val
-                update_event_registration()
-            end,
-        },
-        {
-            type = "dropdown",
-            get = function() return dodoDB.useSoundEncounterVictory_soundID or "38352" end,
-            set = function(val) dodoDB.useSoundEncounterVictory_soundID = val; play_encounter_victory_sound() end,
-            values = sound_encounter_victory_table,
-        }
-    })
+local function on_audio_sync_change(checked)
+    update_event_registration()
+    if checked then
+        sync_audio(true)
+    else
+        print("|c" .. soft_red_hex .. "[dodo]|r 오디오 동기화 비활성화")
+    end
 end
+
+local function on_encounter_start_change(checked)
+    update_event_registration()
+    if checked then play_encounter_start_sound() end
+end
+
+local function on_encounter_victory_change(checked)
+    update_event_registration()
+    if checked then play_encounter_victory_sound() end
+end
+
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["음성"] = dodo.OptionRegistrations["음성"] or {}
+table.insert(dodo.OptionRegistrations["음성"], function(category)
+    Checkbox(category, "useAudioSync", "출력장치 동기화", "출력장치 변경 시 오디오를 자동 동기화합니다.", true, on_audio_sync_change)
+    CheckBoxDropDown(category, "useSoundEncounterStart", "useSoundEncounterStart_soundID", "보스전 시작", "보스전 시작 시 효과음을 재생합니다.", sound_encounter_start_table, true, "16971", on_encounter_start_change)
+    CheckBoxDropDown(category, "useSoundEncounterVictory", "useSoundEncounterVictory_soundID", "보스전 승리", "보스전 승리 시 효과음을 재생합니다.", sound_encounter_victory_table, true, "38352", on_encounter_victory_change)
+end)

@@ -19,6 +19,7 @@ local Config = {
 -- ==============================
 -- 캐싱
 -- ==============================
+local Checkbox          = Checkbox
 local ColorPickerFrame  = ColorPickerFrame
 local CreateColor       = CreateColor
 local CreateFrame       = CreateFrame
@@ -31,6 +32,7 @@ local math_max          = math.max
 local math_min          = math.min
 local pairs             = pairs
 local string_format     = string.format
+local table_concat      = table.concat
 local table_insert      = table.insert
 local table_remove      = table.remove
 local table_sort        = table.sort
@@ -45,12 +47,13 @@ local all_colors     = {}   -- 전체 색상 (설명 매칭용)
 local update_running = false
 local created        = false
 
-local palette_frame    = nil
-local palette_dropdown = nil
-local input_frame      = nil
-local swatch_frame     = nil
+local palette_frame      = nil
+local palette_dropdown   = nil
+local input_frame        = nil
+local swatch_frame       = nil
+local hex_original_points = nil  -- HexBox 원본 앵커 저장
 
-local initFrame = CreateFrame("Frame")
+local init_frame = CreateFrame("Frame")
 
 -- ==============================
 -- 유틸 (LibLodash 대체)
@@ -232,7 +235,7 @@ local function get_swatch_desc(selected, v)
         for _, m in ipairs(matches) do
             out[#out + 1] = m.name
         end
-        return table.concat(out, "\n")
+        return table_concat(out, "\n")
     end
     return ""
 end
@@ -450,13 +453,20 @@ local function create_input_frame()
     -- ColorPicker 색상 변경 시 입력창 동기화
     ColorPickerFrame.Content.ColorPicker:HookScript("OnColorSelect", function()
         if update_running then return end
+        if not (dodoDB and dodoDB.enableColorPicker ~= false) then return end
         input_update_all(f)
     end)
     f:SetScript("OnShow", function() input_update_all(f) end)
 
-    -- HexBox 위치 재조정 (원본 ColorPickerFrame 레이아웃 충돌 방지)
-    ColorPickerFrame.Content.HexBox:ClearAllPoints()
-    ColorPickerFrame.Content.HexBox:SetPoint("TOPLEFT", ColorPickerFrame.Content, "TOPRIGHT", -40, -35)
+    -- HexBox 원본 앵커 저장 후 위치 재조정
+    local hex = ColorPickerFrame.Content.HexBox
+    hex_original_points = {}
+    for i = 1, hex:GetNumPoints() do
+        local point, rel, relPoint, x, y = hex:GetPoint(i)
+        hex_original_points[i] = { point, rel, relPoint, x, y }
+    end
+    hex:ClearAllPoints()
+    hex:SetPoint("TOPLEFT", ColorPickerFrame.Content, "TOPRIGHT", -40, -35)
 
     input_frame = f
 end
@@ -491,17 +501,27 @@ end
 -- ColorPickerFrame 후킹
 -- ==============================
 local function on_picker_show(self)
+    local enabled = dodoDB and dodoDB.enableColorPicker ~= false
+    ColorPickerFrame:UnregisterEvent("GLOBAL_MOUSE_DOWN")
+
+    if not enabled then
+        self:SetWidth(self.hasOpacity and 388 or 331)
+        self:SetHeight(Config.picker_base_h)
+        self.Content:SetPoint("BOTTOMRIGHT", ColorPickerFrame, "BOTTOMRIGHT", 0, 0)
+        return
+    end
+
     local extend = Config.frame_extend
     self.Content:SetPoint("BOTTOMRIGHT", ColorPickerFrame, "BOTTOMRIGHT", -extend, 0)
-
     local w = (self.hasOpacity and 388 or 331) + extend
-    ColorPickerFrame:UnregisterEvent("GLOBAL_MOUSE_DOWN")
     self:SetWidth(w)
+    self:SetHeight(Config.picker_base_h + Config.picker_ext_h)
 
     if palette_frame then palette_frame:set_width(w) end
 end
 
 local function on_okay_click()
+    if not (dodoDB and dodoDB.enableColorPicker ~= false) then return end
     local r, g, b = ColorPickerFrame:GetColorRGB()
     local color   = { r, g, b, 1 }
 
@@ -533,11 +553,21 @@ end
 
 local function update_visibility()
     if not created then return end
-    local on = dodoDB.enableColorPicker ~= false
+    local on = dodoDB and dodoDB.enableColorPicker ~= false
     if palette_frame    then palette_frame:SetShown(on)    end
     if palette_dropdown then palette_dropdown:SetShown(on) end
     if input_frame      then input_frame:SetShown(on)      end
     if swatch_frame     then swatch_frame:SetShown(on)     end
+
+    local hex = ColorPickerFrame.Content.HexBox
+    hex:ClearAllPoints()
+    if on then
+        hex:SetPoint("TOPLEFT", ColorPickerFrame.Content, "TOPRIGHT", -40, -35)
+    elseif hex_original_points then
+        for _, p in ipairs(hex_original_points) do
+            hex:SetPoint(p[1], p[2], p[3], p[4], p[5])
+        end
+    end
 end
 
 -- ==============================
@@ -559,24 +589,21 @@ local function on_event(self, event, arg1)
     end
 end
 
-initFrame:RegisterEvent("ADDON_LOADED")
-initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:SetScript("OnEvent", on_event)
+init_frame:RegisterEvent("ADDON_LOADED")
+init_frame:RegisterEvent("PLAYER_LOGIN")
+init_frame:SetScript("OnEvent", on_event)
 
 -- ==============================
 -- 설정 등록
 -- ==============================
-dodo.RegisterEditModeModuleSetting("편의기능", {
-    {
-        name = "컬러피커 확장",
-        get  = function() return dodoDB and dodoDB.enableColorPicker ~= false end,
-        set  = function(checked)
-            if dodoDB then dodoDB.enableColorPicker = checked end
-            if checked and not created then
-                init_palettes()
-                create_ui()
-            end
-            update_visibility()
-        end,
-    },
-})
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
+table_insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
+    Checkbox(category, "enableColorPicker", "색상 팔레트", "색상 선택기에 팔레트, 수치 입력 패널을 추가합니다.", true, function(checked)
+        if checked and not created then
+            init_palettes()
+            create_ui()
+        end
+        update_visibility()
+    end)
+end)
