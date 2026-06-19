@@ -1,19 +1,26 @@
 -- ==============================
 -- Inspired
 -- ==============================
--- ExwindTools (https://www.curseforge.com/wow/addons/exwindtools) — ExTools.GossipID
+-- ExwindTools (https://www.curseforge.com/wow/addons/exwindtools)
 
 -- ==============================
 -- 설정 및 테이블
 -- ==============================
--- 지정된 gossipOptionID를 NPC 대화창에서 자동 선택.
--- 프리셋 + 사용자 커스텀 목록 지원.
---
--- enableGossipAutoSelect   : 마스터 토글 (기본 ON)
--- gossipAutoCustom         : { [optionID]={ enabled=bool, name=string } } 커스텀 목록
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
+
+local PRESET_IDS = {
+    138618, 136301, 136271, 136316, 136280, 136624, -- 사론 포로구출
+    107065, 107081, 107082, 107083, 107088,         -- 알게타르 대학
+    137133,                                         -- 공결탑 제나스
+    107387, 107428, 137387,                         -- 마이사라동굴
+}
+
+local PRESET_SET = {}
+for _, id in ipairs(PRESET_IDS) do
+    PRESET_SET[id] = true
+end
 
 -- ==============================
 -- 캐싱
@@ -31,21 +38,6 @@ local type          = type
 -- Core 디스패처 참조
 -- ==============================
 local GF = dodo.GossipFrame
-
--- ==============================
--- 프리셋 ID 목록 (항상 자동선택, 개별 토글 없음)
--- ==============================
-local PRESET_IDS = {
-    138618, 136301, 136271, 136316, 136280, 136624, -- 사론 포로구출
-    107065, 107081, 107082, 107083, 107088,         -- 알게타르 대학
-    137133,                                         -- 공결탑 제나스
-    107387, 107428, 137387,                         -- 마이사라동굴
-}
-
-local PRESET_SET = {}
-for _, id in ipairs(PRESET_IDS) do
-    PRESET_SET[id] = true
-end
 
 -- ==============================
 -- DB 헬퍼
@@ -162,8 +154,10 @@ init_frame:SetScript("OnEvent", on_init_event)
 -- ==============================
 -- 설정 등록
 -- ==============================
+local Checkbox = Checkbox
+
 dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.대화창"] = dodo.OptionRegistrations["인터페이스.대화창"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.대화창"], function(category)
+dodo.OptionRegistrations["인터페이스.NPC 대화"] = dodo.OptionRegistrations["인터페이스.NPC 대화"] or {}
+table.insert(dodo.OptionRegistrations["인터페이스.NPC 대화"], function(category)
     Checkbox(category, "enableGossipAutoSelect", "자동 선택", "M+ 던전 버프 NPC 대화를 자동으로 선택합니다.", true, nil)
 end)

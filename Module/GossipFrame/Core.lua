@@ -1,8 +1,11 @@
 -- ==============================
--- GossipFrame 공유 훅 디스패처
+-- Inspired
 -- ==============================
--- ID.lua, SelectAuto.lua 로드 전 먼저 실행되어
--- GossipOptionButtonMixin 훅을 단일 설치하고 콜백 디스패치.
+-- ExwindTools (https://www.curseforge.com/wow/addons/exwindtools)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
@@ -13,6 +16,7 @@ dodoDB = dodoDB or {}
 local CreateFrame = CreateFrame
 local hooksecurefunc = hooksecurefunc
 local ipairs = ipairs
+local type = type
 
 -- ==============================
 -- 공유 디스패치 테이블

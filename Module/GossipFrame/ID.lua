@@ -5,9 +5,7 @@
 
 -- ==============================
 -- 설정 및 테이블
--- ==============================
--- gossipOptionID / questID를 대화창 각 선택지·퀘스트 버튼에 [ID:숫자] 형태로 표시.
--- enableGossipID       : 마스터 토글 (기본 ON)
+-- ==============================토글 (기본 ON)
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
@@ -15,6 +13,7 @@ dodoDB = dodoDB or {}
 -- ==============================
 -- 캐싱
 -- ==============================
+local CreateFrame = CreateFrame
 local GossipFrame = GossipFrame
 local string = string
 local tonumber = tonumber
@@ -101,8 +100,10 @@ init_frame:SetScript("OnEvent", on_init_event)
 -- ==============================
 -- 설정 등록
 -- ==============================
+local Checkbox = Checkbox
+
 dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.대화창"] = dodo.OptionRegistrations["인터페이스.대화창"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.대화창"], function(category)
+dodo.OptionRegistrations["인터페이스.NPC 대화"] = dodo.OptionRegistrations["인터페이스.NPC 대화"] or {}
+table.insert(dodo.OptionRegistrations["인터페이스.NPC 대화"], function(category)
     Checkbox(category, "enableGossipID", "ID 표시", "NPC 대화창 선택지·퀘스트에 ID를 표시합니다.", true, refresh_gossip)
 end)

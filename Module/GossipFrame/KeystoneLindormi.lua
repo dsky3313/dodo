@@ -14,7 +14,6 @@ dodoDB = dodoDB or {}
 -- 캐싱
 -- ==============================
 local C_ChallengeMode = C_ChallengeMode
-local C_GossipInfo = C_GossipInfo
 local C_MythicPlus = C_MythicPlus
 local C_Timer = C_Timer
 local CreateFrame = CreateFrame
@@ -160,8 +159,10 @@ event_frame:SetScript("OnEvent", on_event)
 -- ==============================
 -- 설정 등록
 -- ==============================
+local Checkbox = Checkbox
+
 dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.대화창"] = dodo.OptionRegistrations["인터페이스.대화창"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.대화창"], function(category)
+dodo.OptionRegistrations["인터페이스.NPC 대화"] = dodo.OptionRegistrations["인터페이스.NPC 대화"] or {}
+table.insert(dodo.OptionRegistrations["인터페이스.NPC 대화"], function(category)
     Checkbox(category, "enableKeystoneLindormi", "린도르미 현재돌", "린도르미 NPC 대화창에 보유 쐐기돌 정보를 표시합니다.", true, update_visual)
 end)
