@@ -11,9 +11,9 @@ local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
 local Config = {
-    defaultX = 0,
-    defaultY = 0,
-    defaultPoint = "CENTER",
+    defaultX = -4,
+    defaultY = -3,
+    defaultPoint = "TOPLEFT",
     iconSize = 32, -- 아이콘 크기
     spacing = 5,   -- 아이콘 간격
 }
@@ -100,6 +100,27 @@ local function on_gossip_select(gossipOptionID)
     end
 end
 
+local function restore_space_fix()
+    local ec = LFGListFrame and LFGListFrame.EntryCreation
+    if not ec then return end
+
+    if ec.DescriptionLabel and ec.NameLabel then
+        ec.DescriptionLabel:ClearAllPoints()
+        ec.DescriptionLabel:SetPoint("TOPLEFT", ec.NameLabel, "TOPLEFT", 0, -50)
+    end
+
+    if ec.Description then
+        ec.Description:SetHeight(46)
+    end
+
+    local playstyle_widget = ec.PlayStyleDropdown or ec.PlayStyleLabel
+    if playstyle_widget and ec.Description then
+        playstyle_widget:ClearAllPoints()
+        playstyle_widget:SetPoint("TOPLEFT",  ec.Description, "BOTTOMLEFT",  -5, -20)
+        playstyle_widget:SetPoint("TOPRIGHT", ec.Description, "BOTTOMRIGHT",  5, -20)
+    end
+end
+
 local function apply_space_fix()
     if not (dodoDB and dodoDB.enableQuickselect ~= false) then return end
     local ec = LFGListFrame.EntryCreation
@@ -117,8 +138,10 @@ local function apply_space_fix()
     -- 12.0.0+에서는 PlayStyleLabel 대신 PlayStyleDropdown이 사용됨을 대응한 예방 앵커링
     local playstyle_widget = ec.PlayStyleDropdown or ec.PlayStyleLabel
     if playstyle_widget then
+        local anchor_ref = ec.Description or ec.DescriptionLabel
         playstyle_widget:ClearAllPoints()
-        playstyle_widget:SetPoint("TOPLEFT", ec.DescriptionLabel or ec.Description, "TOPLEFT", 0, -55)
+        playstyle_widget:SetPoint("TOPLEFT",  anchor_ref, "TOPLEFT",  -5, -35)
+        playstyle_widget:SetPoint("TOPRIGHT", anchor_ref, "TOPRIGHT",  5, -35)
     end
 end
 
@@ -143,7 +166,7 @@ local function create_ui()
     main_frame:SetFrameLevel(parent_level + 10)
 
     main_frame:ClearAllPoints()
-    main_frame:SetPoint("TOPLEFT", LFGListFrame.EntryCreation.Name, "BOTTOMLEFT", -4, -4)
+    main_frame:SetPoint(Config.defaultPoint, LFGListFrame.EntryCreation.Name, "BOTTOMLEFT", Config.defaultX, Config.defaultY)
 
     -- dodo.LibIcon이 준비되었는지 확인하고 로드
     local has_lib_icon = dodo.LibIcon and dodo.LibIcon.Create
@@ -264,6 +287,7 @@ local function update_visual()
         end
     else
         if main_frame then main_frame:Hide() end
+        restore_space_fix()
         if initFrame then
             initFrame:UnregisterEvent("BAG_UPDATE_DELAYED")
             initFrame:UnregisterEvent("CHALLENGE_MODE_MAPS_UPDATE")

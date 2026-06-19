@@ -13,6 +13,7 @@ dodoDB = dodoDB or {}
 -- ==============================
 -- 캐싱
 -- ==============================
+local Checkbox = Checkbox
 local CreateFrame = CreateFrame
 local GameTooltip = GameTooltip
 local GetCVar = GetCVar
@@ -172,21 +173,13 @@ local init = CreateFrame("Frame")
 init:RegisterEvent("PLAYER_LOGIN")
 init:SetScript("OnEvent", on_login_event)
 
--- 외부 노출 (호환성 유지)
-dodo.DeleteNow = function() end
-
 -- ==============================
 -- 설정 등록
 -- ==============================
-if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("인터페이스", {
-        {
-            name = "아이템 파괴 간소화",
-            get = function() return not (dodoDB and dodoDB.useDeleteNow == false) end,
-            set = function(checked)
-                if dodoDB then dodoDB.useDeleteNow = (checked and true or false) end
-                set_hooks(dodoDB.useDeleteNow)
-            end
-        }
-    })
-end
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
+table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
+    Checkbox(category, "useDeleteNow", "아이템 파괴 간소화", "아이템 파괴 확인창에서 확인 입력 없이 즉시 삭제합니다.", true, function(value)
+        set_hooks(value)
+    end)
+end)

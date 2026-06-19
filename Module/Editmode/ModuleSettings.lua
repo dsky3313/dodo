@@ -225,7 +225,6 @@ local function create_edit_mode_panel()
     local default_menu_items = {
         { isHeader = true, text = "전투" },
         { isHeader = true, text = "인터페이스" },
-        { isHeader = true, text = "음성" },
         { isHeader = true, text = "편의기능" },
         { isHeader = true, text = "일반" },
         { isHeader = true, text = "설정 & 프로필" },

@@ -14,6 +14,7 @@ dodoDB = dodoDB or {}
 -- 캐싱
 -- ==============================
 local C_Timer = C_Timer
+local Checkbox = Checkbox
 local CreateFrame = CreateFrame
 local Enum = Enum
 local RunNextFrame = RunNextFrame
@@ -91,61 +92,42 @@ local function update_events()
 end
 
 -- ==============================
--- 외부 노출 (Option.lua 호환성)
+-- 이벤트 핸들러
 -- ==============================
-dodo.AuctionFilter = function()
+local function apply_all_filters()
     apply_auction_filter()
     apply_craft_filter(3)
 end
-dodo.expFilter = dodo.AuctionFilter
 
--- ==============================
--- 이벤트 핸들러
--- ==============================
-local function on_event(self, event)
-    if event == "AUCTION_HOUSE_SHOW" then
+local function on_event(self, event, arg1)
+    if event == "ADDON_LOADED" and arg1 == addonName then
+        dodoDB = dodoDB or {}
+    elseif event == "PLAYER_LOGIN" then
+        if dodoDB.enableExpFilter == nil then dodoDB.enableExpFilter = true end
+        update_events()
+        self:UnregisterEvent("ADDON_LOADED")
+        self:UnregisterEvent("PLAYER_LOGIN")
+    elseif event == "AUCTION_HOUSE_SHOW" then
         apply_auction_filter()
     elseif event == "CRAFTINGORDERS_SHOW_CUSTOMER" then
         apply_craft_filter(3)
     elseif event == "PLAYER_ENTERING_WORLD" then
-        C_Timer.After(1, dodo.AuctionFilter)
+        C_Timer.After(1, apply_all_filters)
     end
 end
 
+main_frame:RegisterEvent("ADDON_LOADED")
+main_frame:RegisterEvent("PLAYER_LOGIN")
 main_frame:SetScript("OnEvent", on_event)
 
-local function initialize()
-    if dodoDB.enableExpFilter == nil then dodoDB.enableExpFilter = true end
-    update_events()
-end
-
--- 초기화 이벤트용 임시 프레임
-local init_frame = CreateFrame("Frame")
-local function on_init_event(self, event, arg1)
-    if event == "ADDON_LOADED" and arg1 == addonName then
-        dodoDB = dodoDB or {}
-    elseif event == "PLAYER_LOGIN" then
-        initialize()
-        self:UnregisterAllEvents()
-    end
-end
-init_frame:RegisterEvent("ADDON_LOADED")
-init_frame:RegisterEvent("PLAYER_LOGIN")
-init_frame:SetScript("OnEvent", on_init_event)
-
 -- ==============================
--- 설정 동적 등록 (RegisterEditModeModuleSetting 연동)
+-- 설정 등록
 -- ==============================
-if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("편의기능", {
-        {
-            name = "확장팩 필터",
-            get = function() return dodoDB and dodoDB.enableExpFilter ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.enableExpFilter = checked end
-                update_events()
-                dodo.expFilter()
-            end
-        }
-    })
-end
+dodo.OptionRegistrations = dodo.OptionRegistrations or {}
+dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
+table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
+    Checkbox(category, "enableExpFilter", "확장팩 필터", "경매장/주문 제작창을 열 때 자동으로 현재 확장팩 필터를 적용합니다.", true, function(value)
+        update_events()
+        if value then apply_all_filters() end
+    end)
+end)
