@@ -398,6 +398,7 @@ local function clear_current()
     for _, entry in ipairs(current_events) do
         C_EncounterEvents.SetEventColor(entry.eventID, 0, nil)
         C_EncounterEvents.SetEventColor(entry.eventID, 1, nil)
+        C_EncounterEvents.SetEventColor(entry.eventID, 2, nil)
     end
     if et then et:RegisterEvent("ENCOUNTER_TIMELINE_STATE_UPDATED") end
     current_events = nil
@@ -421,6 +422,8 @@ local function update_visual()
         local color = role and CreateColor(role.r, role.g, role.b)
         C_EncounterEvents.SetEventColor(entry.eventID, 0, color)
         C_EncounterEvents.SetEventColor(entry.eventID, 1, color)
+        local highlight_color = (dodoDB.useEncounterTimelineColorHighlight ~= false) and color or nil
+        C_EncounterEvents.SetEventColor(entry.eventID, 2, highlight_color)
     end
     if et then et:RegisterEvent("ENCOUNTER_TIMELINE_STATE_UPDATED") end
     current_events = events
@@ -436,6 +439,7 @@ local function on_event(self, event, arg1)
         dodoDB = dodoDB or {}
     elseif event == "PLAYER_LOGIN" then
         if dodoDB.enableEncounterTimelineColor == nil then dodoDB.enableEncounterTimelineColor = true end
+        if dodoDB.useEncounterTimelineColorHighlight == nil then dodoDB.useEncounterTimelineColorHighlight = true end
         self:UnregisterEvent("PLAYER_LOGIN")
     elseif event == "PLAYER_ENTERING_WORLD" then
         update_visual()
@@ -459,6 +463,14 @@ if dodo.RegisterEditModeModuleSetting then
                 if dodoDB then dodoDB.enableEncounterTimelineColor = checked end
                 update_visual()
             end
-        }
+        },
+        {
+            name = "보스 타임라인 5초 전 색상 변경",
+            get = function() return dodoDB and dodoDB.useEncounterTimelineColorHighlight ~= false end,
+            set = function(checked)
+                if dodoDB then dodoDB.useEncounterTimelineColorHighlight = checked end
+                update_visual()
+            end
+        },
     })
 end
