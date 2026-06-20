@@ -99,9 +99,6 @@ Module/PVEFrame/BrowseGroup.lua
 # ChallengesKeystoneFrame
 Module/ChallengesKeystoneFrame/InsertKeystone.lua
 
-# WorldMap
-#Module/WorldMap/Icon.lua
-
 # QoL Modules
 Module/ReadyCheck/Timer.lua
 Module/ReadyCheck/Consumeable.lua
@@ -142,10 +139,10 @@ Module/ResourceBar/Tracking.lua
 
 # Tooltip
 Module/Tooltip/Core.lua
-Module/Tooltip/StatusBar.lua
-Module/Tooltip/ID.lua
-Module/Tooltip/Icon.lua
 Module/Tooltip/Color.lua
+Module/Tooltip/Icon.lua
+Module/Tooltip/ID.lua
+Module/Tooltip/StatusBar.lua
 Module/Tooltip/Vehicle.lua
 
 # Unitframe
@@ -163,7 +160,12 @@ Module/Unitframe/Party/AurasHealthColor.lua
 #Module/Unitframe/Party/SoloMode.lua
 #Module/Unitframe/Raid/Anchor.lua
 
+# WorldMap
+#Module/WorldMap/Icon.lua
+
 # Configurations & Layout Anchoring (Last Load)
 Module/Slash.lua
 Option.lua
 Module/Editmode/EditModePos.lua
+
+# 리소스바, 유닛프레임, 레디쳌 수정해야함

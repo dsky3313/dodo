@@ -10,10 +10,6 @@ dodoDB = dodoDB or {}
 -- ==============================
 function dodo.UpdateTooltipAll()
     if dodo.UpdateTooltipStatusBar then dodo.UpdateTooltipStatusBar() end
-    if dodo.UpdateTooltipID then dodo.UpdateTooltipID() end
-    if dodo.UpdateTooltipIcon then dodo.UpdateTooltipIcon() end
-    if dodo.UpdateTooltipColor then dodo.UpdateTooltipColor() end
-    if dodo.UpdateTooltipVehicle then dodo.UpdateTooltipVehicle() end
 end
 
 -- ==============================
@@ -25,19 +21,19 @@ local function initialize()
     if dodoDB.useTooltipID == nil then dodoDB.useTooltipID = true end
     if dodoDB.useTooltipColor == nil then dodoDB.useTooltipColor = true end
     if dodoDB.useTooltipMount == nil then dodoDB.useTooltipMount = true end
+    if dodoDB.useTooltipIcon == nil then dodoDB.useTooltipIcon = true end
 
     dodo.UpdateTooltipAll()
 end
 
-local init_frame = CreateFrame("Frame")
-init_frame:RegisterEvent("PLAYER_LOGIN")
-init_frame:SetScript("OnEvent", function(self, event)
-    if dodo.EditMode then
-        dodo.EditMode:CreateSystem("Tooltip", "툴팁", "툴팁 정보 및 표시 설정", UIParent, 1, 1, { point = "CENTER", relativeTo = "UIParent", relativePoint = "CENTER", xOfs = 0, yOfs = 0 })
-    end
+local function on_event(self)
     initialize()
     self:UnregisterEvent("PLAYER_LOGIN")
-end)
+end
+
+local init_frame = CreateFrame("Frame")
+init_frame:RegisterEvent("PLAYER_LOGIN")
+init_frame:SetScript("OnEvent", on_event)
 
 -- ==============================
 -- 에딧모드 모듈 마스터 토글 등록

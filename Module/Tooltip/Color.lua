@@ -132,12 +132,6 @@ end
 -- ==============================
 -- 초기화
 -- ==============================
-local function update_color()
-    -- 필요시 상태 동기화
-end
-
-dodo.UpdateTooltipColor = update_color
-
 local function initialize()
     if dodoDB.useTooltipColor == nil then dodoDB.useTooltipColor = true end
 
@@ -151,6 +145,9 @@ local function initialize()
     if Enum.TooltipDataType.PetAction then
         TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.PetAction, on_spell_tooltip)
     end
+    if Enum.TooltipDataType.Macro then
+        TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Macro, on_spell_tooltip)
+    end
 
     local tooltips = { GameTooltip, ShoppingTooltip1, ShoppingTooltip2, ItemRefTooltip }
     for _, tt in ipairs(tooltips) do
@@ -160,18 +157,20 @@ local function initialize()
     end
 end
 
-local init_frame = CreateFrame("Frame")
-init_frame:RegisterEvent("PLAYER_LOGIN")
-init_frame:SetScript("OnEvent", function(self, event)
+local function on_event(self)
     initialize()
     self:UnregisterEvent("PLAYER_LOGIN")
-end)
+end
+
+local init_frame = CreateFrame("Frame")
+init_frame:RegisterEvent("PLAYER_LOGIN")
+init_frame:SetScript("OnEvent", on_event)
 
 -- ==============================
 -- 설정 등록
 -- ==============================
 if dodo.RegisterEditModeSystemSetting then
-    dodo.RegisterEditModeSystemSetting("Tooltip", {
+    dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.HudTooltip, {
         {
             name = "색상 변경",
             get = function() return dodoDB and dodoDB.useTooltipColor ~= false end,

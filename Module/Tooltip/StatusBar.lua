@@ -48,18 +48,20 @@ local function initialize()
     hooksecurefunc(GameTooltipStatusBar, "Show", on_tooltip_statusbar_show)
 end
 
-local init_frame = CreateFrame("Frame")
-init_frame:RegisterEvent("PLAYER_LOGIN")
-init_frame:SetScript("OnEvent", function(self, event)
+local function on_event(self)
     initialize()
     self:UnregisterEvent("PLAYER_LOGIN")
-end)
+end
+
+local init_frame = CreateFrame("Frame")
+init_frame:RegisterEvent("PLAYER_LOGIN")
+init_frame:SetScript("OnEvent", on_event)
 
 -- ==============================
 -- 설정 등록
 -- ==============================
 if dodo.RegisterEditModeSystemSetting then
-    dodo.RegisterEditModeSystemSetting("Tooltip", {
+    dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.HudTooltip, {
         {
             name = "체력바 숨기기",
             get = function() return dodoDB and dodoDB.useTooltipHealthHide ~= false end,

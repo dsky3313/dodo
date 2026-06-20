@@ -87,30 +87,26 @@ end
 -- ==============================
 -- 초기화
 -- ==============================
-local function update_vehicle()
-    -- 필요시 상태 동기화
-end
-
-dodo.UpdateTooltipVehicle = update_vehicle
-
 local function initialize()
     if dodoDB.useTooltipMount == nil then dodoDB.useTooltipMount = true end
 
     TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, on_unit_tooltip)
 end
 
-local init_frame = CreateFrame("Frame")
-init_frame:RegisterEvent("PLAYER_LOGIN")
-init_frame:SetScript("OnEvent", function(self, event)
+local function on_event(self)
     initialize()
     self:UnregisterEvent("PLAYER_LOGIN")
-end)
+end
+
+local init_frame = CreateFrame("Frame")
+init_frame:RegisterEvent("PLAYER_LOGIN")
+init_frame:SetScript("OnEvent", on_event)
 
 -- ==============================
 -- 설정 등록
 -- ==============================
 if dodo.RegisterEditModeSystemSetting then
-    dodo.RegisterEditModeSystemSetting("Tooltip", {
+    dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.HudTooltip, {
         {
             name = "탈것 정보 표시",
             get = function() return dodoDB and dodoDB.useTooltipMount ~= false end,

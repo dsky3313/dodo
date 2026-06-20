@@ -1,17 +1,7 @@
 -- ==============================
--- BSD License & Attribution
+-- Inspired
 -- ==============================
--- Portions of this code are derived from idTip
--- Copyright (c) silverwind (https://github.com/silverwind/idTip)
--- All rights reserved.
---
--- Redistribution and use in source and binary forms, with or without
--- modification, are permitted provided the following conditions are met:
--- 1. Redistributions of source code must retain the above copyright notice,
---    this list of conditions and the following disclaimer.
--- 2. Redistributions in binary form must reproduce the above copyright notice,
---    this list of conditions and the following disclaimer in the documentation
---    and/or other materials provided with the distribution.
+-- Enhance QoL (https://www.curseforge.com/wow/addons/eqol)
 
 -- ==============================
 -- 설정 및 테이블
@@ -64,6 +54,8 @@ end
 -- ==============================
 -- 캐싱
 -- ==============================
+local C_Item = C_Item
+local C_Spell = C_Spell
 local format = string.format
 local issecrettable = issecrettable
 local issecretvalue = issecretvalue
@@ -123,10 +115,8 @@ local function handle_item_id(tooltip, data)
     local item_id = data.id 
     if not item_id then return end
 
-    local get_item_info = C_Item and C_Item.GetItemInfo
-    if not get_item_info then return end
-
-    local _, _, _, _, _, _, _, _, _, icon, _, _, _, _, expac_id = get_item_info(item_id)
+    if not C_Item then return end
+    local _, _, _, _, _, _, _, _, _, icon, _, _, _, _, expac_id = C_Item.GetItemInfo(item_id)
     append_tooltip_id_row(tooltip, "ItemID", item_id)
     append_tooltip_id_row(tooltip, "IconID", icon)
     append_expansion_name(tooltip, expac_id)
@@ -139,10 +129,8 @@ local function handle_spell_id(tooltip, data)
     local spell_id = data.id 
     if not spell_id then return end
 
-    local get_spell_info = C_Spell and C_Spell.GetSpellInfo
-    if not get_spell_info then return end
-
-    local spell_info = get_spell_info(spell_id)
+    if not C_Spell then return end
+    local spell_info = C_Spell.GetSpellInfo(spell_id)
     if spell_info and spell_info.iconID then
         append_tooltip_id_row(tooltip, "SpellID", spell_id)
         append_tooltip_id_row(tooltip, "IconID", spell_info.iconID)
@@ -159,12 +147,6 @@ end
 -- ==============================
 -- 초기화
 -- ==============================
-local function update_id()
-    -- 필요시 상태 동기화
-end
-
-dodo.UpdateTooltipID = update_id
-
 local function initialize()
     if dodoDB.useTooltipID == nil then dodoDB.useTooltipID = true end
 
@@ -184,18 +166,20 @@ local function initialize()
     end
 end
 
-local init_frame = CreateFrame("Frame")
-init_frame:RegisterEvent("PLAYER_LOGIN")
-init_frame:SetScript("OnEvent", function(self, event)
+local function on_event(self)
     initialize()
     self:UnregisterEvent("PLAYER_LOGIN")
-end)
+end
+
+local init_frame = CreateFrame("Frame")
+init_frame:RegisterEvent("PLAYER_LOGIN")
+init_frame:SetScript("OnEvent", on_event)
 
 -- ==============================
 -- 설정 등록
 -- ==============================
 if dodo.RegisterEditModeSystemSetting then
-    dodo.RegisterEditModeSystemSetting("Tooltip", {
+    dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.HudTooltip, {
         {
             name = "ID 표시",
             get = function() return dodoDB and dodoDB.useTooltipID ~= false end,
