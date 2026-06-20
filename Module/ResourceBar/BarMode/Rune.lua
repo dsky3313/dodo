@@ -131,7 +131,12 @@ end
 
 function Mode:Update(bar2Frame)
     local width, height2 = get_bar2_size()
-    bar2Frame:SetSize(width, height2)
+    local sizeChanged = (bar2Frame._lastRBWidth ~= width or bar2Frame._lastRBHeight ~= height2)
+    if sizeChanged then
+        bar2Frame:SetSize(width, height2)
+        bar2Frame._lastRBWidth = width
+        bar2Frame._lastRBHeight = height2
+    end
 
     local barWidth = width - 2
     local runeWidth = barWidth / 6
@@ -144,7 +149,7 @@ function Mode:Update(bar2Frame)
             rb:SetPoint("LEFT", bar2Frame, "LEFT", (i - 1) * runeWidth, 0)
             bar2Frame.runebars[i] = rb
         end
-    else
+    elseif sizeChanged then
         for i = 1, 6 do
             local rb = bar2Frame.runebars[i]
             rb:SetSize(runeWidth, height2)

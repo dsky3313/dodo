@@ -133,7 +133,7 @@ function Mode:Update(bar2Frame)
     end
 
     local inCombat = UnitAffectingCombat("player")
-    local hasStagger = stagger > 0
+    local hasStagger = isSecret or stagger > 0
     
     if (inCombat or hasStagger) then
         if not staggerTicker then

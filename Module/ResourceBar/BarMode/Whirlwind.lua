@@ -53,62 +53,6 @@ local Mode = {}
 -- ==============================
 -- 기능 2: 상태 업데이트 및 감지
 -- ==============================
-local function refresh_resource_bar_visual(bar2Frame)
-    if not bar2Frame then return end
-
-    if bar2Frame.runebars then
-        for _, rb in ipairs(bar2Frame.runebars) do rb:Hide() end
-    end
-    if bar2Frame.countStack then bar2Frame.countStack:Show() end
-    if bar2Frame.countDuration then bar2Frame.countDuration:Show() end
-
-    local max_stack = Config.maxStack
-    bar2Frame:SetMinMaxValues(0, max_stack)
-
-    -- Update ticks
-    if not bar2Frame.ticks then bar2Frame.ticks = {} end
-    for _, tick in ipairs(bar2Frame.ticks) do tick:Hide() end
-
-    local bar_width = bar2Frame:GetWidth()
-    local bar_height = bar2Frame:GetHeight()
-
-    for i = 1, max_stack - 1 do
-        if not bar2Frame.ticks[i] then
-            local tick = bar2Frame:CreateTexture(nil, "OVERLAY")
-            tick:SetColorTexture(0, 0, 0, 0.8)
-            bar2Frame.ticks[i] = tick
-        end
-        local tick = bar2Frame.ticks[i]
-        tick:ClearAllPoints()
-        PixelUtil.SetSize(tick, 1, bar_height)
-        local x_offset = (bar_width / max_stack) * i
-        PixelUtil.SetPoint(tick, "LEFT", bar2Frame, "LEFT", x_offset, 0)
-        tick:Show()
-    end
-
-    local c = (bar2Frame.buffConfig and bar2Frame.buffConfig.color) or RB.cachedSpecColor
-    bar2Frame:SetStatusBarColor(c.r, c.g, c.b, 1)
-
-    local tex = bar2Frame:GetStatusBarTexture()
-    if ww_stack_count > 0 then
-        if tex then tex:SetAlpha(1) end
-        if bar2Frame.countStack then
-            bar2Frame.countStack:SetText(tostring(ww_stack_count))
-        end
-        if bar2Frame.countDuration and ww_expire_timestamp then
-            local rem = math.max(0, ww_expire_timestamp - GetTime())
-            bar2Frame.countDuration:SetFormattedText("%.0f", rem)
-        end
-        bar2Frame:SetValue(ww_stack_count, Enum.StatusBarInterpolation.ExponentialEaseOut)
-        bar2Frame:Show()
-    else
-        if tex then tex:SetAlpha(0) end
-        if bar2Frame.countStack then bar2Frame.countStack:SetText("") end
-        if bar2Frame.countDuration then bar2Frame.countDuration:SetText("") end
-        bar2Frame:SetValue(0, Enum.StatusBarInterpolation.ExponentialEaseOut)
-    end
-end
-
 local function handle_timer_tick()
     local bar2Frame = RB.bar2Frame
     if not bar2Frame then return end
@@ -213,25 +157,27 @@ function Mode:Update(bar2Frame)
     local max_stack = Config.maxStack
     bar2Frame:SetMinMaxValues(0, max_stack)
 
-    -- Update ticks
+    -- Update ticks (dirty check: 바 크기 변경 시에만 재배치)
     if not bar2Frame.ticks then bar2Frame.ticks = {} end
-    for _, tick in ipairs(bar2Frame.ticks) do tick:Hide() end
-
     local bar_width = bar2Frame:GetWidth()
     local bar_height = bar2Frame:GetHeight()
-
-    for i = 1, max_stack - 1 do
-        if not bar2Frame.ticks[i] then
-            local tick = bar2Frame:CreateTexture(nil, "OVERLAY")
-            tick:SetColorTexture(0, 0, 0, 0.8)
-            bar2Frame.ticks[i] = tick
+    if bar2Frame._lastBarWidth ~= bar_width or bar2Frame._lastBarHeight ~= bar_height then
+        bar2Frame._lastBarWidth = bar_width
+        bar2Frame._lastBarHeight = bar_height
+        for _, tick in ipairs(bar2Frame.ticks) do tick:Hide() end
+        for i = 1, max_stack - 1 do
+            if not bar2Frame.ticks[i] then
+                local tick = bar2Frame:CreateTexture(nil, "OVERLAY")
+                tick:SetColorTexture(0, 0, 0, 0.8)
+                bar2Frame.ticks[i] = tick
+            end
+            local tick = bar2Frame.ticks[i]
+            tick:ClearAllPoints()
+            PixelUtil.SetSize(tick, 1, bar_height)
+            local x_offset = (bar_width / max_stack) * i
+            PixelUtil.SetPoint(tick, "LEFT", bar2Frame, "LEFT", x_offset, 0)
+            tick:Show()
         end
-        local tick = bar2Frame.ticks[i]
-        tick:ClearAllPoints()
-        PixelUtil.SetSize(tick, 1, bar_height)
-        local x_offset = (bar_width / max_stack) * i
-        PixelUtil.SetPoint(tick, "LEFT", bar2Frame, "LEFT", x_offset, 0)
-        tick:Show()
     end
 
     local c = (bar2Frame.buffConfig and bar2Frame.buffConfig.color) or RB.cachedSpecColor

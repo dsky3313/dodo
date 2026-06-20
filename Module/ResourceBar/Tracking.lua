@@ -44,10 +44,10 @@ local bar2ClassConfig = {
         [3] = { { barMode = "ironfur",       spellID   = 192081, color = Colors.Spec.DRUID[3] } },
     },
     ["EVOKER"]      = {
-        [3] = { { barMode = "duration",      spellID   = 395296, color = Colors.Spec.WARRIOR[1] } },
+        [3] = { { barMode = "duration",      spellID = 395296, color = Colors.Spec.WARRIOR[1] } },
     },
     ["MAGE"]        = {
-        [1] = { { barMode = "power",         powerType = 16,     powerToken = "ARCANE_CHARGES", isTickPower = true, ticks = 4, color = Colors.Class.DEMONHUNTER } },
+        [1] = { { barMode = "power", powerType = 16, powerToken = "ARCANE_CHARGES", isTickPower = true, ticks = 4, color = Colors.Class.DEMONHUNTER } },
     },
     ["MONK"]        = {
         [1] = { { barMode = "stagger", color = Colors.Spec.MONK[1] } },
@@ -59,7 +59,7 @@ local bar2ClassConfig = {
         [3] = { { barMode = "stack",         spellID   = 51564,  maxStack   = 3, color = Colors.Spec.SHAMAN[3] } },
     },
     ["WARRIOR"]     = {
-        [1] = { { barMode = "duration",      spellID   = 167105, color = Colors.Spec.WARRIOR[1] } },
+        [1] = { { barMode = "duration",      spellID = 167105, color = Colors.Spec.WARRIOR[1] } },
         [2] = {
             { barMode = "whirlwind",         spellID   = 12950,  maxStack   = 4,            requiredSpell = 12950, color = Colors.Spec.WARRIOR[2] },
             { barMode = "duration",          spellID   = 184361, excludedSpell = 12950, color = Colors.Spec.WARRIOR[2] },

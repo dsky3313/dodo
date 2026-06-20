@@ -96,7 +96,11 @@ function Mode:Update(bar2Frame)
     end
     
     local width, height2 = get_bar2_size()
-    bar2Frame:SetSize(width, height2)
+    if bar2Frame._lastSFWidth ~= width or bar2Frame._lastSFHeight ~= height2 then
+        bar2Frame:SetSize(width, height2)
+        bar2Frame._lastSFWidth = width
+        bar2Frame._lastSFHeight = height2
+    end
 
     bar2Frame:SetMinMaxValues(0, 5)
     local count = C_Spell.GetSpellCastCount(228477) or 0

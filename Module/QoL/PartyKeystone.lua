@@ -1,6 +1,7 @@
 -- ==============================
 -- Inspired
 -- ==============================
+-- BliZzi Party Tools (https://www.curseforge.com/wow/addons/blizzi-party-tools)
 -- KeystoneGroupList (https://www.curseforge.com/wow/addons/keystonegrouplist)
 -- Party Keystones TSU (https://wago.io/wLeguLKq-)
 
@@ -406,10 +407,6 @@ local function update_module_state()
             open_raid_lib.RegisterCallback(openraid_cb_handle, "KeystoneUpdate", on_openraid_keystone_update)
         end
 
-        -- 실시간 챌린지 상태 체크하여 이벤트 등록 분기
-        local activeLevel = C_ChallengeMode and C_ChallengeMode.GetActiveKeystoneInfo and C_ChallengeMode.GetActiveKeystoneInfo()
-        is_challenge_active = (activeLevel and activeLevel > 0)
-
         if is_challenge_active then
             main_frame:RegisterEvent("CHALLENGE_MODE_COMPLETED")
             main_frame:RegisterEvent("CHALLENGE_MODE_RESET")
@@ -740,6 +737,8 @@ local function on_init_event(self, event, arg1)
             dodo.EditMode:CreateSystem("Keystone", "쐐기돌 목록", "쐐기돌 목록", UIParent, 200, 220, { point = "TOPLEFT", relativeTo = "UIParent", relativePoint = "TOPLEFT", xOfs = 20, yOfs = -140 }, nil, function() return dodoDB and dodoDB.enableKeystoneModule ~= false end)
         end
         initialize()
+        local activeLevel = C_ChallengeMode and C_ChallengeMode.GetActiveKeystoneInfo and C_ChallengeMode.GetActiveKeystoneInfo()
+        is_challenge_active = (activeLevel and activeLevel > 0)
         update_module_state()
         main_frame:SetScript("OnEvent", on_event)
         self:UnregisterEvent("PLAYER_LOGIN")

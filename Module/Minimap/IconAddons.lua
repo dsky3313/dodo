@@ -21,7 +21,6 @@ local Config = {
 
     sortOrder = {
         ["ExpansionLandingPageMinimapButton"] = 1,
-        ["Worldsoul_Searching"]  = 2,
         ["SimpleAddonManager"]   = 2,
         ["NotEvenClose"]         = 3,
         ["SimulationCraft"]      = 4,

@@ -246,7 +246,7 @@ end
 
 local function build_button_cache()
     dodo.buttonCache = dodo.buttonCache or {}
-    wipe(dodo.buttonCache)
+    for _, arr in pairs(dodo.buttonCache) do wipe(arr) end
     local groups = {
         "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton",
         "MultiBarRightButton", "MultiBarLeftButton", "MultiBar5Button", "MultiBar6Button", "MultiBar7Button",
@@ -263,13 +263,13 @@ local function build_button_cache()
                     local rawSpellName = C_Spell.GetSpellName(actionSpellID)
 
                     if spellName then
-                        dodo.buttonCache[spellName] = dodo.buttonCache[spellName] or {}
-                        table.insert(dodo.buttonCache[spellName], btn)
+                        if not dodo.buttonCache[spellName] then dodo.buttonCache[spellName] = {} end
+                        dodo.buttonCache[spellName][#dodo.buttonCache[spellName] + 1] = btn
                     end
 
                     if rawSpellName and rawSpellName ~= spellName then
-                        dodo.buttonCache[rawSpellName] = dodo.buttonCache[rawSpellName] or {}
-                        table.insert(dodo.buttonCache[rawSpellName], btn)
+                        if not dodo.buttonCache[rawSpellName] then dodo.buttonCache[rawSpellName] = {} end
+                        dodo.buttonCache[rawSpellName][#dodo.buttonCache[rawSpellName] + 1] = btn
                     end
                 end
             end
@@ -292,8 +292,8 @@ local function update_cdm_from_item(item)
     end
 
     local targetSpellID = CDMMapping[baseSpellID] or baseSpellID
-    local success, spellName = pcall(C_Spell.GetSpellName, targetSpellID)
-    if success and spellName then
+    local spellName = C_Spell.GetSpellName(targetSpellID)
+    if spellName then
         local buttons = dodo.buttonCache and dodo.buttonCache[spellName]
         if buttons then
             for _, btn in ipairs(buttons) do
@@ -382,8 +382,9 @@ local function init_custom_cdm_spells()
     end
 end
 
+local _matched_buf = {}
 local function get_matching_buttons(targetSpellID, configKey)
-    local matched = {}
+    wipe(_matched_buf)
     local itemConfig = CustomCDMConfigs[configKey]
     for i = 1, 12 do
         local btn = _G["MultiBar7Button" .. i]
@@ -398,7 +399,7 @@ local function get_matching_buttons(targetSpellID, configKey)
                     end
                 end
                 if isMatch or baseSpellID == targetSpellID or id == targetSpellID or id == configKey or baseSpellID == configKey then
-                    table.insert(matched, btn)
+                    _matched_buf[#_matched_buf + 1] = btn
                 end
             elseif actionType == "item" then
                 local isMatch = false
@@ -408,17 +409,17 @@ local function get_matching_buttons(targetSpellID, configKey)
                     end
                 end
                 if isMatch or id == configKey then
-                    table.insert(matched, btn)
+                    _matched_buf[#_matched_buf + 1] = btn
                 else
                     local _, btnSpellID = C_Item.GetItemSpell(id)
                     if btnSpellID and btnSpellID == targetSpellID then
-                        table.insert(matched, btn)
+                        _matched_buf[#_matched_buf + 1] = btn
                     end
                 end
             end
         end
     end
-    return matched
+    return _matched_buf
 end
 
 dodo.ActionbarOnSpellcastSucceeded = function(unitTarget, castGUID, spellID)

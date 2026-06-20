@@ -380,7 +380,7 @@ init_frame:SetScript("OnEvent", function(self, event)
                 return
             end
 
-            if EditMode.systemSettings[systemID] then
+            if EditMode.systemSettings and EditMode.systemSettings[systemID] then
                 local panel = create_system_wing_panel(systemID)
                 panel:Show()
                 update_dialog_layout()

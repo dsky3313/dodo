@@ -70,7 +70,7 @@ function Mode:Update(bar2Frame)
 
     local maxValue = bar2Frame.buffConfig and bar2Frame.buffConfig.duration or 20
     bar2Frame:SetMinMaxValues(0, maxValue)
-    
+
     if bar2Frame.ticks then
         for _, tick in ipairs(bar2Frame.ticks) do tick:Hide() end
     end
@@ -84,9 +84,9 @@ function Mode:Update(bar2Frame)
         bar2Frame:SetValue(0, Enum.StatusBarInterpolation.ExponentialEaseOut)
         local tex = bar2Frame:GetStatusBarTexture()
         if tex then tex:SetAlpha(0) end
-        if durationTicker then 
+        if durationTicker then
             durationTicker:Cancel()
-            durationTicker = nil 
+            durationTicker = nil
             bar2Frame._lastDurationIntVal = nil
         end
         return

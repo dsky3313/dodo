@@ -24,8 +24,8 @@ Data/Colors.lua
 Data/Icon.lua
 Data/OptionUI.xml
 Data/OptionUI.lua
-Data/Widgets.lua
 Data/Dungeons.lua
+Data/Widgets.lua
 
 # Editmode
 Module/Editmode/ModuleSettings.lua
@@ -52,19 +52,22 @@ Module/CharacterFrame/Gem.lua
 # ChatFrame
 Module/ChatFrame/Core.lua
 Module/ChatFrame/Font.lua
-Module/ChatFrame/URL.lua
-Module/ChatFrame/Short.lua
 Module/ChatFrame/GuildButton.lua
+Module/ChatFrame/Short.lua
+Module/ChatFrame/URL.lua
+
+# ChallengesKeystoneFrame
+Module/ChallengesKeystoneFrame/InsertKeystone.lua
 
 # Combat
+Module/Combat/BloodBrez.lua
 Module/Combat/Debuff.lua
 Module/Combat/Debuff.xml
-Module/Combat/BloodBrez.lua
 
 # DamageMeter
 Module/DamageMeter/Core.lua
-Module/DamageMeter/Sync.lua
 Module/DamageMeter/Reset.lua
+Module/DamageMeter/Sync.lua
 
 # EncounterJournal
 Module/EncounterJournal/Core.lua
@@ -92,19 +95,14 @@ Module/Minimap/Square.lua
 Module/Minimap/Zoom.lua
 
 # PVEFrame
+Module/PVEFrame/BrowseGroup.lua
 Module/PVEFrame/PartyClass.lua
 Module/PVEFrame/QuickSelectDungeons.lua
-Module/PVEFrame/BrowseGroup.lua
 
-# ChallengesKeystoneFrame
-Module/ChallengesKeystoneFrame/InsertKeystone.lua
-
-# QoL Modules
-Module/ReadyCheck/Timer.lua
-Module/ReadyCheck/Consumeable.lua
-Module/QoL/ColorPicker.lua
+# QoL
 Module/QoL/Audio.lua
 Module/QoL/Camera.lua
+Module/QoL/ColorPicker.lua
 Module/QoL/ChatBubble.lua
 Module/QoL/CursorSpellTracker.lua
 Module/QoL/DeleteNow.lua
@@ -113,15 +111,18 @@ Module/QoL/FrameOption.lua
 Module/QoL/Friends.lua
 Module/QoL/InsDifficulty.lua
 Module/QoL/PartyKeystone.lua
-Module/QoL/KeystoneTimer.lua
 Module/QoL/Merchant.lua
 Module/QoL/NewLFG.lua
 Module/QoL/QuickBobber.lua
-#Module/QoL/RaidBuff.lua
 Module/QoL/Teleport.lua
 Module/QoL/TimerLFG.lua
 Module/QoL/WMarker.lua
 Module/QoL/WowheadLink.lua
+
+# ReadyCheck
+#Module/QoL/RaidBuff.lua
+Module/ReadyCheck/Timer.lua
+Module/ReadyCheck/Consumeable.lua
 
 # ResourceBar
 Module/ResourceBar/ResourceBar.xml
@@ -147,18 +148,21 @@ Module/Tooltip/Vehicle.lua
 
 # Unitframe
 Module/Unitframe/Core.lua
-Module/Unitframe/Unit/Castbar.lua
 Module/Unitframe/Unit/Absorb.lua
 Module/Unitframe/Unit/Auras.lua
+Module/Unitframe/Unit/Castbar.lua
 Module/Unitframe/Unit/Player.lua
 Module/Unitframe/Unit/Target.lua
 Module/Unitframe/Unit/Boss.lua
 Module/Unitframe/Unit/ETC.lua
+Module/Unitframe/Party/AurasHealthColor.lua
 Module/Unitframe/Party/Leader.lua
 Module/Unitframe/Party/Overshield.lua
-Module/Unitframe/Party/AurasHealthColor.lua
 #Module/Unitframe/Party/SoloMode.lua
 #Module/Unitframe/Raid/Anchor.lua
+
+# ObjectiveTracker
+Module/ObjectiveTracker/KeystoneTimer.lua
 
 # WorldMap
 #Module/WorldMap/Icon.lua
@@ -168,4 +172,4 @@ Module/Slash.lua
 Option.lua
 Module/Editmode/EditModePos.lua
 
-# 리소스바, 유닛프레임, 레디쳌 수정해야함
+# 유닛프레임, 레디쳌 수정해야함

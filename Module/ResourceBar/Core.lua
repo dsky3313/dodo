@@ -218,7 +218,7 @@ local function on_event(self, event, arg1)
 
         -- EditMode 시스템 가상 앵커 등록 (2dodo 9번 규칙)
         if dodo.EditMode then
-            dodo.EditMode:CreateSystem("ResourceBar", "자원바", "자원바와 버프 추적바의 위치를 조정합니다.", UIParent, 272, 21, { point = "CENTER", relativeTo = "UIParent", relativePoint = "CENTER", xOfs = 0, yOfs = RB.barConfigs[1].y })
+            dodo.EditMode:CreateSystem("ResourceBar", "자원바", "자원바와 버프 추적바의 위치를 조정합니다.", UIParent, 272, 21, { point = "CENTER", relativeTo = "UIParent", relativePoint = "CENTER", xOfs = 0, yOfs = RB.barConfigs[1].y }, nil, function() return dodo.DB and dodo.DB.enableResourceBarModule ~= false end)
         end
 
         initialize()
