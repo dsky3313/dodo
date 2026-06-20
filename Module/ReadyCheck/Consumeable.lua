@@ -240,11 +240,11 @@ function update_consumables()
         local flaskDuration, flaskExpiration, flaskIcon = 0, 0, nil
         local runeDuration, runeExpiration = 0, 0
 
-        for i = 1, 40 do
+        for i = 1, 50 do
             local data = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
             if not data then break end
 
-            if FOOD_BUFFS[data.spellId] or data.icon == 136000 then
+            if FOOD_BUFFS[data.spellId] or (not issecretvalue(data.icon) and data.icon == 136000) then
                 hasFood = true
                 foodDuration = data.duration
                 foodExpiration = data.expirationTime

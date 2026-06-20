@@ -116,8 +116,6 @@ local function refresh_spec_watchlist()
 	if on_tick then on_tick() end
 end
 
-refresh_spec_watchlist()
-
 -- ==============================
 -- 체력바 색상 override (버프중 / 만료임박) 조회
 -- ==============================
@@ -282,11 +280,35 @@ local function on_event(self, event, unit)
 end
 
 local event_frame = CreateFrame("Frame")
-event_frame:RegisterEvent("UNIT_AURA")
-event_frame:RegisterEvent("GROUP_ROSTER_UPDATE")
-event_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-event_frame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 event_frame:SetScript("OnEvent", on_event)
+
+local function update_visual()
+	if is_module_enabled() then
+		event_frame:RegisterEvent("UNIT_AURA")
+		event_frame:RegisterEvent("GROUP_ROSTER_UPDATE")
+		event_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+		event_frame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+		refresh_ticker()
+	else
+		event_frame:UnregisterAllEvents()
+		stop_ticker()
+		on_tick()
+	end
+end
+
+local init_frame = CreateFrame("Frame")
+init_frame:RegisterEvent("ADDON_LOADED")
+init_frame:RegisterEvent("PLAYER_LOGIN")
+init_frame:SetScript("OnEvent", function(self, event, arg1)
+	if event == "ADDON_LOADED" and arg1 == addonName then
+		dodoDB = dodoDB or {}
+	elseif event == "PLAYER_LOGIN" then
+		refresh_spec_watchlist()
+		update_visual()
+		self:UnregisterEvent("ADDON_LOADED")
+		self:UnregisterEvent("PLAYER_LOGIN")
+	end
+end)
 
 -- ==============================
 -- 설정 등록
@@ -298,8 +320,7 @@ if dodo.RegisterEditModeModuleSetting then
 			get = function() return dodoDB and dodoDB.enableAurasHealthColor ~= false end,
 			set = function(checked)
 				if dodoDB then dodoDB.enableAurasHealthColor = checked end
-				refresh_ticker()
-				on_tick()
+				update_visual()
 			end
 		}
 	})

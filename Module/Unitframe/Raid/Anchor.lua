@@ -39,7 +39,6 @@ local EditModeManagerFrame = EditModeManagerFrame
 local hooksecurefunc = hooksecurefunc
 local InCombatLockdown = InCombatLockdown
 local PartyFrame = PartyFrame
-local print = print
 local securecallmethod = securecallmethod
 
 -- ==============================

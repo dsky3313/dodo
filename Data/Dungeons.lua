@@ -149,7 +149,7 @@ dodo.Dungeons = {
     { name = "마괴종",   type = "spell", id = 1239155, category = "TWW" },
 
     -- MN
-    -- { name = "기공",     type = "item",  id = 248485,  category = "MN" },
+    { name = "기공",     type = "item",  id = 248485,  category = "MN" },
     -- { name = "골목",     type = "spell", id = 1254559, category = "MN" },
     -- { name = "골짜기",   type = "spell", id = 1254559, category = "MN" },
     { name = "동굴",     type = "spell", id = 1254559, category = "MN", isSeason = true, mapID = 560, lfgID = 1764, texture = 7322719 },

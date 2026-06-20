@@ -14,6 +14,10 @@ local type = type
 local UnitGetTotalAbsorbs = UnitGetTotalAbsorbs
 local UnitGetTotalHealAbsorbs = UnitGetTotalHealAbsorbs
 
+local function on_absorb_changed(s, event, u)
+	if u == s.unit then s.Health:ForceUpdate() end
+end
+
 -- ==============================
 -- 보호막/치유흡수 오버레이 공통 빌더
 -- ==============================
@@ -81,12 +85,8 @@ function dodo.UnitframeCreateAbsorb(self, unit)
 	end
 
 	if not self.__unitframeAbsorbEventsRegistered then
-		self:RegisterEvent('UNIT_ABSORB_AMOUNT_CHANGED', function(s, event, u)
-			if u == s.unit then s.Health:ForceUpdate() end
-		end)
-		self:RegisterEvent('UNIT_HEAL_ABSORB_AMOUNT_CHANGED', function(s, event, u)
-			if u == s.unit then s.Health:ForceUpdate() end
-		end)
+		self:RegisterEvent('UNIT_ABSORB_AMOUNT_CHANGED', on_absorb_changed)
+		self:RegisterEvent('UNIT_HEAL_ABSORB_AMOUNT_CHANGED', on_absorb_changed)
 		self.__unitframeAbsorbEventsRegistered = true
 	end
 

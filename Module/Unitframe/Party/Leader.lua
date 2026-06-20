@@ -211,13 +211,21 @@ end
 -- ==============================
 -- 전체 업데이트
 -- ==============================
+local init_frame -- forward
 
 local function update_all()
 	local is_enabled = (dodoDB and dodoDB.enablePartyframeLeader ~= false)
 	if not is_enabled then
 		clear_all_icons()
+		init_frame:UnregisterEvent("GROUP_ROSTER_UPDATE")
+		init_frame:UnregisterEvent("PARTY_LEADER_CHANGED")
+		init_frame:UnregisterEvent("PLAYER_ROLES_ASSIGNED")
 		return
 	end
+
+	init_frame:RegisterEvent("GROUP_ROSTER_UPDATE")
+	init_frame:RegisterEvent("PARTY_LEADER_CHANGED")
+	init_frame:RegisterEvent("PLAYER_ROLES_ASSIGNED")
 
 	if not IsInGroup() then
 		clear_all_icons()
@@ -255,12 +263,9 @@ local function on_event(self, event, arg1)
 	end
 end
 
-local init_frame = CreateFrame("Frame")
+init_frame = CreateFrame("Frame")
 init_frame:RegisterEvent("ADDON_LOADED")
 init_frame:RegisterEvent("PLAYER_LOGIN")
-init_frame:RegisterEvent("GROUP_ROSTER_UPDATE")
-init_frame:RegisterEvent("PARTY_LEADER_CHANGED")
-init_frame:RegisterEvent("PLAYER_ROLES_ASSIGNED")
 init_frame:SetScript("OnEvent", on_event)
 
 -- ==============================

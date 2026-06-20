@@ -25,7 +25,6 @@ local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
 local ipairs = ipairs
 local issecretvalue = issecretvalue or function() return false end
-local pcall = pcall
 local RegisterUnitWatch = RegisterUnitWatch
 local SecureUnitButton_OnLoad = SecureUnitButton_OnLoad
 local string_format = string.format
@@ -61,14 +60,6 @@ oUF.Tags.Methods['perhp:decimal'] = function(unit)
 end
 oUF.Tags.Events['perhp:decimal'] = 'UNIT_HEALTH UNIT_MAXHEALTH'
 
-local function check_zero(val)
-	return val == 0
-end
-
-local function format_pct(pct)
-	return string_format('%.0f', pct)
-end
-
 oUF.Tags.Methods['dodopower'] = function(unit)
 	local max = UnitPowerMax(unit)
 	if not max then return '' end
@@ -76,39 +67,29 @@ oUF.Tags.Methods['dodopower'] = function(unit)
 	local powerType, powerToken = UnitPowerType(unit)
 	local isMana = (powerType == 0 or powerToken == "MANA")
 
-	local maxSuccess, isMaxZero = pcall(check_zero, max)
-	if not maxSuccess then
+	if issecretvalue(max) then
 		if isMana then
 			local pct = UnitPowerPercent(unit, nil, true, CurveConstants and CurveConstants.ScaleTo100)
-			if not pct then return '0' end
-			local ok, formattedPct = pcall(format_pct, pct)
-			if ok then return formattedPct end
-			return pct
+			if not pct or issecretvalue(pct) then return '0' end
+			return string_format('%.0f', pct)
 		else
 			local cur = UnitPower(unit)
-			return cur
+			return issecretvalue(cur) and cur or tostring(cur)
 		end
 	end
 
-	if isMaxZero then return '' end
+	if max == 0 then return '' end
 
 	local cur = UnitPower(unit)
-	local curSuccess, isCurZero = pcall(check_zero, cur)
-	if not curSuccess then
-		if isMana then
-			local pct = UnitPowerPercent(unit, nil, true, CurveConstants and CurveConstants.ScaleTo100)
-			if not pct then return '0' end
-			local ok, formattedPct = pcall(format_pct, pct)
-			if ok then return formattedPct end
-			return pct
-		else
-			return cur
-		end
-	end
-
 	if isMana then
+		if issecretvalue(cur) then
+			local pct = UnitPowerPercent(unit, nil, true, CurveConstants and CurveConstants.ScaleTo100)
+			if not pct or issecretvalue(pct) then return '0' end
+			return string_format('%.0f', pct)
+		end
 		return string_format('%.0f', (cur / max) * 100)
 	else
+		if issecretvalue(cur) then return cur end
 		return tostring(cur)
 	end
 end
@@ -128,6 +109,13 @@ local function disable_unit_frame(frame, containerKey, contentKey)
 	if health then health:UnregisterAllEvents() end
 	local power = frame.manabar or frame.ManaBar
 	if power then power:UnregisterAllEvents() end
+end
+
+local function restore_unit_frame(frame, containerKey, contentKey)
+	if not frame then return end
+	frame:SetAlpha(1)
+	if frame[containerKey] then frame[containerKey]:Show() end
+	if frame[contentKey] then frame[contentKey]:Show() end
 end
 
 local original_disable_blizzard = oUF.DisableBlizzard
@@ -340,12 +328,6 @@ local function update_module_state()
 			end
 		end
 	else
-		local function restore_unit_frame(frame, containerKey, contentKey)
-			if not frame then return end
-			frame:SetAlpha(1)
-			if frame[containerKey] then frame[containerKey]:Show() end
-			if frame[contentKey] then frame[contentKey]:Show() end
-		end
 		restore_unit_frame(PlayerFrame, 'PlayerFrameContainer', 'PlayerFrameContent')
 		restore_unit_frame(TargetFrame, 'TargetFrameContainer', 'TargetFrameContent')
 		restore_unit_frame(FocusFrame, 'TargetFrameContainer', 'TargetFrameContent')

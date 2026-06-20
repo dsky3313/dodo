@@ -172,4 +172,4 @@ Module/Slash.lua
 Option.lua
 Module/Editmode/EditModePos.lua
 
-# 유닛프레임, 레디쳌 수정해야함
+# 레디쳌 수정해야함
