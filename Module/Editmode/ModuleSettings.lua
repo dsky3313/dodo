@@ -440,272 +440,21 @@ local function create_edit_mode_panel()
 end
 
 -- ==============================
--- 기능 2 - 편집 모드 세부 설정
--- ==============================
-local system_settings = {}
-local custom_panel_active = false  -- 커스텀 프레임 클릭 시 OnHide 차단용
-local system_wing_panel = nil
-local original_dialog_height = nil
-
----@param systemID number 블리자드 순정 EditModeSystem Enum ID
----@param settingItems table 설정 컴포넌트 데이터 목록
-function dodo.RegisterEditModeSystemSetting(systemID, settingItems)
-    if not system_settings[systemID] then
-        system_settings[systemID] = {}
-    end
-    table_insert(system_settings[systemID], settingItems)
-end
-
-local function update_system_disabled_states()
-    if not system_wing_panel or not system_wing_panel.update_queue then return end
-    for _, q in ipairs(system_wing_panel.update_queue) do
-        local disabled = q.check()
-        local enabled = not disabled
-        if q.type == "slider" then
-            dodo.UI:SetSliderEnabled(q.comp, enabled)
-        elseif q.type == "dropdown" then
-            dodo.UI:SetDropdownEnabled(q.comp, enabled)
-        else
-            dodo.UI:SetComponentEnabled(q.comp, enabled)
-        end
-    end
-end
-
-local function update_dialog_layout()
-    local EditModeSystemSettingsDialog = _G.EditModeSystemSettingsDialog
-    if not EditModeSystemSettingsDialog or not EditModeSystemSettingsDialog:IsShown() then return end
-    if not system_wing_panel or not system_wing_panel:IsShown() then return end
-
-    if type(system_wing_panel.systemID) == "number" then
-        -- 순정 세부설정창도 우측 EMP와 짝을 맞춰, 좌측(LEFT)에 날개 자석 앵커링! (간섭 0%)
-        system_wing_panel:ClearAllPoints()
-        system_wing_panel:SetPoint("TOPRIGHT", EditModeSystemSettingsDialog, "TOPLEFT", -10, 0)
-    end
-end
-
-local function create_system_wing_panel(systemID)
-    if system_wing_panel then
-        system_wing_panel:Hide()
-        system_wing_panel = nil
-    end
-
-    local EditModeSystemSettingsDialog = _G.EditModeSystemSettingsDialog
-    local isPureSystem = (type(systemID) == "number")
-    
-    -- 물리적 격리: 부모를 항상 UIParent로 지정하여 자식 프레임 팽창으로 인한 다이얼로그 테두리 버그 차단
-    local f = CreateFrame("Frame", "dodoEditModeSystemPanel", UIParent, "BackdropTemplate")
-    
-    if isPureSystem and EditModeSystemSettingsDialog then
-        f:SetFrameStrata(EditModeSystemSettingsDialog:GetFrameStrata())
-        f:SetFrameLevel(EditModeSystemSettingsDialog:GetFrameLevel() + 5)
-    else
-        local EditModeManagerFrame = _G.EditModeManagerFrame
-        if EditModeManagerFrame then
-            local mainPanel = _G.dodoEditModePanel
-            if mainPanel then
-                f:SetFrameStrata(mainPanel:GetFrameStrata())
-                f:SetFrameLevel(mainPanel:GetFrameLevel() + 5)
-            else
-                f:SetFrameStrata("HIGH")
-                f:SetFrameLevel(EditModeManagerFrame:GetFrameLevel() + 5)
-            end
-        end
-    end
-
-    -- 순정/커스텀 무조건 좌측 날개형 독립 패널로 띄우므로 나인슬라이스 스킨 전면 적용
-    local NineSliceUtil = NineSliceUtil or _G.NineSliceUtil
-    if NineSliceUtil then
-        NineSliceUtil.ApplyLayoutByName(f, "Dialog")
-    end
-
-    f.Bg = f:CreateTexture(nil, "BACKGROUND")
-    f.Bg:SetPoint("TOPLEFT", 8, -8)
-    f.Bg:SetPoint("BOTTOMRIGHT", -8, 8)
-    f.Bg:SetAtlas("UI-DialogBox-Background-Dark")
-    f.Bg:SetAlpha(0.85)
-
-    f:SetWidth(260)
-    
-    local update_queue = {}
-    f.update_queue = update_queue
-
-    local groups = system_settings[systemID]
-    local flat_items = {}
-    if groups then
-        for g = 1, #groups do
-            local group_items = groups[g]
-            for i = 1, #group_items do
-                table_insert(flat_items, group_items[i])
-            end
-        end
-    end
-
-    -- 윙 패널 결합(isJoined) 식별 및 종속성 주입 전처리
-    local menu_items = {}
-    local idx = 1
-    while idx <= #flat_items do
-        local item = flat_items[idx]
-        local next_item = flat_items[idx + 1]
-        if next_item and (next_item.type == "dropdown" or next_item.type == "slider") and (not item.type) and (not next_item.preventJoin) then
-            item.isJoined = true
-            next_item.isJoined = true
-
-            local original_disabled = next_item.disabled
-            next_item.disabled = function()
-                if original_disabled and original_disabled() then
-                    return true
-                end
-                if item.get and not item.get() then
-                    return true
-                end
-                if item.disabled and item.disabled() then
-                    return true
-                end
-                return false
-            end
-
-            table_insert(menu_items, item)
-            table_insert(menu_items, next_item)
-            idx = idx + 2
-        else
-            item.isJoined = false
-            table_insert(menu_items, item)
-            idx = idx + 1
-        end
-    end
-
-    -- 상단 텍스트 및 시작 Y 좌표 설정
-    local current_y = -15
-    local title = f:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    title:SetPoint("TOPLEFT", f, "TOPLEFT", 15, -12)
-
-    if type(systemID) == "string" then
-        title:SetText(systemID .. " 세부 설정")
-        current_y = -32
-    else
-        title:SetText("")
-        current_y = -15
-    end
-
-    -- 세로 1열 컴포넌트 배치 (결합된 슬라이더/드롭다운은 다음 줄에 들여쓰기)
-    for _, item in ipairs(menu_items) do
-        if item.type == "dropdown" then
-            if item.isJoined then
-                -- 결합 드롭다운: 라벨 없이 X=30으로 들여쓰기해서 배치
-                local dd = dodo.UI:CreateDropdown(f, item.get, item.set, item.values, nil)
-                dd:SetPoint("TOPLEFT", f, "TOPLEFT", 30, current_y - 2)
-                if item.disabled then
-                    table_insert(update_queue, { comp = dd, type = "dropdown", check = item.disabled })
-                end
-                current_y = current_y - 28
-            else
-                -- 단독 드롭다운: 세로 1열, 위에 라벨 포함
-                local dd = dodo.UI:CreateDropdown(f, item.get, item.set, item.values, item.name)
-                if dd.Label then
-                    dd.Label:ClearAllPoints()
-                    dd.Label:SetPoint("TOPLEFT", f, "TOPLEFT", 12, current_y)
-                    current_y = current_y - 14
-                end
-                dd:SetPoint("TOPLEFT", f, "TOPLEFT", 12, current_y - 6)
-                if item.disabled then
-                    table_insert(update_queue, { comp = dd, type = "dropdown", check = item.disabled })
-                end
-                current_y = current_y - 28
-            end
-        elseif item.type == "slider" then
-            if item.isJoined then
-                -- 결합 슬라이더: 라벨 없이 X=30으로 들여쓰기해서 배치
-                local slider = dodo.UI:CreateSlider(f, item.get, item.set, item.minVal or 0, item.maxVal or 100, item.step or 1, nil)
-                slider:SetPoint("TOPLEFT", f, "TOPLEFT", 30, current_y - 4)
-                if item.disabled then
-                    table_insert(update_queue, { comp = slider, type = "slider", check = item.disabled })
-                end
-                current_y = current_y - 28
-            else
-                -- 단독 슬라이더: 세로 1열, 위에 라벨 포함
-                local slider = dodo.UI:CreateSlider(f, item.get, item.set, item.minVal or 0, item.maxVal or 100, item.step or 1, item.name)
-                if slider.Label then
-                    slider.Label:ClearAllPoints()
-                    slider.Label:SetPoint("TOPLEFT", f, "TOPLEFT", 12, current_y)
-                    current_y = current_y - 14
-                end
-                slider:SetPoint("TOPLEFT", f, "TOPLEFT", 12, current_y - 6)
-                if item.disabled then
-                    table_insert(update_queue, { comp = slider, type = "slider", check = item.disabled })
-                end
-                current_y = current_y - 28
-            end
-        else -- checkbox
-            local cb = dodo.UI:CreateCheckbox(f, item.name, item.get, item.set)
-            cb:SetPoint("TOPLEFT", f, "TOPLEFT", 0, current_y)
-            if item.disabled then
-                table_insert(update_queue, { comp = cb, type = "checkbox", check = item.disabled })
-            end
-            current_y = current_y - 26
-        end
-    end
-
-    f:SetHeight(math_abs(current_y) + 15)
-    f.systemID = systemID
-    f.UpdateDisabledStates = update_system_disabled_states
-    system_wing_panel = f
-    update_system_disabled_states()
-
-    return f
-end
-
-local init_frame = CreateFrame("Frame")
-init_frame:RegisterEvent("PLAYER_LOGIN")
-init_frame:SetScript("OnEvent", function(self, event)
-    local EditModeSystemSettingsDialog = _G.EditModeSystemSettingsDialog
-    if EditModeSystemSettingsDialog then
-        EditModeSystemSettingsDialog:HookScript("OnHide", function()
-            original_dialog_height = nil
-            _G.dodo_original_dialog_height = nil
-            if custom_panel_active then return end
-            if system_wing_panel then system_wing_panel:Hide() end
-        end)
-        
-        hooksecurefunc(EditModeSystemSettingsDialog, "UpdateDialog", update_dialog_layout)
-        EditModeSystemSettingsDialog:HookScript("OnShow", function()
-            local h = EditModeSystemSettingsDialog:GetHeight()
-            original_dialog_height = h
-            _G.dodo_original_dialog_height = h
-            update_dialog_layout()
-        end)
-    end
-
-    local EditModeManagerFrame = _G.EditModeManagerFrame
-    if EditModeManagerFrame then
-        hooksecurefunc(EditModeManagerFrame, "SelectSystem", function(sm, systemFrame)
-            -- 모듈 편집 모드가 완전히 꺼져 있다면 작동 차단 및 세부설정창 가림
-            if not EditMode.showSystems then
-                if system_wing_panel then system_wing_panel:Hide() end
-                return
-            end
-
-            local systemID = systemFrame.system
-            -- dodo 커스텀 프레임은 OnMouseDown에서 직접 처리하므로 여기서 무시
-            if type(systemID) == "table" and systemID.parentFrame then
-                return
-            end
-
-            if system_settings[systemID] then
-                local panel = create_system_wing_panel(systemID)
-                panel:Show()
-                update_dialog_layout()
-            else
-                if system_wing_panel then system_wing_panel:Hide() end
-            end
-        end)
-    end
-    self:UnregisterAllEvents()
-end)
-
--- ==============================
 -- 이벤트 및 콜백 구현 (전방 선언 대응)
 -- ==============================
 on_enter_edit_mode = function()
+    for _, system in pairs(EditMode.systems) do
+        local pt = dodoDB.editMode and dodoDB.editMode[system.systemName]
+        system._original_point = pt and {
+            point        = pt.point,
+            relativeTo   = pt.relativeTo,
+            relativePoint = pt.relativePoint,
+            xOfs         = pt.xOfs,
+            yOfs         = pt.yOfs,
+        } or nil
+        system._has_active_changes = false
+    end
+
     if EditMode.showSystems then
         update_systems_visibility()
     end
@@ -737,9 +486,7 @@ on_exit_edit_mode = function()
     end
 
     -- dodo 모듈 편집 해제 시 세부설정창도 완벽히 동시 은닉
-    if system_wing_panel then
-        system_wing_panel:Hide()
-    end
+    if EditMode.HideSystemWingPanel then EditMode.HideSystemWingPanel() end
 end
 
 on_checkbox_click = function(checked)
@@ -772,6 +519,16 @@ local function system_on_drag_start(self)
     self:StartMoving()
 end
 
+-- selection이 마우스를 가로채므로 드래그는 selection → system 위임 (LibEditMode 방식: self.parent)
+local function selection_on_drag_start(self)
+    self.parent:SetMovable(true)
+    self.parent:StartMoving()
+end
+
+local function selection_on_drag_stop(self)
+    system_on_drag_stop(self.parent)
+end
+
 local function system_on_drag_stop(self)
     self:StopMovingOrSizing()
     local new_point = { self:GetPoint() }
@@ -788,6 +545,7 @@ local function system_on_drag_stop(self)
 
     dodoDB.editMode = dodoDB.editMode or {}
     dodoDB.editMode[system_name] = new_point_data
+    self._has_active_changes = true
 
     if self.onPositionChanged then
         self.onPositionChanged(new_point_data)
@@ -822,14 +580,12 @@ function EditMode:CreateSystem(system_name, system_label, system_tooltip, parent
         return
     end
 
-    local system = CreateFrame("Frame", "dodoEditMode" .. system_name, parent_frame, "EditModeSystemTemplate")
+    -- EditModeSystemTemplate 제거: 자체 RegisterForDrag가 StartMoving 후 드래그 소유권 충돌 → 멈춤 불가
+    local system = CreateFrame("Frame", "dodoEditMode" .. system_name, parent_frame)
     local selection = CreateFrame("Frame", nil, system, "EditModeSystemSelectionTemplate")
     selection:SetAllPoints()
-    
-    -- 마우스 클릭 보장용 레이어 및 레벨 우선순위 조정
     selection:SetFrameStrata("LOW")
-    selection:SetFrameLevel(1000)
-    selection:EnableMouse(true)
+    selection:EnableMouse(false)  -- 시각 전용: 마우스 이벤트는 system이 직접 받음
     
     system:SetSize(width or 150, height or 50)
     system.systemName = system_name
@@ -837,11 +593,15 @@ function EditMode:CreateSystem(system_name, system_label, system_tooltip, parent
     system.systemTooltip = system_tooltip
     system.onPositionChanged = on_position_changed
     system.checkActiveFunc = check_active_func
+    system.defaultPoint    = default_point
+    system._isDodoSystem   = true
 
-    --  Blizzard EditModeSystemSettingsDialog 호환용 모조 메서드 주입
-    system.GetSystemName = function(self) return self.systemLabel or "" end
-    system.GetSettings = function(self) return {} end
-    system.HasSettings = function(self) return false end
+    -- EditModeSystemMixin 없으므로 필요한 메서드만 수동 위임
+    system.GetSystemName  = function(s) return s.systemLabel or "" end
+    system.GetSettings    = function(s) return {} end
+    system.HasSettings    = function(s) return false end
+    system.HighlightSystem = function(s) selection:ShowHighlighted() end
+    system.ClearHighlight  = function(s) selection:Hide() end
 
     -- 저장된 좌표 로드 (빈 테이블 예외 차단 후 default_point 보장)
     local saved_point = dodoDB.editMode and dodoDB.editMode[system_name]
@@ -849,29 +609,82 @@ function EditMode:CreateSystem(system_name, system_label, system_tooltip, parent
     system:ClearAllPoints()
     system:SetPoint(point.point or "CENTER", point.relativeTo or parent_frame, point.relativePoint or "CENTER", point.xOfs or 0, point.yOfs or 0)
 
-    -- 스크립트 및 메서드 매핑 (정적 함수 활용)
-    system:SetScript("OnDragStart", system_on_drag_start)
-    system:SetScript("OnDragStop", system_on_drag_stop)
-    
     selection.GetLabelText = selection_get_label_text
-    
-    -- EditModeSystemSelectionTemplate의 내부 툴팁 대응용 프록시 객체
+
+    -- EditModeSystemSelectionTemplate 내부 툴팁 대응용 프록시 객체
     selection.system = {
         parentFrame = system,
         GetSystemName = system_get_system_name
     }
 
-    -- 커스텀 프레임 클릭 감지: selection에 훅 설정 (selection이 마우스 이벤트를 받기 때문)
-    selection:HookScript("OnMouseDown", function(self, button)
-        if (button == "LeftButton" or button == "RightButton") and system_settings[system_name] then
-            custom_panel_active = true
-            local panel = create_system_wing_panel(system_name)
-            panel:ClearAllPoints()
-            panel:SetPoint("TOP", system, "BOTTOM", 0, -10)
-            panel:Show()
-            C_Timer.After(0, function() custom_panel_active = false end)
+    -- system이 직접 드래그/클릭 처리 (selection은 EnableMouse(false)이므로 통과)
+    system:EnableMouse(true)
+    system:RegisterForDrag("LeftButton")
+    system:SetScript("OnDragStart", system_on_drag_start)
+    system:SetScript("OnDragStop", system_on_drag_stop)
+    system:SetScript("OnMouseDown", function(self, button)
+        for _, sys in pairs(EditMode.systems) do
+            if sys ~= system then
+                sys:HighlightSystem()
+            end
+        end
+        selection:ShowSelected()
+
+        local dlg = _G.EditModeSystemSettingsDialog
+        if dlg then
+            EditMode.customPanelActive = true
+            if dlg:IsShown() then dlg:Hide() end
+            dlg:AttachToSystemFrame(system)
+            if EditMode.SelectPosFrame then EditMode.SelectPosFrame(system) end
+            C_Timer.After(0, function()
+                EditMode.customPanelActive = false
+            end)
         end
     end)
+
+    -- EditModeSystemSettingsDialog 호환 stub (AttachToSystemFrame 요건)
+    if EditModeSettingDisplayInfoManager then
+        EditModeSettingDisplayInfoManager.systemSettingDisplayInfo[system_name] =
+            EditModeSettingDisplayInfoManager.systemSettingDisplayInfo[system_name] or {}
+    end
+    system.system = system_name
+    system.settingDisplayInfoMap = {}
+    system.settingsDialogAnchor = AnchorUtil.CreateAnchor("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -250, 200)
+    system.ShouldResetSettingsDialogAnchors = function(s, old) return old ~= s end
+    system.GetSettingsDialogAnchor = function(s) return s.settingsDialogAnchor end
+    system.HasActiveChanges = function(s) return s._has_active_changes or false end
+    system.AddExtraButtons = function(s, pool)
+        if not s.defaultPoint then return false end
+        local btn = pool:Acquire()
+        btn.layoutIndex = 3
+        btn:SetText(HUD_EDIT_MODE_RESET_POSITION)
+        btn:SetEnabled(true)
+        btn:SetOnClickHandler(function()
+            local dp = s.defaultPoint
+            local ref = (type(dp.relativeTo) == "string") and (_G[dp.relativeTo] or UIParent) or (dp.relativeTo or UIParent)
+            s:ClearAllPoints()
+            s:SetPoint(dp.point or "CENTER", ref, dp.relativePoint or "CENTER", dp.xOfs or 0, dp.yOfs or 0)
+            local save = {
+                point        = dp.point or "CENTER",
+                relativeTo   = (type(dp.relativeTo) == "string") and dp.relativeTo or (dp.relativeTo and dp.relativeTo:GetName()) or "UIParent",
+                relativePoint = dp.relativePoint or "CENTER",
+                xOfs         = dp.xOfs or 0,
+                yOfs         = dp.yOfs or 0,
+            }
+            dodoDB.editMode = dodoDB.editMode or {}
+            dodoDB.editMode[s.systemName] = save
+            -- 원본이 있으면 되돌리기 버튼 활성화 (기본값 ≠ 세션 원본일 수 있음)
+            s._has_active_changes = s._original_point ~= nil
+            if s.onPositionChanged then s.onPositionChanged(save) end
+            local dlg = _G.EditModeSystemSettingsDialog
+            if dlg and dlg.attachedToSystem == s then dlg:UpdateDialog(s) end
+        end)
+        btn:Show()
+        return true
+    end
+    system.OnKeyDown = function(s, key) end
+    system.OnKeyUp = function(s, key) end
+    system.ClearDownKeys = function(s) end
 
     system:Hide()
     self.systems[system_name] = system

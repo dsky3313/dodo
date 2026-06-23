@@ -591,6 +591,12 @@ local function on_select_system(sm, systemFrame)
     update_pos_dialog()
 end
 
+function dodo.EditMode.SelectPosFrame(frame)
+    if not is_pos_active then return end
+    selected_frame = frame
+    update_pos_dialog()
+end
+
 local function on_clear_system()
     if not is_pos_active then return end
     selected_frame = nil
