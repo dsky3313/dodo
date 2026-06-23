@@ -585,6 +585,12 @@ local function initialize()
     -- 라이브러리 연결
     open_raid_lib = _G.LibStub and _G.LibStub("LibOpenRaid-1.0", true)
 
+    -- 12.0.0: CooldownManager.GetPlayerCooldownStatus가 secret value 직접 비교해 에러 발생
+    -- dodo는 keystone 기능만 사용하므로 cooldown 동기화 함수 무력화
+    if open_raid_lib and open_raid_lib.CooldownManager then
+        open_raid_lib.CooldownManager.GetPlayerCooldownStatus = function() return 0, 0, 0, 0, 0 end
+    end
+
     -- LibKeystone 연결
     lib_keystone = _G.LibStub and _G.LibStub("LibKeystone", true)
     if lib_keystone then
