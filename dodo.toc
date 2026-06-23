@@ -29,6 +29,7 @@ Data/Widgets.lua
 
 # Editmode
 Module/Editmode/ModuleSettings.lua
+Module/Editmode/EditModeSystemSettings.lua
 Module/Editmode/SystemSettings.lua
 
 # Actionbar
@@ -76,9 +77,13 @@ Module/EncounterJournal/AchievementsTabCategory.lua
 Module/EncounterJournal/AchievementsTabRowBuilder.lua
 Module/EncounterJournal/AchievementsTabUI.lua
 
-# EncounterTimeline
-#Module/EncounterTimeline/EncounterTimelineBar.lua
-Module/EncounterTimeline/EncounterTimelineColor.lua
+# Encounter
+Module/Encounter/Core.lua
+Module/Encounter/Data.lua
+#Module/Encounter/TimelineBar.lua
+#Module/Encounter/Sound.lua
+Module/Encounter/Text.lua
+Module/Encounter/TimelineColor.lua
 
 # GossipFrame
 Module/GossipFrame/Core.lua

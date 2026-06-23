@@ -210,6 +210,10 @@ function CDMOverlayMixin:Update()
         local auraInstanceID = rawget(item, "auraInstanceID")
         local auraDataUnit   = rawget(item, "auraDataUnit")
 
+        if not auraDataUnit then
+            self.Count:Hide()
+            return
+        end
         local count = C_UnitAuras.GetAuraApplicationDisplayCount(auraDataUnit, auraInstanceID)
         local hasDisplayCount = false
         if issecretvalue(count) then

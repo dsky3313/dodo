@@ -125,13 +125,15 @@ dodo.Colors = {
     HealthColorExpiring = { r = 0.80, g = 0.20, b = 0.20, hex = "ffcc3333" },
     },
 
-
-    EncounterRole = { -- 보스 인카운터 타임라인 색상 (EXBoss 기본 색상)
-    Tank     = { r = 0xC6/255, g = 0x9B/255, b = 0x6C/255, hex = "ffc69b6c" },
-    Heal     = { r = 0x5F/255, g = 0xFF/255, b = 0x9D/255, hex = "ff5fff9d" },
-    Other    = { r = 0xA5/255, g = 0xAF/255, b = 0xA2/255, hex = "ffa5afa2" },
-    Mechanic = { r = 0xDA/255, g = 0x5B/255, b = 0xFF/255, hex = "ffda5bff" },
-    }
+    EncounterColor = { -- 보스 인카운터 타임라인 색상 (EXBoss 기본 색상)
+    Tank     = { r = 0.78, g = 0.61, b = 0.43, hex = "ffc79c6e" }, -- Class.WARRIOR
+    Heal     = { r = 0.00, g = 1.00, b = 0.60, hex = "ff00ff96" }, -- Class.MONK
+    Mechanic = { r = 0.64, g = 0.19, b = 0.79, hex = "ffa330c9" }, -- Class.DEMONHUNTER
+    Other    = { r = 0.65, g = 0.69, b = 0.64, hex = "ffa5afa2" },
+    ETC1     = { r = 0.25, g = 0.78, b = 0.92, hex = "ff3fc7eb" }, -- Class.MAGE (임시)
+    ETC2     = { r = 0.25, g = 0.78, b = 0.92, hex = "ff3fc7eb" }, -- Class.MAGE (임시)
+    ETC3     = { r = 0.25, g = 0.78, b = 0.92, hex = "ff3fc7eb" }, -- Class.MAGE (임시)
+    },
 }
 
 -- 하위 호환성 유지: Primary 및 ETC 색상들을 상위 dodo.Colors에 매핑

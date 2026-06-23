@@ -103,9 +103,9 @@ local function create_reset_button(win)
     resetBtn.Icon:SetAtlas("UI-RefreshButton")
 
     if win.SessionDropdown and win.SessionDropdown:IsShown() then
-        resetBtn:SetPoint("RIGHT", win.SessionDropdown, "LEFT", -4, 0)
+        resetBtn:SetPoint("RIGHT", win.SessionDropdown, "LEFT", -1, 0)
     else
-        resetBtn:SetPoint("RIGHT", win.SettingsDropdown, "LEFT", -4, 0)
+        resetBtn:SetPoint("RIGHT", win.SettingsDropdown, "LEFT", -1, 0)
     end
 
     -- 클릭 이벤트

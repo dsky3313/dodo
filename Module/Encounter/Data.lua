@@ -1,38 +1,8 @@
--- EXBoss - 블리자드 순정 인카운터 타임라인 바 색상 변경 기능 포팅
-
----@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
-dodoDB = dodoDB or {}
 
--- ==============================
--- 설정 및 테이블
--- ==============================
--- mapID → 이벤트 목록. eventID는 EXBossData/EncounterData.lua 기준 블리자드 고정 ID.
-local INSTANCE_EVENTS = {
-
-    [2526] = { -- 알게타르 대학
-        -- 벡사무스
-        { eventID = 274, role = "Other" },    -- 비전 보주
-        { eventID = 275, role = "Heal" },     -- 마나 폭탄
-        { eventID = 276, role = "Tank" },     -- 비전 방출
-        { eventID = 277, role = "Mechanic" }, -- 비전 균열
-        -- 비대해진 고대정령
-        { eventID = 282, role = "Tank" },     -- 나무껍질 파괴자
-        { eventID = 283, role = "Heal" },     -- 가지 뻗기
-        { eventID = 284, role = "Mechanic" }, -- 발아
-        { eventID = 285, role = "Other" },    -- 밀려드는 분출
-        -- 크로스
-        { eventID = 278, role = "Tank" },     -- 흉포한 쪼기
-        { eventID = 279, role = "Heal" },     -- 귀청 터질듯한 비명
-        { eventID = 280, role = "Other" },    -- 압도적인 돌풍
-        { eventID = 397, role = "Mechanic" }, -- 공놀이
-        -- 도라고사의 메아리
-        { eventID = 293, role = "Other" },    -- 신비한 화살
-        { eventID = 294, role = "Tank" },     -- 천공의 작렬
-        { eventID = 295, role = "Heal" },     -- 마력 폭탄
-        { eventID = 296, role = "Mechanic" }, -- 힘의 공백
-    },
-
+-- mapID → 이벤트 목록. eventID는 블리자드 고정 ID (EXBossData 기준).
+-- role: "Tank" / "Heal" / "Mechanic" / "Other"
+dodo.EncounterEvents = {
     [658] = { -- 사론의 구덩이
         -- 제련장인 가프로스트
         { eventID = 144, role = "Tank" },     -- 광석 파괴자
@@ -76,17 +46,6 @@ local INSTANCE_EVENTS = {
         { eventID = 312, role = "Mechanic" }, -- 렌즈 반사광
     },
 
-    [1592] = { -- 孢陨幽境
-        -- 부패한 늪 (腐沼)
-        { eventID = 424, role = "Mechanic" }, -- 균류 만개
-        { eventID = 425, role = "Mechanic" }, -- 균류 소환
-        { eventID = 426, role = "Heal" },     -- 농포 폭발
-        { eventID = 427, role = "Tank" },     -- 부패의 주먹
-        { eventID = 428, role = "Heal" },     -- 부패한 덩굴
-        { eventID = 808, role = "Mechanic" }, -- 균류인 유충
-        { eventID = 809, role = "Mechanic" }, -- 버섯인 유충
-    },
-
     [1753] = { -- 삼두정의 권좌
         -- 승천자 주라알
         { eventID = 223, role = "Other" },    -- 무효의 손바닥
@@ -116,7 +75,28 @@ local INSTANCE_EVENTS = {
         { eventID = 254, role = "Mechanic" }, -- 반발력
     },
 
-
+    [2526] = { -- 알게타르 대학
+        -- 벡사무스
+        { eventID = 274, role = "Other" },    -- 비전 보주
+        { eventID = 275, role = "Heal" },     -- 마나 폭탄
+        { eventID = 276, role = "Tank" },     -- 비전 방출
+        { eventID = 277, role = "Mechanic", }, -- 비전 균열
+        -- 비대해진 고대정령
+        { eventID = 282, role = "Tank" },     -- 나무껍질 파괴자
+        { eventID = 283, role = "Heal" },     -- 가지 뻗기
+        { eventID = 284, role = "Mechanic" }, -- 발아
+        { eventID = 285, role = "Other" },    -- 밀려드는 분출
+        -- 크로스
+        { eventID = 278, role = "Tank" },     -- 흉포한 쪼기
+        { eventID = 279, role = "Heal" },     -- 귀청 터질듯한 비명
+        { eventID = 280, role = "Other" },    -- 압도적인 돌풍
+        { eventID = 397, role = "Mechanic" }, -- 공놀이
+        -- 도라고사의 메아리
+        { eventID = 293, role = "Other" },    -- 신비한 화살
+        { eventID = 294, role = "Tank" },     -- 천공의 작렬
+        { eventID = 295, role = "Heal" },     -- 마력 폭탄
+        { eventID = 296, role = "Mechanic" }, -- 힘의 공백
+    },
 
     [2805] = { -- 윈드러너 첨탑
         -- 잿불여명
@@ -191,6 +171,47 @@ local INSTANCE_EVENTS = {
         { eventID = 156, role = "Tank" },     -- 영혼파괴자
         { eventID = 157, role = "Heal" },     -- 영혼 분쇄하기
         { eventID = 158, role = "Mechanic" }, -- 영혼을 찢는 포효
+    },
+
+    [2915] = { -- 공결탑 제나스
+        -- 수석 핵장인 카스레스
+        { eventID = 106, role = "Mechanic" }, -- 핵심불꽃 폭발
+        { eventID = 107, role = "Heal" },     -- 역류 돌진
+        { eventID = 108, role = "Other" },    -- 지맥 배열
+        { eventID = 172, role = "Other" },    -- 용제 붕괴
+        -- 핵감시관 니사라
+        { eventID = 33,  role = "Heal" },     -- 일식의 발걸음
+        { eventID = 34,  role = "Mechanic" }, -- 빛흉터 섬광
+        { eventID = 35,  role = "Tank" },     -- 암영의 채찍
+        { eventID = 36,  role = "Mechanic" }, -- 무위의 선봉대
+        { eventID = 313, role = "Other" },    -- 무가치한 자는 포식당하리
+        -- 로스락시온
+        { eventID = 109, role = "Heal" },     -- 찬란한 분산
+        { eventID = 110, role = "Mechanic" }, -- 천상의 기만
+        { eventID = 111, role = "Tank" },     -- 이글거리는 분쇄
+        { eventID = 112, role = "Other" },    -- 깜빡임
+    },
+
+    [2939] = { -- 꿈의 균열
+        -- 꿈결을 벗어난 신 카이메루스
+        { eventID = 48,  role = "Other" },    -- 대식가 강하
+        { eventID = 49,  role = "Heal" },     -- 균열 발생
+        { eventID = 50,  role = "Heal" },     -- 부식성 가래
+        { eventID = 51,  role = "Other" },    -- 찢어지다
+        { eventID = 53,  role = "Other" },    -- 부패와 파괴
+        { eventID = 117, role = "Other" },    -- 끔찍한 전쟁의 함성
+        { eventID = 118, role = "Heal" },     -- 불협화음의 포효
+        { eventID = 119, role = "Mechanic" }, -- 장기를 포식
+        { eventID = 126, role = "Other" },    -- 부패의 깃털
+        { eventID = 149, role = "Mechanic" }, -- 엘린더스트의 격변
+        { eventID = 170, role = "Other" },    -- 균열 대격변
+        { eventID = 208, role = "Other" },    -- 부패한 산성액
+        { eventID = 217, role = "Mechanic" }, -- 균열의 광기
+        { eventID = 307, role = "Heal" },     -- 포식
+        { eventID = 353, role = "Mechanic" }, -- 2페이즈
+        { eventID = 431, role = "Mechanic" }, -- 엘린더스트의 격변
+        { eventID = 458, role = "Other" },    -- 부패와 파괴
+        { eventID = 555, role = "Other" },    -- 삼켜진 정수
     },
 
     [2912] = { -- 공허 첨탑
@@ -332,145 +353,14 @@ local INSTANCE_EVENTS = {
         { eventID = 750, role = "Other" },    -- 불협의 자장가
     },
 
-    [2915] = { -- 공결탑 제나스
-        -- 수석 핵장인 카스레스
-        { eventID = 106, role = "Heal" },     -- 핵심불꽃 폭발
-        { eventID = 107, role = "Other" },    -- 역류 돌진
-        { eventID = 108, role = "Other" },    -- 지맥 배열
-        { eventID = 172, role = "Other" },    -- 용제 붕괴
-        -- 핵감시관 니사라
-        { eventID = 33,  role = "Heal" },     -- 일식의 발걸음
-        { eventID = 34,  role = "Mechanic" }, -- 빛흉터 섬광
-        { eventID = 35,  role = "Tank" },     -- 암영의 채찍
-        { eventID = 36,  role = "Mechanic" }, -- 무위의 선봉대
-        { eventID = 313, role = "Other" },    -- 무가치한 자는 포식당하리
-        -- 로스락시온
-        { eventID = 109, role = "Heal" },     -- 찬란한 분산
-        { eventID = 110, role = "Mechanic" }, -- 천상의 기만
-        { eventID = 111, role = "Tank" },     -- 이글거리는 분쇄
-        { eventID = 112, role = "Other" },    -- 깜빡임
-    },
-
-    [2939] = { -- 꿈의 균열
-        -- 꿈결을 벗어난 신 카이메루스
-        { eventID = 48,  role = "Other" },    -- 대식가 강하
-        { eventID = 49,  role = "Heal" },     -- 균열 발생
-        { eventID = 50,  role = "Heal" },     -- 부식성 가래
-        { eventID = 51,  role = "Other" },    -- 찢어지다
-        { eventID = 53,  role = "Other" },    -- 부패와 파괴
-        { eventID = 117, role = "Other" },    -- 끔찍한 전쟁의 함성
-        { eventID = 118, role = "Heal" },     -- 불협화음의 포효
-        { eventID = 119, role = "Mechanic" }, -- 장기를 포식
-        { eventID = 126, role = "Other" },    -- 부패의 깃털
-        { eventID = 149, role = "Mechanic" }, -- 엘린더스트의 격변
-        { eventID = 170, role = "Other" },    -- 균열 대격변
-        { eventID = 208, role = "Other" },    -- 부패한 산성액
-        { eventID = 217, role = "Mechanic" }, -- 균열의 광기
-        { eventID = 307, role = "Heal" },     -- 포식
-        { eventID = 353, role = "Mechanic" }, -- 2페이즈
-        { eventID = 431, role = "Mechanic" }, -- 엘린더스트의 격변
-        { eventID = 458, role = "Other" },    -- 부패와 파괴
-        { eventID = 555, role = "Other" },    -- 삼켜진 정수
+    [1592] = { -- 孢陨幽境
+        -- 부패한 늪 (腐沼)
+        { eventID = 424, role = "Mechanic" }, -- 균류 만개
+        { eventID = 425, role = "Mechanic" }, -- 균류 소환
+        { eventID = 426, role = "Heal" },     -- 농포 폭발
+        { eventID = 427, role = "Tank" },     -- 부패의 주먹
+        { eventID = 428, role = "Heal" },     -- 부패한 덩굴
+        { eventID = 808, role = "Mechanic" }, -- 균류인 유충
+        { eventID = 809, role = "Mechanic" }, -- 버섯인 유충
     },
 }
-
--- ==============================
--- 캐싱
--- ==============================
-local C_EncounterEvents = C_EncounterEvents
-local CreateColor = CreateColor
-local CreateFrame = CreateFrame
-local GetInstanceInfo = GetInstanceInfo
-local IsInInstance = IsInInstance
-local ipairs = ipairs
-
--- ==============================
--- 기능 1: 색상 적용/해제
--- ==============================
-local current_events = nil -- 현재 적용된 이벤트 목록 (해제 시 사용)
-
-local function clear_current()
-    if not (C_EncounterEvents and C_EncounterEvents.SetEventColor) then return end
-    if not current_events then return end
-    -- SetEventColor가 ENCOUNTER_TIMELINE_STATE_UPDATED를 sync 발화 → tainted C_Timer chain 차단
-    local et = EncounterTimeline
-    if et then et:UnregisterEvent("ENCOUNTER_TIMELINE_STATE_UPDATED") end
-    for _, entry in ipairs(current_events) do
-        C_EncounterEvents.SetEventColor(entry.eventID, 0, nil)
-        C_EncounterEvents.SetEventColor(entry.eventID, 1, nil)
-        C_EncounterEvents.SetEventColor(entry.eventID, 2, nil)
-    end
-    if et then et:RegisterEvent("ENCOUNTER_TIMELINE_STATE_UPDATED") end
-    current_events = nil
-end
-
-local function update_visual()
-    clear_current()
-    if not (dodoDB and dodoDB.enableEncounterTimelineColor ~= false) then return end
-
-    local inInstance, instanceType = IsInInstance()
-    if not inInstance or (instanceType ~= "party" and instanceType ~= "raid") then return end
-
-    local mapID = select(8, GetInstanceInfo())
-    local events = INSTANCE_EVENTS[mapID]
-    if not events then return end
-
-    local et = EncounterTimeline
-    if et then et:UnregisterEvent("ENCOUNTER_TIMELINE_STATE_UPDATED") end
-    for _, entry in ipairs(events) do
-        local role = dodo.Colors.EncounterRole and dodo.Colors.EncounterRole[entry.role]
-        local color = role and CreateColor(role.r, role.g, role.b)
-        C_EncounterEvents.SetEventColor(entry.eventID, 0, color)
-        C_EncounterEvents.SetEventColor(entry.eventID, 1, color)
-        local highlight_color = (dodoDB.useEncounterTimelineColorHighlight ~= false) and color or nil
-        C_EncounterEvents.SetEventColor(entry.eventID, 2, highlight_color)
-    end
-    if et then et:RegisterEvent("ENCOUNTER_TIMELINE_STATE_UPDATED") end
-    current_events = events
-end
-
--- ==============================
--- 이벤트 핸들러
--- ==============================
-local initFrame = CreateFrame("Frame")
-
-local function on_event(self, event, arg1)
-    if event == "ADDON_LOADED" and arg1 == addonName then
-        dodoDB = dodoDB or {}
-    elseif event == "PLAYER_LOGIN" then
-        if dodoDB.enableEncounterTimelineColor == nil then dodoDB.enableEncounterTimelineColor = true end
-        if dodoDB.useEncounterTimelineColorHighlight == nil then dodoDB.useEncounterTimelineColorHighlight = true end
-        self:UnregisterEvent("PLAYER_LOGIN")
-    elseif event == "PLAYER_ENTERING_WORLD" then
-        update_visual()
-    end
-end
-
-initFrame:RegisterEvent("ADDON_LOADED")
-initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-initFrame:SetScript("OnEvent", on_event)
-
--- ==============================
--- 설정 등록
--- ==============================
-if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("편의기능", {
-        {
-            name = "보스 타임라인 색상 변경",
-            get = function() return dodoDB and dodoDB.enableEncounterTimelineColor ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.enableEncounterTimelineColor = checked end
-                update_visual()
-            end
-        },
-        {
-            name = "보스 타임라인 5초 전 색상 변경",
-            get = function() return dodoDB and dodoDB.useEncounterTimelineColorHighlight ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.useEncounterTimelineColorHighlight = checked end
-                update_visual()
-            end
-        },
-    })
-end

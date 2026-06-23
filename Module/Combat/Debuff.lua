@@ -194,7 +194,7 @@ local function create_debuff_frames(parent)
     local w = configs.size
     local h = configs.size * configs.sizerate
 
-    for idx = 1, configs.max_debuffs do
+    for idx = 1, 6 do  -- 슬라이더 maxVal=6 고정, 항상 최대치 생성
         local frame = CreateFrame("Button", nil, parent, "dodo_DebuffFrameTemplate")
         parent.frames[idx] = frame
 
@@ -293,6 +293,8 @@ local function create_private_frames(parent)
         frame.auraIndex = idx
         frame:SetSize(w, h)
         frame:ClearAllPoints()
+        frame:SetFrameStrata("LOW")
+        frame:SetFrameLevel(500)
 
         -- private는 왼쪽에서 오른쪽으로 (중앙 기준 오른쪽으로 뻗어나감)
         if idx == 1 then
@@ -344,6 +346,7 @@ local function update_debuff_frames()
         end
 
         local frame = debuff_frame.frames[shown]
+        if not frame then break end
         frame.unit   = "player"
         frame.auraid = aura.auraInstanceID
 
@@ -491,6 +494,9 @@ local function show_preview_data()
                 frame:Show()
             end
         end
+        for j = configs.max_debuffs + 1, #debuff_frame.frames do
+            if debuff_frame.frames[j] then debuff_frame.frames[j]:Hide() end
+        end
     end
 
     if private_frame and private_frame.PrivateAuraAnchors then
@@ -590,7 +596,11 @@ local function load_position()
     if not main_frame then return end
     main_frame:ClearAllPoints()
     if anchorFrame then
-        main_frame:SetPoint("CENTER", anchorFrame, "CENTER", 0, 0)
+        -- debuff(좌)가 private(우)보다 넓으므로 anchor center에서 우측으로 offset
+        -- offset = (debuff_w - private_1slot_w) / 2
+        local slot_w = configs.size + configs.gap
+        local offset_x = slot_w * (configs.max_debuffs - 1) / 2
+        main_frame:SetPoint("CENTER", anchorFrame, "CENTER", offset_x, 0)
     else
         local targetX = dodoDB.debuffX or (dodoDB.Debuff and dodoDB.Debuff.xpoint) or 350
         local targetY = dodoDB.debuffY or (dodoDB.Debuff and dodoDB.Debuff.ypoint) or 0
@@ -630,14 +640,14 @@ local function update_debuff_option()
         frame:SetSize(icon_w, icon_h)
         if frame.border then frame.border:SetSize(icon_w, icon_h) end
         if frame.cooldown then frame.cooldown:SetSize(configs.cool_size, configs.cool_size) end
-        
+
         frame:ClearAllPoints()
         if idx == 1 then
             frame:SetPoint("RIGHT", debuff_frame, "RIGHT", 0, 0)
         else
             frame:SetPoint("RIGHT", debuff_frame.frames[idx - 1], "LEFT", -configs.gap, 0)
         end
-        
+
         if configs.clickthrough then
             frame:EnableMouse(true)
             if frame.SetMouseClickEnabled then frame:SetMouseClickEnabled(false) end
@@ -652,7 +662,28 @@ local function update_debuff_option()
             if frame.SetMouseMotionEnabled then frame:SetMouseMotionEnabled(true) end
         end
     end
-    
+
+    if private_frame and private_frame.PrivateAuraAnchors then
+        for idx, frame in ipairs(private_frame.PrivateAuraAnchors) do
+            frame:SetSize(icon_w, icon_h)
+            frame:ClearAllPoints()
+            if idx == 1 then
+                frame:SetPoint("LEFT", private_frame, "LEFT", 0, 0)
+            else
+                frame:SetPoint("LEFT", private_frame.PrivateAuraAnchors[idx - 1], "RIGHT", configs.gap, 0)
+            end
+        end
+    end
+
+    local anchorFrame = dodo.EditMode and dodo.EditMode:GetSystem("Debuff")
+    if anchorFrame then
+        anchorFrame:SetSize(debuff_w + (icon_w + configs.gap) + configs.gap * 2, icon_h)
+    end
+
+    if is_preview_active then
+        show_preview_data()
+    end
+
     local is_enabled = (dodoDB and dodoDB.useDebuff ~= false)
     if is_enabled then
         main_frame:RegisterUnitEvent("UNIT_AURA", "player")
@@ -742,6 +773,11 @@ local function init_frames()
     private_frame:Show()
     create_private_frames(private_frame)
     dodo.private_frame = private_frame -- CoTankPrivateAura 모듈에서 위치 참조용
+
+    local anchorFrame = dodo.EditMode and dodo.EditMode:GetSystem("Debuff")
+    if anchorFrame then
+        anchorFrame:SetSize(debuff_w + (icon_w + configs.gap) + configs.gap * 2, icon_h)
+    end
 
     main_frame:SetScript("OnEvent", on_event)
     
@@ -847,7 +883,7 @@ if dodo.RegisterEditModeSystemSetting then
                 update_debuff_option()
             end,
             minVal = 1,
-            maxVal = 10,
+            maxVal = 6,
             step = 1,
             disabled = function() return dodoDB and dodoDB.useDebuff == false end,
         }
