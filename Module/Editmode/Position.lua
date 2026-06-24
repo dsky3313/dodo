@@ -114,7 +114,8 @@ local function enable_pos_settings()
 end
 
 local function apply_pos_settings()
-    if not selected_frame or not selected_frame:CanBeMoved() then return end
+    if not selected_frame then return end
+    if selected_frame.CanBeMoved and not selected_frame:CanBeMoved() then return end
 
     if selected_frame.isManagedFrame and selected_frame:IsInDefaultPosition() then
         selected_frame:BreakFromFrameManager()
@@ -124,13 +125,17 @@ local function apply_pos_settings()
         EditModeManagerFrame:OnSystemSettingChange(selected_frame, Enum.EditModeCastBarSetting.LockToPlayerFrame, 0);
     end
 
-    selected_frame:ClearFrameSnap()
+    if selected_frame.ClearFrameSnap then
+        selected_frame:ClearFrameSnap()
+    end
     selected_frame:StopMovingOrSizing();
 
     selected_frame:ClearAllPoints()
     selected_frame:SetPoint(pos_point, pos_attach_frame, pos_attach_point, pos_x_offset, pos_y_offset)
 
-    if selected_frame.OnSystemPositionChange then
+    if selected_frame._isDodoSystem then
+        update_pos_settings()
+    elseif selected_frame.OnSystemPositionChange then
         selected_frame:OnSystemPositionChange()
     elseif EditModeManagerFrame.OnSystemPositionChange then
         EditModeManagerFrame:OnSystemPositionChange(selected_frame)
