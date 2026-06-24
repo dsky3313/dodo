@@ -349,6 +349,9 @@ end
 
 -- 외부 바인딩 노출
 EditMode.CreateSystemWingPanel = create_system_wing_panel
+EditMode.HideSystemWingPanel = function()
+    if system_wing_panel then system_wing_panel:Hide() end
+end
 
 local init_frame = CreateFrame("Frame")
 init_frame:RegisterEvent("PLAYER_LOGIN")
@@ -397,6 +400,7 @@ init_frame:SetScript("OnEvent", function(self, event)
             end
             -- dodo 커스텀 프레임은 OnMouseDown에서 직접 처리하므로 여기서 무시
             if type(systemID) == "table" and systemID.parentFrame then
+                if system_wing_panel then system_wing_panel:Hide() end
                 return
             end
 
