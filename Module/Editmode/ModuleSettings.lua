@@ -19,9 +19,9 @@ dodoDB = dodoDB or {}
 
 ---@class dodoEditMode
 ---@field systems table<string, EditModeSystemFrame> 등록된 편집모드 가상 앵커 프레임 모음
----@field systemToggle CheckButton 모듈 편집 활성화 체크박스
+---@field systemToggle CheckButton|nil 모듈 편집 활성화 체크박스
 ---@field showSystems boolean 모듈 편집 활성화 여부
----@field panel Frame 메인 모듈 설정 패널 프레임
+---@field panel Frame|nil 메인 모듈 설정 패널 프레임
 
 -- dodo.EditMode 전역 등록
 ---@type dodoEditMode
@@ -582,11 +582,12 @@ function EditMode:CreateSystem(system_name, system_label, system_tooltip, parent
 
     -- EditModeSystemTemplate 제거: 자체 RegisterForDrag가 StartMoving 후 드래그 소유권 충돌 → 멈춤 불가
     local system = CreateFrame("Frame", "dodoEditMode" .. system_name, parent_frame)
+    ---@cast system EditModeSystemFrame
     local selection = CreateFrame("Frame", nil, system, "EditModeSystemSelectionTemplate")
     selection:SetAllPoints()
     selection:SetFrameStrata("LOW")
     selection:EnableMouse(false)  -- 시각 전용: 마우스 이벤트는 system이 직접 받음
-    
+
     system:SetSize(width or 150, height or 50)
     system.systemName = system_name
     system.systemLabel = system_label
@@ -688,7 +689,7 @@ function EditMode:CreateSystem(system_name, system_label, system_tooltip, parent
 
     system:Hide()
     self.systems[system_name] = system
-    
+
     -- 최초 등록 후 모듈 위치를 DB 좌표에 맞게 1회 강제 동기화
     if on_position_changed and (dodoDB.editMode and dodoDB.editMode[system_name] or default_point) then
         on_position_changed(point)

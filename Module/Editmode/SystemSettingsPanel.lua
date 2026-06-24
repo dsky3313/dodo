@@ -297,7 +297,27 @@ local function create_system_wing_panel(systemID)
                 col = 0
             end
 
-            local cb = dodo.UI:CreateCheckbox(f, item.name, item.get, item.set)
+            local cb_set = item.set
+            if item.systemName then
+                local original_set = item.set
+                local sysName = item.systemName
+                cb_set = function(checked)
+                    if original_set then original_set(checked) end
+                    local sys = dodo.EditMode and dodo.EditMode:GetSystem(sysName)
+                    if sys then
+                        local active = not sys.checkActiveFunc or sys.checkActiveFunc()
+                        if active and dodo.EditMode.showSystems then
+                            sys:HighlightSystem()
+                            sys:Show()
+                        else
+                            sys:ClearHighlight()
+                            sys:Hide()
+                        end
+                    end
+                end
+            end
+
+            local cb = dodo.UI:CreateCheckbox(f, item.name, item.get, cb_set)
             local pos_x = (col == 0) and 0 or 165
             cb:SetPoint("TOPLEFT", f, "TOPLEFT", pos_x, current_y)
             if item.disabled then
