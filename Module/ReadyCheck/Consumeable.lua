@@ -224,6 +224,9 @@ local function hide_frame()
     if not InCombatLockdown() then
         main_frame:Hide()
     end
+    if main_frame.is_visible then
+        PlaySoundFile("Interface\\AddOns\\dodo\\Media\\Sound\\Repair.ogg", "Master")
+    end
     main_frame.is_visible = false
     for _, icon in pairs(icons) do
         icon:EnableMouse(false)
