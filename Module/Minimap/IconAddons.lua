@@ -274,6 +274,15 @@ end
 local function initialize()
     if dodoDB.enableHidingBar == nil then dodoDB.enableHidingBar = true end
     create_ui()
+
+    -- Blizzard 버그 워크어라운드: title 미초기화 시 SetText(nil) 에러 방지
+    local exp_btn = ExpansionLandingPageMinimapButton
+    if exp_btn and exp_btn.SetTooltip then
+        local orig = exp_btn.SetTooltip
+        exp_btn.SetTooltip = function(self)
+            if self.title then orig(self) end
+        end
+    end
 end
 
 -- ==============================
