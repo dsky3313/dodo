@@ -28,13 +28,13 @@ local ROW_GAP           = 4
 local DEFAULT_ICON_SIZE = 30
 local DEFAULT_FONT_SIZE = 15
 
-local active_alerts = {}
-local frame_pool    = {}
-local icon_count    = 0
-local is_preview    = false
+local active_alerts  = {}
+local frame_pool     = {}
+local icon_count     = 0
+local is_preview     = false
 
 local name_font_path  = "Fonts\\FRIZQT__.TTF"
-local name_font_flags = ""
+local name_font_flags = "OUTLINE"
 
 -- 전방 선언
 local hide_alert
@@ -94,7 +94,7 @@ local function create_row()
     row.name_fs:SetPoint("RIGHT", row.frame, "RIGHT", -5, 0)
     row.name_fs:SetJustifyH("LEFT")
     row.name_fs:SetJustifyV("MIDDLE")
-    row.name_fs:SetTextColor(1, 0.7, 0, 1)
+    row.name_fs:SetTextColor(1, 1, 1, 1)
     row.name_fs:SetFont(name_font_path, get_font_size(), name_font_flags)
 
     return row
@@ -148,11 +148,14 @@ local function on_hide_alert(eventID)
     hide_alert(eventID)
 end
 
-local function show_alert(eventID, info)
+local function show_alert(eventID, info, role)
+    local ec = dodo.Colors and dodo.Colors.EncounterColor
+    local c  = ec and role and ec[role]
     for _, entry in ipairs(active_alerts) do
         if entry.eventID == eventID then
             entry.icon_tex:SetTexture(info.iconFileID)
             entry.name_fs:SetText(info.spellName)  -- secret → setter
+            if c then entry.name_fs:SetTextColor(c.r, c.g, c.b, 1) end
             local r = C_EncounterTimeline.GetEventTimeRemaining and C_EncounterTimeline.GetEventTimeRemaining(eventID)
             if r and r > 0 then entry.icon_cd:SetCooldown(GetTime(), r) end
             return
@@ -165,6 +168,7 @@ local function show_alert(eventID, info)
     row.frame:SetFrameStrata("HIGH")
     row.icon_tex:SetTexture(info.iconFileID)  -- secret → setter
     row.name_fs:SetText(info.spellName)        -- secret → setter
+    if c then row.name_fs:SetTextColor(c.r, c.g, c.b, 1) end
     local r = C_EncounterTimeline.GetEventTimeRemaining and C_EncounterTimeline.GetEventTimeRemaining(eventID)
     if r and r > 0 then row.icon_cd:SetCooldown(GetTime(), r) else row.icon_cd:Clear() end
 
@@ -183,6 +187,7 @@ local PREVIEW_ID = "preview"
 
 local function show_preview()
     if not dodo.Encounter.IsEnabled() then return end
+    if not (dodoDB and dodoDB.enableEncounterText ~= false) then return end
     if is_preview then return end
     is_preview = true
     local row   = create_row()
@@ -206,6 +211,7 @@ end
 -- ==============================
 local function on_timeline_highlight(eventID)
     if not dodo.Encounter.IsEnabled() then return end
+    if not (dodoDB and dodoDB.enableEncounterText ~= false) then return end
     if not (C_EncounterTimeline and C_EncounterTimeline.GetEventInfo) then return end
 
     local inInstance, instanceType = IsInInstance()
@@ -218,15 +224,18 @@ local function on_timeline_highlight(eventID)
     -- info.source = NeverSecret → 비교 허용
     if not info or info.source ~= dodo.Encounter.ENCOUNTER_SOURCE then return end
 
-    -- eventID(non-secret) == entry.eventID(정적값) 비교 허용
+    -- info.id: non-secret 고정 eventID → Data.lua와 직접 매핑
+    print("[dodo Text] HIGHLIGHT timelineID=" .. tostring(eventID) .. " info.id=" .. tostring(info.id))
+    local event_role
     for _, entry in ipairs(dodo.EncounterEvents[mapID]) do
-        if entry.eventID == eventID then
+        if entry.eventID == info.id then
             if entry.enable == false then return end
+            event_role = entry.role
             break
         end
     end
 
-    show_alert(eventID, info)
+    show_alert(eventID, info, event_role)
 end
 
 local function on_state_changed(eventID)
@@ -247,25 +256,38 @@ local function on_event(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
         dodoDB = dodoDB or {}
     elseif event == "PLAYER_LOGIN" then
+        if dodoDB.enableEncounterText == nil then dodoDB.enableEncounterText = true end
         local gf = _G.GameFontNormalLarge
         if gf then
-            local path, _, flags = gf:GetFont()
-            name_font_path  = path  or name_font_path
-            name_font_flags = flags or name_font_flags
+            local path = gf:GetFont()
+            name_font_path = path or name_font_path
         end
         if dodo.EditMode then
             dodo.EditMode:CreateSystem(
                 "EncounterText", "보스 알림", "보스 알림",
                 UIParent, ROW_W, DEFAULT_ICON_SIZE,
-                { point = "CENTER", relativeTo = "UIParent", relativePoint = "CENTER", xOfs = 0, yOfs = 150 },
+                { point = "CENTER", relativeTo = "UIParent", relativePoint = "CENTER", xOfs = 10, yOfs = -175 },
                 nil,
-                function() return dodo.Encounter.IsEnabled() end
+                function() return dodo.Encounter.IsEnabled() and (dodoDB and dodoDB.enableEncounterText ~= false) end
             )
         end
         local em_frame = _G.dodoEditModeEncounterText
         if em_frame then
             em_frame:HookScript("OnShow", show_preview)
             em_frame:HookScript("OnHide", hide_preview)
+        end
+        if dodo.RegisterEditModeSystemSetting then
+            dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.EncounterEvents, {
+                {
+                    name       = "텍스트 알림",
+                    systemName = "EncounterText",
+                    get        = function() return dodoDB and dodoDB.enableEncounterText ~= false end,
+                    set        = function(checked)
+                        if dodoDB then dodoDB.enableEncounterText = checked end
+                    end,
+                    disabled   = function() return not dodo.Encounter.IsEnabled() end,
+                },
+            })
         end
         if dodo.RegisterEditModeSystemSetting then
             dodo.RegisterEditModeSystemSetting("EncounterText", {

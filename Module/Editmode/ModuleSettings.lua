@@ -624,6 +624,7 @@ function EditMode:CreateSystem(system_name, system_label, system_tooltip, parent
     system:SetScript("OnDragStart", system_on_drag_start)
     system:SetScript("OnDragStop", system_on_drag_stop)
     system:SetScript("OnMouseDown", function(self, button)
+        if EditMode.HideSystemWingPanel then EditMode.HideSystemWingPanel() end
         for _, sys in pairs(EditMode.systems) do
             if sys ~= system then
                 sys:HighlightSystem()
