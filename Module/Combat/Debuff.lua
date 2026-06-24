@@ -322,6 +322,15 @@ local function set_cooldownframe(cooldown, durationobject, enable)
 end
 
 local function update_debuff_frames()
+    if UnitIsDeadOrGhost("player") then
+        if debuff_frame and debuff_frame.frames then
+            for j = 1, 6 do
+                if debuff_frame.frames[j] then debuff_frame.frames[j]:Hide() end
+            end
+        end
+        return
+    end
+
     local is_enabled = (dodoDB and dodoDB.useDebuff ~= false)
     if not is_enabled then
         if debuff_frame and debuff_frame.frames then
