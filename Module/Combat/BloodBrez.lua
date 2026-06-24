@@ -17,7 +17,7 @@ local Config = {
     iconPadding   = 2,
     iconsize      = {45, 45},
     fontsize      = 12,
-    soundPath     = "Interface\\AddOns\\" .. addonName .. "\\Media\\Sound\\1-Stimpack.mp3",
+    soundPath     = "Interface\\AddOns\\" .. addonName .. "\\Media\\Sound\\Blood.mp3",
 }
 
 local BL_DEBUFFS = {
