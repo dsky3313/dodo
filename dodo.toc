@@ -29,8 +29,8 @@ Data/Widgets.lua
 
 # Editmode
 Module/Editmode/ModuleSettings.lua
-Module/Editmode/EditModeSystemSettings.lua
 Module/Editmode/SystemSettings.lua
+Module/Editmode/SystemSettingsPanel.lua
 
 # Actionbar
 Module/Actionbar/ActionBar.xml
@@ -80,9 +80,9 @@ Module/EncounterJournal/AchievementsTabUI.lua
 # Encounter
 Module/Encounter/Core.lua
 Module/Encounter/Data.lua
-#Module/Encounter/TimelineBar.lua
-#Module/Encounter/Sound.lua
+Module/Encounter/Sound.lua
 Module/Encounter/Text.lua
+#Module/Encounter/TimelineBar.lua
 Module/Encounter/TimelineColor.lua
 
 # GossipFrame
@@ -122,6 +122,7 @@ Module/QoL/QuickBobber.lua
 Module/QoL/Teleport.lua
 Module/QoL/TimerLFG.lua
 Module/QoL/WMarker.lua
+Module/QoL/Stance.lua
 Module/QoL/WowheadLink.lua
 
 # ReadyCheck
@@ -175,6 +176,6 @@ Module/ObjectiveTracker/KeystoneTimer.lua
 # Configurations & Layout Anchoring (Last Load)
 Module/Slash.lua
 Option.lua
-Module/Editmode/EditModePos.lua
+Module/Editmode/Position.lua
 
 # 레디쳌 수정해야함
