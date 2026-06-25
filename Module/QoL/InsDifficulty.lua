@@ -309,7 +309,7 @@ end
 update_event_registration = function()
     if not init_ins_difficulty then return end
     local ui_on = (dodoDB and dodoDB.useInsDifficultyFrame ~= false)
-    if ui_on and not is_ins() then
+    if ui_on then
         init_ins_difficulty:RegisterEvent("PLAYER_ENTERING_WORLD")
         init_ins_difficulty:RegisterEvent("PARTY_LEADER_CHANGED")
         init_ins_difficulty:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
