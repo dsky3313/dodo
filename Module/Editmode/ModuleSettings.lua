@@ -443,18 +443,6 @@ end
 -- 이벤트 및 콜백 구현 (전방 선언 대응)
 -- ==============================
 on_enter_edit_mode = function()
-    for _, system in pairs(EditMode.systems) do
-        local pt = dodoDB.editMode and dodoDB.editMode[system.systemName]
-        system._original_point = pt and {
-            point        = pt.point,
-            relativeTo   = pt.relativeTo,
-            relativePoint = pt.relativePoint,
-            xOfs         = pt.xOfs,
-            yOfs         = pt.yOfs,
-        } or nil
-        system._has_active_changes = false
-    end
-
     if EditMode.showSystems then
         update_systems_visibility()
     end
@@ -514,209 +502,23 @@ create_system_toggle = function()
     EditMode.systemToggle = checkBox
 end
 
-local function system_on_drag_start(self)
-    self:SetMovable(true)
-    self:StartMoving()
-end
-
--- selection이 마우스를 가로채므로 드래그는 selection → system 위임 (LibEditMode 방식: self.parent)
-local function selection_on_drag_start(self)
-    self.parent:SetMovable(true)
-    self.parent:StartMoving()
-end
-
-local function selection_on_drag_stop(self)
-    system_on_drag_stop(self.parent)
-end
-
-local function system_on_drag_stop(self)
-    self:StopMovingOrSizing()
-    local new_point = { self:GetPoint() }
-    if not new_point[1] then return end
-
-    local system_name = self.systemName
-    local new_point_data = {
-        point = new_point[1],
-        relativeTo = self:GetParent():GetName() or "UIParent",
-        relativePoint = new_point[3],
-        xOfs = new_point[4],
-        yOfs = new_point[5],
-    }
-
-    dodoDB.editMode = dodoDB.editMode or {}
-    dodoDB.editMode[system_name] = new_point_data
-    self._has_active_changes = true
-
-    if self.onPositionChanged then
-        self.onPositionChanged(new_point_data)
-    end
-end
-
-local function selection_get_label_text(self)
-    return self:GetParent().systemLabel or ""
-end
-
-local function system_get_system_name(self)
-    return self.parentFrame.systemTooltip or ""
-end
-
-local function on_edit_mode_enter()
-    on_enter_edit_mode()
-end
 
 -- ==============================
--- 외부 제공 API
+-- 외부 제공 API (SystemSettings.lua에서 LEM 콜백으로 참조)
 -- ==============================
----@param system_name string 시스템 고유 이름
----@param system_label string 편집 모드 상자 위에 뜰 이름표 텍스트
----@param system_tooltip string 마우스 오버 시 보일 툴팁 내용
----@param parent_frame Frame 부모 프레임 (대체로 UIParent)
----@param width number|nil 가로 크기 (기본값: 150)
----@param height number|nil 세로 크기 (기본값: 50)
----@param default_point table|nil 초기 위치 좌표 { point, relativeTo, relativePoint, xOfs, yOfs }
----@param on_position_changed nil|fun(new_point_data: table) 위치 변경 시 호출될 콜백 함수
-function EditMode:CreateSystem(system_name, system_label, system_tooltip, parent_frame, width, height, default_point, on_position_changed, check_active_func)
-    if self.systems[system_name] then
-        return
-    end
-
-    -- EditModeSystemTemplate 제거: 자체 RegisterForDrag가 StartMoving 후 드래그 소유권 충돌 → 멈춤 불가
-    local system = CreateFrame("Frame", "dodoEditMode" .. system_name, parent_frame)
-    ---@cast system EditModeSystemFrame
-    local selection = CreateFrame("Frame", nil, system, "EditModeSystemSelectionTemplate")
-    selection:SetAllPoints()
-    selection:SetFrameStrata("LOW")
-    selection:EnableMouse(false)  -- 시각 전용: 마우스 이벤트는 system이 직접 받음
-
-    system:SetSize(width or 150, height or 50)
-    system.systemName = system_name
-    system.systemLabel = system_label
-    system.systemTooltip = system_tooltip
-    system.onPositionChanged = on_position_changed
-    system.checkActiveFunc = check_active_func
-    system.defaultPoint    = default_point
-    system._isDodoSystem   = true
-
-    -- EditModeSystemMixin 없으므로 필요한 메서드만 수동 위임
-    system.GetSystemName  = function(s) return s.systemLabel or "" end
-    system.GetSettings    = function(s) return {} end
-    system.HasSettings    = function(s) return false end
-    system.HighlightSystem = function(s) selection:ShowHighlighted() end
-    system.ClearHighlight  = function(s) selection:Hide() end
-
-    -- 저장된 좌표 로드 (빈 테이블 예외 차단 후 default_point 보장)
-    local saved_point = dodoDB.editMode and dodoDB.editMode[system_name]
-    local point = (saved_point and saved_point.point) and saved_point or default_point or {}
-    system:ClearAllPoints()
-    system:SetPoint(point.point or "CENTER", point.relativeTo or parent_frame, point.relativePoint or "CENTER", point.xOfs or 0, point.yOfs or 0)
-
-    selection.GetLabelText = selection_get_label_text
-
-    -- EditModeSystemSelectionTemplate 내부 툴팁 대응용 프록시 객체
-    selection.system = {
-        parentFrame = system,
-        GetSystemName = system_get_system_name
-    }
-
-    -- system이 직접 드래그/클릭 처리 (selection은 EnableMouse(false)이므로 통과)
-    system:EnableMouse(true)
-    system:RegisterForDrag("LeftButton")
-    system:SetScript("OnDragStart", system_on_drag_start)
-    system:SetScript("OnDragStop", system_on_drag_stop)
-    system:SetScript("OnMouseDown", function(self, button)
-        if EditMode.HideSystemWingPanel then EditMode.HideSystemWingPanel() end
-        for _, sys in pairs(EditMode.systems) do
-            if sys ~= system then
-                sys:HighlightSystem()
-            end
-        end
-        selection:ShowSelected()
-
-        local dlg = _G.EditModeSystemSettingsDialog
-        if dlg then
-            EditMode.customPanelActive = true
-            if dlg:IsShown() then dlg:Hide() end
-            dlg:AttachToSystemFrame(system)
-            if EditMode.SelectPosFrame then EditMode.SelectPosFrame(system) end
-            C_Timer.After(0, function()
-                EditMode.customPanelActive = false
-            end)
-        end
-    end)
-
-    -- EditModeSystemSettingsDialog 호환 stub (AttachToSystemFrame 요건)
-    if EditModeSettingDisplayInfoManager then
-        EditModeSettingDisplayInfoManager.systemSettingDisplayInfo[system_name] =
-            EditModeSettingDisplayInfoManager.systemSettingDisplayInfo[system_name] or {}
-    end
-    system.system = system_name
-    system.settingDisplayInfoMap = {}
-    system.settingsDialogAnchor = AnchorUtil.CreateAnchor("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -250, 200)
-    system.ShouldResetSettingsDialogAnchors = function(s, old) return old ~= s end
-    system.GetSettingsDialogAnchor = function(s) return s.settingsDialogAnchor end
-    system.HasActiveChanges = function(s) return s._has_active_changes or false end
-    system.AddExtraButtons = function(s, pool)
-        if not s.defaultPoint then return false end
-        local btn = pool:Acquire()
-        btn.layoutIndex = 3
-        btn:SetText(HUD_EDIT_MODE_RESET_POSITION)
-        btn:SetEnabled(true)
-        btn:SetOnClickHandler(function()
-            local dp = s.defaultPoint
-            local ref = (type(dp.relativeTo) == "string") and (_G[dp.relativeTo] or UIParent) or (dp.relativeTo or UIParent)
-            s:ClearAllPoints()
-            s:SetPoint(dp.point or "CENTER", ref, dp.relativePoint or "CENTER", dp.xOfs or 0, dp.yOfs or 0)
-            local save = {
-                point        = dp.point or "CENTER",
-                relativeTo   = (type(dp.relativeTo) == "string") and dp.relativeTo or (dp.relativeTo and dp.relativeTo:GetName()) or "UIParent",
-                relativePoint = dp.relativePoint or "CENTER",
-                xOfs         = dp.xOfs or 0,
-                yOfs         = dp.yOfs or 0,
-            }
-            dodoDB.editMode = dodoDB.editMode or {}
-            dodoDB.editMode[s.systemName] = save
-            -- 원본이 있으면 되돌리기 버튼 활성화 (기본값 ≠ 세션 원본일 수 있음)
-            s._has_active_changes = s._original_point ~= nil
-            if s.onPositionChanged then s.onPositionChanged(save) end
-            local dlg = _G.EditModeSystemSettingsDialog
-            if dlg and dlg.attachedToSystem == s then dlg:UpdateDialog(s) end
-        end)
-        btn:Show()
-        return true
-    end
-    system.OnKeyDown = function(s, key) end
-    system.OnKeyUp = function(s, key) end
-    system.ClearDownKeys = function(s) end
-
-    system:Hide()
-    self.systems[system_name] = system
-
-    -- 최초 등록 후 모듈 위치를 DB 좌표에 맞게 1회 강제 동기화
-    if on_position_changed and (dodoDB.editMode and dodoDB.editMode[system_name] or default_point) then
-        on_position_changed(point)
-    end
-end
-
----@param system_name string
----@return EditModeSystemFrame|nil
-function EditMode:GetSystem(system_name)
-    return self.systems[system_name]
-end
+EditMode._on_enter = on_enter_edit_mode
+EditMode._on_exit  = on_exit_edit_mode
 
 -- ==============================
 -- 초기화 및 이벤트 등록
 -- ==============================
 local f = CreateFrame("Frame")
 f:RegisterEvent("ADDON_LOADED")
-f:RegisterEvent("PLAYER_LOGIN")
 
 f:SetScript("OnEvent", function(self, event, ...)
     local arg1 = ...
     if event == "ADDON_LOADED" and arg1 == addonName then
         dodoDB = dodoDB or {}
         dodoDB.editMode = dodoDB.editMode or {}
-    elseif event == "PLAYER_LOGIN" then
-        EventRegistry:RegisterCallback("EditMode.Enter", on_edit_mode_enter)
-        EventRegistry:RegisterCallback("EditMode.Exit", on_exit_edit_mode)
     end
 end)

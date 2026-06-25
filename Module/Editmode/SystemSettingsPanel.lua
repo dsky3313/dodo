@@ -33,10 +33,71 @@ local _G = _G
 local system_wing_panel = nil
 local original_dialog_height = nil
 
----@param systemID number 블리자드 순정 EditModeSystem Enum ID
+-- 커스텀 dodo 시스템 설정 누적 테이블 (PLAYER_LOGIN 이후 일괄 적용)
+local pending_lem_settings = {}
+
+local function is_custom_system(systemID)
+    if type(systemID) ~= "string" then return false end
+    if systemID:match("^%d+_%d+$") then return false end
+    if tonumber(systemID) then return false end
+    return true
+end
+
+local function convert_item(item, LEM)
+    if item.isSpacer then return nil end
+
+    local kind
+    if not item.type then
+        kind = LEM.SettingType.Checkbox
+    elseif item.type == "slider" then
+        kind = LEM.SettingType.Slider
+    elseif item.type == "dropdown" then
+        kind = LEM.SettingType.Dropdown
+    else
+        return nil
+    end
+
+    local default_val = item.get and item.get()
+    if default_val == nil then
+        if kind == LEM.SettingType.Checkbox then
+            default_val = false
+        else
+            default_val = item.minVal or item.min or 0
+        end
+    end
+
+    local entry = {
+        kind     = kind,
+        name     = item.name,
+        desc     = item.desc,
+        default  = default_val,
+        get      = function(layoutName) return item.get() end,
+        set      = function(layoutName, value, fromReset) item.set(value) end,
+        disabled = item.disabled,
+    }
+
+    if kind == LEM.SettingType.Slider then
+        entry.minValue  = item.minVal or item.min
+        entry.maxValue  = item.maxVal or item.max
+        entry.valueStep = item.step
+    elseif kind == LEM.SettingType.Dropdown then
+        entry.values    = item.values
+        entry.generator = item.generator
+    end
+
+    return entry
+end
+
+---@param systemID number|string 블리자드 Enum ID 또는 커스텀 dodo 시스템 이름
 ---@param settingItems table 설정 컴포넌트 데이터 목록
 function dodo.RegisterEditModeSystemSetting(systemID, settingItems)
-    -- 로딩 순서 무관 절대 방어 가드 (Lazy Initialization)
+    if is_custom_system(systemID) then
+        pending_lem_settings[systemID] = pending_lem_settings[systemID] or {}
+        table_insert(pending_lem_settings[systemID], settingItems)
+        return
+    end
+
+    -- 블리자드 시스템: 기존 날개 패널 방식 유지
     dodo.EditMode = dodo.EditMode or {}
     EditMode = dodo.EditMode
     EditMode.systemSettings = EditMode.systemSettings or {}
@@ -353,6 +414,28 @@ EditMode.HideSystemWingPanel = function()
     if system_wing_panel then system_wing_panel:Hide() end
 end
 
+local function apply_pending_lem_settings()
+    local LEM = LibStub("LibEditMode")
+    for sysName, groups in pairs(pending_lem_settings) do
+        local frame = EditMode and EditMode.systems and EditMode.systems[sysName]
+        if frame then
+            local flat = {}
+            for _, items in ipairs(groups) do
+                for _, item in ipairs(items) do
+                    local converted = convert_item(item, LEM)
+                    if converted then
+                        table_insert(flat, converted)
+                    end
+                end
+            end
+            if #flat > 0 then
+                LEM:AddFrameSettings(frame, flat)
+            end
+        end
+    end
+    pending_lem_settings = {}
+end
+
 local init_frame = CreateFrame("Frame")
 init_frame:RegisterEvent("PLAYER_LOGIN")
 init_frame:SetScript("OnEvent", function(self, event)
@@ -418,5 +501,6 @@ init_frame:SetScript("OnEvent", function(self, event)
             if system_wing_panel then system_wing_panel:Hide() end
         end)
     end
+    C_Timer.After(0, apply_pending_lem_settings)
     self:UnregisterAllEvents()
 end)

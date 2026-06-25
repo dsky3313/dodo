@@ -605,8 +605,6 @@ local function load_position()
     if not main_frame then return end
     main_frame:ClearAllPoints()
     if anchorFrame then
-        -- debuff(좌)가 private(우)보다 넓으므로 anchor center에서 우측으로 offset
-        -- offset = (debuff_w - private_1slot_w) / 2
         local slot_w = configs.size + configs.gap
         local offset_x = slot_w * (configs.max_debuffs - 1) / 2
         main_frame:SetPoint("CENTER", anchorFrame, "CENTER", offset_x, 0)
@@ -811,7 +809,7 @@ end
 -- 로그인 이벤트 핸들러 (가비지 프리)
 local function on_login_event(self)
     if dodo.EditMode then
-        dodo.EditMode:CreateSystem("Debuff", "디버프", "디버프 표시기", UIParent, 120, 60, { point = "CENTER", relativeTo = "UIParent", relativePoint = "CENTER", xOfs = 350, yOfs = 0 }, function(point)
+        dodo.EditMode:CreateSystem("Debuff", "디버프", "디버프 표시기", UIParent, 120, 60, { point = "RIGHT", relativeTo = "UIParent", relativePoint = "CENTER", xOfs = 396, yOfs = 0 }, function(point)
             if dodoDB then
                 dodoDB.debuffX = point.xOfs
                 dodoDB.debuffY = point.yOfs
