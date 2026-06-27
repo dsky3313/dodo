@@ -8,7 +8,6 @@ dodoDB = dodoDB or {}
 -- ==============================
 -- 캐싱
 -- ==============================
-local C_Timer               = C_Timer
 local C_UnitAuras           = C_UnitAuras
 local C_Spell               = C_Spell
 local CreateFrame           = CreateFrame
@@ -24,12 +23,6 @@ local UIParent              = UIParent
 -- ==============================
 local _, player_class = UnitClass("player")
 
--- -- 팔라딘/드루이드: aura 있으면 무조건 표시
--- local STANCE_LISTS = {
---     PALADIN = { 465, 32223, 317920 },
---     DRUID   = { 5487, 102558, 768, 1850, 24858, 783, 33943, 40120, 114282, 210053 },
--- }
-
 -- 워리어: 스펙별 감시 태세 (이 태세가 활성화됐을 때만 표시)
 -- 71=무기 72=분노 73=방어
 -- 386208=방어 태세  386164=공격 태세  386196=광전사 자세
@@ -39,24 +32,19 @@ local WARRIOR_ALERT_STANCES = {
     [73] = 386164, -- 방어전사 → 공격 태세
 }
 
--- UNIT_SPELLCAST_SUCCEEDED 트리거용
 local CAST_TRIGGERS = {}
 if player_class == "WARRIOR" then
     CAST_TRIGGERS[386208] = true
     CAST_TRIGGERS[386164] = true
     CAST_TRIGGERS[386196] = true
--- elseif STANCE_LISTS[player_class] then
---     for _, id in ipairs(STANCE_LISTS[player_class]) do
---         CAST_TRIGGERS[id] = true
---     end
 end
 
 -- ==============================
 -- 로컬 상태
 -- ==============================
-local stance_icon    = nil
-local last_texture   = nil
-local warrior_spec   = nil  -- 워리어 현재 스펙 ID
+local stance_icon  = nil
+local last_texture = nil
+local warrior_spec = nil
 
 -- ==============================
 -- 크기 적용
@@ -88,27 +76,13 @@ local function update_icon()
     local texture, shown = nil, false
 
     if not InCombatLockdown() and not IsInInstance() then
-        if player_class == "WARRIOR" then
-            local alert = WARRIOR_ALERT_STANCES[warrior_spec]
-            if alert then
-                local aura = C_UnitAuras.GetPlayerAuraBySpellID(alert)
-                if aura and aura.icon then
-                    texture = aura.icon
-                    shown   = true
-                end
+        local alert = WARRIOR_ALERT_STANCES[warrior_spec]
+        if alert then
+            local aura = C_UnitAuras.GetPlayerAuraBySpellID(alert)
+            if aura and aura.icon then
+                texture = aura.icon
+                shown   = true
             end
-        -- else
-        --     local list = STANCE_LISTS[player_class]
-        --     if list then
-        --         for _, spellID in ipairs(list) do
-        --             local aura = C_UnitAuras.GetPlayerAuraBySpellID(spellID)
-        --             if aura and aura.icon then
-        --                 texture = aura.icon
-        --                 shown   = true
-        --                 break
-        --             end
-        --         end
-        --     end
         end
         last_texture = shown and texture or nil
     else
@@ -123,6 +97,13 @@ local function update_icon()
 end
 
 -- ==============================
+-- EditMode checkActive (정적 참조, GC 프리)
+-- ==============================
+local function stance_is_active()
+    return dodoDB and dodoDB.enableStance ~= false
+end
+
+-- ==============================
 -- 이벤트
 -- ==============================
 local event_frame = CreateFrame("Frame")
@@ -131,21 +112,18 @@ local function on_event(self, event, arg1, _, spellID)
     if event == "ADDON_LOADED" then
         if arg1 == addonName then
             dodoDB = dodoDB or {}
+            if dodoDB.enableStance == nil then dodoDB.enableStance = true end
+            if dodoDB.stanceIconSize == nil then dodoDB.stanceIconSize = 60 end
             self:UnregisterEvent("ADDON_LOADED")
         end
 
     elseif event == "PLAYER_LOGIN" then
-        local supported = (player_class == "WARRIOR") -- or (STANCE_LISTS[player_class] ~= nil)
-        if not supported then
+        if player_class ~= "WARRIOR" then
             self:UnregisterAllEvents()
             return
         end
-        if dodoDB.enableStance == nil then dodoDB.enableStance = true end
-        if dodoDB.stanceIconSize == nil then dodoDB.stanceIconSize = 60 end
 
-        if player_class == "WARRIOR" then
-            refresh_warrior_spec()
-        end
+        refresh_warrior_spec()
 
         local icon_size = dodoDB.stanceIconSize
 
@@ -153,7 +131,7 @@ local function on_event(self, event, arg1, _, spellID)
             dodo.EditMode:CreateSystem("Stance", "스탠스", "스탠스", UIParent, icon_size, icon_size,
                 { point = "BOTTOMRIGHT", relativeTo = "PlayerFrame", relativePoint = "TOPRIGHT", xOfs = -20, yOfs = 15 },
                 nil,
-                function() return dodoDB and dodoDB.enableStance ~= false end)
+                stance_is_active)
         end
 
         stance_icon = dodo.LibIcon:Create("dodoStanceIcon", UIParent, { iconsize = { icon_size, icon_size } })
@@ -166,13 +144,11 @@ local function on_event(self, event, arg1, _, spellID)
         if anchor then
             stance_icon:SetPoint("CENTER", anchor, "CENTER", 0, 0)
         else
-            stance_icon:SetPoint("BOTTOMRIGHT", PlayerFrame, "TOPRIGHT", 10, 15)
+            stance_icon:SetPoint("BOTTOMRIGHT", PlayerFrame, "TOPRIGHT", -20, 15)
         end
 
         self:RegisterEvent("PLAYER_ENTERING_WORLD")
         self:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-        self:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
-        self:RegisterEvent("UPDATE_SHAPESHIFT_FORMS")
         self:RegisterEvent("UNIT_AURA")
         self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
         self:UnregisterEvent("PLAYER_LOGIN")
@@ -181,7 +157,7 @@ local function on_event(self, event, arg1, _, spellID)
         update_icon()
 
     elseif event == "PLAYER_SPECIALIZATION_CHANGED" then
-        if arg1 == "player" and player_class == "WARRIOR" then
+        if arg1 == "player" then
             refresh_warrior_spec()
             update_icon()
         end
@@ -190,14 +166,7 @@ local function on_event(self, event, arg1, _, spellID)
         if arg1 ~= "player" or not CAST_TRIGGERS[spellID] then return end
         if dodoDB.enableStance == false then return end
 
-        local should_show
-        if player_class == "WARRIOR" then
-            should_show = (WARRIOR_ALERT_STANCES[warrior_spec] == spellID)
-        else
-            should_show = true
-        end
-
-        if should_show then
+        if WARRIOR_ALERT_STANCES[warrior_spec] == spellID then
             local tex = C_Spell.GetSpellTexture(spellID)
             if tex then
                 last_texture = tex
@@ -205,18 +174,14 @@ local function on_event(self, event, arg1, _, spellID)
                 stance_icon:Show()
             end
         else
-            -- 감시 태세 → 일반 태세로 복귀: 즉시 숨김
             last_texture = nil
             stance_icon:Hide()
         end
 
     elseif event == "UNIT_AURA" then
         if arg1 == "player" then
-            C_Timer.After(0.1, update_icon)
+            update_icon()
         end
-
-    elseif event == "UPDATE_SHAPESHIFT_FORM" or event == "UPDATE_SHAPESHIFT_FORMS" then
-        update_icon()
     end
 end
 

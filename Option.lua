@@ -29,6 +29,7 @@ local subCategoryCommands  = Settings.RegisterVerticalLayoutSubcategory(mainCate
 -- 인터페이스 카테고리 섹션 순서 (헤더 관리 일괄화)
 local interface_sections = {
     { key = "인터페이스.편의기능",  header = "편의기능"  },
+    { key = "인터페이스.모험안내서", header = "모험안내서" },
     { key = "인터페이스.파티모집창", header = "파티모집창" },
     { key = "인터페이스.NPC 대화",  header = "NPC 대화"  },
 }

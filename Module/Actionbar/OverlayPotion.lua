@@ -155,7 +155,7 @@ if dodo.RegisterEditModeSystemSetting then
         local dbKey = POTION_DB_KEYS[barName]
         dodo.RegisterEditModeSystemSetting(sysID, {
             {
-                name = "오버레이: 물약",
+                name = "물약 사용가능 알림",
                 get = function()
                     if not dodoDB then return POTION_DEFAULTS[barName] or false end
                     local val = dodoDB[dbKey]

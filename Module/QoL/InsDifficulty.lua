@@ -312,10 +312,12 @@ update_event_registration = function()
     if ui_on then
         init_ins_difficulty:RegisterEvent("PLAYER_ENTERING_WORLD")
         init_ins_difficulty:RegisterEvent("PARTY_LEADER_CHANGED")
+        init_ins_difficulty:RegisterEvent("GROUP_ROSTER_UPDATE")
         init_ins_difficulty:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
     else
         init_ins_difficulty:UnregisterEvent("PLAYER_ENTERING_WORLD")
         init_ins_difficulty:UnregisterEvent("PARTY_LEADER_CHANGED")
+        init_ins_difficulty:UnregisterEvent("GROUP_ROSTER_UPDATE")
         init_ins_difficulty:UnregisterEvent("PLAYER_DIFFICULTY_CHANGED")
     end
 end
@@ -384,7 +386,7 @@ local function on_event(self, event, arg1)
         self:UnregisterEvent("PLAYER_LOGIN")
     elseif event == "PLAYER_ENTERING_WORLD" then
         C_Timer.After(1, on_entering_world_timer)
-    elseif event == "PARTY_LEADER_CHANGED" or event == "PLAYER_DIFFICULTY_CHANGED" then
+    elseif event == "PARTY_LEADER_CHANGED" or event == "GROUP_ROSTER_UPDATE" or event == "PLAYER_DIFFICULTY_CHANGED" then
         update_ui_status()
     end
 end

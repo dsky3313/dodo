@@ -28,10 +28,9 @@ local Config = {
 -- ==============================
 -- 캐싱
 -- ==============================
+local ChatFrame_AddMessageEventFilter = ChatFrame_AddMessageEventFilter
 local CreateFrame = CreateFrame
-local _G = _G
 local issecretvalue = issecretvalue
-local NUM_CHAT_WINDOWS = NUM_CHAT_WINDOWS or 10
 local pairs = pairs
 local type = type
 
@@ -41,48 +40,37 @@ local type = type
 -- 가벼운 메모리용 해시 캐시
 local channel_cache = {}
 
--- 1. 채널 축약 변환 헬퍼 함수
-local function shorten_channel_match(chan, name)
-    if channel_cache[name] then
-        return "|Hchannel:" .. chan .. "|h[" .. channel_cache[name] .. "]|h"
-    end
+-- 1. 채널명 문자열(arg4) 축약 — 하이퍼링크 구성 전 raw 채널 설명자(예: "1. 일반")를 받음
+local function abbreviate_channel_name(name)
+    if not name or type(name) ~= "string" then return name end
+    if channel_cache[name] then return channel_cache[name] end
 
     for full, short in pairs(Config.channelAbbreviations) do
         if name:find(full, 1, true) then
             channel_cache[name] = short
-            return "|Hchannel:" .. chan .. "|h[" .. short .. "]|h"
+            return short
         end
     end
 
     local index = name:match("^(%d+)%.")
     if index then
         channel_cache[name] = index
-        return "|Hchannel:" .. chan .. "|h[" .. index .. "]|h"
+        return index
     end
 
     channel_cache[name] = name
-    return "|Hchannel:" .. chan .. "|h[" .. name .. "]|h"
+    return name
 end
 
-local function shorten_channels(text)
-    if not text or not dodo.DB.enableChatModule or not dodo.DB.useShortenChannels or type(text) ~= "string" or (issecretvalue and issecretvalue(text)) then
-        return text
+-- 2. CHAT_MSG_CHANNEL 필터: arg4(channelString)만 축약, 나머지 그대로 통과
+-- AddMessage 직접 교체 방식은 MessageEventHandler 실행 컨텍스트를 오염시켜
+-- SetLastTellTarget의 secret string 변환 실패를 유발하므로 필터 방식으로 대체.
+-- sender(arg2)는 secret value이므로 절대 연산하지 않고 그대로 통과.
+local function channel_filter(self, event, message, sender, language, channelString, ...)
+    if not dodo.DB.enableChatModule or not dodo.DB.useShortenChannels then
+        return false, message, sender, language, channelString, ...
     end
-    return text:gsub("|Hchannel:(.-)|h%[(.-)%]|h", shorten_channel_match)
-end
-
-dodo.ShortenChannels = shorten_channels
-
--- 2. AddMessage 래핑: 필터 이후 완성된 포맷 텍스트에서 |Hchannel:| 치환
--- ChatFrame_AddMessageEventFilter는 raw 이벤트 arg(메시지 본문)를 받으므로
--- 채널명 하이퍼링크가 없음. AddMessage를 직접 감싸야 완성된 텍스트를 받을 수 있음.
-local function wrap_addmessage(frame)
-    if not frame or frame._dodoShortHooked then return end
-    frame._dodoShortHooked = true
-    local orig = frame.AddMessage
-    frame.AddMessage = function(self, msg, ...)
-        return orig(self, shorten_channels(msg), ...)
-    end
+    return false, message, sender, language, abbreviate_channel_name(channelString), ...
 end
 
 -- 3. 업데이트 및 상태 제어
@@ -98,9 +86,7 @@ local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:SetScript("OnEvent", function(self, event)
     if dodo.DB.useShortenChannels == nil then dodo.DB.useShortenChannels = true end
-    for i = 1, NUM_CHAT_WINDOWS do
-        wrap_addmessage(_G["ChatFrame"..i])
-    end
+    ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL", channel_filter)
     update_state()
     self:UnregisterAllEvents()
 end)
