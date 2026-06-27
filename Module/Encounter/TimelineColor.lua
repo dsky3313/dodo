@@ -10,8 +10,6 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local INSTANCE_EVENTS = dodo.EncounterEvents
-
 -- ==============================
 -- 캐싱
 -- ==============================
@@ -26,6 +24,7 @@ local ipairs = ipairs
 -- 기능 1: 색상 적용/해제
 -- ==============================
 local current_events = nil -- 현재 적용된 이벤트 목록 (해제 시 사용)
+local applied_eids   = {} -- 실제 적용한 encounterEventID 목록 (해제용)
 
 local function clear_current()
     if not (C_EncounterEvents and C_EncounterEvents.SetEventColor) then return end
@@ -33,12 +32,13 @@ local function clear_current()
     -- SetEventColor가 ENCOUNTER_TIMELINE_STATE_UPDATED를 sync 발화 → tainted C_Timer chain 차단
     local et = EncounterTimeline
     if et then et:UnregisterEvent("ENCOUNTER_TIMELINE_STATE_UPDATED") end
-    for _, entry in ipairs(current_events) do
-        C_EncounterEvents.SetEventColor(entry.eventID, 0, nil)
-        C_EncounterEvents.SetEventColor(entry.eventID, 1, nil)
-        C_EncounterEvents.SetEventColor(entry.eventID, 2, nil)
+    for _, eid in ipairs(applied_eids) do
+        C_EncounterEvents.SetEventColor(eid, 0, nil)
+        C_EncounterEvents.SetEventColor(eid, 1, nil)
+        C_EncounterEvents.SetEventColor(eid, 2, nil)
     end
     if et then et:RegisterEvent("ENCOUNTER_TIMELINE_STATE_UPDATED") end
+    applied_eids   = {}
     current_events = nil
 end
 
@@ -50,22 +50,47 @@ local function update_visual()
     local inInstance, instanceType = IsInInstance()
     if not inInstance or (instanceType ~= "party" and instanceType ~= "raid") then return end
 
-    local mapID = select(8, GetInstanceInfo())
-    local events = INSTANCE_EVENTS[mapID]
-    if not events then return end
+    local mapID   = select(8, GetInstanceInfo())
+    local boss_ids = dodo.EncounterMapBosses and dodo.EncounterMapBosses[mapID]
+    if not boss_ids then return end
+
+    -- spellID → encounterEventID 맵 (신규 형식 지원)
+    local spell_map = {}
+    if C_EncounterEvents.GetEventList and C_EncounterEvents.GetEventInfo then
+        for _, id in ipairs(C_EncounterEvents.GetEventList()) do
+            local info = C_EncounterEvents.GetEventInfo(id)
+            if info and info.spellID and info.spellID ~= 0 then
+                spell_map[info.spellID] = id
+            end
+        end
+    end
 
     local et = EncounterTimeline
     if et then et:UnregisterEvent("ENCOUNTER_TIMELINE_STATE_UPDATED") end
-    for _, entry in ipairs(events) do
-        local role = dodo.Colors.EncounterColor and dodo.Colors.EncounterColor[entry.role]
-        local color = role and CreateColor(role.r, role.g, role.b)
-        C_EncounterEvents.SetEventColor(entry.eventID, 0, color)
-        C_EncounterEvents.SetEventColor(entry.eventID, 1, color)
-        local highlight_color = (dodoDB.useEncounterTimelineColorHighlight == false) and color or nil
-        C_EncounterEvents.SetEventColor(entry.eventID, 2, highlight_color)
+    local all_events = {}
+    for _, eid in ipairs(boss_ids) do
+        local boss_data = dodo.EncounterData and dodo.EncounterData[eid]
+        if boss_data and boss_data.events then
+            for _, ev in ipairs(boss_data.events) do
+                all_events[#all_events + 1] = ev
+            end
+        end
+    end
+    applied_eids = {}
+    for _, entry in ipairs(all_events) do
+        local encounter_eid = entry.eventID or (entry.spellID and spell_map[entry.spellID])
+        if encounter_eid then
+            local role = dodo.Colors.EncounterColor and dodo.Colors.EncounterColor[entry.role]
+            local color = role and CreateColor(role.r, role.g, role.b)
+            C_EncounterEvents.SetEventColor(encounter_eid, 0, color)
+            C_EncounterEvents.SetEventColor(encounter_eid, 1, color)
+            local highlight_color = (dodoDB.useEncounterTimelineColorHighlight == false) and color or nil
+            C_EncounterEvents.SetEventColor(encounter_eid, 2, highlight_color)
+            applied_eids[#applied_eids + 1] = encounter_eid
+        end
     end
     if et then et:RegisterEvent("ENCOUNTER_TIMELINE_STATE_UPDATED") end
-    current_events = events
+    current_events = all_events
 end
 
 -- ==============================

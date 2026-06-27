@@ -31,18 +31,3 @@ end
 init_frame:RegisterEvent("PLAYER_LOGIN")
 init_frame:SetScript("OnEvent", on_event)
 
--- ==============================
--- 설정 등록
--- ==============================
-local SettingsPanel = SettingsPanel
-local Checkbox = Checkbox
-
-local function update_state()
-    if M.SetEnabled then M.SetEnabled(dodoDB and dodoDB.enableEJAchievements ~= false) end
-end
-
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
-    Checkbox(category, "enableEJAchievements", "모험안내서 업적 탭", "모험안내서에서 던전과 관련된 업적을 확인할 수 있습니다.", true, update_state)
-end)

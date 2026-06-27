@@ -128,9 +128,9 @@ dodo.Colors = {
     EncounterColor = { -- 보스 인카운터 타임라인 색상 (EXBoss 기본 색상)
     Tank     = { r = 0.78, g = 0.61, b = 0.43, hex = "ffc79c6e" }, -- Class.WARRIOR
     Heal     = { r = 0.00, g = 1.00, b = 0.60, hex = "ff00ff96" }, -- Class.MONK
-    Mechanic = { r = 0.64, g = 0.19, b = 0.79, hex = "ffa330c9" }, -- Class.DEMONHUNTER
+    Mechanic = { r = 0.53, g = 0.53, b = 0.93, hex = "ff8787ed" }, -- Class.WARLOCK
     Other    = { r = 0.65, g = 0.69, b = 0.64, hex = "ffa5afa2" },
-    ETC1     = { r = 0.25, g = 0.78, b = 0.92, hex = "ff3fc7eb" }, -- Class.MAGE (임시)
+    Adds     = { r = 0.25, g = 0.78, b = 0.92, hex = "ff3fc7eb" }, -- Class.MAGE (임시)
     ETC2     = { r = 0.25, g = 0.78, b = 0.92, hex = "ff3fc7eb" }, -- Class.MAGE (임시)
     ETC3     = { r = 0.25, g = 0.78, b = 0.92, hex = "ff3fc7eb" }, -- Class.MAGE (임시)
     },

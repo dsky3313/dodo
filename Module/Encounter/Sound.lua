@@ -37,19 +37,21 @@ local SOUND_ROOT = "Interface\\AddOns\\" .. addonName .. "\\Media\\Sound\\Encoun
 --   1 = OnTimelineEventFinished  (시전 시) ← 소리
 --   2 = OnTimelineEventHighlight (미사용)
 --
--- sound from ttsfree.com (SunHi 10%, -5%)
+-- sound from ttsfree.com (SunHi 14%, 5%) > https://mp3cut.net/ko/change-volume volume 130%
 ---@type table<dodo.SoundKey, dodo.SoundData>
 local SOUND_MAP = {
-    Tank     = { file = SOUND_ROOT .. "Tank.mp3",    channel = "Master" },
-    AOE      = { file = SOUND_ROOT .. "AOE.mp3",     channel = "Master" },
-    Phase    = { file = SOUND_ROOT .. "Phase.mp3",   channel = "Master" },
-    Frontal  = { file = SOUND_ROOT .. "Frontal.mp3", channel = "Master" },
-    Mechanic = { file = SOUND_ROOT .. "Mechanic.mp3",   channel = "Master" },
-    Dispel   = { file = SOUND_ROOT .. "Dispel.mp3",  channel = "Master" },
+    Adds     = { file = SOUND_ROOT .. "Adds.mp3",     channel = "Master" },
+    AOE      = { file = SOUND_ROOT .. "AOE.mp3",      channel = "Master" },
+    Dispel   = { file = SOUND_ROOT .. "Dispel.mp3",   channel = "Master" },
+    Frontal  = { file = SOUND_ROOT .. "Frontal.mp3",  channel = "Master" },
+    Phase    = { file = SOUND_ROOT .. "Phase.mp3",    channel = "Master" },
+    Pool     = { file = SOUND_ROOT .. "Pool.mp3",     channel = "Master" },
+    Tank     = { file = SOUND_ROOT .. "Tank.mp3",     channel = "Master" },
 }
 
 ---@type dodo.EncounterEntry[]|nil
 local current_events = nil
+local applied_eids   = {}   -- 실제 적용한 encounterEventID 목록 (해제용)
 
 -- ==============================
 -- 기능: 소리 적용/해제
@@ -60,12 +62,13 @@ local function clear_sounds()
     if not current_events then return end
     local et = EncounterTimeline
     if et then et:UnregisterEvent("ENCOUNTER_TIMELINE_STATE_UPDATED") end
-    for _, entry in ipairs(current_events) do
-        C_EncounterEvents.SetEventSound(entry.eventID, 0, nil)
-        C_EncounterEvents.SetEventSound(entry.eventID, 1, nil)
-        C_EncounterEvents.SetEventSound(entry.eventID, 2, nil)
+    for _, eid in ipairs(applied_eids) do
+        C_EncounterEvents.SetEventSound(eid, 0, nil)
+        C_EncounterEvents.SetEventSound(eid, 1, nil)
+        C_EncounterEvents.SetEventSound(eid, 2, nil)
     end
     if et then et:RegisterEvent("ENCOUNTER_TIMELINE_STATE_UPDATED") end
+    applied_eids   = {}
     current_events = nil
 end
 
@@ -79,9 +82,9 @@ local function apply_sounds()
     local inInstance, instanceType = IsInInstance()
     if not inInstance or (instanceType ~= "party" and instanceType ~= "raid") then return end
 
-    local mapID = select(8, GetInstanceInfo())
-    local events = dodo.EncounterEvents and dodo.EncounterEvents[mapID]
-    if not events then return end
+    local mapID    = select(8, GetInstanceInfo())
+    local boss_ids = dodo.EncounterMapBosses and dodo.EncounterMapBosses[mapID]
+    if not boss_ids then return end
 
     dodo.Encounter.EnsureWarnings()
 
@@ -95,17 +98,42 @@ local function apply_sounds()
     end
     local is_dps = (role == "DAMAGER")
 
+    -- spellID → encounterEventID 맵 (신규 형식 지원)
+    local spell_map = {}
+    if C_EncounterEvents.GetEventList and C_EncounterEvents.GetEventInfo then
+        for _, id in ipairs(C_EncounterEvents.GetEventList()) do
+            local info = C_EncounterEvents.GetEventInfo(id)
+            if info and info.spellID and info.spellID ~= 0 then
+                spell_map[info.spellID] = id
+            end
+        end
+    end
+
     local et = EncounterTimeline
     if et then et:UnregisterEvent("ENCOUNTER_TIMELINE_STATE_UPDATED") end
-    for _, entry in ipairs(events) do
-        local sound1 = SOUND_MAP[entry.sound or entry.role]
-        if is_dps and entry.role == "Tank" then sound1 = nil end
-        C_EncounterEvents.SetEventSound(entry.eventID, 0, nil)
-        C_EncounterEvents.SetEventSound(entry.eventID, 1, sound1)
-        C_EncounterEvents.SetEventSound(entry.eventID, 2, nil)
+    local all_events = {}
+    for _, eid in ipairs(boss_ids) do
+        local boss_data = dodo.EncounterData and dodo.EncounterData[eid]
+        if boss_data and boss_data.events then
+            for _, ev in ipairs(boss_data.events) do
+                all_events[#all_events + 1] = ev
+            end
+        end
+    end
+    applied_eids = {}
+    for _, entry in ipairs(all_events) do
+        local encounter_eid = entry.eventID or (entry.spellID and spell_map[entry.spellID])
+        if encounter_eid then
+            local sound1 = SOUND_MAP[entry.sound or entry.role]
+            if is_dps and entry.role == "Tank" then sound1 = nil end
+            C_EncounterEvents.SetEventSound(encounter_eid, 0, nil)
+            C_EncounterEvents.SetEventSound(encounter_eid, 1, sound1)
+            C_EncounterEvents.SetEventSound(encounter_eid, 2, nil)
+            applied_eids[#applied_eids + 1] = encounter_eid
+        end
     end
     if et then et:RegisterEvent("ENCOUNTER_TIMELINE_STATE_UPDATED") end
-    current_events = events
+    current_events = all_events
 end
 
 -- ==============================
