@@ -32,28 +32,34 @@ local update_consumables
 local READY_ICON = "Interface\\RaidFrame\\ReadyCheck-Ready"
 local NOT_READY_ICON = "Interface\\RaidFrame\\ReadyCheck-NotReady"
 
--- 도핑 데이터 (주문)
-local FOOD_BUFFS = {
+local FOOD_BUFFS = { -- 음식 버프
     [1294727] = true, -- 왕실 구이
     [136000] = true,
 }
 
-local FLASK_BUFFS = {
+local FOOD_ITEMS = { -- 음식 아이템
+    242275, -- 왕실 구이
+}
+
+local FLASK_BUFFS = { -- 영약 버프
+    [1235108] = true, -- 마법학자의 영약 (특화)
     [1235111] = true, -- 무너진 태양의 영약 (치명)
+}
+
+local FLASK_ITEMS = { -- 영약 아이템
+    241322, -- 마법학자의 영약 2성 (특화)
+    241326, -- 무너진 태양의 영약 2성 (치명)
 }
 
 local RUNE_BUFFS = {
     [1234969] = true, -- 내부전쟁 평판룬
-    [393438] = true,
-}
-
--- 도핑 데이터 (아이템)
-local FOOD_ITEMS = {
-    242275, -- 왕실 구이
+    [393438]  = true,
 }
 
 local POTION_ITEMS = {
-    241308, 241309, 241310, 212239, 212240, 212241,
+    241308, -- 빛의 잠재력 2성 (주능력치)
+    241309, 241310, 212239, 212240, 212241,
+    241288, -- 무모함의 물약 2성 (가장 높은 보조)
 }
 
 local WEAPON_ITEMS = {
@@ -268,6 +274,11 @@ function update_consumables()
             foodCount = foodCount + GetItemCount(FOOD_ITEMS[i], false, true)
         end
 
+        local flaskCount = 0
+        for i = 1, #FLASK_ITEMS do
+            flaskCount = flaskCount + GetItemCount(FLASK_ITEMS[i], false, true)
+        end
+
         local potionCount = 0
         for i = 1, #POTION_ITEMS do
             potionCount = potionCount + GetItemCount(POTION_ITEMS[i], false, true)
@@ -302,7 +313,7 @@ function update_consumables()
             icons.flask.text:SetText("")
         else
             icons.flask.cooldown:Clear()
-            icons.flask.Count:SetText("")
+            icons.flask.Count:SetText(flaskCount > 0 and flaskCount or "")
             icons.flask.text:SetText("")
         end
 

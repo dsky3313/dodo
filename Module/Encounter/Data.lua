@@ -4,11 +4,9 @@
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 
-
 --[[ eventID > spellID 역조회 매크로
 /run local t={298,299,300,301} for _,id in ipairs(t) do local i=C_EncounterEvents.GetEventInfo(id) print(id.."→"..(i and tostring(i.spellID) or "nil")) end
 ]]
-
 
 ---@class EncounterEvent
 ---@field eventID number
@@ -405,11 +403,11 @@ dodo.EncounterData = {
         events = {
             { spellID = 1251554, role = "Tank",     sound = "Tank"    }, -- 영혼 흡수
             { spellID = 1252054, role = "Other",    sound = "Frontal" }, -- 해체
-            { eventID = 18,      role = "Other" },                       -- 죽음의 은총 (spellID 미확인)
+            --{ eventID = 18,      role = "Other" },                       -- 죽음의 은총 (spellID 미확인)
             { spellID = 1251204, role = "Heal",     sound = "Adds"    }, -- 악령 왜곡
             { spellID = 1250708, role = "Mechanic", sound = "Phase"   }, -- 괴저의 수렴
-            { eventID = 429,     role = "Other" },                       -- 최후의 추적 (spellID 미확인)
-            { eventID = 688,     role = "Other" },                       -- 최후의 추적 (spellID 미확인)
+            --{ eventID = 429,     role = "Other" },                       -- 최후의 추적 (spellID 미확인)
+            --{ eventID = 688,     role = "Other" },                       -- 최후의 추적 (spellID 미확인)
         },
         rules = {
             { dur = 3,      eID = 1251554 }, { dur = 70,     eID = 1250708 },
@@ -518,161 +516,161 @@ dodo.EncounterData = {
     -- 공허 첨탑 (mapID 2912, rules 없음)
     [3176] = { -- 아베르지안
         events = {
-            { eventID = 194, role = "Mechanic", sound = "Phase" }, -- 어둠의 진격
-            { eventID = 195, role = "Mechanic", sound = "Phase" }, -- 어둠의 진격
-            { eventID = 196, role = "Heal" },                      -- 어둠의 지각 변동
-            { eventID = 197, role = "Mechanic", sound = "Phase" }, -- 암영 붕괴
-            { eventID = 198, role = "Other" },                     -- 망각의 분노
-            { eventID = 199, role = "Other" },                     -- 공허 추락
-            { eventID = 200, role = "Other" },                     -- 끝없는 행진
-            { eventID = 201, role = "Other" },                     -- 칠흑 보루
-            { eventID = 209, role = "Other" },                     -- 공허 추락
-            { eventID = 361, role = "Other" },                     -- 황폐화
-            { eventID = 419, role = "Mechanic", sound = "Phase" }, -- 공허 징표
-            { eventID = 492, role = "Tank"    , sound = "Tank"  }, -- 약화됨
+            { spellID = 1262776, role = "Mechanic", sound = "Phase" }, -- 어둠의 진격
+            { spellID = 1251361, role = "Mechanic", sound = "Phase" }, -- 어둠의 진격
+            { spellID = 1249251, role = "Heal" },                      -- 어둠의 지각 변동
+            { spellID = 1249265, role = "Mechanic", sound = "Phase" }, -- 암영 붕괴
+            { spellID = 1260712, role = "Other" },                     -- 망각의 분노
+            { spellID = 1258880, role = "Other" },                     -- 공허 추락
+            { spellID = 1251583, role = "Other" },                     -- 끝없는 행진
+            { spellID = 1255702, role = "Other" },                     -- 칠흑 보루
+            { spellID = 1266786, role = "Other" },                     -- 공허 추락
+            { spellID = 1270949, role = "Other" },                     -- 황폐화
+            { spellID = 1280015, role = "Mechanic", sound = "Phase" }, -- 공허 징표
+            { spellID = 1283069, role = "Tank"    , sound = "Tank"  }, -- 약화됨
         },
     },
     [3177] = { -- 보라시우스
         events = {
-            { eventID = 59,  role = "Tank"    , sound = "Tank"  }, -- 그림자발톱 격돌
-            { eventID = 60,  role = "Tank"    , sound = "Tank"  }, -- 그림자발톱 격돌
-            { eventID = 61,  role = "Other" },                     -- 공허의 숨결
-            { eventID = 62,  role = "Heal" },                      -- 기생충 배출
-            { eventID = 63,  role = "Other" },                     -- 거대한 투척
-            { eventID = 133, role = "Heal" },                      -- 태고의 포효
-            { eventID = 557, role = "Other" },                     -- 시선 고정
-            { eventID = 749, role = "Other" },                     -- 생성
+            { spellID = 1241836, role = "Tank"    , sound = "Tank"  }, -- 그림자발톱 격돌
+            { spellID = 1244293, role = "Tank"    , sound = "Tank"  }, -- 그림자발톱 격돌
+            { spellID = 1243853, role = "Other" },                     -- 공허의 숨결
+            { spellID = 1254199, role = "Heal" },                      -- 기생충 배출
+            { spellID = 1244346, role = "Other" },                     -- 거대한 투척
+            { spellID = 1260046, role = "Heal" },                      -- 태고의 포효
+            { spellID = 1254112, role = "Other" },                     -- 시선 고정
+            { spellID = 1234346, role = "Other" },                     -- 생성
         },
     },
     [3179] = { -- 몰락한 왕 살라다르
         events = {
-            { eventID = 139, role = "Mechanic", sound = "Phase" }, -- 공허의 수렴
-            { eventID = 140, role = "Heal" },                      -- 폭군의 지배
-            { eventID = 141, role = "Other" },                     -- 분열된 투영
-            { eventID = 142, role = "Other" },                     -- 부서지는 황혼
-            { eventID = 143, role = "Heal" },                      -- 뒤틀린 암연
-            { eventID = 148, role = "Mechanic", sound = "Phase" }, -- 무질서의 해체
-            { eventID = 633, role = "Other" },                     -- 광폭화
-            { eventID = 802, role = "Other" },                     -- 맹세를 저버리다
+            { spellID = 1243453, role = "Mechanic", sound = "Phase" }, -- 공허의 수렴
+            { spellID = 1260823, role = "Heal" },                      -- 폭군의 지배
+            { spellID = 1245081, role = "Other" },                     -- 분열된 투영
+            { spellID = 1253911, role = "Other" },                     -- 부서지는 황혼
+            { spellID = 1250686, role = "Heal" },                      -- 뒤틀린 암연
+            { spellID = 1246175, role = "Mechanic", sound = "Phase" }, -- 무질서의 해체
+            { spellID = 64238,   role = "Other" },                     -- 광폭화
+            { spellID = 1272338, role = "Other" },                     -- 맹세를 저버리다
         },
     },
     [3178] = { -- 바엘고어와 에조라크
         events = {
-            { eventID = 101, role = "Other" },                     -- 공허 빔
-            { eventID = 102, role = "Mechanic", sound = "Phase" }, -- 공허의 울부짖음
-            { eventID = 103, role = "Mechanic", sound = "Phase" }, -- 안개
-            { eventID = 104, role = "Other" },                     -- 죽은 자의 숨결
-            { eventID = 105, role = "Heal" },                      -- 한밤의 불꽃
-            { eventID = 219, role = "Other" },                     -- 갈고리 턱
-            { eventID = 220, role = "Tank"    , sound = "Tank"  }, -- 락팽
-            { eventID = 221, role = "Tank"    , sound = "Tank"  }, -- 위어의 날개
-            { eventID = 377, role = "Mechanic", sound = "Phase" }, -- 우주 침투: 안개
-            { eventID = 378, role = "Other" },                     -- 우주 침투: 공허 빔
-            { eventID = 379, role = "Other" },                     -- 우주 침투: 망자의 숨결
-            { eventID = 380, role = "Mechanic", sound = "Phase" }, -- 우주 침투: 공허의 포효
-            { eventID = 381, role = "Mechanic", sound = "Phase" }, -- 광역 장벽
+            { spellID = 1262623, role = "Other" },                     -- 공허 빔
+            { spellID = 1244917, role = "Mechanic", sound = "Phase" }, -- 공허의 울부짖음
+            { spellID = 1245391, role = "Mechanic", sound = "Phase" }, -- 안개
+            { spellID = 1244221, role = "Other" },                     -- 죽은 자의 숨결
+            { spellID = 1249748, role = "Heal" },                      -- 한밤의 불꽃
+            { spellID = 1280458, role = "Other" },                     -- 갈고리 턱
+            { spellID = 1245645, role = "Tank"    , sound = "Tank"  }, -- 락팽
+            { spellID = 1265131, role = "Tank"    , sound = "Tank"  }, -- 위어의 날개
+            { spellID = 1277470, role = "Mechanic", sound = "Phase" }, -- 우주 침투: 안개
+            { spellID = 1277471, role = "Other" },                     -- 우주 침투: 공허 빔
+            { spellID = 1277472, role = "Other" },                     -- 우주 침투: 망자의 숨결
+            { spellID = 1277473, role = "Mechanic", sound = "Phase" }, -- 우주 침투: 공허의 포효
+            { spellID = 1248847, role = "Mechanic", sound = "Phase" }, -- 광역 장벽
         },
     },
     [3180] = { -- 빛에 눈이 먼 선봉대
         events = {
-            { eventID = 71,  role = "Mechanic", sound = "Phase" }, -- 평화로운 후광
-            { eventID = 72,  role = "Other" },                     -- 이벤트 72
-            { eventID = 73,  role = "Other" },                     -- 천둥 코끼리 돌격
-            { eventID = 74,  role = "Mechanic", sound = "Phase" }, -- 거룩한 방패
-            { eventID = 75,  role = "Heal" },                      -- 티르의 분노
-            { eventID = 76,  role = "Mechanic", sound = "Phase" }, -- 경건의 아우라
-            { eventID = 77,  role = "Heal" },                      -- 뜨거운 빛
-            { eventID = 78,  role = "Tank"    , sound = "Tank"  }, -- 심판
-            { eventID = 79,  role = "Mechanic", sound = "Phase" }, -- 복수의 방패
-            { eventID = 80,  role = "Mechanic", sound = "Phase" }, -- 거룩한 종
-            { eventID = 81,  role = "Mechanic", sound = "Phase" }, -- 분노의 아우라
-            { eventID = 82,  role = "Tank"    , sound = "Tank"  }, -- 심판
-            { eventID = 83,  role = "Mechanic", sound = "Phase" }, -- 신성한 폭풍
-            { eventID = 84,  role = "Heal" },                      -- 거룩한 죄
-            { eventID = 85,  role = "Heal" },                      -- 사형 선고
-            { eventID = 358, role = "Mechanic", sound = "Phase" }, -- 열성적인 영혼
-            { eventID = 359, role = "Mechanic", sound = "Phase" }, -- 열성적인 영혼
-            { eventID = 360, role = "Mechanic", sound = "Phase" }, -- 열성적인 영혼
-            { eventID = 365, role = "Mechanic", sound = "Phase" }, -- 복수의 방패
-            { eventID = 373, role = "Heal" },                      -- 뜨거운 빛
-            { eventID = 374, role = "Other" },                     -- 신성한 폭풍
+            { spellID = 1248451, role = "Mechanic", sound = "Phase" }, -- 평화로운 후광
+            --{ eventID = 72,      role = "Other" },                     -- 이벤트 72 (spellID 미확인)
+            { spellID = 1249130, role = "Other" },                     -- 천둥 코끼리 돌격
+            { spellID = 1248674, role = "Mechanic", sound = "Phase" }, -- 거룩한 방패
+            { spellID = 1276831, role = "Heal" },                      -- 티르의 분노
+            { spellID = 1246162, role = "Mechanic", sound = "Phase" }, -- 경건의 아우라
+            { spellID = 1155738, role = "Heal" },                      -- 뜨거운 빛
+            { spellID = 1251857, role = "Tank"    , sound = "Tank"  }, -- 심판
+            { spellID = 1246485, role = "Mechanic", sound = "Phase" }, -- 복수의 방패
+            { spellID = 1248644, role = "Mechanic", sound = "Phase" }, -- 거룩한 종
+            { spellID = 1248449, role = "Mechanic", sound = "Phase" }, -- 분노의 아우라
+            { spellID = 1246736, role = "Tank"    , sound = "Tank"  }, -- 심판
+            { spellID = 1246765, role = "Mechanic", sound = "Phase" }, -- 신성한 폭풍
+            { spellID = 1246749, role = "Heal" },                      -- 거룩한 죄
+            { spellID = 1276368, role = "Heal" },                      -- 사형 선고
+            { spellID = 1272380, role = "Mechanic", sound = "Phase" }, -- 열성적인 영혼
+            { spellID = 1272423, role = "Mechanic", sound = "Phase" }, -- 열성적인 영혼
+            { spellID = 1272425, role = "Mechanic", sound = "Phase" }, -- 열성적인 영혼
+            { spellID = 1276635, role = "Mechanic", sound = "Phase" }, -- 복수의 방패
+            { spellID = 1276639, role = "Heal" },                      -- 뜨거운 빛
+            { spellID = 1272310, role = "Other" },                     -- 신성한 폭풍
         },
     },
     [3181] = { -- 우주의 왕관
         events = {
-            { eventID = 4,   role = "Heal" },                      -- 무의 왕관
-            { eventID = 5,   role = "Mechanic", sound = "Phase" }, -- 공허한 반발
-            { eventID = 6,   role = "Mechanic", sound = "Phase" }, -- 은화살
-            { eventID = 7,   role = "Other" },                     -- 은화살 탄막
-            { eventID = 8,   role = "Other" },                     -- 특이점 폭발
-            { eventID = 9,   role = "Heal" },                      -- 공허추적자 스파이크
-            { eventID = 10,  role = "Mechanic", sound = "Phase" }, -- 공허의 부름
-            { eventID = 11,  role = "Heal" },                      -- 레인저 캡틴의 마크
-            { eventID = 12,  role = "Heal" },                      -- 우주 장벽
-            { eventID = 13,  role = "Mechanic", sound = "Phase" }, -- 최종 수호자
-            { eventID = 14,  role = "Heal" },                      -- 공허함의 파악
-            { eventID = 15,  role = "Mechanic", sound = "Phase" }, -- 우주를 삼켜라
-            { eventID = 64,  role = "Tank"    , sound = "Tank"  }, -- 어둠의 손
-            { eventID = 65,  role = "Mechanic", sound = "Phase" }, -- 폭식의 심연
-            { eventID = 66,  role = "Heal" },                      -- 간섭 진동
-            { eventID = 131, role = "Heal" },                      -- 레인저 캡틴의 마크
-            { eventID = 132, role = "Heal" },                      -- 공허함의 파악
-            { eventID = 135, role = "Mechanic", sound = "Phase" }, -- 균열 환영
-            { eventID = 136, role = "Mechanic", sound = "Phase" }, -- 우주 포털
-            { eventID = 137, role = "Tank"    , sound = "Tank"  }, -- 균열 베기
-            { eventID = 169, role = "Other" },                     -- 우주 에너지 과부하
+            { spellID = 1233865, role = "Heal" },                      -- 무의 왕관
+            { spellID = 1233819, role = "Mechanic", sound = "Phase" }, -- 공허한 반발
+            { spellID = 1233602, role = "Mechanic", sound = "Phase" }, -- 은화살
+            { spellID = 1234564, role = "Other" },                     -- 은화살 탄막
+            { spellID = 1235622, role = "Other" },                     -- 특이점 폭발
+            { spellID = 1237035, role = "Heal" },                      -- 공허추적자 스파이크
+            { spellID = 1237837, role = "Mechanic", sound = "Phase" }, -- 공허의 부름
+            { spellID = 1237614, role = "Heal" },                      -- 레인저 캡틴의 마크
+            { spellID = 1246918, role = "Heal" },                      -- 우주 장벽
+            { spellID = 1239080, role = "Mechanic", sound = "Phase" }, -- 최종 수호자
+            { spellID = 1232467, role = "Heal" },                      -- 공허함의 파악
+            { spellID = 1238843, role = "Mechanic", sound = "Phase" }, -- 우주를 삼켜라
+            { spellID = 1243787, role = "Tank"    , sound = "Tank"  }, -- 어둠의 손
+            { spellID = 1243753, role = "Mechanic", sound = "Phase" }, -- 폭식의 심연
+            { spellID = 1243743, role = "Heal" },                      -- 간섭 진동
+            { spellID = 1260010, role = "Heal" },                      -- 레인저 캡틴의 마크
+            { spellID = 1260026, role = "Heal" },                      -- 공허함의 파악
+            { spellID = 1261016, role = "Mechanic", sound = "Phase" }, -- 균열 환영
+            { spellID = 1261339, role = "Mechanic", sound = "Phase" }, -- 우주 포털
+            { spellID = 1246461, role = "Tank"    , sound = "Tank"  }, -- 균열 베기
+            { spellID = 1239582, role = "Other" },                     -- 우주 에너지 과부하
         },
     },
 
     -- 쿠엘다나스 진격로 (mapID 2913, rules 없음)
     [3182] = { -- 알라르의 자손 벨로렌
         events = {
-            { eventID = 128, role = "Mechanic", sound = "Phase" }, -- 벨로란의 불씨
-            { eventID = 130, role = "Mechanic", sound = "Phase" }, -- 빛나는 메아리
-            { eventID = 134, role = "Tank"    , sound = "Tank"  }, -- 수호자 칙령
-            { eventID = 138, role = "Heal" },                      -- 영원한 소각
-            { eventID = 161, role = "Mechanic", sound = "Phase" }, -- 주입된 깃털
-            { eventID = 218, role = "Heal" },                      -- 공허빛 합류
-            { eventID = 272, role = "Mechanic", sound = "Phase" }, -- 죽음의 낙하
-            { eventID = 273, role = "Other" },                     -- 화염 부화
-            { eventID = 384, role = "Mechanic", sound = "Phase" }, -- 성광의 깃털
-            { eventID = 385, role = "Mechanic", sound = "Phase" }, -- 공허의 깃털
-            { eventID = 417, role = "Other" },                     -- 이벤트 417
-            { eventID = 418, role = "Other" },                     -- 이벤트 418
-            { eventID = 482, role = "Mechanic", sound = "Phase" }, -- 성광의 깃털
-            { eventID = 483, role = "Mechanic", sound = "Phase" }, -- 공허의 깃털
-            { eventID = 494, role = "Heal" },                      -- 성광의 급습
-            { eventID = 495, role = "Heal" },                      -- 공허 강하
-            { eventID = 497, role = "Mechanic", sound = "Phase" }, -- 부활
-            { eventID = 500, role = "Mechanic", sound = "Phase" }, -- 공허빛의 분노
-            { eventID = 748, role = "Other" },                     -- 부활
+            { spellID = 1241282, role = "Mechanic", sound = "Phase" }, -- 벨로란의 불씨
+            { spellID = 1242981, role = "Mechanic", sound = "Phase" }, -- 빛나는 메아리
+            { spellID = 1260763, role = "Tank"    , sound = "Tank"  }, -- 수호자 칙령
+            { spellID = 1244344, role = "Heal" },                      -- 영원한 소각
+            { spellID = 1242260, role = "Mechanic", sound = "Phase" }, -- 주입된 깃털
+            { spellID = 1242515, role = "Heal" },                      -- 공허빛 합류
+            { spellID = 1246709, role = "Mechanic", sound = "Phase" }, -- 죽음의 낙하
+            { spellID = 1242792, role = "Other" },                     -- 화염 부화
+            { spellID = 1241992, role = "Mechanic", sound = "Phase" }, -- 성광의 깃털
+            { spellID = 1242091, role = "Mechanic", sound = "Phase" }, -- 공허의 깃털
+            --{ eventID = 417,     role = "Other" },                     -- 이벤트 417 (spellID 미확인)
+            --{ eventID = 418,     role = "Other" },                     -- 이벤트 418 (spellID 미확인)
+            { spellID = 1241162, role = "Mechanic", sound = "Phase" }, -- 성광의 깃털
+            { spellID = 1241163, role = "Mechanic", sound = "Phase" }, -- 공허의 깃털
+            { spellID = 1241292, role = "Heal" },                      -- 성광의 급습
+            { spellID = 1241339, role = "Heal" },                      -- 공허 강하
+            { spellID = 1241313, role = "Mechanic", sound = "Phase" }, -- 부활
+            { spellID = 1241267, role = "Mechanic", sound = "Phase" }, -- 공허빛의 분노
+            { spellID = 1241320, role = "Other" },                     -- 부활
         },
     },
     [3183] = { -- 한밤의 도래
         events = {
-            { eventID = 255, role = "Mechanic", sound = "Phase" }, -- 죽음의 만가
-            { eventID = 256, role = "Other" },                     -- 하늘의 대검
-            { eventID = 257, role = "Other" },                     -- 수호 각기둥
-            { eventID = 258, role = "Heal" },                      -- 부서진 하늘
-            { eventID = 259, role = "Heal" },                      -- 개기일식
-            { eventID = 260, role = "Mechanic", sound = "Phase" }, -- 가장 어두운 밤
-            { eventID = 261, role = "Mechanic", sound = "Phase" }, -- 빛의 사이펀
-            { eventID = 262, role = "Other" },                     -- 어두운 별자리
-            { eventID = 263, role = "Other" },                     -- 암흑 대천사
-            { eventID = 362, role = "Mechanic", sound = "Phase" }, -- 죽음의 레퀴엠
-            { eventID = 363, role = "Heal" },                      -- 연결 끊기
-            { eventID = 364, role = "Tank"    , sound = "Tank"  }, -- 하늘의 창
-            { eventID = 433, role = "Mechanic", sound = "Phase" }, -- 어둠의 우물 깊이
-            { eventID = 434, role = "Heal" },                      -- 우주 핵분열
-            { eventID = 435, role = "Heal" },                      -- 핵심 수확
-            { eventID = 436, role = "Other" },                     -- 암흑 붕괴
-            { eventID = 437, role = "Heal" },                      -- 별조각
-            { eventID = 632, role = "Heal" },                      -- 충전
-            { eventID = 636, role = "Other" },                     -- 종단 각기둥
-            { eventID = 644, role = "Mechanic", sound = "Phase" }, -- 말살 협주곡
-            { eventID = 649, role = "Other" },                     -- 암흑 퀘이사
-            { eventID = 650, role = "Heal" },                      -- 어두운 룬
-            { eventID = 750, role = "Other" },                     -- 불협의 자장가
+            { spellID = 1244412, role = "Mechanic", sound = "Phase" }, -- 죽음의 만가
+            { spellID = 1253915, role = "Other" },                     -- 하늘의 대검
+            { spellID = 1251386, role = "Other" },                     -- 수호 각기둥
+            { spellID = 1249796, role = "Heal" },                      -- 부서진 하늘
+            { spellID = 1261871, role = "Heal" },                      -- 개기일식
+            { spellID = 1266622, role = "Mechanic", sound = "Phase" }, -- 가장 어두운 밤
+            { spellID = 1266897, role = "Mechanic", sound = "Phase" }, -- 빛의 사이펀
+            { spellID = 1266388, role = "Other" },                     -- 어두운 별자리
+            { spellID = 1250898, role = "Other" },                     -- 암흑 대천사
+            { spellID = 1273158, role = "Mechanic", sound = "Phase" }, -- 죽음의 레퀴엠
+            { spellID = 1276202, role = "Heal" },                      -- 연결 끊기
+            { spellID = 1267049, role = "Tank"    , sound = "Tank"  }, -- 하늘의 창
+            { spellID = 1282047, role = "Mechanic", sound = "Phase" }, -- 어둠의 우물 깊이
+            { spellID = 1282249, role = "Heal" },                      -- 우주 핵분열
+            { spellID = 1282412, role = "Heal" },                      -- 핵심 수확
+            { spellID = 1281194, role = "Other" },                     -- 암흑 붕괴
+            { spellID = 1282441, role = "Heal" },                      -- 별조각
+            { spellID = 1284525, role = "Heal" },                      -- 충전
+            { spellID = 1284931, role = "Other" },                     -- 종단 각기둥
+            { spellID = 1284980, role = "Mechanic", sound = "Phase" }, -- 말살 협주곡
+            { spellID = 1279420, role = "Other" },                     -- 암흑 퀘이사
+            { spellID = 1249609, role = "Heal" },                      -- 어두운 룬
+            { spellID = 1295191, role = "Other" },                     -- 불협의 자장가
         },
     },
 }

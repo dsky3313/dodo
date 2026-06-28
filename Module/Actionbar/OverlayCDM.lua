@@ -49,6 +49,7 @@ local ALL_CDM_GROUPS = {
 
 local CustomCDMConfigs = { -- 물약 지속시간
     [1236616] = { matchIDs = { 241308, 241309 }, duration = 30, type = 3 },
+    [1236994] = { matchIDs = { 241288 }, duration = 30, type = 3 },
 }
 
 local enableCDMADebug = false
