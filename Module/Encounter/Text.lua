@@ -2,6 +2,7 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
+
 -- ==============================
 -- 캐싱
 -- ==============================
@@ -19,6 +20,20 @@ local select              = select
 local table_insert        = table.insert
 local table_remove        = table.remove
 local table_sort          = table.sort
+local wipe                = wipe
+
+local SOUND_DEFAULT_TEXT = {
+    Adds    = "쫄 등장",
+    AOE     = "광역딜",
+    Dispel  = "해제",
+    Frontal = "전방",
+    Interrupt = "차단",
+    Phase   = "사이페",
+    Pool = "바닥 유도" ,
+    Soak = "바닥 밟기",
+    Tank    = "탱커",
+    Target = "대상",
+}
 
 -- ==============================
 -- UI
@@ -36,7 +51,7 @@ local icon_count     = 0
 local is_preview     = false
 
 local function get_font()
-    return STANDARD_TEXT_FONT or "", ""
+    return STANDARD_TEXT_FONT or "", "OUTLINE"
 end
 
 -- 전방 선언
@@ -150,10 +165,6 @@ hide_all_alerts = function()
     active_alerts = {}
 end
 
-local function on_hide_alert(eventID)
-    hide_alert(eventID)
-end
-
 -- custom_text: Data.lua entry.text (non-secret) 있으면 사용, 없으면 info.spellName(secret→setter)
 local function show_alert(eventID, info, role, custom_text)
     local ec = dodo.Colors and dodo.Colors.EncounterColor
@@ -180,8 +191,6 @@ local function show_alert(eventID, info, role, custom_text)
     is_preview = false
     local row  = create_row()
     row.eventID = eventID
-    row.frame:SetFrameStrata("MEDIUM")
-    row.frame:SetFrameLevel(555)
     row.icon_tex:SetTexture(info.iconFileID)  -- secret → setter
     if custom_text then
         row.name_fs:SetText(custom_text)
@@ -201,7 +210,7 @@ local function show_alert(eventID, info, role, custom_text)
     row.frame:Show()
 
     local timer_dur = (r and r > 0) and (r + 1) or 6
-    C_Timer.After(timer_dur, on_hide_alert, eventID)
+    C_Timer.After(timer_dur, function() hide_alert(eventID) end)
 end
 
 -- ==============================
@@ -210,37 +219,27 @@ end
 local MATCH_TOL    = 0.75  -- duration 매칭 허용 오차 (초)
 local BATCH_WINDOW = 0.6   -- pending flush 대기 시간 (초)
 
-local SOUND_DEFAULT_TEXT = {
-    Adds    = "쫄 등장",
-    AOE     = "광역딜",
-    Dispel  = "해제",
-    Frontal = "전방",
-    Interrupt = "차단",
-    Phase   = "사이페",
-    Pool = "바닥 유도" ,
-    Soak = "바닥 밟기",
-    Tank    = "탱커",
-    Target = "대상",
-}
+
 
 local current_encounter  = nil  -- ENCOUNTER_START에서 받은 encounterID
 local pending_adds       = {}   -- {tempID, dur, receivedAt}
 local temp_to_entry      = {}   -- tempID → EncounterEvents entry
 local flush_scheduled    = false
-local global_rule_used   = {}   -- rule_index → true (이벤트 발동/제거 시 해제)
+local global_rule_used   = {}   -- rule_index → true (seq 없는 규칙 슬롯 관리)
 local temp_to_rule_idx   = {}   -- tempID → rule_index (해제용 역참조)
+local seq_counter        = {}   -- dur_key → 발동 횟수 (seq 규칙 round-robin용)
 
 local function flush_pending_adds()
     flush_scheduled = false
     if not current_encounter or #pending_adds == 0 then
-        pending_adds = {}
+        wipe(pending_adds)
         return
     end
     local data    = dodo.EncounterData and dodo.EncounterData[current_encounter]
     local rules   = data and data.rules
     local entries = data and data.events
     if not rules or not entries then
-        pending_adds = {}
+        wipe(pending_adds)
         return
     end
 
@@ -255,56 +254,122 @@ local function flush_pending_adds()
         table_sort(pending_adds, function(a, b) return a.receivedAt < b.receivedAt end)
     end
 
-    -- 그리디 매칭: 각 pending event에 가장 가까운 미사용 rule 배정
-    -- global_rule_used로 flush 간 슬롯 영속 관리 (배치가 따로 도착해도 중복 방지)
-    for _, pev in ipairs(pending_adds) do
-        local best_i   = nil
-        local best_d   = math_abs(MATCH_TOL) + 1
-        local best_seq = math.huge
-        for i, rule in ipairs(rules) do
-            if not global_rule_used[i] then
-                local d = math_abs(pev.dur - rule.dur)
-                if d <= MATCH_TOL then
-                    local s = rule.seq or 0
-                    if d < best_d or (d <= best_d + 0.001 and s < best_seq) then
-                        best_d   = d
-                        best_seq = s
-                        best_i   = i
+    -- dead slot 정리: 타임라인에서 실제 사라진 이벤트의 슬롯만 해제
+    -- (pending에 없어도 타임라인에 살아있으면 유지 → 같은 사이클 내 다른 이벤트 슬롯 보호)
+    local pending_id_set = {}
+    for _, pev in ipairs(pending_adds) do pending_id_set[pev.tempID] = true end
+    if C_EncounterTimeline.GetEventInfo then
+        for tempID, ruleIdx in pairs(temp_to_rule_idx) do
+            if not pending_id_set[tempID] then
+                local still_alive = C_EncounterTimeline.GetEventInfo(tempID)
+                if not still_alive then
+                    global_rule_used[ruleIdx] = nil
+                    temp_to_rule_idx[tempID]  = nil
+                    temp_to_entry[tempID]     = nil
+                    if dodo.EncounterDebug then
+                        print(string.format("[dodo] 슬롯해제 id=%d 규칙#%d", tempID, ruleIdx))
+                    end
+                else
+                    if dodo.EncounterDebug then
+                        local rule = rules[ruleIdx]
+                        print(string.format("[dodo] 슬롯유지 id=%d 규칙#%d 지속=%.2f", tempID, ruleIdx, rule and rule.dur or 0))
                     end
                 end
             end
         end
-        if best_i then
-            global_rule_used[best_i]      = true
-            temp_to_rule_idx[pev.tempID]  = best_i
-            local e = by_eid[rules[best_i].eID]
-            if e and e.enable ~= false then
-                temp_to_entry[pev.tempID] = e
-            end
-            -- DEBUG
-            local rule = rules[best_i]
-            print(string.format("[dodo-dbg] match tempID=%d dur=%.2f → rule#%d dur=%.2f eID=%s seq=%s sound=%s",
-                pev.tempID, pev.dur, best_i, rule.dur, tostring(rule.eID), tostring(rule.seq),
-                e and tostring(e.sound) or "nil"))
-        else
-            -- DEBUG
-            print(string.format("[dodo-dbg] NO_MATCH tempID=%d dur=%.2f", pev.tempID, pev.dur))
+    end
+
+    -- seq 규칙 그룹 사전 계산 (round-robin counter용)
+    local seq_groups = {}  -- dur_key → [{idx, seq}] sorted by seq
+    for i, rule in ipairs(rules) do
+        if rule.seq then
+            local k = string.format("%.2f", rule.dur)
+            if not seq_groups[k] then seq_groups[k] = {} end
+            local g = seq_groups[k]
+            g[#g + 1] = { idx = i, seq = rule.seq }
         end
     end
-    pending_adds = {}
-end
+    for _, g in pairs(seq_groups) do
+        table_sort(g, function(a, b) return a.seq < b.seq end)
+    end
 
-local function do_flush()
-    flush_pending_adds()
+    -- 매칭: seq 규칙 → round-robin counter, 나머지 → 그리디
+    for _, pev in ipairs(pending_adds) do
+        local best_i = nil
+
+        -- seq 그룹 탐색
+        local grp_key, grp = nil, nil
+        for k, g in pairs(seq_groups) do
+            if math_abs(pev.dur - tonumber(k)) <= MATCH_TOL then
+                grp_key, grp = k, g
+                break
+            end
+        end
+
+        if grp then
+            local cnt  = seq_counter[grp_key] or 0
+            local pick = grp[(cnt % #grp) + 1]
+            best_i = pick.idx
+            seq_counter[grp_key] = cnt + 1
+            if dodo.EncounterDebug then
+                local rule = rules[best_i]
+                local e    = by_eid[rule.eID]
+                print(string.format("[dodo] 카운터매칭 id=%d 지속=%.2f → 규칙#%d eID=%s 순서=%d 사운드=%s (cnt=%d)",
+                    pev.tempID, pev.dur, best_i, tostring(rule.eID), rule.seq,
+                    e and tostring(e.sound) or "없음", cnt))
+            end
+        else
+            -- seq 없는 규칙: 그리디
+            local best_d = math_abs(MATCH_TOL) + 1
+            for i, rule in ipairs(rules) do
+                if not rule.seq and not global_rule_used[i] then
+                    local d = math_abs(pev.dur - rule.dur)
+                    if d <= MATCH_TOL and d < best_d then
+                        best_d = d
+                        best_i = i
+                    end
+                end
+            end
+            if dodo.EncounterDebug then
+                if best_i then
+                    local rule = rules[best_i]
+                    local e    = by_eid[rule.eID]
+                    print(string.format("[dodo] 매칭 id=%d 지속=%.2f → 규칙#%d 지속=%.2f eID=%s 사운드=%s",
+                        pev.tempID, pev.dur, best_i, rule.dur, tostring(rule.eID),
+                        e and tostring(e.sound) or "없음"))
+                else
+                    local blocked = ""
+                    for i, rule in ipairs(rules) do
+                        if global_rule_used[i] and math_abs(pev.dur - rule.dur) <= MATCH_TOL then
+                            blocked = blocked .. string.format(" #%d(%.1f점유)", i, rule.dur)
+                        end
+                    end
+                    print(string.format("[dodo] 미매칭 id=%d 지속=%.2f%s",
+                        pev.tempID, pev.dur, blocked ~= "" and blocked or " (규칙없음)"))
+                end
+            end
+        end
+
+        if best_i then
+            if not rules[best_i].seq then
+                global_rule_used[best_i] = true  -- seq 없는 규칙만 슬롯 점유
+            end
+            temp_to_rule_idx[pev.tempID] = best_i
+            local e = by_eid[rules[best_i].eID]
+            if e and e.enable ~= false then temp_to_entry[pev.tempID] = e end
+        end
+    end
+    wipe(pending_adds)
 end
 
 local function clear_encounter_state()
     current_encounter = nil
-    pending_adds      = {}
-    temp_to_entry     = {}
+    wipe(pending_adds)
+    wipe(temp_to_entry)
     flush_scheduled   = false
-    global_rule_used  = {}
-    temp_to_rule_idx  = {}
+    wipe(global_rule_used)
+    wipe(temp_to_rule_idx)
+    wipe(seq_counter)
 end
 
 -- ==============================
@@ -348,12 +413,13 @@ local function on_timeline_added(eventInfo)
     if eventInfo.source ~= dodo.Encounter.ENCOUNTER_SOURCE then return end
 
     pending_adds[#pending_adds + 1] = { tempID = tempID, dur = dur, receivedAt = GetTime() }
-    -- DEBUG
-    print(string.format("[dodo-dbg] ADDED tempID=%d dur=%.2f pending=%d", tempID, dur, #pending_adds))
+    if dodo.EncounterDebug then
+        print(string.format("[dodo]  추가 id=%d 지속=%.2f 대기=%d", tempID, dur, #pending_adds))
+    end
 
     if not flush_scheduled then
         flush_scheduled = true
-        C_Timer.After(BATCH_WINDOW, do_flush)
+        C_Timer.After(BATCH_WINDOW, flush_pending_adds)
     end
 end
 
@@ -396,7 +462,11 @@ local function on_state_changed(eventID)
     local state = C_EncounterTimeline.GetEventState(eventID)
     if state == dodo.Encounter.STATE_FINISHED or state == dodo.Encounter.STATE_CANCELED then
         hide_alert(eventID)
-        -- rule slot은 REMOVED에서만 해제 (FINISHED 즉시 해제 시 동일 dur 이벤트가 잘못된 slot 재사용)
+        if dodo.EncounterDebug then
+            local idx = temp_to_rule_idx[eventID]
+            if idx then print(string.format("[dodo] FINISHED 해제 id=%d 규칙#%d", eventID, idx)) end
+        end
+        release_rule_slot(eventID)
     end
 end
 
@@ -436,8 +506,6 @@ local function on_event(self, event, arg1)
                     disabled   = function() return not dodo.Encounter.IsEnabled() end,
                 },
             })
-        end
-        if dodo.RegisterEditModeSystemSetting then
             dodo.RegisterEditModeSystemSetting("EncounterText", {
                 {
                     name = "아이콘 크기",
@@ -466,7 +534,7 @@ local function on_event(self, event, arg1)
                     disabled = function() return not dodo.Encounter.IsEnabled() end,
                 },
             })
-        end
+        end  -- RegisterEditModeSystemSetting
         self:UnregisterEvent("PLAYER_LOGIN")
     elseif event == "PLAYER_ENTERING_WORLD" then
         hide_all_alerts()
@@ -474,12 +542,14 @@ local function on_event(self, event, arg1)
     elseif event == "ENCOUNTER_START" then
         -- arg1 = encounterID
         current_encounter = arg1
-        pending_adds      = {}
-        temp_to_entry     = {}
+        wipe(pending_adds)
+        wipe(temp_to_entry)
         flush_scheduled   = false
-        global_rule_used  = {}
-        temp_to_rule_idx  = {}
+        wipe(global_rule_used)
+        wipe(temp_to_rule_idx)
+        wipe(seq_counter)
     elseif event == "ENCOUNTER_END" then
+        hide_all_alerts()
         clear_encounter_state()
     elseif event == "ENCOUNTER_TIMELINE_EVENT_ADDED" then
         -- arg1 = eventInfo table {id, duration, source, ...}

@@ -40,13 +40,15 @@ local SOUND_ROOT = "Interface\\AddOns\\" .. addonName .. "\\Media\\Sound\\Encoun
 -- sound from ttsfree.com (SunHi 14%, 5%) > https://mp3cut.net/ko/change-volume volume 130%
 ---@type table<dodo.SoundKey, dodo.SoundData>
 local SOUND_MAP = {
-    Adds     = { file = SOUND_ROOT .. "Adds.mp3",     channel = "Master" },
-    AOE      = { file = SOUND_ROOT .. "AOE.mp3",      channel = "Master" },
-    Dispel   = { file = SOUND_ROOT .. "Dispel.mp3",   channel = "Master" },
-    Frontal  = { file = SOUND_ROOT .. "Frontal.mp3",  channel = "Master" },
-    Phase    = { file = SOUND_ROOT .. "Phase.mp3",    channel = "Master" },
-    Pool     = { file = SOUND_ROOT .. "Pool.mp3",     channel = "Master" },
-    Tank     = { file = SOUND_ROOT .. "Tank.mp3",     channel = "Master" },
+    Adds      = { file = SOUND_ROOT .. "Adds.mp3",      channel = "Master" },
+    AOE       = { file = SOUND_ROOT .. "AOE.mp3",       channel = "Master" },
+    Dispel    = { file = SOUND_ROOT .. "Dispel.mp3",    channel = "Master" },
+    Frontal   = { file = SOUND_ROOT .. "Frontal.mp3",   channel = "Master" },
+    Interrupt = { file = SOUND_ROOT .. "Interrupt.mp3", channel = "Master" },
+    Phase     = { file = SOUND_ROOT .. "Phase.mp3",     channel = "Master" },
+    Pool      = { file = SOUND_ROOT .. "Pool.mp3",      channel = "Master" },
+    Soak      = { file = SOUND_ROOT .. "Soak.mp3",      channel = "Master" },
+    Tank      = { file = SOUND_ROOT .. "Tank.mp3",      channel = "Master" },
 }
 
 ---@type dodo.EncounterEntry[]|nil
@@ -98,13 +100,15 @@ local function apply_sounds()
     end
     local is_dps = (role == "DAMAGER")
 
-    -- spellID → encounterEventID 맵 (신규 형식 지원)
+    -- spellID → encounterEventID 리스트 맵 (같은 spellID 사이클별 다중 ID 대응)
     local spell_map = {}
     if C_EncounterEvents.GetEventList and C_EncounterEvents.GetEventInfo then
         for _, id in ipairs(C_EncounterEvents.GetEventList()) do
             local info = C_EncounterEvents.GetEventInfo(id)
             if info and info.spellID and info.spellID ~= 0 then
-                spell_map[info.spellID] = id
+                local t = spell_map[info.spellID]
+                if not t then t = {}; spell_map[info.spellID] = t end
+                t[#t + 1] = id
             end
         end
     end
@@ -122,14 +126,17 @@ local function apply_sounds()
     end
     applied_eids = {}
     for _, entry in ipairs(all_events) do
-        local encounter_eid = entry.eventID or (entry.spellID and spell_map[entry.spellID])
-        if encounter_eid then
+        local eids = entry.eventID and { entry.eventID }
+            or (entry.spellID and spell_map[entry.spellID])
+        if eids then
             local sound1 = SOUND_MAP[entry.sound or entry.role]
             if is_dps and entry.role == "Tank" then sound1 = nil end
-            C_EncounterEvents.SetEventSound(encounter_eid, 0, nil)
-            C_EncounterEvents.SetEventSound(encounter_eid, 1, sound1)
-            C_EncounterEvents.SetEventSound(encounter_eid, 2, nil)
-            applied_eids[#applied_eids + 1] = encounter_eid
+            for _, encounter_eid in ipairs(eids) do
+                C_EncounterEvents.SetEventSound(encounter_eid, 0, nil)
+                C_EncounterEvents.SetEventSound(encounter_eid, 1, sound1)
+                C_EncounterEvents.SetEventSound(encounter_eid, 2, nil)
+                applied_eids[#applied_eids + 1] = encounter_eid
+            end
         end
     end
     if et then et:RegisterEvent("ENCOUNTER_TIMELINE_STATE_UPDATED") end
