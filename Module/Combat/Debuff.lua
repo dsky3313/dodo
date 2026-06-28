@@ -392,58 +392,25 @@ local function update_debuff_frames()
     end
 end
 
-local function update_auras(updateInfo)
+local function update_auras()
     if is_preview_active then return end
-    if not updateInfo or updateInfo.isFullUpdate then
-        -- 전체 재스캔
-        local auras = C_UnitAuras.GetUnitAuras("player", debufffilter)
-        table.wipe(activeDebuffsCache)
-        if auras then
-            for _, aura in ipairs(auras) do
-                local sid = aura.spellId
-                local isFiltered = false
-                if sid then
-                    if not isSecretValue(sid) and filterList[sid] then
-                        isFiltered = true
-                    end
-                end
-                if not isFiltered then
-                    table.insert(activeDebuffsCache, aura)
-                    if #activeDebuffsCache >= configs.max_debuffs then break end
+    local auras = C_UnitAuras.GetUnitAuras("player", debufffilter)
+    table.wipe(activeDebuffsCache)
+    if auras then
+        for _, aura in ipairs(auras) do
+            local sid = aura.spellId
+            local isFiltered = false
+            if sid then
+                if not isSecretValue(sid) and filterList[sid] then
+                    isFiltered = true
                 end
             end
-        end
-    else
-        -- 부분 갱신: 삭제 처리
-        if updateInfo.removedAuraInstanceIDs then
-            for _, removedID in ipairs(updateInfo.removedAuraInstanceIDs) do
-                for i = #activeDebuffsCache, 1, -1 do
-                    if activeDebuffsCache[i].auraInstanceID == removedID then
-                        table.remove(activeDebuffsCache, i)
-                        break
-                    end
-                end
-            end
-        end
-        -- 부분 갱신: 추가 처리
-        if updateInfo.addedAuras then
-            for _, aura in ipairs(updateInfo.addedAuras) do
-                if aura.isHarmful and #activeDebuffsCache < configs.max_debuffs then
-                    local sid = aura.spellId
-                    local isFiltered = false
-                    if sid then
-                        if not isSecretValue(sid) and filterList[sid] then
-                            isFiltered = true
-                        end
-                    end
-                    if not isFiltered then
-                        table.insert(activeDebuffsCache, aura)
-                    end
-                end
+            if not isFiltered then
+                table.insert(activeDebuffsCache, aura)
+                if #activeDebuffsCache >= configs.max_debuffs then break end
             end
         end
     end
-
     activeDebuffs["player"] = activeDebuffsCache
     update_debuff_frames()
 end
@@ -729,7 +696,7 @@ end
 -- ==============================
 local function on_event(self, event, arg1, arg2)
     if event == "UNIT_AURA" and arg1 == "player" then
-        update_auras(arg2)
+        update_auras()
     elseif event == "PLAYER_ENTERING_WORLD" then
         update_auras()
         if not bsetupprivate then
