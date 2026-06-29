@@ -318,6 +318,13 @@ local function on_event(self, event, arg1)
         if arg1 == addonName then
             dodoDB = dodoDB or {}
         else
+            if arg1 == "Blizzard_GarrisonUI" and GarrisonLandingPage and GarrisonLandingPage.SetupCovenantTopPanel then
+                -- Blizzard 버그 워크어라운드: 패치 12.0에서 섀도우랜즈 covenantData nil 크래시 방지
+                local orig_setup = GarrisonLandingPage.SetupCovenantTopPanel
+                GarrisonLandingPage.SetupCovenantTopPanel = function(self, ...)
+                    pcall(orig_setup, self, ...)
+                end
+            end
             refresh_all_buttons()
         end
     elseif event == "PLAYER_LOGIN" then

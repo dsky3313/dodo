@@ -80,6 +80,42 @@ function EditMode:CreateSystem(system_name, system_label, system_tooltip, parent
     system.GetSettings   = function(s) return {} end
     system.HasSettings   = function(s) return false end
 
+    -- Position 모듈 연동: 위치 변경 시 dodoDB 직접 저장
+    system.SavePosition = function(s)
+        local pt, attachFrame, attachPoint, x, y = s:GetPoint()
+        local relName = attachFrame and (attachFrame:GetName() or "UIParent") or "UIParent"
+        local save = {
+            point         = pt,
+            relativeTo    = relName,
+            relativePoint = attachPoint or pt,
+            xOfs          = x or 0,
+            yOfs          = y or 0,
+        }
+        dodoDB.editMode = dodoDB.editMode or {}
+        dodoDB.editMode[system_name] = save
+        if on_position_changed then on_position_changed(save) end
+    end
+
+    -- Position 모듈 연동: LEM 프레임 선택 시 pos 패널 갱신
+    if lem_selection then
+        lem_selection:HookScript("OnMouseDown", function()
+            if dodo.EditMode.SelectPosFrame then
+                dodo.EditMode.SelectPosFrame(system)
+            end
+        end)
+    end
+
+    -- Position 모듈 연동: LEM dialog 참조 & OnHide 훅 (최초 1회)
+    if LEM.internal and LEM.internal.dialog and not EditMode._lemDialogHookedPos then
+        EditMode._lemDialog = LEM.internal.dialog
+        EditMode._lemDialogHookedPos = true
+        LEM.internal.dialog:HookScript("OnHide", function()
+            if dodo.EditMode.ClearPosFrame then
+                dodo.EditMode.ClearPosFrame()
+            end
+        end)
+    end
+
     system:Hide()
     self.systems[system_name] = system
 

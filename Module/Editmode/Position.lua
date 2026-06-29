@@ -134,6 +134,9 @@ local function apply_pos_settings()
     selected_frame:SetPoint(pos_point, pos_attach_frame, pos_attach_point, pos_x_offset, pos_y_offset)
 
     if selected_frame._isDodoSystem then
+        if selected_frame.SavePosition then
+            selected_frame:SavePosition()
+        end
         update_pos_settings()
     elseif selected_frame.OnSystemPositionChange then
         selected_frame:OnSystemPositionChange()
@@ -238,8 +241,6 @@ end
 -- 기능 4: EMM 스타일 하단 부착 및 고정 계산 공식 적용
 -- ==============================
 local function update_pos_dialog()
-    local EditModeSystemSettingsDialog = _G.EditModeSystemSettingsDialog
-    if not EditModeSystemSettingsDialog or not EditModeSystemSettingsDialog:IsShown() then return end
     if not pos_frame or not is_pos_active then return end
 
     if not selected_frame then
@@ -247,17 +248,30 @@ local function update_pos_dialog()
         return
     end
 
+    -- 활성 다이얼로그 결정: dodo 시스템은 LEM dialog, 블리자드 시스템은 EditModeSystemSettingsDialog
+    local active_dialog
+    if selected_frame._isDodoSystem then
+        active_dialog = dodo.EditMode and dodo.EditMode._lemDialog
+    else
+        active_dialog = _G.EditModeSystemSettingsDialog
+    end
+    if not active_dialog or not active_dialog:IsShown() then return end
+
     update_pos_settings()
 
-    if selected_frame.isManagedFrame and selected_frame:IsInDefaultPosition() and pos_attach_frame and pos_attach_frame:GetName() == "UIParentBottomManagedFrameContainer" then
+    if not selected_frame._isDodoSystem
+        and selected_frame.isManagedFrame
+        and selected_frame:IsInDefaultPosition()
+        and pos_attach_frame
+        and pos_attach_frame:GetName() == "UIParentBottomManagedFrameContainer"
+    then
         disable_pos_settings()
     else
         enable_pos_settings()
     end
 
-    -- 순정 Buttons 하단에 꼬리 일체형으로 부착!
     pos_frame:ClearAllPoints()
-    pos_frame:SetPoint("TOPLEFT", EditModeSystemSettingsDialog.Buttons, "BOTTOMLEFT", 0, -2)
+    pos_frame:SetPoint("TOPLEFT", active_dialog.Buttons, "BOTTOMLEFT", 0, -2)
     pos_frame:Show()
 
     local emp_height = 16 + 32 * 6
@@ -266,25 +280,28 @@ local function update_pos_dialog()
     end
     pos_frame:SetSize(360, emp_height)
 
-    -- 안전 가드 기반 높이 연산 (세부설정 패널이 보이면 그것의 최하단 끝점을 기준으로 동적 높이 연산)
     local lowestFrame = pos_frame
-    local systemPanel = _G.dodoEditModeSystemPanel
-    if systemPanel and systemPanel:IsShown() then
-        lowestFrame = systemPanel
+    if not selected_frame._isDodoSystem then
+        local systemPanel = _G.dodoEditModeSystemPanel
+        if systemPanel and systemPanel:IsShown() then
+            lowestFrame = systemPanel
+        end
     end
 
-    if EditModeSystemSettingsDialog:GetTop() and lowestFrame:GetBottom() then
-        local new_height = EditModeSystemSettingsDialog:GetTop() - lowestFrame:GetBottom() + 20
+    if active_dialog:GetTop() and lowestFrame:GetBottom() then
+        local new_height = active_dialog:GetTop() - lowestFrame:GetBottom() + 20
         if not is_updating_height then
             is_updating_height = true
-            EditModeSystemSettingsDialog:SetHeight(new_height)
+            active_dialog:SetHeight(new_height)
             is_updating_height = false
         end
     end
 
-    -- 세부설정 패널의 레이아웃도 연쇄적으로 업데이트 유도 (자식 앵커 밀림 및 겹침 방지)
-    if systemPanel and systemPanel.UpdateLayout then
-        systemPanel:UpdateLayout()
+    if not selected_frame._isDodoSystem then
+        local systemPanel = _G.dodoEditModeSystemPanel
+        if systemPanel and systemPanel.UpdateLayout then
+            systemPanel:UpdateLayout()
+        end
     end
 end
 
@@ -600,6 +617,12 @@ function dodo.EditMode.SelectPosFrame(frame)
     if not is_pos_active then return end
     selected_frame = frame
     update_pos_dialog()
+end
+
+function dodo.EditMode.ClearPosFrame()
+    if not is_pos_active then return end
+    selected_frame = nil
+    if pos_frame then pos_frame:Hide() end
 end
 
 local function on_clear_system()
