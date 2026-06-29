@@ -113,7 +113,7 @@ local function on_event(self, event, arg1, _, spellID)
         if arg1 == addonName then
             dodoDB = dodoDB or {}
             if dodoDB.enableStance == nil then dodoDB.enableStance = true end
-            if dodoDB.stanceIconSize == nil then dodoDB.stanceIconSize = 60 end
+            if dodoDB.stanceIconSize == nil then dodoDB.stanceIconSize = 80 end
             self:UnregisterEvent("ADDON_LOADED")
         end
 
@@ -129,7 +129,7 @@ local function on_event(self, event, arg1, _, spellID)
 
         if dodo.EditMode then
             dodo.EditMode:CreateSystem("Stance", "스탠스", "스탠스", UIParent, icon_size, icon_size,
-                { point = "BOTTOMRIGHT", relativeTo = "PlayerFrame", relativePoint = "TOPRIGHT", xOfs = -20, yOfs = 15 },
+                { point = "CENTER", relativeTo = "UIParent", relativePoint = "CENTER", xOfs = -185, yOfs = -100 },
                 nil,
                 stance_is_active)
         end
@@ -144,7 +144,7 @@ local function on_event(self, event, arg1, _, spellID)
         if anchor then
             stance_icon:SetPoint("CENTER", anchor, "CENTER", 0, 0)
         else
-            stance_icon:SetPoint("BOTTOMRIGHT", PlayerFrame, "TOPRIGHT", -20, 15)
+            stance_icon:SetPoint("CENTER", UIParent, "CENTER", -185, -100)
         end
 
         self:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -195,7 +195,7 @@ event_frame:SetScript("OnEvent", on_event)
 if dodo.RegisterEditModeModuleSetting then
     dodo.RegisterEditModeModuleSetting("편의기능", {
         {
-            name = "스탠스 아이콘",
+            name = "태세 아이콘",
             get  = function() return dodoDB.enableStance ~= false end,
             set  = function(v)
                 dodoDB.enableStance = v
@@ -212,13 +212,13 @@ if dodo.RegisterEditModeSystemSetting then
         {
             name   = "아이콘 크기",
             type   = "slider",
-            get    = function() return dodoDB and dodoDB.stanceIconSize or 60 end,
+            get    = function() return dodoDB and dodoDB.stanceIconSize or 80 end,
             set    = function(val)
                 dodoDB.stanceIconSize = val
                 apply_icon_size(val)
             end,
             minVal = 40,
-            maxVal = 80,
+            maxVal = 100,
             step   = 2,
         },
     })
