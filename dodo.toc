@@ -174,7 +174,7 @@ Module/Unitframe/Party/Overshield.lua
 Module/ObjectiveTracker/KeystoneTimer.lua
 
 # WorldMap
-#Module/WorldMap/Icon.lua
+Module/WorldMap/Icon.lua
 
 # Configurations & Layout Anchoring (Last Load)
 Module/Slash.lua

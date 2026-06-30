@@ -30,6 +30,7 @@ local tonumber = tonumber
 -- 기능 1: 로컬 상태
 -- ==============================
 local tick2, tick3 = nil, nil
+local hide_result  -- 기능 5에서 정의
 
 -- ==============================
 -- 기능 2: 적 병력 바 디자인 리스킨 (ObjectiveTrackerProgressBarTemplate 스타일)
@@ -161,6 +162,7 @@ local function create_tick_marks(statusBar)
 end
 
 local function on_challenge_mode_activate(self, timerID, elapsedTime, timeLimit)
+    hide_result()
     if not (dodoDB and dodoDB.enableKeystoneTimer ~= false and dodoDB.useKeystoneTimerTick ~= false) then
         if tick2 then tick2:Hide() end
         if tick3 then tick3:Hide() end
@@ -203,6 +205,118 @@ local function on_challenge_mode_update_time(self, elapsedTime)
 end
 
 -- ==============================
+-- 기능 5: 완료 후 최종 시간 표시
+-- ==============================
+local result_frame = nil
+
+hide_result = function()
+    if result_frame then
+        result_frame:Hide()
+    end
+end
+
+local function get_or_create_result_frame()
+    if result_frame then return result_frame end
+
+    local f = CreateFrame("Frame", nil, UIParent)
+    f:SetSize(200, 28)
+    f:SetFrameStrata("HIGH")
+
+    local bg = f:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints(f)
+    bg:SetColorTexture(0, 0, 0, 0.75)
+
+    f.timeText = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    f.timeText:SetPoint("LEFT", f, "LEFT", 10, 0)
+
+    f.statusText = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    f.statusText:SetPoint("RIGHT", f, "RIGHT", -10, 0)
+
+    f:Hide()
+
+    result_frame = f
+    return f
+end
+
+local function show_completion_result(elapsedTime, timeLimit, affixes)
+    if not (dodoDB and dodoDB.enableKeystoneTimer ~= false) then return end
+    if not elapsedTime or not timeLimit or timeLimit <= 0 then return end
+
+    local block = ScenarioObjectiveTracker and ScenarioObjectiveTracker.ChallengeModeBlock
+    local f = get_or_create_result_frame()
+
+    if block and block:IsShown() then
+        local x, y = block:GetCenter()
+        f:ClearAllPoints()
+        f:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x, y)
+    else
+        f:ClearAllPoints()
+        f:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -220, -350)
+    end
+
+    local plusTwoT, plusThreeT = calculate_bonus_timers(timeLimit, affixes)
+
+    local statusStr, r, g, b
+    if elapsedTime <= plusThreeT then
+        statusStr = "+3"
+        r, g, b = 0.4, 1, 0.4
+    elseif elapsedTime <= plusTwoT then
+        statusStr = "+2"
+        r, g, b = 0.4, 1, 0.4
+    elseif elapsedTime <= timeLimit then
+        statusStr = "+1"
+        r, g, b = 1, 0.85, 0
+    else
+        statusStr = "시간 초과"
+        r, g, b = 1, 0.3, 0.3
+    end
+
+    f.timeText:SetText(SecondsToClock(elapsedTime))
+    f.timeText:SetTextColor(r, g, b)
+    f.statusText:SetText(statusStr)
+    f.statusText:SetTextColor(r, g, b)
+    f:Show()
+end
+
+local function on_challenge_mode_completed()
+    local block = ScenarioObjectiveTracker and ScenarioObjectiveTracker.ChallengeModeBlock
+    if not block or not block.timerID then return end
+
+    local _, elapsedTime = GetWorldElapsedTime(block.timerID)
+    local timeLimit = block.timeLimit
+    local _, affixes = C_ChallengeMode.GetActiveKeystoneInfo()
+
+    show_completion_result(elapsedTime, timeLimit, affixes)
+end
+
+-- ==============================
+-- 기능 6: 인스턴스 진입 시 트래커 자동 접기
+-- ==============================
+local AUTO_COLLAPSE_MODULES = {
+    "ACHIEVEMENT_TRACKER_MODULE",
+    "BONUS_OBJECTIVE_TRACKER_MODULE",
+    "CAMPAIGN_QUEST_TRACKER_MODULE",
+    "QUEST_TRACKER_MODULE",
+    "WORLD_QUEST_TRACKER_MODULE",
+}
+
+local function set_module_collapsed(module, shouldCollapse)
+    if not module or not module.Header or not module.Header.MinimizeButton then return end
+    local isCollapsed = module:IsCollapsed() and true or false
+    if shouldCollapse ~= isCollapsed then
+        module.Header.MinimizeButton:Click()
+    end
+end
+
+local function update_tracker_collapse()
+    if not (dodoDB and dodoDB.enableKeystoneTimer ~= false and dodoDB.useKeystoneTimerAutoCollapse ~= false) then return end
+    local inInstance = IsInInstance()
+    for _, name in ipairs(AUTO_COLLAPSE_MODULES) do
+        set_module_collapsed(_G[name], inInstance)
+    end
+end
+
+-- ==============================
 -- 상태 업데이트
 -- ==============================
 local function update_visual()
@@ -231,7 +345,7 @@ local function initialize()
     if dodoDB.useKeystoneTimerBarStyle == nil then dodoDB.useKeystoneTimerBarStyle = true end
     if dodoDB.useKeystoneTimerPercent == nil then dodoDB.useKeystoneTimerPercent = true end
     if dodoDB.useKeystoneTimerTick == nil then dodoDB.useKeystoneTimerTick = true end
-
+    if dodoDB.useKeystoneTimerAutoCollapse == nil then dodoDB.useKeystoneTimerAutoCollapse = true end
     local block = ScenarioObjectiveTracker and ScenarioObjectiveTracker.ChallengeModeBlock
     if block then
         hooksecurefunc(block, "Activate", on_challenge_mode_activate)
@@ -256,7 +370,19 @@ local function on_event(self, event, arg1)
         dodoDB = dodoDB or {}
     elseif event == "PLAYER_LOGIN" then
         initialize()
+        self:RegisterEvent("CHALLENGE_MODE_COMPLETED")
+        self:RegisterEvent("CHALLENGE_MODE_RESET")
+        self:RegisterEvent("PLAYER_ENTERING_WORLD")
         self:UnregisterEvent("PLAYER_LOGIN")
+    elseif event == "CHALLENGE_MODE_COMPLETED" then
+        on_challenge_mode_completed()
+    elseif event == "CHALLENGE_MODE_RESET" then
+        hide_result()
+    elseif event == "PLAYER_ENTERING_WORLD" then
+        if not IsInInstance() then
+            hide_result()
+        end
+        update_tracker_collapse()
     end
 end
 
@@ -305,6 +431,15 @@ if dodo.RegisterEditModeSystemSetting then
             set = function(checked)
                 if dodoDB then dodoDB.useKeystoneTimerTick = checked end
                 update_visual()
+            end,
+            disabled = function() return dodoDB and dodoDB.enableKeystoneTimer == false end,
+        },
+        {
+            name = "인스턴스 시 트래커 자동 접기",
+            get = function() return dodoDB and dodoDB.useKeystoneTimerAutoCollapse ~= false end,
+            set = function(checked)
+                if dodoDB then dodoDB.useKeystoneTimerAutoCollapse = checked end
+                update_tracker_collapse()
             end,
             disabled = function() return dodoDB and dodoDB.enableKeystoneTimer == false end,
         },
