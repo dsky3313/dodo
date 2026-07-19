@@ -326,7 +326,7 @@ local function create_system_wing_panel(systemID)
         elseif item.type == "slider" then
             if item.isJoined then
                 -- 결합 슬라이더: 이전 체크박스 바로 옆(X=175)에 2열에 배치
-                local slider = dodo.UI:CreateSlider(f, item.get, item.set, item.minVal or 0, item.maxVal or 100, item.step or 1, nil)
+                local slider = dodo.UI:CreateSlider(f, item.get, item.set, item.minVal or item.min or 0, item.maxVal or item.max or 100, item.step or 1, nil)
                 slider:SetPoint("TOPLEFT", f, "TOPLEFT", 175, current_y - 8)
                 if item.disabled then
                     table_insert(update_queue, { comp = slider, type = "slider", check = item.disabled })
@@ -339,7 +339,7 @@ local function create_system_wing_panel(systemID)
                     current_y = current_y - 26
                     col = 0
                 end
-                local slider = dodo.UI:CreateSlider(f, item.get, item.set, item.minVal or 0, item.maxVal or 100, item.step or 1, item.name)
+                local slider = dodo.UI:CreateSlider(f, item.get, item.set, item.minVal or item.min or 0, item.maxVal or item.max or 100, item.step or 1, item.name)
                 if slider.Label then
                     slider.Label:ClearAllPoints()
                     slider.Label:SetPoint("TOPLEFT", f, "TOPLEFT", 12, current_y)

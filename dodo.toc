@@ -147,6 +147,10 @@ Module/ResourceBar/BarMode/Whirlwind.lua
 Module/ResourceBar/Power.lua
 Module/ResourceBar/Tracking.lua
 
+# PersonalResource
+#Module/PersonalResource/Core.lua
+#Module/PersonalResource/Resource.lua
+
 # Tooltip
 Module/Tooltip/Core.lua
 Module/Tooltip/Color.lua

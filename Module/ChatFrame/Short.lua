@@ -11,7 +11,6 @@ local addonName, dodo = ...
 dodoDB = dodoDB or {}
 dodo.DB = dodo.DB or dodoDB
 
--- 축약어 고정 정의
 local Config = {
     channelAbbreviations = {
         ["공개"] = "공개",
@@ -28,19 +27,15 @@ local Config = {
 -- ==============================
 -- 캐싱
 -- ==============================
-local ChatFrame_AddMessageEventFilter = ChatFrame_AddMessageEventFilter
 local CreateFrame = CreateFrame
-local issecretvalue = issecretvalue
 local pairs = pairs
 local type = type
 
 -- ==============================
 -- 기능 구현
 -- ==============================
--- 가벼운 메모리용 해시 캐시
 local channel_cache = {}
 
--- 1. 채널명 문자열(arg4) 축약 — 하이퍼링크 구성 전 raw 채널 설명자(예: "1. 일반")를 받음
 local function abbreviate_channel_name(name)
     if not name or type(name) ~= "string" then return name end
     if channel_cache[name] then return channel_cache[name] end
@@ -52,28 +47,31 @@ local function abbreviate_channel_name(name)
         end
     end
 
-    local index = name:match("^(%d+)%.")
-    if index then
-        channel_cache[name] = index
-        return index
-    end
-
     channel_cache[name] = name
     return name
 end
 
--- 2. CHAT_MSG_CHANNEL 필터: arg4(channelString)만 축약, 나머지 그대로 통과
--- AddMessage 직접 교체 방식은 MessageEventHandler 실행 컨텍스트를 오염시켜
--- SetLastTellTarget의 secret string 변환 실패를 유발하므로 필터 방식으로 대체.
--- sender(arg2)는 secret value이므로 절대 연산하지 않고 그대로 통과.
-local function channel_filter(self, event, message, sender, language, channelString, ...)
-    if not dodo.DB.enableChatModule or not dodo.DB.useShortenChannels then
-        return false, message, sender, language, channelString, ...
+-- ChatFrameUtil.ResolvePrefixedChannelName 교체 방식 사용.
+-- ChatFrame_AddMessageEventFilter로 arg4(channelString = "1. 공개")를 직접 수정하면
+-- Blizzard 코드의 channelLength > strlen(channelListValue) 체크 실패 → 메시지 드롭.
+-- 대신 표시 전용 함수를 교체해서 arg4는 보존하고 렌더 단계에서만 축약.
+local function hook_resolve_prefixed()
+    if not ChatFrameUtil or not ChatFrameUtil.ResolvePrefixedChannelName then return end
+
+    local orig = ChatFrameUtil.ResolvePrefixedChannelName
+    ChatFrameUtil.ResolvePrefixedChannelName = function(channelArg)
+        if not (dodo.DB and dodo.DB.enableChatModule and dodo.DB.useShortenChannels) then
+            return orig(channelArg)
+        end
+        -- "N. 채널명" 파싱. Communities 채널("N. clubId:streamId")은 orig로 위임.
+        local name = channelArg:match("^%d+%. (.*)")
+        if name and not name:find(":", 1, true) then
+            return abbreviate_channel_name(name)
+        end
+        return orig(channelArg)
     end
-    return false, message, sender, language, abbreviate_channel_name(channelString), ...
 end
 
--- 3. 업데이트 및 상태 제어
 local function update_state()
     if dodo.UpdateChatFontState then
         dodo.UpdateChatFontState()
@@ -86,7 +84,7 @@ local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:SetScript("OnEvent", function(self, event)
     if dodo.DB.useShortenChannels == nil then dodo.DB.useShortenChannels = true end
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL", channel_filter)
+    hook_resolve_prefixed()
     update_state()
     self:UnregisterAllEvents()
 end)
