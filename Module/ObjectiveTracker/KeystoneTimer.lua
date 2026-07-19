@@ -382,7 +382,7 @@ local function on_event(self, event, arg1)
         if not IsInInstance() then
             hide_result()
         end
-        update_tracker_collapse()
+        C_Timer.After(0, update_tracker_collapse)
     end
 end
 

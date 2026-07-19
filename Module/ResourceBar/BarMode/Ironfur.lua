@@ -14,6 +14,7 @@ local RB = dodo.ResourceBar
 -- ==============================
 local C_SpellBook = C_SpellBook
 local C_Timer = C_Timer
+local C_UnitAuras = C_UnitAuras
 local CreateFrame = CreateFrame
 local Enum = Enum
 local GetTime = GetTime
@@ -71,7 +72,7 @@ local function update_ironfur_ticks(bar2Frame, stackCount, longestIdx, fillPct, 
             pct = math.max(0, math.min(1, (ironfurExpiries[i] - now) / ironfurDurations[i]))
         end
 
-        tick:SetSize(barHeight * 0.6, barHeight * 1.6)
+        tick:SetSize(barHeight * 0.5, barHeight * 1.6)
         tick:ClearAllPoints()
         tick:SetPoint("CENTER", bar2Frame, "LEFT", pct * barWidth, 0)
         tick:Show()
@@ -88,15 +89,26 @@ end
 local Mode = {}
 
 function Mode:OnEnable(bar2Frame)
+    ironfurExpiries = {}
+    ironfurDurations = {}
     bar2Frame:UnregisterEvent("RUNE_POWER_UPDATE")
     bar2Frame:UnregisterEvent("UNIT_POWER_UPDATE")
     bar2Frame:UnregisterEvent("UNIT_AURA")
     bar2Frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
     refresh_ironfur_talents()
+    local aura = C_UnitAuras.GetPlayerAuraBySpellID(192081)
+    if aura and aura.applications and aura.applications > 0 then
+        for i = 1, aura.applications do
+            ironfurExpiries[i] = aura.expirationTime
+            ironfurDurations[i] = ironfurBaseDuration
+        end
+    end
     self:Update(bar2Frame)
 end
 
 function Mode:OnDisable(bar2Frame)
+    ironfurExpiries = {}
+    ironfurDurations = {}
     if ironfurTicker then
         ironfurTicker:Cancel()
         ironfurTicker = nil
@@ -129,12 +141,20 @@ function Mode:Update(bar2Frame)
         if bar2Frame.ironfurTicks then
             for _, t in ipairs(bar2Frame.ironfurTicks) do t:Hide() end
         end
+        local tex = bar2Frame:GetStatusBarTexture()
+        if tex then tex:SetAlpha(0) end
         if ironfurTicker then
             ironfurTicker:Cancel()
             ironfurTicker = nil
         end
         return
     end
+
+    bar2Frame:SetMinMaxValues(0, 1)
+    local c = (bar2Frame.buffConfig and bar2Frame.buffConfig.color) or RB.cachedSpecColor
+    bar2Frame:SetStatusBarColor(c.r, c.g, c.b, 1)
+    local tex = bar2Frame:GetStatusBarTexture()
+    if tex then tex:SetAlpha(1) end
 
     local longestIdx = 1
     local maxRem = 0

@@ -356,7 +356,7 @@ local function update_tracking_spec(englishClass, spec)
             
             local activeConfig = nil
             for _, config in ipairs(currentSpecBuffs) do
-                if config.barMode == "soulfragments" then
+                if config.barMode == "soulfragments" or config.barMode == "ironfur" then
                     activeConfig = config
                     break
                 end

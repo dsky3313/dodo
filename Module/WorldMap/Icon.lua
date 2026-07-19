@@ -19,6 +19,7 @@ local PinIcon = {
     auction  = { atlas = "Auctioneer",                        name = "경매장" },
     bank     = { atlas = "Banker",                            name = "은행" },
     crafting = { atlas = "Professions-Crafting-Orders-Icon",  name = "주문제작" },
+    delve    = { atlas = "poi-islands-table",                 name = "구렁" },
     dummy    = { atlas = "Tormentors-Event",                  name = "허수아비" },
     inn      = { atlas = "Innkeeper",                         name = "여관" },
     portal_t = { atlas = "TaxiNode_Continent_Alliance_Timed", name = "차원문" },
@@ -36,8 +37,9 @@ local PinDefs = {
     [2393] = { -- 실버문 (한밤)
         { x=0.5031, y=0.7489, icon=PinIcon.auction },
         { x=0.4511, y=0.5558, icon=PinIcon.crafting },
-        { x=0.5537, y=0.7040, icon=PinIcon.inn },
+        { x=0.5219, y=0.7776, icon=PinIcon.delve },
         { x=0.3621, y=0.8469, icon=PinIcon.dummy },
+        { x=0.5537, y=0.7040, icon=PinIcon.inn },
         { x=0.4038, y=0.6496, icon=PinIcon.tier },
         { x=0.4834, y=0.6175, icon=PinIcon.upgrade },
     },
