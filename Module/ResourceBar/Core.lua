@@ -34,6 +34,7 @@ RB.barConfigs = {
 -- ==============================
 local C_SpecializationInfo = C_SpecializationInfo
 local CreateFrame = CreateFrame
+local Enum = Enum
 local InCombatLockdown = InCombatLockdown
 local math = math
 local Mixin = Mixin
@@ -65,6 +66,19 @@ local function update_spec_config()
 end
 
 RB.UpdateSpecConfig = update_spec_config
+
+-- ==============================
+-- 부드러운 증감 보간 모드 (SetValue 인자로 사용, 하위 모듈 공유)
+-- ==============================
+local function update_smooth()
+    local db = dodo.DB or dodoDB
+    RB.smoothInterp = (not db or db.useResourceBarSmooth ~= false)
+        and Enum.StatusBarInterpolation.ExponentialEaseOut
+        or Enum.StatusBarInterpolation.Immediate
+end
+
+update_smooth()
+RB.UpdateSmooth = update_smooth
 
 -- ==============================
 -- 크기 및 위치 업데이트
@@ -215,6 +229,7 @@ local function on_event(self, event, arg1)
         dodo.DB = dodo.DB or dodoDB
     elseif event == "PLAYER_LOGIN" then
         dodo.DB = dodo.DB or dodoDB or {}
+        update_smooth()
 
         -- EditMode 시스템 가상 앵커 등록 (2dodo 9번 규칙)
         if dodo.EditMode then
@@ -246,7 +261,7 @@ initFrame:SetScript("OnEvent", on_event)
 if dodo.RegisterEditModeModuleSetting then
     dodo.RegisterEditModeModuleSetting("전투", {
         {
-            name = "자원바",
+            name = "자원 막대",
             get = function() return dodo.DB and dodo.DB.enableResourceBarModule ~= false end,
             set = function(checked)
                 if dodo.DB then dodo.DB.enableResourceBarModule = checked end
@@ -260,15 +275,7 @@ end
 if dodo.RegisterEditModeSystemSetting then
     dodo.RegisterEditModeSystemSetting("ResourceBar", {
         {
-            name = "자원바 활성화",
-            get = function() return dodo.DB and dodo.DB.enableResourceBarModule ~= false end,
-            set = function(checked)
-                if dodo.DB then dodo.DB.enableResourceBarModule = checked end
-                update_visibility()
-            end
-        },
-        {
-            name = "플레이어 자원바 사용",
+            name = "자원바 막대",
             get = function() return dodo.DB and dodo.DB.useResourceBar1 ~= false end,
             set = function(checked)
                 if dodo.DB then dodo.DB.useResourceBar1 = checked end
@@ -276,11 +283,19 @@ if dodo.RegisterEditModeSystemSetting then
             end
         },
         {
-            name = "버프 추적 바 사용",
+            name = "보조자원 막대",
             get = function() return dodo.DB and dodo.DB.useResourceBar2 ~= false end,
             set = function(checked)
                 if dodo.DB then dodo.DB.useResourceBar2 = checked end
                 update_visibility()
+            end
+        },
+        {
+            name = "부드러운 증감",
+            get = function() return dodo.DB and dodo.DB.useResourceBarSmooth ~= false end,
+            set = function(checked)
+                if dodo.DB then dodo.DB.useResourceBarSmooth = checked end
+                update_smooth()
             end
         },
         {

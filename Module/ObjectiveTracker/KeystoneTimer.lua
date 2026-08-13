@@ -90,11 +90,14 @@ local function remove_bar_style(progressBar)
 end
 
 local function on_progress_bar_on_get(self, isNew, criteriaIndex)
-    if dodoDB and dodoDB.enableKeystoneTimer ~= false and dodoDB.useKeystoneTimerBarStyle ~= false then
-        apply_bar_style(self)
-    else
-        remove_bar_style(self)
-    end
+    -- defer: LayoutContents 실행 중 inline taint 전파 방지
+    C_Timer.After(0, function()
+        if dodoDB and dodoDB.enableKeystoneTimer ~= false and dodoDB.useKeystoneTimerBarStyle ~= false then
+            apply_bar_style(self)
+        else
+            remove_bar_style(self)
+        end
+    end)
 end
 
 -- ==============================
@@ -103,21 +106,25 @@ end
 -- 블리자드 percentage 인자(quantity)는 정수로 반올림된 값 -> quantityString 원본 수치를
 -- totalQuantity로 직접 나눠 재계산 (AngryKeystones 방식)
 local function on_progress_bar_set_value(self)
-    if not (dodoDB and dodoDB.enableKeystoneTimer ~= false and dodoDB.useKeystoneTimerPercent ~= false) then return end
-    if not (C_ChallengeMode.IsChallengeModeActive and C_ChallengeMode.IsChallengeModeActive()) then return end
+    -- defer: ScenarioObjectiveTracker:LayoutContents 실행 중 SetValue hook이 taint를 전파해
+    -- ShouldShowMawBuffs → GetAuraDataByIndex 실패하는 문제 방지 (C_Timer.After로 chain 끊기)
+    C_Timer.After(0, function()
+        if not (dodoDB and dodoDB.enableKeystoneTimer ~= false and dodoDB.useKeystoneTimerPercent ~= false) then return end
+        if not (C_ChallengeMode.IsChallengeModeActive and C_ChallengeMode.IsChallengeModeActive()) then return end
 
-    local numCriteria = select(3, C_Scenario.GetStepInfo())
-    for criteriaIndex = 1, numCriteria do
-        local criteriaInfo = C_ScenarioInfo.GetCriteriaInfo(criteriaIndex)
-        if criteriaInfo and criteriaInfo.isWeightedProgress then
-            local currentQuantity = criteriaInfo.quantityString and tonumber(criteriaInfo.quantityString:match("%d+"))
-            local totalQuantity = criteriaInfo.totalQuantity
-            if currentQuantity and totalQuantity and totalQuantity > 0 then
-                self.Bar.Label:SetFormattedText("%.2f%%", currentQuantity / totalQuantity * 100)
+        local numCriteria = select(3, C_Scenario.GetStepInfo())
+        for criteriaIndex = 1, numCriteria do
+            local criteriaInfo = C_ScenarioInfo.GetCriteriaInfo(criteriaIndex)
+            if criteriaInfo and criteriaInfo.isWeightedProgress then
+                local currentQuantity = criteriaInfo.quantityString and tonumber(criteriaInfo.quantityString:match("%d+"))
+                local totalQuantity = criteriaInfo.totalQuantity
+                if currentQuantity and totalQuantity and totalQuantity > 0 then
+                    self.Bar.Label:SetFormattedText("%.2f%%", currentQuantity / totalQuantity * 100)
+                end
+                break
             end
-            break
         end
-    end
+    end)
 end
 
 -- ==============================
@@ -290,33 +297,6 @@ local function on_challenge_mode_completed()
 end
 
 -- ==============================
--- 기능 6: 인스턴스 진입 시 트래커 자동 접기
--- ==============================
-local AUTO_COLLAPSE_MODULES = {
-    "ACHIEVEMENT_TRACKER_MODULE",
-    "BONUS_OBJECTIVE_TRACKER_MODULE",
-    "CAMPAIGN_QUEST_TRACKER_MODULE",
-    "QUEST_TRACKER_MODULE",
-    "WORLD_QUEST_TRACKER_MODULE",
-}
-
-local function set_module_collapsed(module, shouldCollapse)
-    if not module or not module.Header or not module.Header.MinimizeButton then return end
-    local isCollapsed = module:IsCollapsed() and true or false
-    if shouldCollapse ~= isCollapsed then
-        module.Header.MinimizeButton:Click()
-    end
-end
-
-local function update_tracker_collapse()
-    if not (dodoDB and dodoDB.enableKeystoneTimer ~= false and dodoDB.useKeystoneTimerAutoCollapse ~= false) then return end
-    local inInstance = IsInInstance()
-    for _, name in ipairs(AUTO_COLLAPSE_MODULES) do
-        set_module_collapsed(_G[name], inInstance)
-    end
-end
-
--- ==============================
 -- 상태 업데이트
 -- ==============================
 local function update_visual()
@@ -345,7 +325,6 @@ local function initialize()
     if dodoDB.useKeystoneTimerBarStyle == nil then dodoDB.useKeystoneTimerBarStyle = true end
     if dodoDB.useKeystoneTimerPercent == nil then dodoDB.useKeystoneTimerPercent = true end
     if dodoDB.useKeystoneTimerTick == nil then dodoDB.useKeystoneTimerTick = true end
-    if dodoDB.useKeystoneTimerAutoCollapse == nil then dodoDB.useKeystoneTimerAutoCollapse = true end
     local block = ScenarioObjectiveTracker and ScenarioObjectiveTracker.ChallengeModeBlock
     if block then
         hooksecurefunc(block, "Activate", on_challenge_mode_activate)
@@ -382,7 +361,6 @@ local function on_event(self, event, arg1)
         if not IsInInstance() then
             hide_result()
         end
-        C_Timer.After(0, update_tracker_collapse)
     end
 end
 
@@ -431,15 +409,6 @@ if dodo.RegisterEditModeSystemSetting then
             set = function(checked)
                 if dodoDB then dodoDB.useKeystoneTimerTick = checked end
                 update_visual()
-            end,
-            disabled = function() return dodoDB and dodoDB.enableKeystoneTimer == false end,
-        },
-        {
-            name = "인스턴스 시 트래커 자동 접기",
-            get = function() return dodoDB and dodoDB.useKeystoneTimerAutoCollapse ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.useKeystoneTimerAutoCollapse = checked end
-                update_tracker_collapse()
             end,
             disabled = function() return dodoDB and dodoDB.enableKeystoneTimer == false end,
         },

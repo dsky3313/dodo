@@ -476,6 +476,8 @@ init_frame:SetScript("OnEvent", function(self, event)
                 systemID = string.format("%d_%d", Enum_EditModeSystem_UnitFrame, Enum_EditModeUnitFrameSystem_Raid)
             elseif systemFrame == _G.PartyFrame then
                 systemID = string.format("%d_%d", Enum_EditModeSystem_UnitFrame, Enum_EditModeUnitFrameSystem_Party)
+            elseif systemFrame == _G.FocusFrame then
+                systemID = string.format("%d_%d", Enum_EditModeSystem_UnitFrame, 6)
             elseif systemID == Enum_EditModeSystem_UnitFrame and systemFrame.systemIndex then
                 systemID = string.format("%d_%d", systemID, systemFrame.systemIndex)
             elseif systemID == Enum_EditModeSystem_ActionBar and systemFrame.systemIndex then

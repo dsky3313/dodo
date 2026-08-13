@@ -102,7 +102,7 @@ function Mode:Update(bar2Frame)
     
     if bar2Frame.countStack then bar2Frame.countStack:SetText(current) end
     if bar2Frame.countDuration then bar2Frame.countDuration:SetText("") end
-    bar2Frame:SetValue(current, Enum.StatusBarInterpolation.ExponentialEaseOut)
+    bar2Frame:SetValue(current, RB.smoothInterp)
     
     if bar2Frame.buffConfig.isTickPower then
         update_stack_ticks(bar2Frame, maxVal)

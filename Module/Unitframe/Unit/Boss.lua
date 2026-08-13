@@ -20,12 +20,6 @@ local _G = _G
 dodo.UnitframeStyles['boss'] = function(self, unit)
 	self.uWidth = 150
 	self.uHeight = 30
-	self.showPower = false
-
-	-- 캐스팅바 부착
-	if dodo.UnitframeCreateCastbar then
-		dodo.UnitframeCreateCastbar(self, self.uWidth)
-	end
 end
 
 -- ==============================

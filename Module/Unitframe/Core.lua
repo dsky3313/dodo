@@ -13,6 +13,14 @@ dodoDB = dodoDB or {}
 local oUF = dodo.oUF or _G.oUF
 dodo.UnitframeStyles = dodo.UnitframeStyles or {}
 
+-- 편집 모드 시스템 ID용 유닛프레임 인덱스 맵
+dodo.UNIT_INDEX_MAP = {
+	[1] = "player",
+	[2] = "target",
+	[5] = "boss",
+	[6] = "focus",
+}
+
 local config = {
 	barTexture = [[Interface\Buttons\WHITE8X8]],
 }
@@ -69,8 +77,8 @@ oUF.Tags.Methods['dodopower'] = function(unit)
 
 	if issecretvalue(max) then
 		if isMana then
-			local pct = UnitPowerPercent(unit, nil, true, CurveConstants and CurveConstants.ScaleTo100)
-			if not pct or issecretvalue(pct) then return '0' end
+			local pct = UnitPowerPercent(unit, powerType, false, CurveConstants and CurveConstants.ScaleTo100)
+			if not pct then return '' end
 			return string_format('%.0f', pct)
 		else
 			local cur = UnitPower(unit)
@@ -83,8 +91,8 @@ oUF.Tags.Methods['dodopower'] = function(unit)
 	local cur = UnitPower(unit)
 	if isMana then
 		if issecretvalue(cur) then
-			local pct = UnitPowerPercent(unit, nil, true, CurveConstants and CurveConstants.ScaleTo100)
-			if not pct or issecretvalue(pct) then return '0' end
+			local pct = UnitPowerPercent(unit, powerType, false, CurveConstants and CurveConstants.ScaleTo100)
+			if not pct then return '' end
 			return string_format('%.0f', pct)
 		end
 		return string_format('%.0f', (cur / max) * 100)
@@ -211,18 +219,25 @@ local function create_style(self, unit)
 
 	-- 유닛별 특화 컴포넌트 추가 호출
 	local isBoss = unit and unit:match('^boss%d')
-	local styleKey = isBoss and 'boss' or unit
-	if dodo.UnitframeStyles and dodo.UnitframeStyles[styleKey] then
-		dodo.UnitframeStyles[styleKey](self, unit)
+	local unitKey = isBoss and 'boss' or unit
+	if dodo.UnitframeStyles and dodo.UnitframeStyles[unitKey] then
+		dodo.UnitframeStyles[unitKey](self, unit)
 	elseif dodo.UnitframeStyles and dodo.UnitframeStyles['etc'] then
 		dodo.UnitframeStyles['etc'](self, unit)
 	end
 
-	-- 최종 프레임 크기 지정
+	-- 최종 프레임 크기 지정 (공통 기능 빌더보다 먼저 계산)
 	local uWidth = self.uWidth or 190
 	local uHeight = self.uHeight or 30
-	local showPower = self.showPower
 	local pHeight = self.pHeight or 10
+
+	-- 공통 기능 (설정에서 프레임별 on/off 가능)
+	if dodo.UnitframeCreatePower   then dodo.UnitframeCreatePower(self, unitKey) end
+	if dodo.UnitframeCreateAbsorb  then dodo.UnitframeCreateAbsorb(self, unitKey) end
+	if dodo.UnitframeCreateBuffs   then dodo.UnitframeCreateBuffs(self, uWidth, unitKey) end
+	if dodo.UnitframeCreateCastbar then dodo.UnitframeCreateCastbar(self, uWidth, unitKey) end
+
+	local showPower = self.showPower
 
 	health:SetSize(uWidth, uHeight)
 	healthOverlay:SetAllPoints(health)
@@ -263,7 +278,7 @@ local function create_ui()
 	dodo.TargetTargetFrame = targettargetFrame
 
 	focusFrame = oUF:Spawn('focus', 'dodoFocusFrame')
-	focusFrame:SetPoint('TOPLEFT', FocusFrame, 'TOPLEFT', 20, -23)
+	focusFrame:SetPoint('TOPLEFT', FocusFrame, 'TOPLEFT', 20, -18)
 	table.insert(customFrames, focusFrame)
 	dodo.FocusFrame = focusFrame
 
@@ -378,3 +393,40 @@ initFrame:SetScript("OnEvent", function(self, event, arg1)
 		end
 	end
 end)
+
+-- ==============================
+-- 편집모드: dodo 유닛프레임 반투명 + 클릭 통과
+-- ==============================
+-- dodo 프레임은 시큐어 유닛버튼이라 알파만 낮춰선 편집모드 클릭/드래그를 계속 가로챔 —
+-- 흐리게 표시하면서 EnableMouse(false)로 마우스를 꺼서 Selection 박스가 클릭받게 함
+-- 편집모드는 전투 중 진입 불가 → 시큐어 프레임 마우스 조작 안전
+-- (보스 프레임은 편집모드에서 위치 확인용으로 일부러 표시하므로 제외)
+local EDIT_MODE_ALPHA = 0.5
+
+local function set_frames_edit_mode(alpha, mouseEnabled)
+	for _, frame in ipairs(customFrames) do
+		if frame and not (frame:GetName() and frame:GetName():match('^dodoBossFrame')) then
+			frame:SetAlpha(alpha)
+			if not InCombatLockdown() then
+				frame:EnableMouse(mouseEnabled)
+			end
+		end
+	end
+end
+
+local function on_edit_mode_enter()
+	if dodo.DB and dodo.DB.enableUnitframeModule ~= false then
+		set_frames_edit_mode(EDIT_MODE_ALPHA, false)
+	end
+end
+
+local function on_edit_mode_exit()
+	if dodo.DB and dodo.DB.enableUnitframeModule ~= false then
+		set_frames_edit_mode(1, true)
+	end
+end
+
+if EventRegistry then
+	EventRegistry:RegisterCallback("EditMode.Enter", on_edit_mode_enter)
+	EventRegistry:RegisterCallback("EditMode.Exit", on_edit_mode_exit)
+end

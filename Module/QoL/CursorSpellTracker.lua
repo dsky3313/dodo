@@ -22,9 +22,18 @@ local C_Spell = C_Spell
 local C_SpellBook = C_SpellBook
 local C_UnitAuras = C_UnitAuras
 local C_Timer = C_Timer
+local C_CooldownViewer = C_CooldownViewer
+local GetTime = GetTime
+local BuffBarCooldownViewer = BuffBarCooldownViewer
+local BuffIconCooldownViewer = BuffIconCooldownViewer
+local hooksecurefunc = hooksecurefunc
+local pairs = pairs
+local rawget = rawget
 local issecretvalue = issecretvalue or function() return false end
 local ipairs = ipairs
 local math_abs = math.abs
+local pcall = pcall
+local type = type
 
 -- ==============================
 -- Config (기본값 - 위치/크기 수정은 여기서)
@@ -34,6 +43,10 @@ local Config = {
     offsetX = 42,  -- 커서 기준 X 오프셋
     offsetY = -34, -- 커서 기준 Y 오프셋
     iconGap = 2,   -- 아이콘 간 간격
+    -- 글로우(반짝임) 색상. 원본 아틀라스가 노란 계열이라 색은 곱연산으로 적용됨.
+    -- 원본 그대로: r=1, g=1, b=1
+    glowColor = { r = 0.2, g = 1.0, b = 0.2 },
+    glowAlpha = 0.6, -- 글로우 투명도 (1 = 불투명, 0 = 안 보임)
 }
 
 -- ==============================
@@ -43,7 +56,9 @@ local Config = {
 local TRACKED_SPELLS_BY_SPEC = {
     [264] = { -- 복원 주술사
         { spellID = 77130, type = "cooldown" }, -- 영혼정화
-        { spellID = 61295, type = "cooldown", glowAuraSpellID = 53390 }, -- 성난해일 (굽이치는 물결 보유시 반짝임)
+        -- 성난해일 (굽이치는 물결 보유시 반짝임)
+        -- glowCDMSpellID: 블리자드 CDM 추적 버프에는 버프 ID(53390)가 아닌 특성 ID(51564)로 등록됨
+        { spellID = 61295, type = "cooldown", glowAuraSpellID = 53390, glowCDMSpellID = 51564 },
     },
 }
 
@@ -61,23 +76,144 @@ local STATE_INTERVAL = 0.2
 -- ==============================
 -- 유틸
 -- ==============================
-local function safe_num(value)
-    if value == nil or issecretvalue(value) then return 0 end
+-- 전투 중 쿨다운/충전/오라 수치는 secret value로 반환됨 (WoW 12.x).
+-- secret은 비교/연산 시 Lua 에러를 던지므로 판정은 반드시 pcall 내부에서 수행하고,
+-- 판정 불가 시 기존 표시를 유지한다 (0으로 뭉개지 않음).
+local function readable_num(value)
+    if value == nil or issecretvalue(value) or type(value) ~= "number" then return nil end
     return value
 end
 
--- GetPlayerAuraBySpellID 누락 케이스 대비 인덱스 스캔 보강 (CST ReadAuraBySpellIDSafe 참고)
-local function find_player_aura(spellID)
-    local aura = C_UnitAuras.GetPlayerAuraBySpellID(spellID)
-    if aura then return aura end
+-- 전투 중 targeted helper가 secret/nil을 반환해도 "존재함"으로 처리하기 위한 sentinel.
+-- 수치 필드가 전부 nil이므로 지속시간/스택 표시는 생략되고 존재 판정만 가능.
+local AURA_SECRET_PRESENT = { secretPresent = true }
 
-    for i = 1, 40 do
-        local a = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
-        if not a then break end
-        local sid = a.spellId
-        if not issecretvalue(sid) and sid == spellID then return a end
+-- CST ReadAuraBySpellIDSafe 포팅: 인덱스 스캔 우선 + presence-only 폴백
+local function find_player_aura(spellID)
+    -- 인덱스 스캔 우선: 전투 중 targeted helper가 부실해도 ID-only AuraData 경로는
+    -- 값을 노출할 수 있음. 전투 중 일부 인덱스가 nil일 수 있으므로 중간 break 금지 (CST 방식)
+    for i = 1, 80 do
+        local ok, a = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
+        if ok and a and type(a) == "table" then
+            local sid = readable_num(a.spellId)
+            if sid == spellID then return a end
+        end
+    end
+
+    local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, spellID)
+    if ok and aura then
+        if type(aura) == "table" then return aura end
+        -- 전투 중 secret/비테이블 반환: ID 지정 조회가 non-nil이면 존재로 간주 (CST acceptAura)
+        return AURA_SECRET_PRESENT
+    end
+
+    if AuraUtil and AuraUtil.FindAuraBySpellID then
+        local okF, auraF = pcall(AuraUtil.FindAuraBySpellID, spellID, "player", "HELPFUL")
+        if okF and auraF then
+            if type(auraF) == "table" then return auraF end
+            return AURA_SECRET_PRESENT
+        end
+    end
+
+    return nil
+end
+
+-- ==============================
+-- CDM(쿨다운 관리자) 버프 미러링 (OverlayCDM 방식)
+-- ==============================
+-- 전투 중에는 아우라 조회 API가 전부 막히므로 (targeted 조회 nil, 인덱스 스캔
+-- spellId secret) 버프 존재 판정은 CDM 뷰어 item 프레임으로 통일한다.
+-- 블리자드가 item 프레임에 심는 auraInstanceID 필드를 rawget으로 읽는 방식으로,
+-- OverlayCDM(단축바 강화효과 오버레이)에서 전투 중 동작이 검증된 경로.
+local cdm_tracked_items = {} -- CDM item 프레임 -> 우리쪽 aura spellID (관심 항목만)
+local cdm_rescan_at = 0
+
+local function cdm_match_aura_id(sid)
+    if not sid then return nil end
+    for _, entry in ipairs(active_spells) do
+        if entry.glowAuraSpellID and (sid == entry.glowAuraSpellID or sid == entry.glowCDMSpellID) then
+            return entry.glowAuraSpellID
+        end
     end
     return nil
+end
+
+-- item이 현재 표시 중인 cooldownID를 우리 트래킹 대상과 매칭 (RefreshData마다 갱신 -
+-- item 프레임은 풀에서 재사용되므로 cooldownID가 바뀔 수 있음)
+local function update_cdm_item(item)
+    local auraID
+    local cooldownID = item.cooldownID
+    if cooldownID and C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
+        local ok, cdInfo = pcall(C_CooldownViewer.GetCooldownViewerCooldownInfo, cooldownID)
+        if ok and type(cdInfo) == "table" then
+            auraID = cdm_match_aura_id(readable_num(cdInfo.spellID))
+            if not auraID and type(cdInfo.linkedSpellIDs) == "table" then
+                for _, lid in ipairs(cdInfo.linkedSpellIDs) do
+                    auraID = cdm_match_aura_id(readable_num(lid))
+                    if auraID then break end
+                end
+            end
+        end
+    end
+    cdm_tracked_items[item] = auraID
+end
+
+local function hook_cdm_item(item)
+    if not item.__dodoCSTHooked then
+        item.__dodoCSTHooked = true
+        hooksecurefunc(item, "RefreshData", function() update_cdm_item(item) end)
+    end
+    update_cdm_item(item)
+end
+
+local function rescan_cdm_items()
+    for item in pairs(cdm_tracked_items) do update_cdm_item(item) end
+    local viewers = { BuffIconCooldownViewer, BuffBarCooldownViewer }
+    for i = 1, #viewers do
+        local viewer = viewers[i]
+        if viewer and viewer.GetItemFrames then
+            local ok, items = pcall(viewer.GetItemFrames, viewer)
+            if ok and type(items) == "table" then
+                for _, item in ipairs(items) do hook_cdm_item(item) end
+            end
+        end
+    end
+end
+
+local cdm_hooks_installed = false
+local function init_cdm_hooks()
+    if cdm_hooks_installed then return end
+    cdm_hooks_installed = true
+    local viewers = { BuffIconCooldownViewer, BuffBarCooldownViewer }
+    for i = 1, #viewers do
+        local viewer = viewers[i]
+        if viewer then
+            pcall(hooksecurefunc, viewer, "OnAcquireItemFrame", function(_, item) hook_cdm_item(item) end)
+        end
+    end
+    rescan_cdm_items()
+end
+
+local function is_cdm_aura_active(auraSpellID)
+    local matched = false
+    for item, auraID in pairs(cdm_tracked_items) do
+        if auraID == auraSpellID then
+            matched = true
+            -- 활성 판정은 훅 시점이 아니라 매 폴링마다 item 필드를 직접 읽음 (OverlayCDM 방식)
+            if item:IsShown() and rawget(item, "auraInstanceID") ~= nil then
+                return true
+            end
+        end
+    end
+    if not matched then
+        -- 로그인/특성 변경 직후 CDM item을 아직 못 찾은 경우 재스캔 (5초 스로틀)
+        local now = GetTime()
+        if now - cdm_rescan_at > 5 then
+            cdm_rescan_at = now
+            rescan_cdm_items()
+        end
+    end
+    return false
 end
 
 -- ==============================
@@ -148,21 +284,47 @@ local function update_cooldown_icon(icon, entry)
         return false
     end
 
-    local startTime, duration = 0, 0
     local charges = C_Spell.GetSpellCharges(spellID)
-    if charges and charges.maxCharges and charges.maxCharges > 1 then
-        local current = safe_num(charges.currentCharges)
-        icon.count:SetText(current > 1 and current or "")
-        startTime, duration = safe_num(charges.cooldownStartTime), safe_num(charges.cooldownDuration)
+    local maxCharges = charges and readable_num(charges.maxCharges)
+    -- 전투 중 maxCharges가 secret(nil)이어도 charges 테이블 존재 = 충전 스킬로 간주
+    local isChargeSpell = charges ~= nil and (maxCharges == nil or maxCharges > 1)
+
+    if isChargeSpell then
+        local current = readable_num(charges.currentCharges)
+        if current then
+            icon.count:SetText(current > 1 and current or "")
+        elseif not pcall(icon.count.SetText, icon.count, charges.currentCharges) then
+            -- secret 충전 수는 FontString이 직접 표시 가능 (CST SafeSetText 방식)
+            icon.count:SetText("")
+        end
     else
         icon.count:SetText("")
+    end
+
+    local startTime, duration
+    if isChargeSpell then
+        startTime = readable_num(charges.cooldownStartTime)
+        duration = readable_num(charges.cooldownDuration)
+    else
         local cd = C_Spell.GetSpellCooldown(spellID)
         if cd then
-            startTime, duration = safe_num(cd.startTime), safe_num(cd.duration)
+            startTime = readable_num(cd.startTime)
+            duration = readable_num(cd.duration)
+        else
+            startTime, duration = 0, 0
         end
     end
 
-    icon.cooldown:SetCooldown(startTime, duration)
+    if startTime and duration then
+        icon.cooldown:SetCooldown(startTime, duration)
+    elseif C_Spell.GetSpellCooldownDuration and icon.cooldown.SetCooldownFromDurationObject then
+        -- 전투 중 secret: DurationObject를 Cooldown 프레임에 직접 넘겨
+        -- 애드온이 secret 수치를 만지지 않고 블리자드가 렌더링 (CST 방식)
+        local ok, durObj = pcall(C_Spell.GetSpellCooldownDuration, spellID)
+        if ok and durObj then
+            pcall(icon.cooldown.SetCooldownFromDurationObject, icon.cooldown, durObj, true)
+        end
+    end
 
     if entry.glowAuraSpellID then
         if not icon.glowOverlay then
@@ -171,8 +333,12 @@ local function update_cooldown_icon(icon, entry)
             icon.glowOverlay:SetFrameLevel(icon:GetFrameLevel() + 3)
             local glowSize = Config.iconSize * 1.4
             icon.glowOverlay.Proc:SetSize(glowSize, glowSize)
+            local gc = Config.glowColor
+            if gc then
+                icon.glowOverlay.Proc:SetVertexColor(gc.r or 1, gc.g or 1, gc.b or 1, Config.glowAlpha or 1)
+            end
         end
-        icon.glowOverlay:Update(find_player_aura(entry.glowAuraSpellID) ~= nil)
+        icon.glowOverlay:Update(is_cdm_aura_active(entry.glowAuraSpellID))
     end
 
     icon:Show()
@@ -186,15 +352,23 @@ local function update_aura_icon(icon, entry)
         return false
     end
 
-    local duration, expirationTime = safe_num(aura.duration), safe_num(aura.expirationTime)
-    if duration > 0 then
-        icon.cooldown:SetCooldown(expirationTime - duration, duration)
-    else
-        icon.cooldown:Clear()
+    local duration = readable_num(aura.duration)
+    local expirationTime = readable_num(aura.expirationTime)
+    if duration and expirationTime then
+        if duration > 0 then
+            icon.cooldown:SetCooldown(expirationTime - duration, duration)
+        else
+            icon.cooldown:Clear()
+        end
     end
+    -- 전투 중 secret이면 기존 표시 유지 (0으로 초기화하지 않음)
 
-    local applications = safe_num(aura.applications)
-    icon.count:SetText(applications > 1 and applications or "")
+    local applications = readable_num(aura.applications)
+    if applications then
+        icon.count:SetText(applications > 1 and applications or "")
+    elseif aura.applications == nil or not pcall(icon.count.SetText, icon.count, aura.applications) then
+        icon.count:SetText("")
+    end
 
     icon:Show()
     return true
@@ -266,6 +440,7 @@ local function refresh_active_spells()
 
     spec_retry_count = 0
     active_spells = TRACKED_SPELLS_BY_SPEC[specID] or {}
+    rescan_cdm_items()
     if iconHolder then
         setup_icons()
         update_visual()
@@ -300,6 +475,9 @@ local function initialize()
     iconHolder = CreateFrame("Frame", "dodoCursorSpellTrackerHolder", UIParent)
     iconHolder:SetSize(1, 1)
     iconHolder:SetFrameStrata("TOOLTIP")
+
+    init_cdm_hooks()
+    C_Timer.After(1, rescan_cdm_items) -- CDM 뷰어 초기화가 늦는 경우 대비 (OverlayCDM의 0.5s 지연과 동일 목적)
 
     refresh_active_spells()
 

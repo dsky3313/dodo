@@ -106,7 +106,7 @@ function Mode:Update(bar2Frame)
     local count = C_Spell.GetSpellCastCount(228477) or 0
     if bar2Frame.countStack then bar2Frame.countStack:SetText(count) end
     if bar2Frame.countDuration then bar2Frame.countDuration:SetText("") end
-    bar2Frame:SetValue(count, Enum.StatusBarInterpolation.ExponentialEaseOut)
+    bar2Frame:SetValue(count, RB.smoothInterp)
     update_stack_ticks(bar2Frame, 5)
     
     local c = (bar2Frame.buffConfig and bar2Frame.buffConfig.color) or RB.cachedSpecColor

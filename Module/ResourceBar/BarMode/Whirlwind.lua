@@ -74,7 +74,7 @@ local function process_player_spellcast(bar2Frame, unit, cast_guid, spell_id)
         if bar2Frame.countStack then
             bar2Frame.countStack:SetText(tostring(ww_stack_count))
         end
-        bar2Frame:SetValue(ww_stack_count, Enum.StatusBarInterpolation.ExponentialEaseOut)
+        bar2Frame:SetValue(ww_stack_count, RB.smoothInterp)
         return
     end
 
@@ -105,7 +105,7 @@ local function process_player_spellcast(bar2Frame, unit, cast_guid, spell_id)
         if bar2Frame.countStack then
             bar2Frame.countStack:SetText(ww_stack_count > 0 and tostring(ww_stack_count) or "")
         end
-        bar2Frame:SetValue(ww_stack_count, Enum.StatusBarInterpolation.ExponentialEaseOut)
+        bar2Frame:SetValue(ww_stack_count, RB.smoothInterp)
     end
 end
 
@@ -183,10 +183,10 @@ function Mode:Update(bar2Frame)
     local c = (bar2Frame.buffConfig and bar2Frame.buffConfig.color) or RB.cachedSpecColor
     bar2Frame:SetStatusBarColor(c.r, c.g, c.b, 1)
 
-    if not bar2Frame.viewerItem or not bar2Frame.viewerItem.auraInstanceID or not bar2Frame.viewerItem.auraDataUnit then
+    if not bar2Frame.viewerItem or not bar2Frame.viewerItem.auraDataCached then
         if bar2Frame.countStack then bar2Frame.countStack:SetText("") end
         if bar2Frame.countDuration then bar2Frame.countDuration:SetText("") end
-        bar2Frame:SetValue(0, Enum.StatusBarInterpolation.ExponentialEaseOut)
+        bar2Frame:SetValue(0, RB.smoothInterp)
         local tex = bar2Frame:GetStatusBarTexture()
         if tex then tex:SetAlpha(0) end
         return
@@ -195,8 +195,7 @@ function Mode:Update(bar2Frame)
     local tex = bar2Frame:GetStatusBarTexture()
     if tex then tex:SetAlpha(1) end
 
-    local unit, auraID = bar2Frame.viewerItem.auraDataUnit, bar2Frame.viewerItem.auraInstanceID
-    local auraData = C_UnitAuras.GetAuraDataByAuraInstanceID(unit, auraID)
+    local auraData = bar2Frame.viewerItem.auraDataCached
     if auraData then
         -- 버프 최초 획득 시에만 4스택으로 초기화
         if not ww_is_active then
@@ -208,7 +207,7 @@ function Mode:Update(bar2Frame)
             bar2Frame.countStack:SetText(tostring(ww_stack_count))
         end
         
-        local durObj = C_UnitAuras.GetAuraDuration(unit, auraID)
+        local durObj = nil -- GetAuraDuration 12.1.0에서 API 변경으로 사용 불가
         if durObj and bar2Frame.countDuration then
             local rem = durObj:GetRemainingDuration()
             if issecretvalue(rem) then
@@ -223,7 +222,7 @@ function Mode:Update(bar2Frame)
             end
         end
         
-        bar2Frame:SetValue(ww_stack_count, Enum.StatusBarInterpolation.ExponentialEaseOut)
+        bar2Frame:SetValue(ww_stack_count, RB.smoothInterp)
         bar2Frame:Show()
     else
         -- 실제 버프가 해제되었을 때
@@ -232,7 +231,7 @@ function Mode:Update(bar2Frame)
         bar2Frame._lastDurationIntVal = nil
         if bar2Frame.countStack then bar2Frame.countStack:SetText("") end
         if bar2Frame.countDuration then bar2Frame.countDuration:SetText("") end
-        bar2Frame:SetValue(0, Enum.StatusBarInterpolation.ExponentialEaseOut)
+        bar2Frame:SetValue(0, RB.smoothInterp)
     end
 end
 

@@ -1,5 +1,5 @@
-## Interface: 120007
-## Version: 12.0.7
+## Interface: 120100
+## Version: 12.1.0
 ## Title: dodo
 ## Author: dodo
 ## DefaultState: enabled
@@ -56,7 +56,7 @@ Module/CharacterFrame/Gem.lua
 Module/ChatFrame/Core.lua
 Module/ChatFrame/Font.lua
 Module/ChatFrame/GuildButton.lua
-Module/ChatFrame/Short.lua
+# Module/ChatFrame/Short.lua
 Module/ChatFrame/URL.lua
 
 # ChallengesKeystoneFrame
@@ -147,10 +147,6 @@ Module/ResourceBar/BarMode/Whirlwind.lua
 Module/ResourceBar/Power.lua
 Module/ResourceBar/Tracking.lua
 
-# PersonalResource
-#Module/PersonalResource/Core.lua
-#Module/PersonalResource/Resource.lua
-
 # Tooltip
 Module/Tooltip/Core.lua
 Module/Tooltip/Color.lua
@@ -162,6 +158,7 @@ Module/Tooltip/Vehicle.lua
 # Unitframe
 Module/Unitframe/Core.lua
 Module/Unitframe/Unit/Absorb.lua
+Module/Unitframe/Unit/Power.lua
 Module/Unitframe/Unit/Auras.lua
 Module/Unitframe/Unit/Castbar.lua
 Module/Unitframe/Unit/Player.lua
@@ -176,6 +173,7 @@ Module/Unitframe/Party/Overshield.lua
 
 # ObjectiveTracker
 Module/ObjectiveTracker/KeystoneTimer.lua
+Module/ObjectiveTracker/Collapse.lua
 
 # WorldMap
 Module/WorldMap/Icon.lua
@@ -184,5 +182,3 @@ Module/WorldMap/Icon.lua
 Module/Slash.lua
 Option.lua
 Module/Editmode/Position.lua
-
-# 레디쳌 수정해야함

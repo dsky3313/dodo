@@ -11,27 +11,23 @@ dodoDB = dodoDB or {}
 dodo.UnitframeStyles['targettarget'] = function(self, unit)
 	self.uWidth = 100
 	self.uHeight = 16
-	self.showPower = false
 	self.showHealthText = false
 end
 
 dodo.UnitframeStyles['pet'] = function(self, unit)
 	self.uWidth = 100
 	self.uHeight = 16
-	self.showPower = false
 	self.showHealthText = false
 end
 
 dodo.UnitframeStyles['focus'] = function(self, unit)
 	self.uWidth = 120
 	self.uHeight = 16
-	self.showPower = false
 	self.showHealthText = false
 end
 
 dodo.UnitframeStyles['etc'] = function(self, unit)
 	self.uWidth = 120
 	self.uHeight = 16
-	self.showPower = false
 	self.showHealthText = false
 end

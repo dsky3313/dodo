@@ -163,6 +163,14 @@ local function panel_on_maximized()
     dodoDB.editModeMinimized = false
 end
 
+local function open_general_options()
+    -- 편집모드 중엔 UIPanel이 안 열리므로 먼저 편집모드 종료 후 설정창 직접 오픈
+    if EditModeManagerFrame and EditModeManagerFrame:IsShown() then
+        HideUIPanel(EditModeManagerFrame)
+    end
+    if dodo.OpenOptions then dodo.OpenOptions() end
+end
+
 local function panel_on_show(self)
     if dodoDB.editModeMinimized then
         self.max_min_frame:Minimize(true)
@@ -209,6 +217,16 @@ local function create_edit_mode_panel()
     max_min_frame:SetOnMinimizedCallback(panel_on_minimized)
     max_min_frame:SetOnMaximizedCallback(panel_on_maximized)
     frame.max_min_frame = max_min_frame
+
+    -- 일반설정 버튼 (/dd 순정 설정창 열기)
+    -- NineSlice 테두리가 frameLevel 500에 그려지므로 그 위로 (MaxMin 템플릿의 510과 동일)
+    local general_button = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    general_button:SetFrameLevel(510)
+    general_button:SetSize(72, 21)
+    general_button:SetPoint("RIGHT", max_min_frame, "LEFT", -15, 0)
+    general_button:SetText("일반설정")
+    general_button:SetScript("OnClick", open_general_options)
+    frame.general_button = general_button
 
     local scroll_frame = CreateFrame("ScrollFrame", "$parentScrollFrame", frame, "ScrollFrameTemplate")
     scroll_frame:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -30)

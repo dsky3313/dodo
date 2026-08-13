@@ -169,6 +169,7 @@ function CDMOverlayMixin:StopCustomCDM()
     self.Cooldown:Hide()
     self.InnerGlow:Hide()
     self.Count:Hide()
+    self.TimerCooldown:Hide()
     self:Hide()
 end
 
@@ -205,45 +206,26 @@ function CDMOverlayMixin:Update()
         end
     end
 
-    local hasAura = self.viewerItem and rawget(self.viewerItem, "auraInstanceID") ~= nil
-    if hasAura then
-        local item = self.viewerItem
-        local auraInstanceID = rawget(item, "auraInstanceID")
-        local auraDataUnit   = rawget(item, "auraDataUnit")
-
-        if not auraDataUnit then
-            self.Count:Hide()
-            return
-        end
-        local count = C_UnitAuras.GetAuraApplicationDisplayCount(auraDataUnit, auraInstanceID)
-        local hasDisplayCount = false
-        if issecretvalue(count) then
-            hasDisplayCount = true
-        elseif type(count) == "number" then
-            hasDisplayCount = (count > 0)
-        elseif type(count) == "string" then
-            hasDisplayCount = (count ~= "" and count ~= "0")
-        end
-
-        if hasDisplayCount then
-            self.Count:SetText(count)
-            self.Count:Show()
+    local item = self.viewerItem
+    if item and item.isActive then
+        -- 초기 시드: 현재 CDM 프레임 상태 반영 (이후 갱신은 hook_viewer_item 후킹이 처리)
+        local appFS = (item.Applications and item.Applications.Applications)
+                   or (item.Icon and item.Icon.Applications)
+        if appFS then
+            local val = appFS:GetText()
+            if val ~= nil and (issecretvalue(val) or (val ~= "" and val ~= "0")) then
+                self.Count:SetText(val)
+                self.Count:Show()
+            else
+                self.Count:Hide()
+            end
         else
             self.Count:Hide()
         end
-
-        local duration = C_UnitAuras.GetAuraDuration(auraDataUnit, auraInstanceID)
-        if duration then
-            self.Cooldown:SetCooldownFromDurationObject(duration, true)
-            self.Cooldown:Show()
-        else
-            self.Cooldown:Hide()
-        end
+        self.Cooldown:Hide() -- 쿨다운은 SetCooldownFromDurationObject/SetCooldown 후킹에서 채워짐
 
         self.InnerGlow:Show()
         self:Show()
-
-        customize_cooldown_text(self.Cooldown)
     else
         self:StopCustomCDM()
     end
@@ -312,9 +294,98 @@ local function update_cdm_from_item(item)
     end
 end
 
+-- 아이콘형 CDM 카운트다운 텍스트 폴링 (secret 값은 SetCooldown 불가 → GetCountdownFontString 우회)
+local function poll_cdm_timer_overlays()
+    for btn in pairs(dodo.registeredButtons) do
+        local overlay = btn.cdmOverlay
+        if overlay and overlay:IsShown() then
+            local item = overlay.viewerItem
+            local text
+            if item and item.isActive then
+                if item.Cooldown and item.Cooldown.GetCountdownFontString then
+                    local cfs = item.Cooldown:GetCountdownFontString()
+                    text = cfs and cfs:GetText()
+                elseif item.Bar and item.Bar.Duration then
+                    text = item.Bar.Duration:GetText()
+                end
+            end
+            if text and (issecretvalue(text) or text ~= "") then
+                overlay.TimerCooldown:SetText(text)
+                overlay.TimerCooldown:Show()
+            else
+                overlay.TimerCooldown:Hide()
+            end
+        end
+    end
+end
+
+local function mirror_count_to_overlays(item, val)
+    for btn in pairs(dodo.registeredButtons) do
+        if btn.cdmOverlay and btn.cdmOverlay.viewerItem == item then
+            if val ~= nil and (issecretvalue(val) or (val ~= "" and val ~= "0")) then
+                btn.cdmOverlay.Count:SetText(val)
+                btn.cdmOverlay.Count:Show()
+            else
+                btn.cdmOverlay.Count:Hide()
+            end
+        end
+    end
+end
+
+local function mirror_cooldown_to_overlays(item, durObj, useAuraDisplayTime)
+    for btn in pairs(dodo.registeredButtons) do
+        if btn.cdmOverlay and btn.cdmOverlay.viewerItem == item then
+            if durObj then
+                btn.cdmOverlay.Cooldown:SetCooldownFromDurationObject(durObj, useAuraDisplayTime)
+                btn.cdmOverlay.Cooldown:Show()
+                customize_cooldown_text(btn.cdmOverlay.Cooldown)
+            else
+                btn.cdmOverlay.Cooldown:Hide()
+            end
+        end
+    end
+end
+
+local function mirror_setcooldown_to_overlays(item, start, dur, modRate)
+    -- secret 값은 tainted 코드에서 SetCooldown에 전달 불가 → 타이머 표시 포기
+    if issecretvalue(start) or issecretvalue(dur) then return end
+    for btn in pairs(dodo.registeredButtons) do
+        if btn.cdmOverlay and btn.cdmOverlay.viewerItem == item then
+            if start and start > 0 and dur and dur > 0 then
+                btn.cdmOverlay.Cooldown:SetCooldown(start, dur, modRate)
+                btn.cdmOverlay.Cooldown:Show()
+                customize_cooldown_text(btn.cdmOverlay.Cooldown)
+            else
+                btn.cdmOverlay.Cooldown:Hide()
+            end
+        end
+    end
+end
+
 local function hook_viewer_item(item)
     if not item.__AB2Hooked then
         hooksecurefunc(item, "RefreshData", function() update_cdm_from_item(item) end)
+
+        -- 스택 카운트: CDM이 Applications FontString에 값 쓸 때 오버레이 미러
+        -- (secret value도 SetText에 그대로 전달 가능)
+        local appFS = (item.Applications and item.Applications.Applications)
+                   or (item.Icon and item.Icon.Applications)
+        if appFS then
+            hooksecurefunc(appFS, "SetText", function(_, val)
+                mirror_count_to_overlays(item, val)
+            end)
+        end
+
+        -- 쿨다운 타이머: CDM이 자기 Cooldown 업데이트할 때 오버레이 미러
+        if item.Cooldown then
+            hooksecurefunc(item.Cooldown, "SetCooldownFromDurationObject", function(_, durObj, useAuraDisplayTime)
+                mirror_cooldown_to_overlays(item, durObj, useAuraDisplayTime)
+            end)
+            hooksecurefunc(item.Cooldown, "SetCooldown", function(_, start, dur, modRate)
+                mirror_setcooldown_to_overlays(item, start, dur, modRate)
+            end)
+        end
+
         item.__AB2Hooked = true
     end
     update_cdm_from_item(item)
@@ -478,6 +549,7 @@ dodo.ActionbarInitCDM = function()
         for _, item in ipairs(BuffIconCooldownViewer:GetItemFrames()) do hook_viewer_item(item) end
     end
     C_Timer.After(0.5, on_login_delay)
+    C_Timer.NewTicker(0.1, poll_cdm_timer_overlays)
 end
 
 dodo.ActionbarApplyCDM = function()

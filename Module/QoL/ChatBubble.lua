@@ -87,7 +87,7 @@ if dodo.RegisterEditModeModuleSetting then
     dodo.RegisterEditModeModuleSetting("인터페이스", {
         -- 1. 글꼴 변경 토글 + 드롭다운 세트 (2열 결합)
         {
-            name = "말풍선 글꼴 변경",
+            name = "말풍선 글꼴",
             get = function() return dodoDB and dodoDB.useChatbubbleFont ~= false end,
             set = function(checked)
                 if dodoDB then dodoDB.useChatbubbleFont = checked end
@@ -107,7 +107,7 @@ if dodo.RegisterEditModeModuleSetting then
 
         -- 2. 글꼴 크기 변경 토글 + 슬라이더 세트 (2열 결합)
         {
-            name = "말풍선 크기 변경",
+            name = "말풍선 글꼴 크기",
             get = function() return dodoDB and dodoDB.useChatbubbleFontSize ~= false end,
             set = function(checked)
                 if dodoDB then dodoDB.useChatbubbleFontSize = checked end

@@ -59,7 +59,7 @@ initFrame:SetScript("OnEvent", on_event)
 -- 설정 등록
 -- ==============================
 if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("편의기능", {
+    dodo.RegisterEditModeModuleSetting("전투", {
         {
             name = "우두머리 경보",
             get = function() return dodoDB and dodoDB.enableEncounter ~= false end,

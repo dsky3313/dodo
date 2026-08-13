@@ -9,10 +9,39 @@ dodoDB = dodoDB or {}
 -- 캐싱
 -- ==============================
 local CreateFrame = CreateFrame
+local Enum = Enum
 local issecretvalue = issecretvalue or function() return false end
+local pairs = pairs
+local string_format = string.format
 local type = type
 local UnitGetTotalAbsorbs = UnitGetTotalAbsorbs
 local UnitGetTotalHealAbsorbs = UnitGetTotalHealAbsorbs
+
+-- ==============================
+-- 설정 테이블
+-- ==============================
+local ABSORB_UNITS = {
+	player = true, target = true, focus = true,
+}
+
+local ABSORB_DB_KEYS = {
+	player = "unitframeAbsorbPlayer",
+	target = "unitframeAbsorbTarget",
+	focus  = "unitframeAbsorbFocus",
+}
+
+local ABSORB_DEFAULTS = {
+	player = true, target = false, focus = false,
+}
+
+local function is_absorb_enabled(unit)
+	local dbKey = ABSORB_DB_KEYS[unit]
+	if not dbKey then return false end
+	if not dodoDB then return ABSORB_DEFAULTS[unit] or false end
+	local val = dodoDB[dbKey]
+	if val == nil then return ABSORB_DEFAULTS[unit] or false end
+	return val
+end
 
 local function on_absorb_changed(s, event, u)
 	if u == s.unit then s.Health:ForceUpdate() end
@@ -22,8 +51,13 @@ end
 -- 보호막/치유흡수 오버레이 공통 빌더
 -- ==============================
 function dodo.UnitframeCreateAbsorb(self, unit)
+	if not ABSORB_UNITS[unit] then return end
+
 	local uWidth = self.uWidth
 	local health = self.Health
+	if not health then return end
+
+	health.__absorbUnitKey = unit
 
 	-- 1. 보호막 (빈 체력 채움)
 	local clipEmpty = health.clipEmpty
@@ -91,6 +125,13 @@ function dodo.UnitframeCreateAbsorb(self, unit)
 	end
 
 	health.PostUpdate = function(element, u, cur, max)
+		if not is_absorb_enabled(element.__absorbUnitKey) then
+			if element.absorbBarBase    then element.absorbBarBase:Hide() end
+			if element.absorbBarOverlay then element.absorbBarOverlay:Hide() end
+			if element.healAbsorbBar    then element.healAbsorbBar:Hide() end
+			return
+		end
+
 		local totalAbsorb = UnitGetTotalAbsorbs(u) or 0
 		local hasAbsorb = issecretvalue(totalAbsorb) or (type(totalAbsorb) == "number" and totalAbsorb > 0)
 
@@ -114,5 +155,45 @@ function dodo.UnitframeCreateAbsorb(self, unit)
 			element.healAbsorbBar:SetValue(totalHealAbsorb)
 			if hasHealAbsorb then element.healAbsorbBar:Show() else element.healAbsorbBar:Hide() end
 		end
+	end
+end
+
+-- ==============================
+-- 설정 등록
+-- ==============================
+local Enum_EditModeSystem_UnitFrame = (Enum and Enum.EditModeSystem and Enum.EditModeSystem.UnitFrame) or 3
+
+local ABSORB_SYSTEM_INDICES = {
+	player = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Player) or 1,
+	target = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Target) or 2,
+	focus  = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Focus) or 6,
+}
+
+if dodo.RegisterEditModeSystemSetting then
+	for unit, sysIdx in pairs(ABSORB_SYSTEM_INDICES) do
+		local sysID = string_format("%d_%d", Enum_EditModeSystem_UnitFrame, sysIdx)
+		local dbKey = ABSORB_DB_KEYS[unit]
+		local default = ABSORB_DEFAULTS[unit]
+		dodo.RegisterEditModeSystemSetting(sysID, {
+			{
+				name = "보호막 표시",
+				get = function()
+					if not dodoDB or not dbKey then return default or false end
+					local val = dodoDB[dbKey]
+					return val == nil and (default or false) or val
+				end,
+				set = function(checked)
+					if dodoDB and dbKey then dodoDB[dbKey] = checked end
+					local frameMap = {
+						player = dodo.PlayerFrame,
+						target = dodo.TargetFrame,
+						focus  = dodo.FocusFrame,
+					}
+					local frame = frameMap[unit]
+					if frame and frame.Health then frame.Health:ForceUpdate() end
+				end,
+				disabled = function() return dodo.DB and dodo.DB.enableUnitframeModule == false end
+			}
+		})
 	end
 end

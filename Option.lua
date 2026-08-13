@@ -34,10 +34,23 @@ local interface_sections = {
     { key = "인터페이스.NPC 대화",  header = "NPC 대화"  },
 }
 
+-- 설정창 → 편집모드 진입 (설정창 먼저 닫고 /ed 슬래시 재사용, 전투 가드 포함)
+local function open_edit_mode_from_options()
+    HideUIPanel(SettingsPanel)
+    local handler = SlashCmdList["EDITMODE"]
+    if handler then handler("") end
+end
+
 -- 설정 생성
 function dodoCreateOptions()
     if dodoOptionsCreated then return end
     dodoOptionsCreated = true
+
+    -- 메인 페이지: 편집모드 열기 버튼
+    local main_layout = SettingsPanel:GetLayout(mainCategory)
+    if main_layout and CreateSettingsButtonInitializer then
+        main_layout:AddInitializer(CreateSettingsButtonInitializer("", "UI설정 열기", open_edit_mode_from_options, "dodo 모듈 편집이 포함된 편집모드를 엽니다.", false))
+    end
 
     local layout = SettingsPanel:GetLayout(subCategoryInterface)
     if layout then
@@ -86,9 +99,8 @@ end)
 -- ==============================
 -- 명령어
 -- ==============================
-SLASH_dodo1 = "/dd"
-SLASH_dodo2 = "/ㅇㅇ"
-SlashCmdList["dodo"] = function()
+-- 외부(편집모드 패널 등)에서 설정창을 직접 열 수 있는 공개 API
+function dodo.OpenOptions()
     if InCombatLockdown() then
         print("|cffff0000dodo: 전투 중에는 설정창을 열 수 없습니다.|r")
         return
@@ -96,4 +108,8 @@ SlashCmdList["dodo"] = function()
     if dodoCreateOptions then dodoCreateOptions() end
     Settings.OpenToCategory(mainCategory:GetID())
 end
+
+SLASH_dodo1 = "/dd"
+SLASH_dodo2 = "/ㅇㅇ"
+SlashCmdList["dodo"] = dodo.OpenOptions
 

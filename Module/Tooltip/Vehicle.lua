@@ -54,7 +54,7 @@ local function get_mount_info(unit)
     if unit == "player" and not IsMounted() then return end
     
     found_mount_name, found_mount_icon = nil, nil
-    AuraUtil.ForEachAura(unit, "HELPFUL", nil, on_mount_aura_check, true)
+    pcall(AuraUtil.ForEachAura, unit, "HELPFUL", nil, on_mount_aura_check, true)
     return found_mount_name, found_mount_icon
 end
 

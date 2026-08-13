@@ -394,7 +394,8 @@ end
 
 local function update_auras()
     if is_preview_active then return end
-    local auras = C_UnitAuras.GetUnitAuras("player", debufffilter)
+    local ok, auras = pcall(C_UnitAuras.GetUnitAuras, "player", debufffilter)
+    if not ok then return end
     table.wipe(activeDebuffsCache)
     if auras then
         for _, aura in ipairs(auras) do

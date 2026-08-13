@@ -163,16 +163,16 @@ local function update_bar1()
         if isTickPower then
             if pType == 19 then -- 기원사 정수 소수점 연산
                 local partial = UnitPartialPower("player", 19) or 0
-                bar1Frame:SetValue(current + (partial / 1000), Enum.StatusBarInterpolation.ExponentialEaseOut)
+                bar1Frame:SetValue(current + (partial / 1000), RB.smoothInterp)
             else
-                bar1Frame:SetValue(current, Enum.StatusBarInterpolation.ExponentialEaseOut)
+                bar1Frame:SetValue(current, RB.smoothInterp)
             end
             if bar1Frame.countPower then
                 bar1Frame.countPower:SetText(current)
             end
             update_bar1_ticks(overridePowerConfig.ticks or max)
         else
-            bar1Frame:SetValue(current, Enum.StatusBarInterpolation.ExponentialEaseOut)
+            bar1Frame:SetValue(current, RB.smoothInterp)
             if bar1Frame.countPower then
                 if pType == 0 then
                     local pct = UnitPowerPercent("player", 0, false, CurveConstants and CurveConstants.ScaleTo100)

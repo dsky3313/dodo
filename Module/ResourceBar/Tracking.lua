@@ -79,7 +79,6 @@ local hooksecurefunc = hooksecurefunc
 local ipairs = ipairs
 local math = math
 local Mixin = Mixin
-local rawget = rawget
 local table = table
 local UnitClass = UnitClass
 
@@ -186,39 +185,11 @@ function ResourceBar2UpdaterMixin:UpdateFromItem(item)
 
     for i, config in ipairs(currentSpecBuffs) do
         if spellID == config.spellID then
-            local itemUnit = item.auraDataUnit or rawget(item, "auraDataUnit")
-            local itemAura = item.auraInstanceID or rawget(item, "auraInstanceID")
-            local hasAuraData = itemUnit ~= nil and itemAura ~= nil
-
-            -- [무적 방어막] 블리자드 UI에서 auraData가 유실되어 들어왔을 때, 런타임 버프 엔진에서 직접 찾아 수동 복구 주입
-            if not hasAuraData then
-                local unit = (cdInfo.selfAura) and "player" or "target"
-                local spellName = C_Spell.GetSpellName(config.spellID)
-                if spellName then
-                    local aura = C_UnitAuras.GetAuraDataBySpellName(unit, spellName, "HELPFUL")
-                    if not aura then
-                        aura = C_UnitAuras.GetAuraDataBySpellName(unit, spellName, "HARMFUL")
-                    end
-                    if not aura and unit == "player" then
-                        aura = C_UnitAuras.GetPlayerAuraBySpellID(config.spellID)
-                    end
-                    
-                    if aura then
-                        item.auraDataUnit = unit
-                        item.auraInstanceID = aura.auraInstanceID
-                        hasAuraData = true
-                    end
-                end
-            end
+            local hasAuraData = item:IsShown()
 
             if self.bar2Frame.buffConfig and self.bar2Frame.currentPriority and i > self.bar2Frame.currentPriority then
                 local curItem = self.bar2Frame.viewerItem
-                local curItemUnit = curItem and (curItem.auraDataUnit or rawget(curItem, "auraDataUnit"))
-                local curItemAura = curItem and (curItem.auraInstanceID or rawget(curItem, "auraInstanceID"))
-                if curItem and curItemUnit and curItemAura then
-                    local curAura = C_UnitAuras.GetAuraDataByAuraInstanceID(curItemUnit, curItemAura)
-                    if curAura then return end
-                end
+                if curItem and curItem.auraDataCached then return end
             end
 
             if hasAuraData then

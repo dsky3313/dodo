@@ -94,10 +94,10 @@ function Mode:Update(bar2Frame)
     local c = (bar2Frame.buffConfig and bar2Frame.buffConfig.color) or RB.cachedSpecColor
     bar2Frame:SetStatusBarColor(c.r, c.g, c.b, 1)
 
-    if not bar2Frame.viewerItem or not bar2Frame.viewerItem.auraInstanceID or not bar2Frame.viewerItem.auraDataUnit then
+    if not bar2Frame.viewerItem or not bar2Frame.viewerItem.auraDataCached then
         if bar2Frame.countStack then bar2Frame.countStack:SetText("") end
         if bar2Frame.countDuration then bar2Frame.countDuration:SetText("") end
-        bar2Frame:SetValue(0, Enum.StatusBarInterpolation.ExponentialEaseOut)
+        bar2Frame:SetValue(0, RB.smoothInterp)
         local tex = bar2Frame:GetStatusBarTexture()
         if tex then tex:SetAlpha(0) end
         return
@@ -106,8 +106,7 @@ function Mode:Update(bar2Frame)
     local tex = bar2Frame:GetStatusBarTexture()
     if tex then tex:SetAlpha(1) end
 
-    local unit, auraID = bar2Frame.viewerItem.auraDataUnit, bar2Frame.viewerItem.auraInstanceID
-    local auraData = C_UnitAuras.GetAuraDataByAuraInstanceID(unit, auraID)
+    local auraData = bar2Frame.viewerItem.auraDataCached
     if auraData then
         local countBar = auraData.applications or 0
         if bar2Frame.countStack then 
@@ -118,7 +117,7 @@ function Mode:Update(bar2Frame)
             end
         end
         if bar2Frame.countDuration then bar2Frame.countDuration:SetText("") end
-        bar2Frame:SetValue(countBar, Enum.StatusBarInterpolation.ExponentialEaseOut)
+        bar2Frame:SetValue(countBar, RB.smoothInterp)
         bar2Frame:Show()
     end
 end

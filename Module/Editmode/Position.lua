@@ -39,6 +39,7 @@ local is_pos_active = false
 local init_frame = CreateFrame("Frame")
 local last_pure_height = 300
 local is_updating_height = false
+local lem_layout_hooked = false
 
 -- ==============================
 -- 기능 1: 좌표 및 스케일 변환
@@ -240,7 +241,21 @@ end
 -- ==============================
 -- 기능 4: EMM 스타일 하단 부착 및 고정 계산 공식 적용
 -- ==============================
-local function update_pos_dialog()
+local update_pos_dialog
+
+-- LEM dialog는 ResizeLayoutFrame이라 위젯 클릭 시 Layout()이 자기 내용물 크기로
+-- 높이를 원복시킴 — Layout 후에 다시 확장하도록 훅 (최초 1회, is_updating_height가 재귀 방지)
+local function hook_lem_dialog_layout(active_dialog)
+    if lem_layout_hooked then return end
+    lem_layout_hooked = true
+    hooksecurefunc(active_dialog, "Layout", function()
+        if is_pos_active then
+            update_pos_dialog()
+        end
+    end)
+end
+
+function update_pos_dialog()
     if not pos_frame or not is_pos_active then return end
 
     if not selected_frame then
@@ -252,6 +267,9 @@ local function update_pos_dialog()
     local active_dialog
     if selected_frame._isDodoSystem then
         active_dialog = dodo.EditMode and dodo.EditMode._lemDialog
+        if active_dialog then
+            hook_lem_dialog_layout(active_dialog)
+        end
     else
         active_dialog = _G.EditModeSystemSettingsDialog
     end

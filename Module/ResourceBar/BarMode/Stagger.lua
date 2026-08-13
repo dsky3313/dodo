@@ -81,7 +81,7 @@ function Mode:Update(bar2Frame)
     local stagger = UnitStagger("player") or 0
     local maxHealth = UnitHealthMax("player") or 1
     bar2Frame:SetMinMaxValues(0, maxHealth)
-    bar2Frame:SetValue(stagger, Enum.StatusBarInterpolation.ExponentialEaseOut)
+    bar2Frame:SetValue(stagger, RB.smoothInterp)
 
     local pct = 0
     local isSecret = issecretvalue(stagger) or issecretvalue(maxHealth)

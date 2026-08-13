@@ -78,10 +78,10 @@ function Mode:Update(bar2Frame)
     local c = (bar2Frame.buffConfig and bar2Frame.buffConfig.color) or RB.cachedSpecColor
     bar2Frame:SetStatusBarColor(c.r, c.g, c.b, 1)
 
-    if not bar2Frame.viewerItem or not bar2Frame.viewerItem.auraInstanceID or not bar2Frame.viewerItem.auraDataUnit then
+    if not bar2Frame.viewerItem or not bar2Frame.viewerItem.auraDataCached then
         if bar2Frame.countStack then bar2Frame.countStack:SetText("") end
         if bar2Frame.countDuration then bar2Frame.countDuration:SetText("0") end
-        bar2Frame:SetValue(0, Enum.StatusBarInterpolation.ExponentialEaseOut)
+        bar2Frame:SetValue(0, RB.smoothInterp)
         local tex = bar2Frame:GetStatusBarTexture()
         if tex then tex:SetAlpha(0) end
         if durationTicker then
@@ -95,22 +95,17 @@ function Mode:Update(bar2Frame)
     local tex = bar2Frame:GetStatusBarTexture()
     if tex then tex:SetAlpha(1) end
 
-    local unit, auraID = bar2Frame.viewerItem.auraDataUnit, bar2Frame.viewerItem.auraInstanceID
-    local auraData = C_UnitAuras.GetAuraDataByAuraInstanceID(unit, auraID)
+    local auraData = bar2Frame.viewerItem.auraDataCached
     if auraData then
-        local durObj = C_UnitAuras.GetAuraDuration(unit, auraID)
-        if durObj then
-            bar2Frame:SetTimerDuration(durObj, Enum.StatusBarInterpolation.ExponentialEaseOut, Enum.StatusBarTimerDirection.RemainingTime)
-            local rem = durObj:GetRemainingDuration()
-            if issecretvalue(rem) then
-                bar2Frame.countDuration:SetFormattedText("%.0f", rem)
+        -- SetTimerDuration/GetAuraDuration 는 12.1.0에서 API 변경 + secret으로 사용 불가
+        -- 남은시간 텍스트는 CDM Cooldown FontString에서 읽음
+        local item = bar2Frame.viewerItem
+        if item.Cooldown and item.Cooldown.GetCountdownFontString then
+            local cfs = item.Cooldown:GetCountdownFontString()
+            local remText = cfs and cfs:GetText()
+            if remText and (issecretvalue(remText) or remText ~= "") then
+                bar2Frame.countDuration:SetText(remText)
                 bar2Frame._lastDurationIntVal = nil
-            else
-                local intVal = math.floor(rem)
-                if intVal ~= bar2Frame._lastDurationIntVal then
-                    bar2Frame.countDuration:SetFormattedText("%.0f", intVal)
-                    bar2Frame._lastDurationIntVal = intVal
-                end
             end
         end
         if bar2Frame.countStack then bar2Frame.countStack:SetText("") end
