@@ -1,14 +1,4 @@
----@diagnostic disable: redundant-parameter
--- ==============================
--- Inspired
--- ==============================
--- asDebuffFilter (https://www.curseforge.com/wow/addons/asdebufffilter)
--- Enhance QoL (https://www.curseforge.com/wow/addons/eqol)
-
--- ==============================
--- 설정 및 테이블
--- ==============================
----@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
+---@diagnostic disable: redundant-parameter, lowercase-global, param-type-mismatch, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
@@ -17,113 +7,76 @@ local configs = {
     sizerate       = 1,
     max_debuffs    = 6,
     max_private    = 6,
-    gap            = 2,    -- 아이콘 간격
-    cool_size      = 50,   -- 쿨다운 크기
-    cool_fontsize  = 18,   -- 쿨다운
-    cool_x         = 0,
-    cool_y         = 0,
-    count_fontsize = 18,   -- 스택
+    gap            = 2,
+    cool_fontsize  = 18,
+    count_fontsize = 18,
     count_x        = 0,
     count_y        = 0,
-    dispel_size    = 20,   -- 해제 아이콘
+    dispel_size    = 20,
     dispel_x       = 1,
     dispel_y       = 1,
-    clickthrough   = false, -- 클릭 무시 (true시 뒤에 있는 NPC 클릭 가능)
+    clickthrough   = false,
 }
 
 local Options_Default = {
     Version = 1,
-    xpoint  = 350,         -- 위치
+    xpoint  = 350,
     ypoint  = 0,
 }
 
--- dodo.Colors.Debuff 데이터베이스 동적 참조 매핑 (중앙화 지원)
-local debuffinfo = {}
-if dodo.Colors and dodo.Colors.Debuff then
-    for dispeltype, v in pairs(dodo.Colors.Debuff) do
-        debuffinfo[dispeltype] = CreateColor(v.r, v.g, v.b)
-    end
-else
-    debuffinfo = {
-        [0]  = CreateColor(0.80, 0.80, 0.80), -- 일반 디버프
-        [1]  = CreateColor(0.32, 0.66, 1.00), -- Magic (파랑)
-        [2]  = CreateColor(0.67, 0.16, 1.00), -- Curse (보라)
-        [3]  = CreateColor(0.70, 0.47, 0.00), -- Disease (노랑/갈색)
-        [4]  = CreateColor(0.00, 1.00, 0.00), -- Poison (녹색)
-        [9]  = CreateColor(1.00, 0.29, 0.17), -- Bleed (붉은 갈색)
-        [11] = CreateColor(1.00, 0.16, 0.16), -- Bleed (붉은 갈색)
-    }
-end
-
-local filterList = {
-    [26013]  = true, -- 탈영병 (Deserter)
-    [71041]  = true, -- 탈영병 (Deserter - 인스턴스)
-    [57723]  = true, -- 소진 (Exhaustion - 영웅심)
-    [57724]  = true, -- 만족함 (Sated - 피의 욕망)
-    [80354]  = true, -- 시간 변위 (Temporal Displacement - 시간 왜곡)
-    [95809]  = true, -- 포만감 (Ancient Hysteria - 고대 광분)
-    [160455] = true, -- 만족함 (Insanity - 북)
-    [264689] = true, -- 피로 (Fatigued - 원초적 분노)
-    [390435] = true, -- 탈진 (Aspects' Benevolence - 위상의 격노)
+local excluded_spell_ids = {
+    [26013]  = true, -- 탈영병
+    [71041]  = true, -- 탈영병 (인스턴스)
+    [57723]  = true, -- 소진
+    [57724]  = true, -- 만족함
+    [80354]  = true, -- 시간 변위
+    [95809]  = true, -- 포만감
+    [160455] = true, -- 만족함
+    [264689] = true, -- 피로
+    [390435] = true, -- 탈진
     [97821]  = true, -- 죽기 디버프
 }
 
--- ==============================
--- 캐싱
--- ==============================
-local CopyTable = CopyTable
-local CreateFrame = CreateFrame
-local GameTooltip = GameTooltip
-local GameTooltip_SetDefaultAnchor = GameTooltip_SetDefaultAnchor
-local InCombatLockdown = InCombatLockdown
-local UnitAffectingCombat = UnitAffectingCombat
-local ipairs = ipairs
-local math_max = math.max
-local next = next
-local pairs = pairs
-local type = type
+local DISPEL_TYPE_NAMES = { "Magic", "Curse", "Disease", "Poison", "Bleed" }
 
-local GetTime = GetTime
-
-local activeDebuffs = {}
-local activeDebuffsCache = {}
-local is_preview_active = false
-local bsetupprivate = false
-local debuff_frame
-local debufffilter = AuraUtil.CreateFilterString(AuraUtil.AuraFilters.Harmful)
-local main_frame = CreateFrame("Frame", nil, UIParent)
-local private_frame
-local DISPEL_TYPE_NAMES = { "Magic", "Curse", "Disease", "Poison", "Bleed" } -- 해제 타입 이름 (상수)
-
-local isSecretValue = issecretvalue or function() return false end
-
-local colorcurve = C_CurveUtil.CreateColorCurve()
-colorcurve:SetType(Enum.LuaCurveType.Step)
-for dispeltype, v in pairs(debuffinfo) do
-    colorcurve:AddPoint(dispeltype, v)
-end
-
--- 탐지용 커브 생성 도우미 함수 (비교 연산 에러 방지용)
-local function create_dispel_curve(type_id, alt_type_id)
-    local curve = C_CurveUtil.CreateColorCurve()
-    curve:SetType(Enum.LuaCurveType.Step)
-    curve:AddPoint(0, CreateColor(0, 0, 0, 0))
-    curve:AddPoint(type_id, CreateColor(1, 1, 1, 1))
-    curve:AddPoint(type_id + 1, CreateColor(0, 0, 0, 0))
-    if alt_type_id then
-        curve:AddPoint(alt_type_id, CreateColor(1, 1, 1, 1))
-        curve:AddPoint(alt_type_id + 1, CreateColor(0, 0, 0, 0))
-    end
-    return curve
-end
-
-local detect_curves = {
-    Magic   = create_dispel_curve(1),
-    Curse   = create_dispel_curve(2),
-    Disease = create_dispel_curve(3),
-    Poison  = create_dispel_curve(4),
-    Bleed   = create_dispel_curve(9, 11),
+local PREVIEW_BORDER_COLORS = {
+    Magic   = {0.32, 0.66, 1.00},
+    Curse   = {0.67, 0.16, 1.00},
+    Disease = {0.70, 0.47, 0.00},
+    Poison  = {0.00, 1.00, 0.00},
+    Bleed   = {1.00, 0.29, 0.17},
 }
+
+local CopyTable           = CopyTable
+local CreateFrame         = CreateFrame
+local GetTime             = GetTime
+local UnitAffectingCombat = UnitAffectingCombat
+local math_max            = math.max
+local next                = next
+local ipairs              = ipairs
+
+local is_preview_active   = false
+local bsetupprivate       = false
+local debuff_container
+local debuff_anchor
+local debuff_buttons      = {}
+local debuff_preview_frames
+local main_frame          = CreateFrame("Frame", nil, UIParent)
+local private_frame
+
+-- ==============================
+-- dispel 컬러맵 (lazy)
+-- ==============================
+local dispel_color_map
+local function get_dispel_color_map()
+    if not dispel_color_map then
+        dispel_color_map = {}
+        for _, t in ipairs(DISPEL_TYPE_NAMES) do
+            dispel_color_map[t] = AuraUtil.GetAuraBorderColor(t)
+        end
+    end
+    return dispel_color_map
+end
 
 -- ==============================
 -- Private Aura Mixin
@@ -131,155 +84,210 @@ local detect_curves = {
 dodo_PrivateAuraAnchorMixin = {}
 
 function dodo_PrivateAuraAnchorMixin:SetUnit(unit)
-    if unit == self.unit then
-        return
-    end
+    if unit == self.unit then return end
     self.unit = unit
-
     if self.anchorID then
         C_UnitAuras.RemovePrivateAuraAnchor(self.anchorID)
         self.anchorID = nil
     end
-
     if unit then
-        local iconAnchor = {
-            point         = "CENTER",
-            relativeTo    = self,
-            relativePoint = "CENTER",
-            offsetX       = 0,
-            offsetY       = 0,
-        }
-
-        local args = {}
-        args.unitToken            = unit
-        args.auraIndex            = self.auraIndex
-        args.parent               = self
-        args.showCountdownFrame   = true
-        args.showCountdownNumbers = true
-        args.isContainer          = false
-        args.iconInfo = {
-            iconAnchor  = iconAnchor,
-            iconWidth   = self:GetWidth(),
-            iconHeight  = self:GetHeight(),
-            borderScale = 2.0,
-        }
-        args.durationAnchor = nil
-
-        self.anchorID = C_UnitAuras.AddPrivateAuraAnchor(args)
+        self.anchorID = C_UnitAuras.AddPrivateAuraAnchor({
+            unitToken            = unit,
+            auraIndex            = self.auraIndex,
+            parent               = self,
+            showCountdownFrame   = true,
+            showCountdownNumbers = true,
+            isContainer          = false,
+            iconInfo = {
+                iconAnchor = { point="CENTER", relativeTo=self, relativePoint="CENTER", offsetX=0, offsetY=0 },
+                iconWidth  = self:GetWidth(),
+                iconHeight = self:GetHeight(),
+                borderScale = 2.0,
+            },
+            durationAnchor = nil,
+        })
     end
 end
 
 -- ==============================
--- 마우스 오버 툴팁 정적 핸들러 (가비지 프리)
+-- AuraButton 설정 콜백
 -- ==============================
-local function on_debuff_enter(self)
-    if self.auraid then
-        GameTooltip_SetDefaultAnchor(GameTooltip, self)
-        GameTooltip:SetUnitDebuffByAuraInstanceID(self.unit, self.auraid, debufffilter)
-    end
-end
-
-local function on_debuff_leave()
-    GameTooltip:Hide()
-end
-
--- ==============================
--- UI 생성
--- ==============================
-local function create_debuff_frames(parent)
-    if parent.frames == nil then
-        parent.frames = {}
-    end
-
+local function configure_button(button)
     local w = configs.size
     local h = configs.size * configs.sizerate
+    button:SetSize(w, h)
 
-    for idx = 1, 6 do  -- 슬라이더 maxVal=6 고정, 항상 최대치 생성
-        local frame = CreateFrame("Button", nil, parent, "dodo_DebuffFrameTemplate")
-        parent.frames[idx] = frame
+    -- 아이콘 (BACKGROUND → 테두리보다 아래 레이어)
+    if not button._dodo_icon then
+        button._dodo_icon = button:CreateTexture(nil, "BACKGROUND")
+        button._dodo_icon:SetAllPoints(button)
+        button:SetIcon(button._dodo_icon)
+    end
+    button._dodo_icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
-        frame.cooldown:SetDrawEdge(false)
-        frame.cooldown:SetDrawSwipe(true)
-        frame.cooldown:SetHideCountdownNumbers(false)
-        frame.cooldown:ClearAllPoints()
-        frame.cooldown:SetPoint("CENTER", frame.icon, "CENTER", 0, 0)
-        frame.cooldown:SetSize(configs.cool_size, configs.cool_size)
-        for _, r in next, { frame.cooldown:GetRegions() } do
-            if r:GetObjectType() == "FontString" then
-                r:SetFont(STANDARD_TEXT_FONT, configs.cool_fontsize, "OUTLINE")
-                r:ClearAllPoints()
-                r:SetPoint("CENTER", configs.cool_x, configs.cool_y)
-                r:SetDrawLayer("OVERLAY")
-                break
-            end
+    -- 기본 border (항상 표시, 회색 = 해제불가 디버프)
+    if not button._dodo_base_border then
+        button._dodo_base_border = button:CreateTexture(nil, "ARTWORK", nil, 6)
+        button._dodo_base_border:SetTexture("Interface\\Addons\\dodo\\Media\\Texture\\AuraBorder.tga")
+    end
+    button._dodo_base_border:ClearAllPoints()
+    button._dodo_base_border:SetPoint("TOPLEFT",     button, "TOPLEFT",     -4,  4)
+    button._dodo_base_border:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT",  4, -4)
+    button._dodo_base_border:SetVertexColor(0.5, 0.5, 0.5, 1)
+
+    -- dispel 컬러 border (타입 있을 때만 표시, 기본 border 위에 덮음)
+    if not button._dodo_dispel_border then
+        button._dodo_dispel_border = button:CreateTexture(nil, "ARTWORK", nil, 7)
+        button._dodo_dispel_border:SetTexture("Interface\\Addons\\dodo\\Media\\Texture\\AuraBorder.tga")
+        button:AddDispelTypeTexture(button._dodo_dispel_border, {
+            style = Enum.CustomAuraButtonDispelTypeTextureStyle.PreserveAsset,
+            customDispelColorMap = get_dispel_color_map(),
+            showWhenHarmful  = true,
+            showWhenHelpful  = false,
+        })
+    end
+    button._dodo_dispel_border:ClearAllPoints()
+    button._dodo_dispel_border:SetPoint("TOPLEFT",     button, "TOPLEFT",     -4,  4)
+    button._dodo_dispel_border:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT",  4, -4)
+
+    -- overlay (swipe 위 텍스트/아이콘 레이어)
+    if not button._dodo_overlay then
+        button._dodo_overlay = CreateFrame("Frame", nil, button)
+        button._dodo_overlay:SetAllPoints(button)
+    end
+    button._dodo_overlay:SetFrameLevel(button:GetFrameLevel() + 3)
+
+    -- 스택 카운트 (SetFont 먼저, 그 후 SetApplicationCount — 등록 즉시 SetText 트리거 방지)
+    local count_new = not button._dodo_count
+    if count_new then
+        button._dodo_count = button._dodo_overlay:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+    end
+    button._dodo_count:SetFont(STANDARD_TEXT_FONT, configs.count_fontsize, "OUTLINE")
+    button._dodo_count:ClearAllPoints()
+    button._dodo_count:SetPoint("BOTTOMRIGHT", button._dodo_overlay, "BOTTOMRIGHT", configs.count_x, configs.count_y)
+    button._dodo_count:SetTextColor(1, 1, 0)
+    if count_new then
+        button:SetApplicationCount(button._dodo_count, {})
+    end
+
+    -- 쿨다운 swipe
+    if not button._dodo_cooldown then
+        button._dodo_cooldown = CreateFrame("Cooldown", nil, button, "CooldownFrameTemplate")
+        button._dodo_cooldown:SetAllPoints(button._dodo_icon)
+        button._dodo_cooldown:SetDrawEdge(false)
+        button._dodo_cooldown:SetDrawSwipe(true)
+        button._dodo_cooldown:SetHideCountdownNumbers(false)
+        button._dodo_cooldown:SetReverse(true)
+        button:SetDurationCooldown(button._dodo_cooldown)
+    end
+    for _, r in next, { button._dodo_cooldown:GetRegions() } do
+        if r:GetObjectType() == "FontString" then
+            r:SetFont(STANDARD_TEXT_FONT, configs.cool_fontsize, "OUTLINE")
+            r:SetDrawLayer("OVERLAY")
+            break
         end
+    end
 
-        frame.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        frame.icon:ClearAllPoints()
-        frame.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", 4, -4)
-        frame.icon:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -4, 4)
-        frame:SetSize(w, h)
-        frame:ClearAllPoints()
+    -- dispel 타입 아이콘 (우상단)
+    if not button._dodo_dispel_icon then
+        local ov = CreateFrame("Frame", nil, button)
+        ov:SetAllPoints(button)
+        ov:SetFrameLevel(button:GetFrameLevel() + 4)
+        button._dodo_dispel_icon_ov = ov
+        button._dodo_dispel_icon = ov:CreateTexture(nil, "OVERLAY")
+        button:AddDispelTypeTexture(button._dodo_dispel_icon, {
+            style = Enum.CustomAuraButtonDispelTypeTextureStyle.Icon,
+            showWhenHarmful = true,
+            showWhenHelpful = false,
+        })
+    end
+    button._dodo_dispel_icon:SetSize(configs.dispel_size, configs.dispel_size)
+    button._dodo_dispel_icon:ClearAllPoints()
+    button._dodo_dispel_icon:SetPoint("TOPRIGHT", button._dodo_dispel_icon_ov, "TOPRIGHT", configs.dispel_x, configs.dispel_y)
 
-        -- border/dispel/count 전용 오버레이 프레임 (swipe 501 위)
-        local overlayLayer = CreateFrame("Frame", nil, frame)
-        overlayLayer:SetAllPoints(frame)
-        overlayLayer:SetFrameLevel(frame:GetFrameLevel() + 2)
-        frame.overlayLayer = overlayLayer
-
-        frame.border:SetParent(overlayLayer)
-        frame.border:SetDrawLayer("ARTWORK")
-        frame.border:ClearAllPoints()
-        frame.border:SetPoint("CENTER", overlayLayer, "CENTER", 0, 0)
-        frame.border:SetSize(w, h)
-
-        frame.count:SetParent(overlayLayer)
-        frame.count:SetDrawLayer("OVERLAY")
-        frame.count:SetFont(STANDARD_TEXT_FONT, configs.count_fontsize, "OUTLINE")
-        frame.count:ClearAllPoints()
-        frame.count:SetPoint("BOTTOMRIGHT", overlayLayer, "BOTTOMRIGHT", configs.count_x, configs.count_y)
-        frame.count:SetTextColor(1, 1, 0)
-
-        -- 해제 타입 아이콘 설정
-        for _, name in ipairs(DISPEL_TYPE_NAMES) do
-            local dispelIcon = frame["dispel" .. name]
-            if dispelIcon then
-                dispelIcon:SetParent(overlayLayer)
-                dispelIcon:SetDrawLayer("OVERLAY")
-                dispelIcon:SetSize(configs.dispel_size, configs.dispel_size)
-                dispelIcon:ClearAllPoints()
-                dispelIcon:SetPoint("TOPRIGHT", overlayLayer, "TOPRIGHT", configs.dispel_x, configs.dispel_y)
-            end
-        end
-
-        if idx == 1 then
-            frame:SetPoint("RIGHT", parent, "RIGHT", 0, 0)
-        else
-            frame:SetPoint("RIGHT", parent.frames[idx - 1], "LEFT", -configs.gap, 0)
-        end
-
-        frame:SetScript("OnEnter", on_debuff_enter)
-        frame:SetScript("OnLeave", on_debuff_leave)
-
-        -- 마우스 설정 (초기)
-        if configs.clickthrough then
-            frame:EnableMouse(true)
-            if frame.SetMouseClickEnabled then frame:SetMouseClickEnabled(false) end
-        else
-            frame:EnableMouse(true)
-        end
-        frame:Hide()
+    -- 마우스 (AuraButton 자동 툴팁)
+    local show_tooltip = not configs.clickthrough or (dodoDB and dodoDB.debuffClickthroughTooltip ~= false)
+    button:SetMouseMotionEnabled(show_tooltip)
+    if button.SetMouseClickEnabled then
+        button:SetMouseClickEnabled(not configs.clickthrough)
     end
 end
 
+-- ==============================
+-- AuraContainer 생성 / 갱신
+-- ==============================
+local function build_container()
+    if not C_AddOns.IsAddOnLoaded("Blizzard_AuraContainer") then
+        C_AddOns.LoadAddOn("Blizzard_AuraContainer")
+    end
+
+    local w       = configs.size
+    local h       = configs.size * configs.sizerate
+    local spacing = configs.gap
+    local limit   = configs.max_debuffs
+
+    if not debuff_anchor then
+        debuff_anchor = CreateFrame("Frame", nil, main_frame)
+    end
+    debuff_anchor:SetSize(w, h)
+    debuff_anchor:SetPoint("RIGHT", main_frame, "CENTER", -spacing, 0)
+
+    if not debuff_container then
+        debuff_container = CreateFrame("AuraContainer", nil, main_frame, "CustomAuraContainerTemplate")
+    end
+
+    local row_width = math_max(w, w * limit + spacing * math_max(limit - 1, 0))
+    debuff_container:SetSize(w, h)
+    debuff_container:SetUnit("player")
+    debuff_container:SetFlowLayoutAxis(AnchorUtil.FlowLayoutAxis.Horizontal)
+    debuff_container:SetFlowLayoutAnchorPoint("TOPRIGHT")
+    debuff_container:SetFlowLayoutGrowthDirection(AnchorUtil.FlowDirection.Left, AnchorUtil.FlowDirection.Down)
+    debuff_container:SetFlowLayoutMaximumLineSize(row_width)
+    debuff_container:ClearAllPoints()
+    debuff_container:SetPoint("TOPRIGHT", debuff_anchor, "TOPRIGHT", 0, 0)
+
+    local group_key         = "dodo_player_debuffs"
+    local filter_string     = AuraUtil.CreateFilterString(AuraUtil.AuraFilters.Harmful)
+    local candidate_filters = { excludeSpellIDs = excluded_spell_ids }
+    local layout = {
+        elementWidth   = w,
+        elementHeight  = h,
+        elementSpacing = spacing,
+        lineSpacing    = spacing,
+    }
+
+    if debuff_container:HasAuraGroup(group_key) then
+        debuff_container:SetAuraGroupMaxFrameCount(group_key, limit)
+        debuff_container:SetAuraGroupCandidateFilters(group_key, candidate_filters)
+        debuff_container:SetAuraGroupLayout(group_key, layout)
+    else
+        debuff_container:AddAuraGroup(group_key, filter_string, {
+            maxFrameCount    = limit,
+            sortMethod       = AuraContainerSortMethod.AuraInstanceIDOnly,
+            sortDirection    = AuraContainerSortDirection.Normal,
+            initializeFrame  = function(button)
+                debuff_buttons[button] = true
+                configure_button(button)
+            end,
+            candidateFilters = candidate_filters,
+            layout           = layout,
+        })
+    end
+
+    local is_enabled = (dodoDB and dodoDB.useDebuff ~= false) and not is_preview_active
+    debuff_container:SetEnabled(is_enabled)
+    debuff_container:SetShown(is_enabled)
+    debuff_anchor:SetShown(is_enabled)
+end
+
+-- ==============================
+-- Private Aura 프레임 생성
+-- ==============================
 local function create_private_frames(parent)
     if parent.PrivateAuraAnchors == nil then
         parent.PrivateAuraAnchors = {}
     end
-
-    if UnitAffectingCombat("player") then
-        return
-    end
+    if UnitAffectingCombat("player") then return end
 
     bsetupprivate = true
 
@@ -289,201 +297,115 @@ local function create_private_frames(parent)
     for idx = 1, configs.max_private do
         local frame = CreateFrame("Frame", nil, parent, "dodo_PrivateAuraAnchorTemplate")
         parent.PrivateAuraAnchors[idx] = frame
-
         frame.auraIndex = idx
         frame:SetSize(w, h)
         frame:ClearAllPoints()
         frame:SetFrameStrata("LOW")
         frame:SetFrameLevel(500)
-
-        -- private는 왼쪽에서 오른쪽으로 (중앙 기준 오른쪽으로 뻗어나감)
         if idx == 1 then
             frame:SetPoint("LEFT", parent, "LEFT", 0, 0)
         else
             frame:SetPoint("LEFT", parent.PrivateAuraAnchors[idx - 1], "RIGHT", configs.gap, 0)
         end
-
         frame:SetUnit("player")
     end
 end
 
 -- ==============================
--- 디버프 로직
+-- 미리보기 (Edit Mode용)
 -- ==============================
-
-local function set_cooldownframe(cooldown, durationobject, enable)
-    if enable and durationobject then
-        cooldown:SetCooldownFromDurationObject(durationobject)
-        cooldown:Show()
-    else
-        cooldown:Clear()
-        cooldown:Hide()
-    end
-end
-
-local function update_debuff_frames()
-    if UnitIsDeadOrGhost("player") then
-        if debuff_frame and debuff_frame.frames then
-            for j = 1, 6 do
-                if debuff_frame.frames[j] then debuff_frame.frames[j]:Hide() end
-            end
-        end
-        return
-    end
-
-    local is_enabled = (dodoDB and dodoDB.useDebuff ~= false)
-    if not is_enabled then
-        if debuff_frame and debuff_frame.frames then
-            for j = 1, configs.max_debuffs do
-                if debuff_frame.frames[j] then
-                    debuff_frame.frames[j]:Hide()
-                end
-            end
-        end
-        return
-    end
-
-    local auraList = activeDebuffs["player"]
-    if not auraList then return end
-
-    local shown = 0
-
-    for _, aura in ipairs(auraList) do
-        shown = shown + 1
-        if shown > configs.max_debuffs then
-            break
-        end
-
-        local frame = debuff_frame.frames[shown]
-        if not frame then break end
-        frame.unit   = "player"
-        frame.auraid = aura.auraInstanceID
-
-        frame.icon:SetTexture(aura.icon)
-        frame.count:SetText(C_UnitAuras.GetAuraApplicationDisplayCount("player", aura.auraInstanceID, 1, 100))
-
-        local durationobject = C_UnitAuras.GetAuraDuration("player", aura.auraInstanceID)
-        set_cooldownframe(frame.cooldown, durationobject, true)
-
-        local color = C_UnitAuras.GetAuraDispelTypeColor("player", aura.auraInstanceID, colorcurve)
-        if color then
-            frame.border:SetVertexColor(color.r, color.g, color.b)
-        else
-            frame.border:SetVertexColor(0, 0, 0)
-        end
-
-        -- 각 타입별 디버프 아이콘 처리 (비교 연산 없이 알파값으로 제어)
-        for _, name in ipairs(DISPEL_TYPE_NAMES) do
-            local detectColor = C_UnitAuras.GetAuraDispelTypeColor("player", aura.auraInstanceID, detect_curves[name])
-            local dispelIcon = frame["dispel" .. name]
-            if dispelIcon then
-                dispelIcon:SetAlpha(detectColor and detectColor.a or 0)
-                dispelIcon:Show()
-            end
-        end
-
-        frame:Show()
-    end
-
-    for j = shown + 1, configs.max_debuffs do
-        if debuff_frame.frames[j] then
-            debuff_frame.frames[j]:Hide()
-        end
-    end
-end
-
-local function update_auras()
-    if is_preview_active then return end
-    local ok, auras = pcall(C_UnitAuras.GetUnitAuras, "player", debufffilter)
-    if not ok then return end
-    table.wipe(activeDebuffsCache)
-    if auras then
-        for _, aura in ipairs(auras) do
-            local sid = aura.spellId
-            local isFiltered = false
-            if sid then
-                if not isSecretValue(sid) and filterList[sid] then
-                    isFiltered = true
-                end
-            end
-            if not isFiltered then
-                table.insert(activeDebuffsCache, aura)
-                if #activeDebuffsCache >= configs.max_debuffs then break end
-            end
-        end
-    end
-    activeDebuffs["player"] = activeDebuffsCache
-    update_debuff_frames()
-end
-
 local function show_preview_data()
     is_preview_active = true
+    if debuff_container then
+        debuff_container:SetEnabled(false)
+        debuff_container:Hide()
+    end
+    if debuff_anchor then debuff_anchor:Hide() end
 
-    local fake_debuffs = {
-        { icon = 135900, count = 1, dispel = "Magic", color = debuffinfo[1], duration = 15 },
-        { icon = 136121, count = 2, dispel = "Curse", color = debuffinfo[2], duration = 10 },
-        { icon = 135869, count = 0, dispel = "Disease", color = debuffinfo[3], duration = 8 },
-        { icon = 135925, count = 5, dispel = "Poison", color = debuffinfo[4], duration = 12 },
-        { icon = 132242, count = 0, dispel = "Bleed", color = debuffinfo[9], duration = 20 },
-        { icon = 136183, count = 0, dispel = nil, color = debuffinfo[0], duration = 0 },
-    }
+    local w = configs.size
+    local h = configs.size * configs.sizerate
 
-    if debuff_frame and debuff_frame.frames then
-        for i = 1, configs.max_debuffs do
-            local frame = debuff_frame.frames[i]
-            local data = fake_debuffs[i]
-            if frame and data then
-                frame.unit = "player"
-                frame.auraid = nil
-                frame.icon:SetTexture(data.icon)
-                
-                if data.count > 0 then
-                    frame.count:SetText(data.count)
-                else
-                    frame.count:SetText("")
+    if not debuff_preview_frames then
+        debuff_preview_frames = {}
+        for i = 1, 6 do
+            local frame = CreateFrame("Button", nil, main_frame, "dodo_DebuffFrameTemplate")
+            debuff_preview_frames[i] = frame
+            frame.cooldown:SetDrawEdge(false)
+            frame.cooldown:SetDrawSwipe(true)
+            frame.cooldown:SetHideCountdownNumbers(false)
+            frame.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            local ov = CreateFrame("Frame", nil, frame)
+            ov:SetAllPoints(frame)
+            ov:SetFrameLevel(frame:GetFrameLevel() + 2)
+            frame.overlayLayer = ov
+            frame.border:SetParent(ov)
+            frame.border:SetDrawLayer("ARTWORK")
+            frame.count:SetParent(ov)
+            frame.count:SetDrawLayer("OVERLAY")
+            frame.count:SetFont(STANDARD_TEXT_FONT, configs.count_fontsize, "OUTLINE")
+            frame.count:SetTextColor(1, 1, 0)
+            for _, name in ipairs(DISPEL_TYPE_NAMES) do
+                local di = frame["dispel" .. name]
+                if di then
+                    di:SetParent(ov)
+                    di:SetSize(configs.dispel_size, configs.dispel_size)
                 end
-
-                if data.duration > 0 then
-                    frame.cooldown:SetCooldown(GetTime(), data.duration)
-                    frame.cooldown:Show()
-                else
-                    frame.cooldown:Clear()
-                    frame.cooldown:Hide()
-                end
-
-                if data.color then
-                    frame.border:SetVertexColor(data.color.r, data.color.g, data.color.b)
-                else
-                    frame.border:SetVertexColor(0, 0, 0)
-                end
-
-                for _, name in ipairs(DISPEL_TYPE_NAMES) do
-                    local dispelIcon = frame["dispel" .. name]
-                    if dispelIcon then
-                        if name == data.dispel then
-                            dispelIcon:SetAlpha(1)
-                        else
-                            dispelIcon:SetAlpha(0)
-                        end
-                        dispelIcon:Show()
-                    end
-                end
-                frame:Show()
             end
         end
-        for j = configs.max_debuffs + 1, #debuff_frame.frames do
-            if debuff_frame.frames[j] then debuff_frame.frames[j]:Hide() end
+    end
+
+    local fake = {
+        { icon=135900, count=1, dispel="Magic",   duration=15 },
+        { icon=136121, count=2, dispel="Curse",   duration=10 },
+        { icon=135869, count=0, dispel="Disease", duration=8  },
+        { icon=135925, count=5, dispel="Poison",  duration=12 },
+        { icon=132242, count=0, dispel="Bleed",   duration=20 },
+        { icon=136183, count=0, dispel=nil,        duration=0  },
+    }
+
+    for i = 1, configs.max_debuffs do
+        local frame = debuff_preview_frames[i]
+        local data  = fake[i] or {}
+        frame:SetSize(w, h)
+        frame.border:SetSize(w, h)
+        frame:ClearAllPoints()
+        if i == 1 then
+            frame:SetPoint("RIGHT", main_frame, "CENTER", -configs.gap, 0)
+        else
+            frame:SetPoint("RIGHT", debuff_preview_frames[i - 1], "LEFT", -configs.gap, 0)
         end
+        frame.icon:SetTexture(data.icon)
+        frame.count:SetText((data.count and data.count > 0) and data.count or "")
+        local c = data.dispel and PREVIEW_BORDER_COLORS[data.dispel]
+        if c then
+            frame.border:SetVertexColor(c[1], c[2], c[3])
+        else
+            frame.border:SetVertexColor(0.5, 0.5, 0.5)
+        end
+        if data.duration and data.duration > 0 then
+            frame.cooldown:SetCooldown(GetTime(), data.duration)
+            frame.cooldown:Show()
+        else
+            frame.cooldown:Clear()
+            frame.cooldown:Hide()
+        end
+        for _, name in ipairs(DISPEL_TYPE_NAMES) do
+            local di = frame["dispel" .. name]
+            if di then
+                di:SetAlpha(name == data.dispel and 1 or 0)
+                di:Show()
+            end
+        end
+        frame:Show()
+    end
+    for i = configs.max_debuffs + 1, 6 do
+        if debuff_preview_frames[i] then debuff_preview_frames[i]:Hide() end
     end
 
     if private_frame and private_frame.PrivateAuraAnchors then
-        local fake_private = {
-            { icon = 136209, duration = 12 },
-        }
-
         for i = 1, configs.max_private do
             local frame = private_frame.PrivateAuraAnchors[i]
-            local data = (i == 1) and fake_private[1] or nil
+            local data  = i == 1 and { icon=136209, duration=12 } or nil
             if frame then
                 if data then
                     if not frame.previewIcon then
@@ -493,7 +415,6 @@ local function show_preview_data()
                     end
                     frame.previewIcon:SetTexture(data.icon)
                     frame.previewIcon:Show()
-
                     if not frame.previewBorder then
                         frame.previewBorder = frame:CreateTexture(nil, "ARTWORK")
                         frame.previewBorder:SetTexture("Interface\\Addons\\dodo\\Media\\Texture\\AuraBorder.tga")
@@ -501,7 +422,6 @@ local function show_preview_data()
                     end
                     frame.previewBorder:SetVertexColor(1, 0.5, 0)
                     frame.previewBorder:Show()
-
                     if not frame.previewCooldown then
                         frame.previewCooldown = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
                         frame.previewCooldown:SetAllPoints(true)
@@ -509,21 +429,15 @@ local function show_preview_data()
                         frame.previewCooldown:SetDrawEdge(false)
                         frame.previewCooldown:SetHideCountdownNumbers(false)
                     end
-                    if data.duration > 0 then
-                        frame.previewCooldown:SetCooldown(GetTime(), data.duration)
-                        frame.previewCooldown:Show()
-                    else
-                        frame.previewCooldown:Clear()
-                        frame.previewCooldown:Hide()
-                    end
+                    frame.previewCooldown:SetCooldown(GetTime(), data.duration)
+                    frame.previewCooldown:Show()
                 else
-                    if frame.previewIcon then frame.previewIcon:Hide() end
-                    if frame.previewBorder then frame.previewBorder:Hide() end
+                    if frame.previewIcon     then frame.previewIcon:Hide() end
+                    if frame.previewBorder   then frame.previewBorder:Hide() end
                     if frame.previewCooldown then
                         frame.previewCooldown:Clear()
                         frame.previewCooldown:Hide()
                     end
-                    if frame.previewBg then frame.previewBg:Hide() end
                 end
             end
         end
@@ -532,40 +446,45 @@ end
 
 local function hide_preview_data()
     is_preview_active = false
-
+    if debuff_preview_frames then
+        for _, f in ipairs(debuff_preview_frames) do f:Hide() end
+    end
     if private_frame and private_frame.PrivateAuraAnchors then
         for i = 1, configs.max_private do
             local frame = private_frame.PrivateAuraAnchors[i]
             if frame then
-                if frame.previewIcon then frame.previewIcon:Hide() end
-                if frame.previewBorder then frame.previewBorder:Hide() end
+                if frame.previewIcon     then frame.previewIcon:Hide() end
+                if frame.previewBorder   then frame.previewBorder:Hide() end
                 if frame.previewCooldown then
                     frame.previewCooldown:Clear()
                     frame.previewCooldown:Hide()
                 end
-                if frame.previewBg then frame.previewBg:Hide() end
             end
         end
     end
-
-    update_auras()
+    local is_enabled = dodoDB and dodoDB.useDebuff ~= false
+    if debuff_container then
+        debuff_container:SetEnabled(is_enabled)
+        debuff_container:SetShown(is_enabled)
+    end
+    if debuff_anchor then debuff_anchor:SetShown(is_enabled) end
 end
 
 -- ==============================
--- 위치 저장 및 해제
+-- 위치 저장 / 복원
 -- ==============================
 local function save_position()
-    local x, y = main_frame:GetCenter()
-    local scale = main_frame:GetEffectiveScale()
+    local x, y   = main_frame:GetCenter()
+    local scale  = main_frame:GetEffectiveScale()
     local ux, uy = UIParent:GetCenter()
-    local us = UIParent:GetEffectiveScale()
-    local px = (x * scale - ux * us) / us
-    local py = (y * scale - uy * us) / us
-    dodoDB.Debuff = dodoDB.Debuff or {}
+    local us     = UIParent:GetEffectiveScale()
+    local px     = (x * scale - ux * us) / us
+    local py     = (y * scale - uy * us) / us
+    dodoDB.Debuff        = dodoDB.Debuff or {}
     dodoDB.Debuff.xpoint = px
     dodoDB.Debuff.ypoint = py
-    dodoDB.debuffX = px
-    dodoDB.debuffY = py
+    dodoDB.debuffX       = px
+    dodoDB.debuffY       = py
 end
 
 local function load_position()
@@ -573,26 +492,24 @@ local function load_position()
     if not main_frame then return end
     main_frame:ClearAllPoints()
     if anchorFrame then
-        local slot_w = configs.size + configs.gap
+        local slot_w   = configs.size + configs.gap
         local offset_x = slot_w * (configs.max_debuffs - 1) / 2
         main_frame:SetPoint("CENTER", anchorFrame, "CENTER", offset_x, 0)
     else
-        local targetX = dodoDB.debuffX or (dodoDB.Debuff and dodoDB.Debuff.xpoint) or 350
-        local targetY = dodoDB.debuffY or (dodoDB.Debuff and dodoDB.Debuff.ypoint) or 0
-        main_frame:SetPoint("CENTER", UIParent, "CENTER", targetX, targetY)
+        local tx = dodoDB.debuffX or (dodoDB.Debuff and dodoDB.Debuff.xpoint) or 350
+        local ty = dodoDB.debuffY or (dodoDB.Debuff and dodoDB.Debuff.ypoint) or 0
+        main_frame:SetPoint("CENTER", UIParent, "CENTER", tx, ty)
     end
 end
 
 -- ==============================
--- 설정 업데이트 (설정창용)
+-- 설정 업데이트
 -- ==============================
 local function update_debuff_option()
-    if not main_frame or not debuff_frame then return end
+    if not main_frame then return end
 
-    configs.size = dodoDB.debuffSize or 56
-    configs.max_debuffs = dodoDB.debuffMax or 6
-    configs.cool_size = math_max(configs.size - 6, 10)
-
+    configs.size        = dodoDB.debuffSize or 56
+    configs.max_debuffs = dodoDB.debuffMax  or 6
     if dodoDB.debuffClickthrough ~= nil then
         configs.clickthrough = dodoDB.debuffClickthrough
     else
@@ -601,105 +518,68 @@ local function update_debuff_option()
 
     load_position()
 
-    local icon_w = configs.size
-    local icon_h = configs.size * configs.sizerate
-    local debuff_w = (icon_w + configs.gap) * configs.max_debuffs
-    local private_w = (icon_w + configs.gap) * configs.max_private
+    local w  = configs.size
+    local h  = configs.size * configs.sizerate
+    local dw = (w + configs.gap) * configs.max_debuffs
+    local pw = (w + configs.gap) * configs.max_private
 
-    debuff_frame:SetSize(debuff_w, icon_h)
     if private_frame then
-        private_frame:SetSize(private_w, icon_h)
-    end
-
-    for idx, frame in pairs(debuff_frame.frames) do
-        frame:SetSize(icon_w, icon_h)
-        if frame.border then frame.border:SetSize(icon_w, icon_h) end
-        if frame.cooldown then frame.cooldown:SetSize(configs.cool_size, configs.cool_size) end
-
-        frame:ClearAllPoints()
-        if idx == 1 then
-            frame:SetPoint("RIGHT", debuff_frame, "RIGHT", 0, 0)
-        else
-            frame:SetPoint("RIGHT", debuff_frame.frames[idx - 1], "LEFT", -configs.gap, 0)
-        end
-
-        if configs.clickthrough then
-            frame:EnableMouse(true)
-            if frame.SetMouseClickEnabled then frame:SetMouseClickEnabled(false) end
-            if dodoDB.debuffClickthroughTooltip == false then
-                if frame.SetMouseMotionEnabled then frame:SetMouseMotionEnabled(false) end
-            else
-                if frame.SetMouseMotionEnabled then frame:SetMouseMotionEnabled(true) end
-            end
-        else
-            frame:EnableMouse(true)
-            if frame.SetMouseClickEnabled then frame:SetMouseClickEnabled(true) end
-            if frame.SetMouseMotionEnabled then frame:SetMouseMotionEnabled(true) end
-        end
-    end
-
-    if private_frame and private_frame.PrivateAuraAnchors then
-        for idx, frame in ipairs(private_frame.PrivateAuraAnchors) do
-            frame:SetSize(icon_w, icon_h)
-            frame:ClearAllPoints()
-            if idx == 1 then
-                frame:SetPoint("LEFT", private_frame, "LEFT", 0, 0)
-            else
-                frame:SetPoint("LEFT", private_frame.PrivateAuraAnchors[idx - 1], "RIGHT", configs.gap, 0)
+        private_frame:SetSize(pw, h)
+        if private_frame.PrivateAuraAnchors then
+            for idx, frame in ipairs(private_frame.PrivateAuraAnchors) do
+                frame:SetSize(w, h)
+                frame:ClearAllPoints()
+                if idx == 1 then
+                    frame:SetPoint("LEFT", private_frame, "LEFT", 0, 0)
+                else
+                    frame:SetPoint("LEFT", private_frame.PrivateAuraAnchors[idx - 1], "RIGHT", configs.gap, 0)
+                end
             end
         end
     end
 
     local anchorFrame = dodo.EditMode and dodo.EditMode:GetSystem("Debuff")
     if anchorFrame then
-        anchorFrame:SetSize(debuff_w + (icon_w + configs.gap) + configs.gap * 2, icon_h)
+        anchorFrame:SetSize(dw + (w + configs.gap) + configs.gap * 2, h)
     end
 
-    if is_preview_active then
-        show_preview_data()
-    end
-
-    local is_enabled = (dodoDB and dodoDB.useDebuff ~= false)
+    local is_enabled = dodoDB and dodoDB.useDebuff ~= false
     if is_enabled then
-        main_frame:RegisterUnitEvent("UNIT_AURA", "player")
-        main_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        main_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
-        main_frame:RegisterEvent("PLAYER_REGEN_DISABLED")
-        main_frame:RegisterEvent("PLAYER_LOGOUT")
-        
+        build_container()
+        for button in pairs(debuff_buttons) do
+            configure_button(button)
+        end
         if private_frame and private_frame.PrivateAuraAnchors then
             for _, frame in ipairs(private_frame.PrivateAuraAnchors) do
                 frame:SetUnit("player")
             end
         end
-        update_auras()
+        main_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+        main_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+        main_frame:RegisterEvent("PLAYER_REGEN_DISABLED")
+        main_frame:RegisterEvent("PLAYER_LOGOUT")
     else
-        main_frame:UnregisterAllEvents()
-        
+        if debuff_container then
+            debuff_container:SetEnabled(false)
+            debuff_container:Hide()
+        end
+        if debuff_anchor then debuff_anchor:Hide() end
         if private_frame and private_frame.PrivateAuraAnchors then
             for _, frame in ipairs(private_frame.PrivateAuraAnchors) do
                 frame:SetUnit(nil)
             end
         end
-        
-        if debuff_frame and debuff_frame.frames then
-            for j = 1, configs.max_debuffs do
-                if debuff_frame.frames[j] then
-                    debuff_frame.frames[j]:Hide()
-                end
-            end
-        end
+        main_frame:UnregisterAllEvents()
     end
+
+    if is_preview_active then show_preview_data() end
 end
 
 -- ==============================
--- 이벤트 핸들러 (가비지 프리 정적 참조)
+-- 이벤트 핸들러
 -- ==============================
-local function on_event(self, event, arg1, arg2)
-    if event == "UNIT_AURA" and arg1 == "player" then
-        update_auras()
-    elseif event == "PLAYER_ENTERING_WORLD" then
-        update_auras()
+local function on_event(self, event)
+    if event == "PLAYER_ENTERING_WORLD" then
         if not bsetupprivate then
             create_private_frames(private_frame)
         end
@@ -720,8 +600,8 @@ local function init_frames()
         dodoDB.Debuff = CopyTable(Options_Default)
     end
 
-    configs.size = dodoDB.debuffSize or configs.size
-    configs.max_debuffs = dodoDB.debuffMax or configs.max_debuffs
+    configs.size        = dodoDB.debuffSize or configs.size
+    configs.max_debuffs = dodoDB.debuffMax  or configs.max_debuffs
     if dodoDB.debuffClickthrough ~= nil then
         configs.clickthrough = dodoDB.debuffClickthrough
     end
@@ -731,68 +611,56 @@ local function init_frames()
     load_position()
     main_frame:Show()
 
-    local icon_w = configs.size
-    local icon_h = configs.size * configs.sizerate
-    local debuff_w = (icon_w + configs.gap) * configs.max_debuffs
-    local private_w = (icon_w + configs.gap) * configs.max_private
-
-    debuff_frame = CreateFrame("Frame", nil, main_frame)
-    debuff_frame:SetSize(debuff_w, icon_h)
-    debuff_frame:SetPoint("RIGHT", main_frame, "CENTER", -configs.gap, 0)
-    debuff_frame:Show()
-    create_debuff_frames(debuff_frame)
+    local w  = configs.size
+    local h  = configs.size * configs.sizerate
+    local pw = (w + configs.gap) * configs.max_private
 
     private_frame = CreateFrame("Frame", nil, main_frame)
-    private_frame:SetSize(private_w, icon_h)
+    private_frame:SetSize(pw, h)
     private_frame:SetPoint("LEFT", main_frame, "CENTER", configs.gap, 0)
     private_frame:Show()
     create_private_frames(private_frame)
-    dodo.private_frame = private_frame -- CoTankPrivateAura 모듈에서 위치 참조용
+    dodo.private_frame = private_frame
 
+    local dw          = (w + configs.gap) * configs.max_debuffs
     local anchorFrame = dodo.EditMode and dodo.EditMode:GetSystem("Debuff")
     if anchorFrame then
-        anchorFrame:SetSize(debuff_w + (icon_w + configs.gap) + configs.gap * 2, icon_h)
+        anchorFrame:SetSize(dw + (w + configs.gap) + configs.gap * 2, h)
     end
 
     main_frame:SetScript("OnEvent", on_event)
-    
-    local is_enabled = (dodoDB and dodoDB.useDebuff ~= false)
-    if is_enabled then
-        main_frame:RegisterUnitEvent("UNIT_AURA", "player")
+
+    if dodoDB and dodoDB.useDebuff ~= false then
+        build_container()
         main_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
         main_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
         main_frame:RegisterEvent("PLAYER_REGEN_DISABLED")
         main_frame:RegisterEvent("PLAYER_LOGOUT")
-        update_auras()
-    else
-        main_frame:UnregisterAllEvents()
-        if private_frame and private_frame.PrivateAuraAnchors then
-            for _, frame in ipairs(private_frame.PrivateAuraAnchors) do
-                frame:SetUnit(nil)
-            end
-        end
     end
 end
 
--- 로그인 이벤트 핸들러 (가비지 프리)
 local function on_login_event(self)
     if dodo.EditMode then
-        dodo.EditMode:CreateSystem("Debuff", "디버프", "디버프 표시기", UIParent, 120, 60, { point = "RIGHT", relativeTo = "UIParent", relativePoint = "CENTER", xOfs = 396, yOfs = 0 }, function(point)
-            if dodoDB then
-                dodoDB.debuffX = point.xOfs
-                dodoDB.debuffY = point.yOfs
-            end
-            load_position()
-        end, function() return dodoDB and dodoDB.useDebuff ~= false end)
+        dodo.EditMode:CreateSystem("Debuff", "디버프", "디버프 표시기", UIParent, 120, 60,
+            { point="RIGHT", relativeTo="UIParent", relativePoint="CENTER", xOfs=396, yOfs=0 },
+            function(point)
+                if dodoDB then
+                    dodoDB.debuffX = point.xOfs
+                    dodoDB.debuffY = point.yOfs
+                end
+                load_position()
+            end,
+            function() return dodoDB and dodoDB.useDebuff ~= false end
+        )
     end
     init_frames()
-    
-    local anchorFrame = _G.dodoEditModeDebuff
-    if anchorFrame then
-        anchorFrame:HookScript("OnShow", show_preview_data)
-        anchorFrame:HookScript("OnHide", hide_preview_data)
+
+    local em = _G.dodoEditModeDebuff
+    if em then
+        em:HookScript("OnShow", show_preview_data)
+        em:HookScript("OnHide", hide_preview_data)
     end
-    
+
     self:UnregisterEvent("PLAYER_LOGIN")
 end
 
@@ -807,60 +675,60 @@ if dodo.RegisterEditModeModuleSetting then
     dodo.RegisterEditModeModuleSetting("전투", {
         {
             name = "디버프",
-            get = function() return dodoDB and dodoDB.useDebuff ~= false end,
-            set = function(checked)
+            get  = function() return dodoDB and dodoDB.useDebuff ~= false end,
+            set  = function(checked)
                 if dodoDB then dodoDB.useDebuff = checked end
                 update_debuff_option()
-            end
-        }
+            end,
+        },
     })
 end
 
 if dodo.RegisterEditModeSystemSetting then
     dodo.RegisterEditModeSystemSetting("Debuff", {
         {
-            name = "클릭스루 (클릭 무시)",
-            get = function() return dodoDB and dodoDB.debuffClickthrough ~= false end,
-            set = function(checked)
+            name     = "클릭스루 (클릭 무시)",
+            get      = function() return dodoDB and dodoDB.debuffClickthrough ~= false end,
+            set      = function(checked)
                 if dodoDB then dodoDB.debuffClickthrough = checked end
                 update_debuff_option()
             end,
             disabled = function() return dodoDB and dodoDB.useDebuff == false end,
         },
         {
-            name = "클릭스루 시 툴팁 표시",
-            get = function() return dodoDB and dodoDB.debuffClickthroughTooltip ~= false end,
-            set = function(checked)
+            name     = "클릭스루 시 툴팁 표시",
+            get      = function() return dodoDB and dodoDB.debuffClickthroughTooltip ~= false end,
+            set      = function(checked)
                 if dodoDB then dodoDB.debuffClickthroughTooltip = checked end
                 update_debuff_option()
             end,
             disabled = function() return dodoDB and (dodoDB.useDebuff == false or dodoDB.debuffClickthrough == false) end,
         },
         {
-            name = "아이콘 크기",
-            type = "slider",
-            get = function() return dodoDB and dodoDB.debuffSize or 56 end,
-            set = function(val)
+            name     = "아이콘 크기",
+            type     = "slider",
+            get      = function() return dodoDB and dodoDB.debuffSize or 56 end,
+            set      = function(val)
                 if dodoDB then dodoDB.debuffSize = val end
                 update_debuff_option()
             end,
-            minVal = 30,
-            maxVal = 80,
-            step = 2,
+            minVal   = 30,
+            maxVal   = 80,
+            step     = 2,
             disabled = function() return dodoDB and dodoDB.useDebuff == false end,
         },
         {
-            name = "최대 표시 개수",
-            type = "slider",
-            get = function() return dodoDB and dodoDB.debuffMax or 6 end,
-            set = function(val)
+            name     = "최대 표시 개수",
+            type     = "slider",
+            get      = function() return dodoDB and dodoDB.debuffMax or 6 end,
+            set      = function(val)
                 if dodoDB then dodoDB.debuffMax = val end
                 update_debuff_option()
             end,
-            minVal = 1,
-            maxVal = 6,
-            step = 1,
+            minVal   = 1,
+            maxVal   = 6,
+            step     = 1,
             disabled = function() return dodoDB and dodoDB.useDebuff == false end,
-        }
+        },
     })
 end

@@ -96,12 +96,12 @@ dodo.Dungeons = {
     { name = "메카곤",   type = "spell", id = 373274,  category = "BfA" },
     { name = "보랄",     type = "spell", id = 445418,  category = "BfA", faction = "Alliance" },
     { name = "보랄",     type = "spell", id = 464256,  category = "BfA", faction = "Horde"    },
-    { name = "세스랄",   type = "spell", id = 410074,  category = "BfA", mapID = 250, lfgID = 645, isSeason = true },
+    { name = "세스랄",   type = "spell", id = 1286828, category = "BfA", mapID = 250, lfgID = 645, isSeason = true },
     { name = "썩은굴",   type = "spell", id = 410074,  category = "BfA" },
     { name = "아탈",     type = "spell", id = 424187,  category = "BfA" },
     { name = "왕노",     type = "spell", id = 467553,  category = "BfA", faction = "Alliance" },
     { name = "왕노",     type = "spell", id = 467555,  category = "BfA", faction = "Horde"    },
-    { name = "왕안",     type = "spell", id = 467555,  category = "BfA", mapID = 249, lfgID = 513, isSeason = true },
+    { name = "왕안",     type = "spell", id = 1286831, category = "BfA", mapID = 249, lfgID = 513, isSeason = true },
     { name = "자유지대", type = "spell", id = 410071,  category = "BfA" },
     { name = "저택",     type = "spell", id = 424167,  category = "BfA" },
 
@@ -152,15 +152,15 @@ dodo.Dungeons = {
 
     -- MN
     { name = "기공",     type = "item",  id = 248485,  category = "MN" },
-    { name = "골목",     type = "spell", id = 1254559, category = "MN", mapID = 587, lfgID = 1751, isSeason = true },
-    { name = "골짜기",   type = "spell", id = 1254559, category = "MN", mapID = 584, lfgID = 1701, isSeason = true },
+    { name = "골목",     type = "spell", id = 1286809, category = "MN", mapID = 587, lfgID = 1751, isSeason = true },
+    { name = "골짜기",   type = "spell", id = 1286801, category = "MN", mapID = 584, lfgID = 1701, isSeason = true },
     { name = "동굴",     type = "spell", id = 1254559, category = "MN", mapID = 560, lfgID = 1764 },
     { name = "마정",     type = "spell", id = 1254572, category = "MN", mapID = 558, lfgID = 1760 },
-    { name = "소굴",     type = "spell", id = 1254559, category = "MN", mapID = 646, lfgID = 1723, isSeason = true },
+    { name = "소굴",     type = "spell", id = 1286807, category = "MN", mapID = 646, lfgID = 1723, isSeason = true },
     { name = "송곳니",   type = "spell", id = 1286812, category = "MN", mapID = 588, lfgID = 1932, isSeason = true },
     { name = "제나스",   type = "spell", id = 1254563, category = "MN", mapID = 559, lfgID = 1768 },
     { name = "첨탑",     type = "spell", id = 1254400, category = "MN", mapID = 557, lfgID = 1542 },
-    { name = "투기장",   type = "spell", id = 1254559, category = "MN", mapID = 585, lfgID = 1756, isSeason = true },
+    { name = "투기장",   type = "spell", id = 1286804, category = "MN", mapID = 585, lfgID = 1756, isSeason = true },
 
     -- ETC
     { name = "하우징",   type = "housing", id = 1263273, category = "ETC" },
