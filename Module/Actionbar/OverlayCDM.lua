@@ -88,6 +88,9 @@ local wipe = wipe
 local custom_cdmauras = dodo.customCDMAuras
 local custom_cdmspell_map = dodo.customCDMSpellMap
 
+-- 현재 표시 중인 overlay만 추적 (poll 최적화)
+local active_cdm_overlays = {}
+
 -- ==============================
 -- 기능 구현
 -- ==============================
@@ -154,6 +157,7 @@ function CDMOverlayMixin:StartCustomCDM(spellID, duration, startTime)
     self.customCDMSpellID = spellID
     self.customCDMEndTime = startTime + duration
 
+    active_cdm_overlays[self] = true
     self.InnerGlow:Show()
     self.Cooldown:SetCooldown(startTime, duration)
     self.Cooldown:Show()
@@ -163,6 +167,8 @@ function CDMOverlayMixin:StartCustomCDM(spellID, duration, startTime)
 end
 
 function CDMOverlayMixin:StopCustomCDM()
+    active_cdm_overlays[self] = nil
+    self.viewerItem = nil
     self.customCDMSpellID = nil
     self.customCDMEndTime = nil
     self.Cooldown:Clear()
@@ -224,6 +230,7 @@ function CDMOverlayMixin:Update()
         end
         self.Cooldown:Hide() -- 쿨다운은 SetCooldownFromDurationObject/SetCooldown 후킹에서 채워짐
 
+        active_cdm_overlays[self] = true
         self.InnerGlow:Show()
         self:Show()
     else
@@ -295,26 +302,24 @@ local function update_cdm_from_item(item)
 end
 
 -- 아이콘형 CDM 카운트다운 텍스트 폴링 (secret 값은 SetCooldown 불가 → GetCountdownFontString 우회)
+-- active_cdm_overlays만 순회 — registeredButtons 전체 순회 대비 96→실제 활성 수로 감소
 local function poll_cdm_timer_overlays()
-    for btn in pairs(dodo.registeredButtons) do
-        local overlay = btn.cdmOverlay
-        if overlay and overlay:IsShown() then
-            local item = overlay.viewerItem
-            local text
-            if item and item.isActive then
-                if item.Cooldown and item.Cooldown.GetCountdownFontString then
-                    local cfs = item.Cooldown:GetCountdownFontString()
-                    text = cfs and cfs:GetText()
-                elseif item.Bar and item.Bar.Duration then
-                    text = item.Bar.Duration:GetText()
-                end
+    for overlay in pairs(active_cdm_overlays) do
+        local item = overlay.viewerItem
+        local text
+        if item and item.isActive then
+            if item.Cooldown and item.Cooldown.GetCountdownFontString then
+                local cfs = item.Cooldown:GetCountdownFontString()
+                text = cfs and cfs:GetText()
+            elseif item.Bar and item.Bar.Duration then
+                text = item.Bar.Duration:GetText()
             end
-            if text and (issecretvalue(text) or text ~= "") then
-                overlay.TimerCooldown:SetText(text)
-                overlay.TimerCooldown:Show()
-            else
-                overlay.TimerCooldown:Hide()
-            end
+        end
+        if text and (issecretvalue(text) or text ~= "") then
+            overlay.TimerCooldown:SetText(text)
+            overlay.TimerCooldown:Show()
+        else
+            overlay.TimerCooldown:Hide()
         end
     end
 end
