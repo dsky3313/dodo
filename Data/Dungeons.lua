@@ -26,16 +26,16 @@ dodo.DungeonExps = {
     { iconID = 132311,  category = "ETC",     name = "기타"     },
 }
 
+-- lfgID 조회: /run print("선택된 던전 lfgID:", LFGListFrame.EntryCreation.selectedActivity)
 ---@class Dungeon
 ---@field name string 표시명
 ---@field type string "spell" | "item" | "housing"
 ---@field id number 주문/아이템 ID
 ---@field category string 확장팩 카테고리
 ---@field faction string? "Alliance" | "Horde"
----@field isSeason boolean? 현 시즌 M+ 던전 여부
 ---@field mapID number? C_ChallengeMode 맵 ID (isSeason 항목에만 사용)
 ---@field lfgID number? LFG 활동 ID
----@field texture number? 던전 아이콘 텍스처
+---@field isSeason boolean? 현 시즌 M+ 던전 여부
 
 ---@type Dungeon[]
 dodo.Dungeons = {
@@ -50,86 +50,88 @@ dodo.Dungeons = {
 
     -- WoL
     { name = "기공",     type = "item",  id = 48933,   category = "WoL" },
-    { name = "사론",     type = "spell", id = 1254555, category = "WoL", isSeason = true, mapID = 556, lfgID = 1770, texture = 343641  },
+    { name = "사론",     type = "spell", id = 1254555, category = "WoL", mapID = 556, lfgID = 1770 },
 
     -- CATA
+    { name = "그림바톨", type = "spell", id = 445424,  category = "CATA" },
     { name = "누각",     type = "spell", id = 410080,  category = "CATA" },
     { name = "파도",     type = "spell", id = 424142,  category = "CATA" },
-    { name = "그림바톨", type = "spell", id = 445424,  category = "CATA" },
 
     -- MoP
     { name = "기공",     type = "item",  id = 87215,   category = "MoP" },
-    { name = "옥룡사",   type = "spell", id = 131204,  category = "MoP" },
-    { name = "양조장",   type = "spell", id = 131205,  category = "MoP" },
-    { name = "음영파",   type = "spell", id = 131206,  category = "MoP" },
     { name = "모구샨",   type = "spell", id = 131222,  category = "MoP" },
-    { name = "석양문",   type = "spell", id = 131225,  category = "MoP" },
     { name = "사원",     type = "spell", id = 131228,  category = "MoP" },
-    { name = "붉수도원", type = "spell", id = 131229,  category = "MoP" },
-    { name = "전당",     type = "spell", id = 131231,  category = "MoP" },
+    { name = "수도원", type = "spell", id = 131229,  category = "MoP" },
+    { name = "석양문",   type = "spell", id = 131225,  category = "MoP" },
     { name = "스칼로",   type = "spell", id = 131232,  category = "MoP" },
+    { name = "양조장",   type = "spell", id = 131205,  category = "MoP" },
+    { name = "옥룡사",   type = "spell", id = 131204,  category = "MoP" },
+    { name = "음영파",   type = "spell", id = 131206,  category = "MoP" },
+    { name = "전당",     type = "spell", id = 131231,  category = "MoP" },
 
     -- WoD
     { name = "기공",     type = "item",  id = 112059,  category = "WoD" },
+    { name = "검바탑",   type = "spell", id = 159902,  category = "WoD" },
     { name = "상록숲",   type = "spell", id = 159901,  category = "WoD" },
+    { name = "선착장",   type = "spell", id = 159896,  category = "WoD" },
+    { name = "아킨둔",   type = "spell", id = 159897,  category = "WoD" },
     { name = "어둠달",   type = "spell", id = 159899,  category = "WoD" },
     { name = "정비소",   type = "spell", id = 159900,  category = "WoD" },
-    { name = "선착장",   type = "spell", id = 159896,  category = "WoD" },
     { name = "피망치",   type = "spell", id = 159895,  category = "WoD" },
-    { name = "아킨둔",   type = "spell", id = 159897,  category = "WoD" },
-    { name = "하늘탑",   type = "spell", id = 159898,  category = "WoD", isSeason = true, mapID = 161, lfgID = 182,  texture = 1002596 },
-    { name = "검바탑",   type = "spell", id = 159902,  category = "WoD" },
+    { name = "하늘탑",   type = "spell", id = 159898,  category = "WoD", mapID = 161, lfgID = 182 },
 
     -- Legion
     { name = "기공",     type = "item",  id = 151652,  category = "Legion" },
-    { name = "삼두정",   type = "spell", id = 1254551, category = "Legion", isSeason = true, mapID = 239, lfgID = 486,  texture = 1711340 },
-    { name = "용맹",     type = "spell", id = 393764,  category = "Legion" },
+    { name = "검떼",     type = "spell", id = 424153,  category = "Legion" },
     { name = "넬둥",     type = "spell", id = 410078,  category = "Legion" },
     { name = "별궁",     type = "spell", id = 393766,  category = "Legion" },
-    { name = "카라잔",   type = "spell", id = 373262,  category = "Legion" },
-    { name = "검떼",     type = "spell", id = 424153,  category = "Legion" },
+    { name = "삼두정",   type = "spell", id = 1254551, category = "Legion", mapID = 239, lfgID = 486 },
     { name = "어숲",     type = "spell", id = 424163,  category = "Legion" },
+    { name = "용맹",     type = "spell", id = 393764,  category = "Legion" },
+    { name = "카라잔",   type = "spell", id = 373262,  category = "Legion" },
 
     -- BfA
     { name = "기공 얼",  type = "item",  id = 168807,  category = "BfA" },
     { name = "기공 호",  type = "item",  id = 168808,  category = "BfA" },
-    { name = "자유지대", type = "spell", id = 410071,  category = "BfA" },
-    { name = "썩은굴",   type = "spell", id = 410074,  category = "BfA" },
     { name = "메카곤",   type = "spell", id = 373274,  category = "BfA" },
-    { name = "저택",     type = "spell", id = 424167,  category = "BfA" },
-    { name = "아탈",     type = "spell", id = 424187,  category = "BfA" },
     { name = "보랄",     type = "spell", id = 445418,  category = "BfA", faction = "Alliance" },
     { name = "보랄",     type = "spell", id = 464256,  category = "BfA", faction = "Horde"    },
+    { name = "세스랄",   type = "spell", id = 410074,  category = "BfA", mapID = 250, lfgID = 645, isSeason = true },
+    { name = "썩은굴",   type = "spell", id = 410074,  category = "BfA" },
+    { name = "아탈",     type = "spell", id = 424187,  category = "BfA" },
     { name = "왕노",     type = "spell", id = 467553,  category = "BfA", faction = "Alliance" },
     { name = "왕노",     type = "spell", id = 467555,  category = "BfA", faction = "Horde"    },
+    { name = "왕안",     type = "spell", id = 467555,  category = "BfA", mapID = 249, lfgID = 513, isSeason = true },
+    { name = "자유지대", type = "spell", id = 410071,  category = "BfA" },
+    { name = "저택",     type = "spell", id = 424167,  category = "BfA" },
 
     -- SL
     { name = "기공",     type = "item",  id = 172924,  category = "SL" },
-    { name = "죽상",     type = "spell", id = 354462,  category = "SL" },
-    { name = "역병",     type = "spell", id = 354463,  category = "SL" },
-    { name = "티르너",   type = "spell", id = 354464,  category = "SL" },
+    { name = "고투",     type = "spell", id = 354467,  category = "SL" },
     { name = "속죄",     type = "spell", id = 354465,  category = "SL" },
     { name = "승천",     type = "spell", id = 354466,  category = "SL" },
-    { name = "고투",     type = "spell", id = 354467,  category = "SL" },
+    { name = "역병",     type = "spell", id = 354463,  category = "SL" },
+    { name = "죽상",     type = "spell", id = 354462,  category = "SL" },
     { name = "저편",     type = "spell", id = 354468,  category = "SL" },
-    { name = "핏빛",     type = "spell", id = 354469,  category = "SL" },
     { name = "타자베쉬", type = "spell", id = 367416,  category = "SL" },
+    { name = "티르너",   type = "spell", id = 354464,  category = "SL" },
+    { name = "핏빛",     type = "spell", id = 354469,  category = "SL" },
     { name = "나스리아", type = "spell", id = 373190,  category = "SL" },
     { name = "지배",     type = "spell", id = 373191,  category = "SL" },
     { name = "태존매",   type = "spell", id = 373192,  category = "SL" },
 
     -- DF
     { name = "기공",     type = "item",  id = 198156,  category = "DF" },
+    { name = "넬타",     type = "spell", id = 393276,  category = "DF" },
     { name = "노쿠드",   type = "spell", id = 393262,  category = "DF" },
     { name = "담쟁이",   type = "spell", id = 393267,  category = "DF" },
-    { name = "대학",     type = "spell", id = 393273,  category = "DF", isSeason = true, mapID = 402, lfgID = 1160, texture = 4578414 },
-    { name = "루비",     type = "spell", id = 393256,  category = "DF" },
-    { name = "넬타",     type = "spell", id = 393276,  category = "DF" },
+    { name = "대학",     type = "spell", id = 393273,  category = "DF", mapID = 402, lfgID = 1160 },
+    { name = "루비",     type = "spell", id = 393256,  category = "DF", mapID = 399, lfgID = 1175, isSeason = true },
     { name = "보관소",   type = "spell", id = 393279,  category = "DF" },
-    { name = "주입",     type = "spell", id = 393283,  category = "DF" },
-    { name = "울다만",   type = "spell", id = 393222,  category = "DF" },
     { name = "여명",     type = "spell", id = 424197,  category = "DF" },
-    { name = "금고",     type = "spell", id = 432254,  category = "DF" },
+    { name = "울다만",   type = "spell", id = 393222,  category = "DF" },
+    { name = "주입",     type = "spell", id = 393283,  category = "DF" },
+    { name = "헌신",     type = "spell", id = 432254,  category = "DF" },
     { name = "아베루스", type = "spell", id = 432257,  category = "DF" },
     { name = "아미",     type = "spell", id = 432258,  category = "DF" },
 
@@ -142,23 +144,23 @@ dodo.Dungeons = {
     { name = "수문",     type = "spell", id = 1216786, category = "TWW" },
     { name = "실타래",   type = "spell", id = 445416,  category = "TWW" },
     { name = "아라카라", type = "spell", id = 445417,  category = "TWW" },
+    { name = "알다니",   type = "spell", id = 1237215, category = "TWW" },
     { name = "양조장",   type = "spell", id = 445440,  category = "TWW" },
     { name = "어불동",   type = "spell", id = 445441,  category = "TWW" },
-    { name = "알다니",   type = "spell", id = 1237215, category = "TWW" },
     { name = "언더마인", type = "spell", id = 1226482, category = "TWW" },
     { name = "마괴종",   type = "spell", id = 1239155, category = "TWW" },
 
     -- MN
     { name = "기공",     type = "item",  id = 248485,  category = "MN" },
-    -- { name = "골목",     type = "spell", id = 1254559, category = "MN" },
-    -- { name = "골짜기",   type = "spell", id = 1254559, category = "MN" },
-    { name = "동굴",     type = "spell", id = 1254559, category = "MN", isSeason = true, mapID = 560, lfgID = 1764, texture = 7322719 },
-    { name = "마정",     type = "spell", id = 1254572, category = "MN", isSeason = true, mapID = 558, lfgID = 1760, texture = 7439625 },
-    -- { name = "소굴",     type = "spell", id = 1254559, category = "MN" },
-    { name = "제나스",   type = "spell", id = 1254563, category = "MN", isSeason = true, mapID = 559, lfgID = 1768, texture = 7553062 },
-    { name = "첨탑",     type = "spell", id = 1254400, category = "MN", isSeason = true, mapID = 557, lfgID = 1542, texture = 7266215 },
-    -- { name = "투기장",   type = "spell", id = 1254559, category = "MN" },
-    -- { name = "투기장2",  type = "spell", id = 1254559, category = "MN" },
+    { name = "골목",     type = "spell", id = 1254559, category = "MN", mapID = 587, lfgID = 1751, isSeason = true },
+    { name = "골짜기",   type = "spell", id = 1254559, category = "MN", mapID = 584, lfgID = 1701, isSeason = true },
+    { name = "동굴",     type = "spell", id = 1254559, category = "MN", mapID = 560, lfgID = 1764 },
+    { name = "마정",     type = "spell", id = 1254572, category = "MN", mapID = 558, lfgID = 1760 },
+    { name = "소굴",     type = "spell", id = 1254559, category = "MN", mapID = 646, lfgID = 1723, isSeason = true },
+    { name = "송곳니",   type = "spell", id = 1286812, category = "MN", mapID = 588, lfgID = 1932, isSeason = true },
+    { name = "제나스",   type = "spell", id = 1254563, category = "MN", mapID = 559, lfgID = 1768 },
+    { name = "첨탑",     type = "spell", id = 1254400, category = "MN", mapID = 557, lfgID = 1542 },
+    { name = "투기장",   type = "spell", id = 1254559, category = "MN", mapID = 585, lfgID = 1756, isSeason = true },
 
     -- ETC
     { name = "하우징",   type = "housing", id = 1263273, category = "ETC" },

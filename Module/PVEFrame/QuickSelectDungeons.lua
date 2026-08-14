@@ -18,7 +18,7 @@ local Config = {
     spacing = 5,   -- 아이콘 간격
 }
 
--- dID 조회: /run print("선택된 dID:", LFGListFrame.EntryCreation.selectedActivity)
+-- lfgID 조회: /run print("선택된 던전 lfgID:", LFGListFrame.EntryCreation.selectedActivity)
 local DungeonList = {}
 for _, d in ipairs(dodo.Dungeons) do
     if d.isSeason then DungeonList[#DungeonList + 1] = d end
@@ -29,6 +29,7 @@ end
 -- ==============================
 local C_GossipInfo = C_GossipInfo
 local C_LFGList = C_LFGList
+local C_Spell = C_Spell
 local C_Timer = C_Timer
 local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
@@ -182,7 +183,7 @@ local function create_ui()
             
             local icon_config = {
                 type = "macro",
-                icon = data.texture,
+                icon = data.texture or C_Spell.GetSpellTexture(data.id),
                 label = data.name,
                 fontsize = 10,
                 outline = true,
@@ -218,7 +219,7 @@ local function create_ui()
             
             local icon = btn:CreateTexture(nil, "ARTWORK")
             icon:SetAllPoints()
-            icon:SetTexture(data.texture)
+            icon:SetTexture(data.texture or C_Spell.GetSpellTexture(data.id))
             icon:SetVertexColor(1, 1, 1, 1)
             btn.icon = icon
 

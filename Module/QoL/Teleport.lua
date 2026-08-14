@@ -11,6 +11,7 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 local lib_icon = dodo.LibIcon
+-- 던전관련 추가/수정은 `Data\Dungeons.lua`로.
 
 -- ==============================
 -- 캐싱
