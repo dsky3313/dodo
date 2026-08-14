@@ -177,6 +177,7 @@ end
 
 function ResourceBar2UpdaterMixin:UpdateFromItem(item)
     if not item or not item.cooldownID then return end
+    if not self.bar2Frame or not self.bar2Frame:IsShown() then return end
 
     local cdInfo = C_CooldownViewer.GetCooldownViewerCooldownInfo(item.cooldownID)
     if not cdInfo or not cdInfo.spellID then return end
@@ -185,7 +186,7 @@ function ResourceBar2UpdaterMixin:UpdateFromItem(item)
 
     for i, config in ipairs(currentSpecBuffs) do
         if spellID == config.spellID then
-            local hasAuraData = item:IsShown()
+            local hasAuraData = item.isActive
 
             if self.bar2Frame.buffConfig and self.bar2Frame.currentPriority and i > self.bar2Frame.currentPriority then
                 local curItem = self.bar2Frame.viewerItem

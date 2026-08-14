@@ -119,6 +119,7 @@ function Mode:OnEnable(bar2Frame)
     bar2Frame:UnregisterEvent("UNIT_AURA")
     
     bar2Frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+    bar2Frame:RegisterEvent("PLAYER_REGEN_ENABLED")
 
     ww_stack_count = 0
     ww_is_active = false
@@ -136,6 +137,7 @@ end
 
 function Mode:OnDisable(bar2Frame)
     bar2Frame:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+    bar2Frame:UnregisterEvent("PLAYER_REGEN_ENABLED")
 
     if ww_timer_ticker then
         ww_timer_ticker:Cancel()
@@ -148,6 +150,7 @@ function Mode:OnDisable(bar2Frame)
 end
 
 function Mode:Update(bar2Frame)
+    if not bar2Frame:IsShown() then return end
     if bar2Frame.runebars then
         for _, rb in ipairs(bar2Frame.runebars) do rb:Hide() end
     end
@@ -238,6 +241,8 @@ end
 function Mode:OnEvent(bar2Frame, event, ...)
     if event == "UNIT_SPELLCAST_SUCCEEDED" then
         process_player_spellcast(bar2Frame, ...)
+    elseif event == "PLAYER_REGEN_ENABLED" then
+        ww_processed_cast_guids = {}
     end
 end
 

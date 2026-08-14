@@ -275,7 +275,7 @@ end
 if dodo.RegisterEditModeSystemSetting then
     dodo.RegisterEditModeSystemSetting("ResourceBar", {
         {
-            name = "자원바 막대",
+            name = "직업자원 막대",
             get = function() return dodo.DB and dodo.DB.useResourceBar1 ~= false end,
             set = function(checked)
                 if dodo.DB then dodo.DB.useResourceBar1 = checked end

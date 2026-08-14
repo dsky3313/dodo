@@ -81,6 +81,7 @@ function Mode:OnDisable(bar2Frame)
 end
 
 function Mode:Update(bar2Frame)
+    if not bar2Frame:IsShown() then return end
     if bar2Frame.runebars then
         for _, rb in ipairs(bar2Frame.runebars) do rb:Hide() end
     end

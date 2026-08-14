@@ -14,7 +14,6 @@ local RB = dodo.ResourceBar
 -- ==============================
 local C_SpellBook = C_SpellBook
 local C_Timer = C_Timer
-local C_UnitAuras = C_UnitAuras
 local CreateFrame = CreateFrame
 local Enum = Enum
 local GetTime = GetTime
@@ -96,13 +95,8 @@ function Mode:OnEnable(bar2Frame)
     bar2Frame:UnregisterEvent("UNIT_AURA")
     bar2Frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
     refresh_ironfur_talents()
-    local aura = C_UnitAuras.GetPlayerAuraBySpellID(192081)
-    if aura and aura.applications and aura.applications > 0 then
-        for i = 1, aura.applications do
-            ironfurExpiries[i] = aura.expirationTime
-            ironfurDurations[i] = ironfurBaseDuration
-        end
-    end
+    -- 12.1: Ironfur aura 전체 secret → applications/expirationTime 비교 불가.
+    -- 기존 스택 시드 불가, SPELLCAST 이벤트로만 추적.
     self:Update(bar2Frame)
 end
 
@@ -120,6 +114,7 @@ function Mode:OnDisable(bar2Frame)
 end
 
 function Mode:Update(bar2Frame)
+    if not bar2Frame:IsShown() then return end
     if bar2Frame.runebars then
         for _, rb in ipairs(bar2Frame.runebars) do rb:Hide() end
     end
