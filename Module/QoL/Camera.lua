@@ -44,7 +44,6 @@ local function camera_tilt()
         local angle = dodoDB.cameraAngle or CAMERA_TILT_ANGLE
 
         if GetCVar(CAM_DYNAMIC_PITCH) ~= "1" then
-            UIParent:UnregisterEvent("EXPERIMENTAL_CVAR_CONFIRMATION_NEEDED")
             safe_set_cvar(CAM_DYNAMIC_PITCH, 1)
             safe_set_cvar(CAM_KEEP_CENTERED, 0)
         end
@@ -73,7 +72,12 @@ local function on_event(self, event, arg1)
         self:RegisterEvent("PLAYER_LOGIN")
         self:UnregisterEvent("ADDON_LOADED")
     elseif event == "PLAYER_LOGIN" then
+        UIParent:UnregisterEvent("EXPERIMENTAL_CVAR_CONFIRMATION_NEEDED")
         camera_tilt()
+        self:RegisterEvent("FIRST_FRAME_RENDERED")
+        self:UnregisterEvent("PLAYER_LOGIN")
+    elseif event == "FIRST_FRAME_RENDERED" then
+        StaticPopup_Hide("EXPERIMENTAL_CVAR_WARNING")
         self:UnregisterAllEvents()
         self:SetScript("OnEvent", nil)
     end
