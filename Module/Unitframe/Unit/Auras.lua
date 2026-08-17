@@ -5,7 +5,6 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local CreateFrame = CreateFrame
 local Enum = Enum
 local pairs = pairs
 local string_format = string.format
@@ -56,24 +55,26 @@ function dodo.UnitframeCreateBuffs(self, uWidth, unit)
 	if not BUFFS_UNITS[unit] then return end
 	if self.Buffs then return end
 
-	local buffs = CreateFrame('Frame', nil, self)
+	local buffs = self:CreateAuras({
+		initialAnchor = 'BOTTOMRIGHT',
+		growthX       = 'LEFT',
+		growthY       = 'UP',
+		layoutLimit   = uWidth,
+	})
 	buffs:SetPoint('BOTTOMRIGHT', self, 'TOPRIGHT', 0, -4)
 	buffs:SetSize(uWidth, 20)
-	buffs.num = 5
-	buffs.spacing = 1
-	buffs.size = 20
-	buffs.initialAnchor = 'BOTTOMRIGHT'
-	buffs.growthY = 'UP'
-	buffs.growthX = 'LEFT'
+	buffs.size           = 20
+	buffs.showCount      = true
+	buffs.elementSpacing = 1
 	buffs.PostCreateButton = dodo.UnitframePostCreateButton
 	buffs.__unitKey = unit
-	buffs.PostUpdate = function(element)
-		if not is_buffs_enabled(element.__unitKey) then
-			element:Hide()
-		else
-			element:Show()
-		end
+
+	buffs:AddGroup('HELPFUL', { maxFrameCount = 5 })
+
+	if not is_buffs_enabled(unit) then
+		buffs:Hide()
 	end
+
 	self.Buffs = buffs
 end
 
