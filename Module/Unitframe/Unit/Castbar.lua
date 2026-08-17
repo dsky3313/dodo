@@ -159,18 +159,20 @@ function dodo.UnitframeCreateCastbar(self, uWidth, unit)
 	castbar.__unitKey = unit
 	castbar.ShouldShow = function(element, u)
 		if not is_castbar_enabled(element.__unitKey) then return false end
-		return element.__owner.unit == u
+		return element.__owner.__unit == u
 	end
 
 	-- 차단 속성 훅
-	castbar.PostCastStart = function(element, u)
-		local isNotInterruptible = element.notInterruptible
+	castbar.PostCastStart = function(element, u, spellID, notInterruptible)
+		if element.Time then element.Time:Show() end
+		local isNotInterruptible = notInterruptible
 		if issecretvalue and issecretvalue(isNotInterruptible) then isNotInterruptible = true end
 		element:SetStatusBarColor(isNotInterruptible and 0.6 or 1, isNotInterruptible and 0.6 or 0.7, isNotInterruptible and 0.6 or 0)
 	end
 
-	castbar.PostChannelStart = function(element, u)
-		local isNotInterruptible = element.notInterruptible
+	castbar.PostChannelStart = function(element, u, spellID, notInterruptible)
+		if element.Time then element.Time:Show() end
+		local isNotInterruptible = notInterruptible
 		if issecretvalue and issecretvalue(isNotInterruptible) then isNotInterruptible = true end
 		element:SetStatusBarColor(isNotInterruptible and 0.6 or 1, isNotInterruptible and 0.6 or 0.7, isNotInterruptible and 0.6 or 0)
 	end
@@ -183,12 +185,14 @@ function dodo.UnitframeCreateCastbar(self, uWidth, unit)
 		element:SetStatusBarColor(1, 0.7, 0)
 	end
 
-	castbar.PostCastFailed = function(element, u)
+	castbar.PostCastFail = function(element, u)
 		if element.Text then element.Text:SetText("실패") end
+		if element.Time then element.Time:Hide() end
 	end
 
 	castbar.PostCastInterrupted = function(element, u)
 		if element.Text then element.Text:SetText("차단됨") end
+		if element.Time then element.Time:Hide() end
 	end
 
 	self.Castbar = castbar
