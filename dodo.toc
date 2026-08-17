@@ -131,7 +131,7 @@ Module/QoL/WowheadLink.lua
 # ReadyCheck
 #Module/QoL/RaidBuff.lua
 Module/ReadyCheck/Timer.lua
-Module/ReadyCheck/Consumeable.lua
+#Module/ReadyCheck/Consumeable.lua
 
 # ResourceBar
 Module/ResourceBar/ResourceBar.xml
@@ -173,7 +173,7 @@ Module/Unitframe/Party/Overshield.lua
 
 # ObjectiveTracker
 Module/ObjectiveTracker/KeystoneTimer.lua
-Module/ObjectiveTracker/Collapse.lua
+#Module/ObjectiveTracker/Collapse.lua
 
 # WorldMap
 Module/WorldMap/Icon.lua

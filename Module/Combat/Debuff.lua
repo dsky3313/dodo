@@ -15,7 +15,6 @@ local configs = {
     dispel_size    = 20,
     dispel_x       = 1,
     dispel_y       = 1,
-    clickthrough   = false,
 }
 
 local Options_Default = {
@@ -115,7 +114,7 @@ end
 local function configure_button(button)
     local w = configs.size
     local h = configs.size * configs.sizerate
-    button:SetSize(w, h)
+    button:SetSize(w - 8, h - 8)
 
     -- 아이콘 (BACKGROUND → 테두리보다 아래 레이어)
     if not button._dodo_icon then
@@ -125,9 +124,16 @@ local function configure_button(button)
     end
     button._dodo_icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
+    -- 테두리 컨테이너 (cooldown 위에 렌더링)
+    if not button._dodo_border_frame then
+        button._dodo_border_frame = CreateFrame("Frame", nil, button)
+        button._dodo_border_frame:SetAllPoints(button)
+    end
+    button._dodo_border_frame:SetFrameLevel(button:GetFrameLevel() + 2)
+
     -- 기본 border (항상 표시, 회색 = 해제불가 디버프)
     if not button._dodo_base_border then
-        button._dodo_base_border = button:CreateTexture(nil, "ARTWORK", nil, 6)
+        button._dodo_base_border = button._dodo_border_frame:CreateTexture(nil, "ARTWORK", nil, 6)
         button._dodo_base_border:SetTexture("Interface\\Addons\\dodo\\Media\\Texture\\AuraBorder.tga")
     end
     button._dodo_base_border:ClearAllPoints()
@@ -137,7 +143,7 @@ local function configure_button(button)
 
     -- dispel 컬러 border (타입 있을 때만 표시, 기본 border 위에 덮음)
     if not button._dodo_dispel_border then
-        button._dodo_dispel_border = button:CreateTexture(nil, "ARTWORK", nil, 7)
+        button._dodo_dispel_border = button._dodo_border_frame:CreateTexture(nil, "ARTWORK", nil, 7)
         button._dodo_dispel_border:SetTexture("Interface\\Addons\\dodo\\Media\\Texture\\AuraBorder.tga")
         button:AddDispelTypeTexture(button._dodo_dispel_border, {
             style = Enum.CustomAuraButtonDispelTypeTextureStyle.PreserveAsset,
@@ -205,12 +211,7 @@ local function configure_button(button)
     button._dodo_dispel_icon:ClearAllPoints()
     button._dodo_dispel_icon:SetPoint("TOPRIGHT", button._dodo_dispel_icon_ov, "TOPRIGHT", configs.dispel_x, configs.dispel_y)
 
-    -- 마우스 (AuraButton 자동 툴팁)
-    local show_tooltip = not configs.clickthrough or (dodoDB and dodoDB.debuffClickthroughTooltip ~= false)
-    button:SetMouseMotionEnabled(show_tooltip)
-    if button.SetMouseClickEnabled then
-        button:SetMouseClickEnabled(not configs.clickthrough)
-    end
+    button:SetMouseMotionEnabled(true)
 end
 
 -- ==============================
@@ -298,7 +299,7 @@ local function create_private_frames(parent)
         local frame = CreateFrame("Frame", nil, parent, "dodo_PrivateAuraAnchorTemplate")
         parent.PrivateAuraAnchors[idx] = frame
         frame.auraIndex = idx
-        frame:SetSize(w, h)
+        frame:SetSize(w - 8, h - 8)
         frame:ClearAllPoints()
         frame:SetFrameStrata("LOW")
         frame:SetFrameLevel(500)
@@ -510,11 +511,6 @@ local function update_debuff_option()
 
     configs.size        = dodoDB.debuffSize or 56
     configs.max_debuffs = dodoDB.debuffMax  or 6
-    if dodoDB.debuffClickthrough ~= nil then
-        configs.clickthrough = dodoDB.debuffClickthrough
-    else
-        configs.clickthrough = true
-    end
 
     load_position()
 
@@ -527,7 +523,7 @@ local function update_debuff_option()
         private_frame:SetSize(pw, h)
         if private_frame.PrivateAuraAnchors then
             for idx, frame in ipairs(private_frame.PrivateAuraAnchors) do
-                frame:SetSize(w, h)
+                frame:SetSize(w - 8, h - 8)
                 frame:ClearAllPoints()
                 if idx == 1 then
                     frame:SetPoint("LEFT", private_frame, "LEFT", 0, 0)
@@ -602,9 +598,6 @@ local function init_frames()
 
     configs.size        = dodoDB.debuffSize or configs.size
     configs.max_debuffs = dodoDB.debuffMax  or configs.max_debuffs
-    if dodoDB.debuffClickthrough ~= nil then
-        configs.clickthrough = dodoDB.debuffClickthrough
-    end
 
     main_frame:SetFrameStrata("MEDIUM")
     main_frame:SetSize(1, 1)
@@ -686,24 +679,6 @@ end
 
 if dodo.RegisterEditModeSystemSetting then
     dodo.RegisterEditModeSystemSetting("Debuff", {
-        {
-            name     = "클릭스루 (클릭 무시)",
-            get      = function() return dodoDB and dodoDB.debuffClickthrough ~= false end,
-            set      = function(checked)
-                if dodoDB then dodoDB.debuffClickthrough = checked end
-                update_debuff_option()
-            end,
-            disabled = function() return dodoDB and dodoDB.useDebuff == false end,
-        },
-        {
-            name     = "클릭스루 시 툴팁 표시",
-            get      = function() return dodoDB and dodoDB.debuffClickthroughTooltip ~= false end,
-            set      = function(checked)
-                if dodoDB then dodoDB.debuffClickthroughTooltip = checked end
-                update_debuff_option()
-            end,
-            disabled = function() return dodoDB and (dodoDB.useDebuff == false or dodoDB.debuffClickthrough == false) end,
-        },
         {
             name     = "아이콘 크기",
             type     = "slider",

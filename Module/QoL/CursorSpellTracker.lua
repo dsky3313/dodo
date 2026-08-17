@@ -93,23 +93,23 @@ local function find_player_aura(spellID)
     -- 인덱스 스캔 우선: 전투 중 targeted helper가 부실해도 ID-only AuraData 경로는
     -- 값을 노출할 수 있음. 전투 중 일부 인덱스가 nil일 수 있으므로 중간 break 금지 (CST 방식)
     for i = 1, 80 do
-        local ok, a = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
-        if ok and a and type(a) == "table" then
+        local a = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
+        if a and type(a) == "table" then
             local sid = readable_num(a.spellId)
             if sid == spellID then return a end
         end
     end
 
-    local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, spellID)
-    if ok and aura then
+    local aura = C_UnitAuras.GetPlayerAuraBySpellID(spellID)
+    if aura then
         if type(aura) == "table" then return aura end
         -- 전투 중 secret/비테이블 반환: ID 지정 조회가 non-nil이면 존재로 간주 (CST acceptAura)
         return AURA_SECRET_PRESENT
     end
 
     if AuraUtil and AuraUtil.FindAuraBySpellID then
-        local okF, auraF = pcall(AuraUtil.FindAuraBySpellID, spellID, "player", "HELPFUL")
-        if okF and auraF then
+        local auraF = AuraUtil.FindAuraBySpellID(spellID, "player", "HELPFUL")
+        if auraF then
             if type(auraF) == "table" then return auraF end
             return AURA_SECRET_PRESENT
         end
@@ -144,8 +144,8 @@ local function update_cdm_item(item)
     local auraID
     local cooldownID = item.cooldownID
     if cooldownID and C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
-        local ok, cdInfo = pcall(C_CooldownViewer.GetCooldownViewerCooldownInfo, cooldownID)
-        if ok and type(cdInfo) == "table" then
+        local cdInfo = C_CooldownViewer.GetCooldownViewerCooldownInfo(cooldownID)
+        if cdInfo and type(cdInfo) == "table" then
             auraID = cdm_match_aura_id(readable_num(cdInfo.spellID))
             if not auraID and type(cdInfo.linkedSpellIDs) == "table" then
                 for _, lid in ipairs(cdInfo.linkedSpellIDs) do
