@@ -12,21 +12,21 @@ local EventRegistry = EventRegistry
 local InCombatLockdown = InCombatLockdown
 local RegisterUnitWatch = RegisterUnitWatch
 local UnregisterUnitWatch = UnregisterUnitWatch
-local _G = _G
 
 -- ==============================
 -- 보스 스타일 주입
 -- ==============================
-dodo.UnitframeStyles['boss'] = function(self, unit)
+local function boss_style(self, unit)
 	self.uWidth = 150
 	self.uHeight = 30
 end
+dodo.UnitframeStyles['boss'] = boss_style
 
 -- ==============================
 -- 우두머리 미리보기 디버그 기능
 -- ==============================
 function dodo.ToggleBossDebug(forceState)
-	if dodo and dodo.DB and dodo.DB.enableUnitframeModule == false then return end
+	if dodoDB.enableUnitframeModule == false then return end
 
 	if forceState ~= nil then
 		dodo.IsBossDebug = forceState
@@ -39,7 +39,7 @@ function dodo.ToggleBossDebug(forceState)
 		if bossFrame then
 			if dodo.IsBossDebug then
 				UnregisterUnitWatch(bossFrame)
-				bossFrame.unit = 'player'
+				bossFrame.__unit = 'player'
 				bossFrame:SetAlpha(1)
 				bossFrame:Show()
 				bossFrame:UpdateAllElements('UNIT_PORTRAIT_UPDATE')
@@ -47,7 +47,7 @@ function dodo.ToggleBossDebug(forceState)
 					bossFrame.nameText:SetText("우두머리 " .. i)
 				end
 			else
-				bossFrame.unit = 'boss' .. i
+				bossFrame.__unit = 'boss' .. i
 				if not InCombatLockdown() then
 					RegisterUnitWatch(bossFrame)
 				end
