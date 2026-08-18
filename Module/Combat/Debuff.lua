@@ -1,3 +1,13 @@
+-- ==============================
+-- Inspired
+-- ==============================
+-- asDebuffFilter (https://www.curseforge.com/wow/addons/asdebufffilter)
+-- Enhance QoL (https://www.curseforge.com/wow/addons/eqol)
+-- Northern Sky Raid Tools (https://www.curseforge.com/wow/addons/northern-sky-raid-tools)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 ---@diagnostic disable: redundant-parameter, lowercase-global, param-type-mismatch, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
