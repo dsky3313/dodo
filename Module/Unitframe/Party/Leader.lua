@@ -274,7 +274,7 @@ init_frame:SetScript("OnEvent", on_event)
 if dodo.RegisterEditModeSystemSetting then
 	dodo.RegisterEditModeSystemSetting(raid_system_id, {
 		{
-			name = "파티장/지원 아이콘 표시",
+			name = "파티장/지원 아이콘 표시", -- 레이드
 			get = function() return dodoDB and dodoDB.enablePartyframeLeader ~= false end,
 			set = function(checked)
 				if dodoDB then dodoDB.enablePartyframeLeader = checked end
@@ -285,7 +285,7 @@ if dodo.RegisterEditModeSystemSetting then
 
 	dodo.RegisterEditModeSystemSetting(party_system_id, {
 		{
-			name = "파티장/지원 아이콘 표시",
+			name = "파티장/지원 아이콘 표시", -- 파티
 			get = function() return dodoDB and dodoDB.enablePartyframeLeader ~= false end,
 			set = function(checked)
 				if dodoDB then dodoDB.enablePartyframeLeader = checked end
