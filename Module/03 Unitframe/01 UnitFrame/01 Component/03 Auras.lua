@@ -61,7 +61,7 @@ function dodo.UnitframeCreateBuffs(self, uWidth, unit)
 		growthY       = 'UP',
 		layoutLimit   = uWidth,
 	})
-	buffs:SetPoint('BOTTOMRIGHT', self, 'TOPRIGHT', 0, -4)
+	buffs:SetPoint('BOTTOMRIGHT', self, 'TOPRIGHT', 0, -6)
 	buffs:SetSize(uWidth, 20)
 	buffs.size           = 20
 	buffs.showCount      = true
@@ -111,7 +111,7 @@ function dodo.UnitframeCreateDebuffs(self, uWidth, unit)
 		growthY       = 'UP',
 		layoutLimit   = uWidth,
 	})
-	debuffs:SetPoint('BOTTOMRIGHT', self, 'TOPRIGHT', 0, 24)
+	debuffs:SetPoint('BOTTOMRIGHT', self, 'TOPRIGHT', 0, 16)
 	debuffs:SetSize(uWidth, 20)
 	debuffs.size           = 20
 	debuffs.showCount      = true

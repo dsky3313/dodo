@@ -300,7 +300,7 @@ dodo.RegisterOption("행동 단축바", function(category)
 
     -- 마스터 토글
     local _, master_setting = dodo.UI:SettingsCheckbox(category, "enableActionbar", "행동 단축바 모듈 활성화",
-        "행동 단축바와 관련된 추가적인 기능을 지원합니다.",
+        "행동 단축바와 관련된 추가적인 기능을 활성화합니다.",
         true, function(val)
             if dodoDB then dodoDB.enableActionbar = val end
             if dodo.ActionbarUpdateVisual then dodo.ActionbarUpdateVisual() end
@@ -532,4 +532,4 @@ dodo.RegisterOption("행동 단축바", function(category)
 
     local function _shown() return master_setting:GetValue() end
     for _, v in ipairs(_sub) do if v.AddShownPredicate then v:AddShownPredicate(_shown) end end
-end, 1)
+end, 1000)

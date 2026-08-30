@@ -325,10 +325,9 @@ dodo.BloodBrez = function()
     update_ticker_and_events()
 end
 
-dodo.RegisterOption("전투 (미완^^;)", function(category)
-    dodo.UI:SettingsSectionHeader(category, "블러드 & 전투부활")
+dodo.RegisterOption("전투", function(category)
     dodo.UI:SettingsCheckbox(category, "useBloodBrez", "블러드 & 전투부활", "블러드 & 전투부활", true, dodo.BloodBrez)
-end, 3500)
+end, 4030)
 
 if dodo.RegisterEditModeSystemSetting then
     dodo.RegisterEditModeSystemSetting("BloodBrez", {

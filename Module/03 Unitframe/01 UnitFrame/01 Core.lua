@@ -129,7 +129,6 @@ end
 local original_disable_blizzard = oUF.DisableBlizzard
 function oUF:DisableBlizzard(unit)
 	if dodoDB and dodoDB.enableUnitframeModule == false then
-		original_disable_blizzard(self, unit)
 		return
 	end
 	if unit == 'player' then
@@ -289,9 +288,15 @@ local function create_ui()
 	table.insert(customFrames, petFrame)
 	dodo.PetFrame = petFrame
 
+	local prevBossFrame
 	for i = 1, 5 do
 		local bossFrame = oUF:Spawn('boss' .. i, 'dodoBossFrame' .. i)
-		bossFrame:SetPoint('TOPLEFT', _G['Boss' .. i .. 'TargetFrame'], 'TOPLEFT', 20, -18)
+		if i == 1 then
+			bossFrame:SetPoint('TOPLEFT', _G['Boss1TargetFrame'], 'TOPLEFT', 20, -18)
+		else
+			bossFrame:SetPoint('TOPLEFT', prevBossFrame, 'BOTTOMLEFT', 0, -10)
+		end
+		prevBossFrame = bossFrame
 		table.insert(customFrames, bossFrame)
 	end
 end
@@ -344,6 +349,7 @@ local function update_module_state()
 				disable_unit_frame(bossFrame, 'TargetFrameContainer', 'TargetFrameContent')
 			end
 		end
+		if dodo.UnitframeApplyCastbarStates then dodo.UnitframeApplyCastbarStates() end
 	else
 		restore_unit_frame(PlayerFrame, 'PlayerFrameContainer', 'PlayerFrameContent')
 		restore_unit_frame(TargetFrame, 'TargetFrameContainer', 'TargetFrameContent')
@@ -357,6 +363,11 @@ local function update_module_state()
 			local bossFrame = _G['Boss' .. i .. 'TargetFrame']
 			if bossFrame then
 				restore_unit_frame(bossFrame, 'TargetFrameContainer', 'TargetFrameContent')
+			end
+		end
+		for _, frame in ipairs(customFrames) do
+			if frame and frame.Castbar then
+				frame:DisableElement('Castbar')
 			end
 		end
 	end

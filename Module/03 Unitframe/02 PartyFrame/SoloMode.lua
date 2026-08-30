@@ -53,20 +53,3 @@ if CompactPartyFrame and CompactPartyFrame.UpdateVisibility then
 	hooksecurefunc(CompactPartyFrame, "UpdateVisibility", force_show_party_frame)
 end
 
--- ==============================
--- 설정 등록
--- ==============================
-if dodo.RegisterEditModeSystemSetting then
-	dodo.RegisterEditModeSystemSetting(party_system_id, {
-		{
-			name = "솔로일 때 파티프레임 표시",
-			get = function() return dodoDB and dodoDB.enablePartyframeSoloMode ~= false end,
-			set = function(checked)
-				if dodoDB then dodoDB.enablePartyframeSoloMode = checked end
-				if CompactPartyFrame and CompactPartyFrame.UpdateVisibility then
-					CompactPartyFrame:UpdateVisibility()
-				end
-			end
-		}
-	})
-end

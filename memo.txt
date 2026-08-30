@@ -10,3 +10,6 @@ LEM
 RegisterEditModeSystemSetting
 
 dodo.RegisterOption
+
+
+RegisterEditModeSystemSetting

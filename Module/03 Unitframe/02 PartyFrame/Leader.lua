@@ -268,29 +268,3 @@ init_frame:RegisterEvent("ADDON_LOADED")
 init_frame:RegisterEvent("PLAYER_LOGIN")
 init_frame:SetScript("OnEvent", on_event)
 
--- ==============================
--- 설정 등록
--- ==============================
-if dodo.RegisterEditModeSystemSetting then
-	dodo.RegisterEditModeSystemSetting(raid_system_id, {
-		{
-			name = "파티장/지원 아이콘 표시", -- 레이드
-			get = function() return dodoDB and dodoDB.enablePartyframeLeader ~= false end,
-			set = function(checked)
-				if dodoDB then dodoDB.enablePartyframeLeader = checked end
-				update_all()
-			end
-		}
-	})
-
-	dodo.RegisterEditModeSystemSetting(party_system_id, {
-		{
-			name = "파티장/지원 아이콘 표시", -- 파티
-			get = function() return dodoDB and dodoDB.enablePartyframeLeader ~= false end,
-			set = function(checked)
-				if dodoDB then dodoDB.enablePartyframeLeader = checked end
-				update_all()
-			end
-		}
-	})
-end

@@ -80,9 +80,10 @@ local FALSE_DEFAULTS = {
 -- ==============================
 -- 미리보기 Mixin
 -- ==============================
-local _preview_ref = nil
+local _preview_ref    = nil
+local _tab_change_fn  = nil
 local PREVIEW_TABS   = { "player", "target", "focus", "boss" }
-local PREVIEW_LABELS = { player = "플레이어", target = "대상", focus = "주시대상", boss = "우두머리" }
+local PREVIEW_LABELS = { player = "플레이어", target = "대상", focus = "주시대상", boss = "우두머리 1" }
 
 local UNIT_W       = { player = 190, target = 190, focus = 120, boss = 150 }
 local UNIT_H       = { player = 30,  target = 30,  focus = 16,  boss = 30  }
@@ -90,7 +91,9 @@ local POWER_W      = { player = 120, target = 120, focus = 70,  boss = 120 }
 local POWER_H_SIZE = 10
 local CAST_H       = 16
 local CAST_ICON    = 16
-local BUFF_SIZE    = 18
+local BUFF_SIZE    = 20
+local BUFF_ICONS   = { 132341, 132362, 132352, 132351, 613534 }
+local DEBUFF_ICONS = { 237517, 136105, 132344, 132090, 237553 }
 
 local HEALTH_FILL_COLOR = { 0.25, 0.70, 0.25 }
 
@@ -122,7 +125,7 @@ end
 dodoUnitframePreviewMixin = {}
 
 dodoUnitframePreviewMixin.GetExtent = function()
-	return 210
+	return 250
 end
 
 function dodoUnitframePreviewMixin:OnLoad()
@@ -161,7 +164,7 @@ function dodoUnitframePreviewMixin:OnLoad()
 
 	-- ── 자원 바 ───────────────────────────────────────────
 	local pf = CreateFrame('Frame', nil, self)
-	pf:SetFrameLevel(base + 1)
+	pf:SetFrameLevel(base + 5)
 	self.pf = pf
 
 	local pBg = pf:CreateTexture(nil, 'BACKGROUND')
@@ -182,6 +185,11 @@ function dodoUnitframePreviewMixin:OnLoad()
 	local cIconBg = cif:CreateTexture(nil, 'BACKGROUND')
 	cIconBg:SetAllPoints()
 	cIconBg:SetColorTexture(0.12, 0.12, 0.12, 0.9)
+
+	local cIcon = cif:CreateTexture(nil, 'ARTWORK')
+	cIcon:SetAllPoints()
+	cIcon:SetTexture(132355)
+	cIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 	make_nineslice(cif)
 
 	local cf = CreateFrame('Frame', nil, self)
@@ -198,6 +206,19 @@ function dodoUnitframePreviewMixin:OnLoad()
 	self.cFill = cFill
 	make_nineslice(cf)
 
+	local cText = cf:CreateFontString(nil, 'OVERLAY', 'SystemFont_Outline_Small')
+	cText:SetPoint('LEFT', cf, 'LEFT', 5, 0)
+	cText:SetPoint('RIGHT', cf, 'RIGHT', -40, 0)
+	cText:SetJustifyH('LEFT')
+	local fontPath, _, fontFlags = cText:GetFont()
+	cText:SetFont(fontPath, 9, fontFlags)
+	cText:SetText("필사의 일격")
+
+	local cTime = cf:CreateFontString(nil, 'OVERLAY', 'SystemFont_Outline')
+	cTime:SetPoint('RIGHT', cf, 'RIGHT', -5, 0)
+	cTime:SetJustifyH('RIGHT')
+	cTime:SetText("0.4")
+
 	-- ── 버프 슬롯 ─────────────────────────────────────────
 	self.buffFrames = {}
 	for i = 1, 5 do
@@ -205,16 +226,25 @@ function dodoUnitframePreviewMixin:OnLoad()
 		bf:SetSize(BUFF_SIZE, BUFF_SIZE)
 		bf:SetFrameLevel(base)
 
-		local bg = bf:CreateTexture(nil, 'BACKGROUND')
-		bg:SetAllPoints()
-		bg:SetColorTexture(0.1, 0.1, 0.1, 0.9)
+		local icon = bf:CreateTexture(nil, 'ARTWORK')
+		icon:SetAllPoints()
+		icon:SetTexture(BUFF_ICONS[i])
 
-		local bfill = bf:CreateTexture(nil, 'ARTWORK')
-		bfill:SetAllPoints()
-		bfill:SetAtlas('UI-HUD-ActionBar-IconFrame-Background', false)
-
-		make_nineslice(bf)
 		self.buffFrames[i] = bf
+	end
+
+	-- ── 디버프 슬롯 ───────────────────────────────────────
+	self.debuffFrames = {}
+	for i = 1, 5 do
+		local df = CreateFrame('Frame', nil, self)
+		df:SetSize(BUFF_SIZE, BUFF_SIZE)
+		df:SetFrameLevel(base)
+
+		local icon = df:CreateTexture(nil, 'ARTWORK')
+		icon:SetAllPoints()
+		icon:SetTexture(DEBUFF_ICONS[i])
+
+		self.debuffFrames[i] = df
 	end
 
 	-- ── 소환수 시뮬레이션 (player 탭) ────────────────────────
@@ -228,6 +258,9 @@ function dodoUnitframePreviewMixin:OnLoad()
 	petFill:SetVertexColor(HEALTH_FILL_COLOR[1], HEALTH_FILL_COLOR[2], HEALTH_FILL_COLOR[3])
 	self.petFill = petFill
 	make_nineslice(petHf)
+	local petName = petHf:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+	petName:SetPoint('BOTTOMLEFT', petHf, 'TOPLEFT', 2, 3)
+	petName:SetText("소환수")
 	self.petHf = petHf
 
 	-- ── 대상의 대상 시뮬레이션 (target 탭) ─────────────────
@@ -241,6 +274,9 @@ function dodoUnitframePreviewMixin:OnLoad()
 	totFill:SetVertexColor(HEALTH_FILL_COLOR[1], HEALTH_FILL_COLOR[2], HEALTH_FILL_COLOR[3])
 	self.totFill = totFill
 	make_nineslice(totHf)
+	local totName = totHf:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+	totName:SetPoint('BOTTOMLEFT', totHf, 'TOPLEFT', 2, 3)
+	totName:SetText("대상의 대상")
 	self.totHf = totHf
 
 	-- ── 인디케이터 시뮬레이션 ─────────────────────────────
@@ -278,6 +314,7 @@ end
 
 function dodoUnitframePreviewMixin:OnTabSelected(tabIndex)
 	self._unit = PREVIEW_TABS[tabIndex] or "player"
+	if _tab_change_fn then _tab_change_fn(self._unit) end
 end
 
 function dodoUnitframePreviewMixin:Update()
@@ -295,7 +332,7 @@ function dodoUnitframePreviewMixin:Update()
 	local aEnabled = ABSORB_KEYS[unit] and preview_get(ABSORB_KEYS, ABSORB_DEFAULTS, unit) or false
 
 	local cast_gap = 22
-	local off_y    = 60
+	local off_y    = 80
 	local hx       = math_floor((W - hW) / 2)
 
 	-- ── 체력 바 ───────────────────────────────────────────
@@ -330,7 +367,7 @@ function dodoUnitframePreviewMixin:Update()
 	-- ── 자원 바 ───────────────────────────────────────────
 	if pEnabled then
 		self.pf:ClearAllPoints()
-		self.pf:SetPoint('TOPRIGHT', self.hf, 'BOTTOMRIGHT', -5, -2)
+		self.pf:SetPoint('RIGHT', self.hf, 'BOTTOMRIGHT', -5, -2)
 		self.pf:SetSize(pW, POWER_H_SIZE)
 		self.pf:Show()
 
@@ -345,8 +382,10 @@ function dodoUnitframePreviewMixin:Update()
 	-- ── 캐스팅바 ──────────────────────────────────────────
 	if cEnabled then
 		local cW = hW - CAST_ICON - 6
+		local cif_y = -(cast_gap - CAST_H / 2)
+		if unit == 'player' then cif_y = cif_y - 30 end
 		self.cif:ClearAllPoints()
-		self.cif:SetPoint('TOPLEFT', self.hf, 'BOTTOMLEFT', 0, -(cast_gap - CAST_H / 2))
+		self.cif:SetPoint('TOPLEFT', self.hf, 'BOTTOMLEFT', 0, cif_y)
 		self.cif:Show()
 
 		self.cf:ClearAllPoints()
@@ -374,10 +413,22 @@ function dodoUnitframePreviewMixin:Update()
 		for i = 1, 5 do self.buffFrames[i]:Hide() end
 	end
 
+	-- ── 디버프 ────────────────────────────────────────────
+	local dEnabled = preview_get(DEBUFFS_KEYS, DEBUFFS_DEFAULTS, unit)
+	if dEnabled then
+		for i = 1, 5 do
+			self.debuffFrames[i]:ClearAllPoints()
+			self.debuffFrames[i]:SetPoint('BOTTOMRIGHT', self.hf, 'TOPRIGHT', -(i - 1) * (BUFF_SIZE + 1), 26)
+			self.debuffFrames[i]:Show()
+		end
+	else
+		for i = 1, 5 do self.debuffFrames[i]:Hide() end
+	end
+
 	-- ── 소환수 (플레이어 탭만) ──────────────────────────────
 	if unit == 'player' then
 		self.petHf:ClearAllPoints()
-		self.petHf:SetPoint('TOPLEFT', self.hf, 'BOTTOMLEFT', 0, -5)
+		self.petHf:SetPoint('TOPLEFT', self.hf, 'BOTTOMLEFT', 0, -20)
 		self.petHf:SetSize(100, 16)
 		self.petHf:Show()
 		self.petFill:ClearAllPoints()
@@ -391,7 +442,7 @@ function dodoUnitframePreviewMixin:Update()
 	-- ── 대상의 대상 (대상 탭만) ─────────────────────────────
 	if unit == 'target' then
 		self.totHf:ClearAllPoints()
-		self.totHf:SetPoint('TOPLEFT', self.hf, 'BOTTOMRIGHT', -100, -36)
+		self.totHf:SetPoint('TOPLEFT', self.hf, 'BOTTOMRIGHT', -100, -50)
 		self.totHf:SetSize(100, 16)
 		self.totHf:Show()
 		self.totFill:ClearAllPoints()
@@ -520,7 +571,7 @@ end
 -- ==============================
 -- /dd 설정 등록
 -- ==============================
-dodo.RegisterOption("유닛프레임 (미완 ^^;)", function(category)
+dodo.RegisterOption("유닛프레임", function(category)
 	-- false가 기본인 항목 초기화 (nil → MultiDropDown이 체크로 오인 방지)
 	if dodoDB then
 		for key, val in pairs(FALSE_DEFAULTS) do
@@ -530,7 +581,7 @@ dodo.RegisterOption("유닛프레임 (미완 ^^;)", function(category)
 
 	-- 마스터 토글
 	local _, master_setting = dodo.UI:SettingsCheckbox(category, "enableUnitframeModule", "유닛프레임 활성화",
-		"oUF 커스텀 유닛프레임 모듈(플레이어·대상·주시대상·우두머리·펫) 전체를 활성화/비활성화합니다.",
+		"유닛프레임 모듈을 활성화합니다.",
 		true, function(val)
 			if dodoDB then dodoDB.enableUnitframeModule = val end
 			if dodo.UpdateUnitframeModuleState then dodo.UpdateUnitframeModuleState() end
@@ -571,7 +622,13 @@ dodo.RegisterOption("유닛프레임 (미완 ^^;)", function(category)
 	if mana_init and power_init and mana_init.SetParentInitializer then
 		mana_init:SetParentInitializer(power_init)
 	end
-	T(mana_init)
+	-- _sub 제외: 하단에서 combined predicate 직접 등록
+	_tab_change_fn = function()
+		-- SETTING_VALUE_CHANGED 이벤트 트리거 → 설정 리스트 layout 재평가
+		if master_setting then
+			master_setting:SetValue(master_setting:GetValue())
+		end
+	end
 
 	-- 캐스팅바
 	T(dodo.UI:SettingsMultiDropDown(category, "캐스팅바", {
@@ -633,6 +690,7 @@ dodo.RegisterOption("유닛프레임 (미완 ^^;)", function(category)
 		for unit, k in pairs(DEBUFFS_KEYS) do
 			if k == key then apply_debuffs(unit, selected) end
 		end
+		refresh_preview()
 	end))
 
 	-- 추가기능 섹션
@@ -648,24 +706,18 @@ dodo.RegisterOption("유닛프레임 (미완 ^^;)", function(category)
 		{ text = "플레이어", key = "unitframeLeaderPlayer" },
 		{ text = "대상",     key = "unitframeLeaderTarget" },
 		{ text = "주시대상", key = "unitframeLeaderFocus"  },
-		{ text = "우두머리", key = "unitframeLeaderBoss"   },
 	}, function(key, selected)
 		if dodoDB then dodoDB[key] = selected end
 		local map = { unitframeLeaderPlayer = dodo.PlayerFrame, unitframeLeaderTarget = dodo.TargetFrame, unitframeLeaderFocus = dodo.FocusFrame }
-		if map[key] then
-			toggle(map[key], 'LeaderIndicator', selected)
-		elseif key == "unitframeLeaderBoss" then
-			for i = 1, 5 do toggle(_G['dodoBossFrame'..i], 'LeaderIndicator', selected) end
-		end
+		if map[key] then toggle(map[key], 'LeaderIndicator', selected) end
 		refresh_preview()
 	end))
-	
+
 	-- 휴식 표시
 	T(dodo.UI:SettingsMultiDropDown(category, "휴식 표시", {
 		{ text = "플레이어", key = "unitframeRestPlayer" },
 		{ text = "대상",     key = "unitframeRestTarget" },
 		{ text = "주시대상", key = "unitframeRestFocus"  },
-		{ text = "우두머리", key = "unitframeRestBoss"   },
 	}, function(key, selected)
 		if dodoDB then dodoDB[key] = selected end
 		if key == "unitframeRestPlayer" then toggle(dodo.PlayerFrame, 'RestingIndicator', selected) end
@@ -691,5 +743,13 @@ dodo.RegisterOption("유닛프레임 (미완 ^^;)", function(category)
 
 	local function _shown() return master_setting:GetValue() end
 	for _, v in ipairs(_sub) do if v.AddShownPredicate then v:AddShownPredicate(_shown) end end
+	-- mana_init: 마스터 ON + 플레이어 탭일 때만 표시
+	if mana_init and mana_init.AddShownPredicate then
+		mana_init:AddShownPredicate(function()
+			local master = master_setting:GetValue()
+			local unit   = (_preview_ref and _preview_ref._unit) or "player"
+			return master and unit == "player"
+		end)
+	end
 
-end, 2)
+end, 3000)

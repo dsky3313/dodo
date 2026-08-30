@@ -47,8 +47,8 @@ local ALL_CDM_GROUPS = {
     { group = "MultiBar7Button",           barName = "MultiBar7"           },
 }
 
-local CustomCDMConfigs = { -- 물약 지속시간
-    [1236616] = { matchIDs = { 241308, 241309 }, duration = 30, type = 3 }, -- 빛의 잠재력
+local CustomCDMConfigs = { -- 물약 지속시간 (스펠ID - 아이템ID)
+    [1236616] = { matchIDs = { 241308, 241309 }, duration = 30, type = 3 }, -- 빛의 잠재력 
     [1236994] = { matchIDs = { 241288, 241289 }, duration = 30, type = 3 }, -- 무모함의 물약
 }
 

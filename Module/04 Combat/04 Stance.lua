@@ -192,14 +192,13 @@ event_frame:SetScript("OnEvent", on_event)
 -- ==============================
 -- 설정 등록
 -- ==============================
-dodo.RegisterOption("전투 (미완^^;)", function(category)
-    dodo.UI:SettingsSectionHeader(category, "태세 아이콘")
+dodo.RegisterOption("전투", function(category)
     dodo.UI:SettingsCheckbox(category, "enableStance", "태세 아이콘", "태세 아이콘", true, function(v)
         if stance_icon then
             if v then update_icon() else stance_icon:Hide() end
         end
     end)
-end, 3502)
+end, 4040)
 
 if dodo.RegisterEditModeSystemSetting then
     dodo.RegisterEditModeSystemSetting("Stance", {

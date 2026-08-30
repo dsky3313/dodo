@@ -33,7 +33,7 @@ Module/Editmode/ModuleSettings.lua
 Module/Editmode/SystemSettings.lua
 Module/Editmode/SystemSettingsPanel.lua
 
-# Actionbar
+# 01 Actionbar
 Module/01 Actionbar/00 ActionBar.xml
 Module/01 Actionbar/01 Core.lua
 Module/01 Actionbar/02 IconPadding.lua
@@ -43,6 +43,46 @@ Module/01 Actionbar/05 OverlayInterrupt.lua
 Module/01 Actionbar/06 OverlayPotion.lua
 Module/01 Actionbar/07 IconText.lua
 Module/01 Actionbar/99 Options.lua
+
+# 03 Unitframe
+Module/03 Unitframe/01 UnitFrame/01 Component/01 Power.lua
+Module/03 Unitframe/01 UnitFrame/01 Component/02 Castbar.lua
+Module/03 Unitframe/01 UnitFrame/01 Component/03 Auras.lua
+Module/03 Unitframe/01 UnitFrame/01 Component/04 Absorb.lua
+Module/03 Unitframe/01 UnitFrame/01 Component/99 Indicator.lua
+Module/03 Unitframe/01 UnitFrame/01 Core.lua
+Module/03 Unitframe/01 UnitFrame/02 Styles.lua
+Module/03 Unitframe/02 PartyFrame/AurasHealthColor.lua
+Module/03 Unitframe/02 PartyFrame/Leader.lua
+Module/03 Unitframe/02 PartyFrame/Overshield.lua
+#Module/03 Unitframe/02 PartyFrame/SoloMode.lua
+#Module/03 Unitframe/03 RaidFrame/Anchor.lua
+Module/03 Unitframe/99 Options.lua
+
+# 04 Combat
+# ResourceBar
+Module/04 Combat/01 ResourceBar/ResourceBar.xml
+Module/04 Combat/01 ResourceBar/Core.lua
+Module/04 Combat/01 ResourceBar/BarMode/Rune.lua
+Module/04 Combat/01 ResourceBar/BarMode/Stagger.lua
+Module/04 Combat/01 ResourceBar/BarMode/Ironfur.lua
+Module/04 Combat/01 ResourceBar/BarMode/SoulFragments.lua
+Module/04 Combat/01 ResourceBar/BarMode/Duration.lua
+Module/04 Combat/01 ResourceBar/BarMode/Power.lua
+Module/04 Combat/01 ResourceBar/BarMode/Stack.lua
+Module/04 Combat/01 ResourceBar/BarMode/Whirlwind.lua
+Module/04 Combat/01 ResourceBar/Power.lua
+Module/04 Combat/01 ResourceBar/Tracking.lua
+Module/04 Combat/01 ResourceBar/Options.lua
+# Debuff
+Module/04 Combat/02 Debuff/Debuff.xml
+Module/04 Combat/02 Debuff/Debuff.lua
+# BloodBrez
+Module/04 Combat/03 BloodBrez.lua
+# Stance
+Module/04 Combat/04 Stance.lua
+
+
 
 
 Module/CursorSpellTracker/CursorSpellTracker.lua
@@ -65,11 +105,7 @@ Module/Interface/ChatFrame/URL.lua
 # ChallengesKeystoneFrame
 Module/ChallengesKeystoneFrame/InsertKeystone.lua
 
-# Combat
-Module/Combat/BloodBrez.lua
-Module/Combat/Debuff.lua
-Module/Combat/Debuff.xml
-Module/Combat/Stance.lua
+
 
 # DamageMeter
 Module/Interface/DamageMeter/Core.lua
@@ -138,50 +174,20 @@ Module/QoL/WowheadLink.lua
 Module/ReadyCheck/Timer.lua
 #Module/ReadyCheck/Consumeable.lua
 
-# ResourceBar
-Module/ResourceBar/ResourceBar.xml
-Module/ResourceBar/Core.lua
-Module/ResourceBar/BarMode/Rune.lua
-Module/ResourceBar/BarMode/Stagger.lua
-Module/ResourceBar/BarMode/Ironfur.lua
-Module/ResourceBar/BarMode/SoulFragments.lua
-Module/ResourceBar/BarMode/Duration.lua
-Module/ResourceBar/BarMode/Power.lua
-Module/ResourceBar/BarMode/Stack.lua
-Module/ResourceBar/BarMode/Whirlwind.lua
-Module/ResourceBar/Power.lua
-Module/ResourceBar/Tracking.lua
-Module/ResourceBar/Options.lua
 
 # NamePlate
 # Module/Nameplate/Core.lua
 # Module/Nameplate/HealthColor.lua
 
 # Tooltip
-#Module/Tooltip/Core.lua
-#Module/Tooltip/Color.lua
-#Module/Tooltip/Icon.lua
-#Module/Tooltip/ID.lua
-#Module/Tooltip/StatusBar.lua
-#Module/Tooltip/Vehicle.lua
+Module/Tooltip/Core.lua
+Module/Tooltip/Color.lua
+Module/Tooltip/Icon.lua
+Module/Tooltip/ID.lua
+Module/Tooltip/StatusBar.lua
+Module/Tooltip/Vehicle.lua
 
-# Unitframe
-Module/Unitframe/Core.lua
-Module/Unitframe/Unit/Absorb.lua
-Module/Unitframe/Unit/Power.lua
-Module/Unitframe/Unit/Auras.lua
-Module/Unitframe/Unit/Castbar.lua
-Module/Unitframe/Unit/Player.lua
-Module/Unitframe/Unit/Target.lua
-Module/Unitframe/Unit/Boss.lua
-Module/Unitframe/Unit/ETC.lua
-Module/Unitframe/ETC/Indicator.lua
-Module/Unitframe/Party/AurasHealthColor.lua
-Module/Unitframe/Party/Leader.lua
-Module/Unitframe/Party/Overshield.lua
-#Module/Unitframe/Party/SoloMode.lua
-#Module/Unitframe/Raid/Anchor.lua
-Module/Unitframe/Options.lua
+
 
 # ObjectiveTracker
 Module/ObjectiveTracker/KeystoneTimer.lua

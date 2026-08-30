@@ -227,29 +227,3 @@ init_frame:SetScript("OnEvent", function(self, event, arg1)
 	end
 end)
 
--- ==============================
--- 설정 등록
--- ==============================
-if dodo.RegisterEditModeSystemSetting then
-	dodo.RegisterEditModeSystemSetting(party_system_id, {
-		{
-			name = "오라 (체력바 색상)",
-			get  = function() return dodoDB and dodoDB.usePartyframeAurasHealthColor ~= false end,
-			set  = function(checked)
-				if dodoDB then dodoDB.usePartyframeAurasHealthColor = checked end
-				rebuild_all_containers()
-			end
-		}
-	})
-
-	dodo.RegisterEditModeSystemSetting(raid_system_id, {
-		{
-			name = "오라 (체력바 색상)",
-			get  = function() return dodoDB and dodoDB.useRaidframeAurasHealthColor ~= false end,
-			set  = function(checked)
-				if dodoDB then dodoDB.useRaidframeAurasHealthColor = checked end
-				rebuild_all_containers()
-			end
-		}
-	})
-end

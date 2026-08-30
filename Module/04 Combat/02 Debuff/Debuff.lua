@@ -674,10 +674,9 @@ init:SetScript("OnEvent", on_login_event)
 -- ==============================
 -- 설정 등록
 -- ==============================
-dodo.RegisterOption("전투 (미완^^;)", function(category)
-    dodo.UI:SettingsSectionHeader(category, "디버프")
+dodo.RegisterOption("전투", function(category)
     dodo.UI:SettingsCheckbox(category, "useDebuff", "디버프", "디버프", true, update_debuff_option)
-end, 3501)
+end, 4020)
 
 if dodo.RegisterEditModeSystemSetting then
     dodo.RegisterEditModeSystemSetting("Debuff", {

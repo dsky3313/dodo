@@ -7,7 +7,7 @@ local RB = dodo.ResourceBar
 -- ==============================
 -- /dd 설정 등록
 -- ==============================
-dodo.RegisterOption("자원 막대 (미완 ^^;)", function(category)
+dodo.RegisterOption("전투", function(category)
     local _, master_setting = dodo.UI:SettingsCheckbox(category, "enableResourceBarModule", "자원 막대 모듈 활성화",
         "직업자원 막대와 보조자원 막대를 활성화합니다.",
         true, function(val)
@@ -17,8 +17,6 @@ dodo.RegisterOption("자원 막대 (미완 ^^;)", function(category)
 
     local _sub = {}
     local function T(v) if v then _sub[#_sub+1] = v end return v end
-
-    T(dodo.UI:SettingsSectionHeader(category, "구성"))
 
     T(dodo.UI:SettingsCheckbox(category, "useResourceBar1", "직업자원 막대",
         "1번 막대 — 현재 직업/전문화의 주 자원(마나·분노·기력 등)을 표시합니다.",
@@ -40,8 +38,6 @@ dodo.RegisterOption("자원 막대 (미완 ^^;)", function(category)
             if dodoDB then dodoDB.useResourceBarSmooth = val end
             if RB and RB.UpdateSmooth then RB.UpdateSmooth() end
         end))
-
-    T(dodo.UI:SettingsSectionHeader(category, "크기"))
 
     T(dodo.UI:SettingsSlider(category, "resourceBarWidth", "가로 크기",
         "막대의 가로 길이(픽셀)를 조정합니다.",
@@ -66,4 +62,4 @@ dodo.RegisterOption("자원 막대 (미완 ^^;)", function(category)
 
     local function _shown() return master_setting:GetValue() end
     for _, v in ipairs(_sub) do if v.AddShownPredicate then v:AddShownPredicate(_shown) end end
-end, 2000)
+end, 4010)

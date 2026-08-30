@@ -78,27 +78,3 @@ end
 hooksecurefunc("CompactUnitFrame_UpdateAll", update_overshield)
 hooksecurefunc("CompactUnitFrame_UpdateHealPrediction", update_overshield)
 
--- ==============================
--- 설정 등록
--- ==============================
-if dodo.RegisterEditModeSystemSetting then
-	dodo.RegisterEditModeSystemSetting(raid_system_id, {
-		{
-			name = "파티/레이드 보호막 표시",
-			get = function() return dodoDB and dodoDB.enablePartyframeOvershield ~= false end,
-			set = function(checked)
-				if dodoDB then dodoDB.enablePartyframeOvershield = checked end
-			end
-		}
-	})
-
-	dodo.RegisterEditModeSystemSetting(party_system_id, {
-		{
-			name = "파티/레이드 보호막 표시",
-			get = function() return dodoDB and dodoDB.enablePartyframeOvershield ~= false end,
-			set = function(checked)
-				if dodoDB then dodoDB.enablePartyframeOvershield = checked end
-			end
-		}
-	})
-end

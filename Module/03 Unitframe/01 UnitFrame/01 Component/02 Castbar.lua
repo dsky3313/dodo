@@ -76,9 +76,24 @@ function dodo.UnitframeCreateCastbar(self, uWidth, unit)
 	-- 아이콘
 	local icon = castbar:CreateTexture(nil, 'ARTWORK')
 	icon:SetSize(16, 16)
-	icon:SetPoint('LEFT', self.Health, 'BOTTOMLEFT', 0, -22)
 	icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 	castbar.Icon = icon
+
+	local health_ref = self.Health
+	local function reanchor_icon()
+		local iy = (unit == 'player' and UnitExists('pet')) and -52 or -22
+		icon:ClearAllPoints()
+		icon:SetPoint('LEFT', health_ref, 'BOTTOMLEFT', 0, iy)
+	end
+	reanchor_icon()
+
+	if unit == 'player' then
+		local petWatcher = CreateFrame('Frame')
+		petWatcher:RegisterEvent('UNIT_PET')
+		petWatcher:SetScript('OnEvent', function(_, _, unitToken)
+			if unitToken == 'player' then reanchor_icon() end
+		end)
+	end
 
 	-- 아이콘 테두리
 	local iconFrame = CreateFrame('Frame', nil, castbar)
@@ -236,6 +251,12 @@ local function apply_castbar_state(unit)
 	end
 end
 
+function dodo.UnitframeApplyCastbarStates()
+	for unit in pairs(CASTBAR_UNITS) do
+		apply_castbar_state(unit)
+	end
+end
+
 -- 로그인 시 초기 상태 적용
 -- Core.lua가 toc에서 먼저 로드되므로 같은 PLAYER_LOGIN 안에서 Core의 스폰(oUF Enable) 이후 실행됨.
 -- PLAYER_ENTERING_WORLD 이전에 복원해야 블리자드 캐스팅바가 PEW 초기화를 정상 수신해
@@ -251,37 +272,3 @@ initFrame:SetScript("OnEvent", function(self)
 	end
 end)
 
--- ==============================
--- 설정 등록
--- ==============================
-local Enum_EditModeSystem_UnitFrame = (Enum and Enum.EditModeSystem and Enum.EditModeSystem.UnitFrame) or 3
-
-local CASTBAR_SYSTEM_INDICES = {
-	player = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Player) or 1,
-	target = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Target) or 2,
-	boss   = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Boss) or 5,
-	focus  = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Focus) or 6,
-}
-
-if dodo.RegisterEditModeSystemSetting then
-	for unit, sysIdx in pairs(CASTBAR_SYSTEM_INDICES) do
-		local sysID = string_format("%d_%d", Enum_EditModeSystem_UnitFrame, sysIdx)
-		local dbKey = CASTBAR_DB_KEYS[unit]
-		local default = CASTBAR_DEFAULTS[unit]
-		dodo.RegisterEditModeSystemSetting(sysID, {
-			{
-				name = "캐스팅바",
-				get = function()
-					if not dodoDB or not dbKey then return default or false end
-					local val = dodoDB[dbKey]
-					return val == nil and (default or false) or val
-				end,
-				set = function(checked)
-					if dodoDB and dbKey then dodoDB[dbKey] = checked end
-					apply_castbar_state(unit)
-				end,
-				disabled = function() return dodoDB and dodoDB.enableUnitframeModule == false end
-			}
-		})
-	end
-end
