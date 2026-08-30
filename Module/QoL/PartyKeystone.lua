@@ -513,8 +513,8 @@ local function create_ui()
         row.name:SetPoint("TOPLEFT", row.portBtn, "TOPRIGHT", 10, -2)
         row.name:SetJustifyH("LEFT")
 
-        row.noPort = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        row.noPort:SetPoint("TOP", row.portBtn, "BOTTOM", 0, -1)
+        row.noPort = row.portBtn.overlayLayer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        row.noPort:SetPoint("TOPLEFT", row.portBtn, "TOPLEFT", 0, -6)
         row.noPort:SetTextColor(1, 0, 0)
         row.noPort:SetText("미개방")
 
@@ -771,9 +771,6 @@ if dodo.RegisterEditModeModuleSetting then
     })
 end
 
-local Checkbox = Checkbox
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
-    Checkbox(category, "useKeyRoll", "쐐기돌 굴림 알림", "던전 클리어 후 쐐기돌을 굴리라는 알림을 보냅니다.", true)
-end)
+dodo.RegisterOption("편의기능.편의기능", function(category)
+    dodo.UI:SettingsCheckbox(category, "useKeyRoll", "쐐기돌 굴림 알림", "던전 클리어 후 쐐기돌을 굴리라는 알림을 보냅니다.", true)
+end, 7007)

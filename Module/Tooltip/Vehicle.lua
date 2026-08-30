@@ -102,19 +102,3 @@ local init_frame = CreateFrame("Frame")
 init_frame:RegisterEvent("PLAYER_LOGIN")
 init_frame:SetScript("OnEvent", on_event)
 
--- ==============================
--- 설정 등록
--- ==============================
-if dodo.RegisterEditModeSystemSetting then
-    dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.HudTooltip, {
-        {
-            name = "탈것 정보 표시",
-            get = function() return dodoDB and dodoDB.useTooltipMount ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.useTooltipMount = checked end
-                update_vehicle()
-            end,
-            disabled = function() return dodoDB and dodoDB.enableTooltip == false end,
-        }
-    })
-end

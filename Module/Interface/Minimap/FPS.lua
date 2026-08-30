@@ -1,0 +1,144 @@
+-- ==============================
+-- Inspired
+-- ==============================
+-- Simple FPS Ping (https://www.curseforge.com/wow/addons/simple-fps-ping)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
+---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
+local addonName, dodo = ...
+dodoDB = dodoDB or {}
+dodo.DB = dodo.DB or dodoDB
+
+local fps_frame = nil
+local fps_ticker = nil
+local fps_interval = 0
+local text_green, text_red, text_yellow
+local last_text = ""
+local init_frame = nil
+
+-- ==============================
+-- 캐싱
+-- ==============================
+local C_Timer = C_Timer
+local CreateFrame = CreateFrame
+local GetFramerate = GetFramerate
+local GetNetStats = GetNetStats
+local IsInInstance = IsInInstance
+local MinimapCluster = MinimapCluster
+local NineSliceUtil = NineSliceUtil
+local format = string.format
+
+-- ==============================
+-- UI 생성
+-- ==============================
+local function create_ui()
+    if fps_frame then return end
+
+    fps_frame = CreateFrame("Frame", "dodoFPSFrame", MinimapCluster)
+    fps_frame:SetSize(98, 16)
+    fps_frame:Hide()
+
+    if MinimapCluster then
+        fps_frame:SetPoint("TOPLEFT", MinimapCluster.BorderTop, "BOTTOMLEFT", 0, -2)
+    end
+
+    local border = CreateFrame("Frame", nil, fps_frame, "NineSliceCodeTemplate")
+    border:SetAllPoints(fps_frame)
+    border.layoutType = "UniqueCornersLayout"
+    border.layoutTextureKit = "ui-hud-minimap-button"
+    NineSliceUtil.ApplyLayout(border, NineSliceUtil.GetLayout(border.layoutType), border.layoutTextureKit)
+
+    fps_frame.text = border:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    fps_frame.text:SetPoint("RIGHT", border, "RIGHT", -5, 0)
+    fps_frame.text:SetJustifyH("RIGHT")
+end
+
+-- ==============================
+-- FPS / MS 업데이트
+-- ==============================
+local function update_fps_text()
+    if not fps_frame then return end
+    local fps = GetFramerate()
+    local _, _, latency = GetNetStats()
+    local fps_color = (fps >= 60) and text_green or (fps >= 30 and text_yellow or text_red)
+    local ms_color = (latency <= 100) and text_green or (latency <= 200 and text_yellow or text_red)
+
+    local current_text = format("|cff%s%.0f|r fps | |cff%s%d|r ms", fps_color, fps, ms_color, latency)
+    if last_text ~= current_text then
+        fps_frame.text:SetText(current_text)
+        last_text = current_text
+    end
+end
+
+local function update_fps_display()
+    create_ui()
+    if not fps_frame then return end
+
+    local is_enabled = (dodoDB and dodoDB.useFPSFrame ~= false)
+    if is_enabled then
+        fps_frame:Show()
+
+        local in_instance = IsInInstance()
+        local interval = in_instance and 2 or 1
+
+        if fps_ticker and fps_interval ~= interval then
+            fps_ticker:Cancel()
+            fps_ticker = nil
+            fps_interval = 0
+        end
+
+        if not fps_ticker then
+            fps_ticker = C_Timer.NewTicker(interval, update_fps_text)
+            fps_interval = interval
+        end
+
+        if init_frame then
+            init_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+        end
+    else
+        fps_frame:Hide()
+        if fps_ticker then
+            fps_ticker:Cancel()
+            fps_ticker = nil
+            fps_interval = 0
+        end
+        if init_frame then
+            init_frame:UnregisterEvent("PLAYER_ENTERING_WORLD")
+        end
+    end
+end
+
+dodo.UpdateFPSDisplay = update_fps_display
+dodo.UpdateMinimapFPSState = update_fps_display
+
+-- ==============================
+-- 이벤트 핸들러
+-- ==============================
+local function initialize()
+    local colors = dodo.Colors
+    if colors then
+        text_green  = colors.Green and colors.Green.hex:sub(3) or "00ff00"
+        text_red    = colors.Red and colors.Red.hex:sub(3) or "ff0000"
+        text_yellow = colors.Gold and colors.Gold.hex:sub(3) or "ffd100"
+    else
+        text_green, text_red, text_yellow = "00ff00", "ff0000", "ffd100"
+    end
+
+    if dodoDB.useFPSFrame == nil then dodoDB.useFPSFrame = true end
+    update_fps_display()
+end
+
+local function on_event(self, event)
+    if event == "PLAYER_LOGIN" then
+        initialize()
+    elseif event == "PLAYER_ENTERING_WORLD" then
+        update_fps_display()
+    end
+end
+
+init_frame = CreateFrame("Frame")
+init_frame:RegisterEvent("PLAYER_LOGIN")
+init_frame:SetScript("OnEvent", on_event)
+

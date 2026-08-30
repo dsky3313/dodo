@@ -128,7 +128,7 @@ end
 
 local original_disable_blizzard = oUF.DisableBlizzard
 function oUF:DisableBlizzard(unit)
-	if dodo and dodo.DB and dodo.DB.enableUnitframeModule == false then
+	if dodoDB and dodoDB.enableUnitframeModule == false then
 		original_disable_blizzard(self, unit)
 		return
 	end
@@ -232,10 +232,12 @@ local function create_style(self, unit)
 	local pHeight = self.pHeight or 10
 
 	-- 공통 기능 (설정에서 프레임별 on/off 가능)
-	if dodo.UnitframeCreatePower   then dodo.UnitframeCreatePower(self, unitKey) end
-	if dodo.UnitframeCreateAbsorb  then dodo.UnitframeCreateAbsorb(self, unitKey) end
-	if dodo.UnitframeCreateBuffs   then dodo.UnitframeCreateBuffs(self, uWidth, unitKey) end
-	if dodo.UnitframeCreateCastbar then dodo.UnitframeCreateCastbar(self, uWidth, unitKey) end
+	if dodo.UnitframeCreatePower      then dodo.UnitframeCreatePower(self, unitKey) end
+	if dodo.UnitframeCreateAbsorb     then dodo.UnitframeCreateAbsorb(self, unitKey) end
+	if dodo.UnitframeCreateBuffs      then dodo.UnitframeCreateBuffs(self, uWidth, unitKey) end
+	if dodo.UnitframeCreateDebuffs    then dodo.UnitframeCreateDebuffs(self, uWidth, unitKey) end
+	if dodo.UnitframeCreateCastbar    then dodo.UnitframeCreateCastbar(self, uWidth, unitKey) end
+	if dodo.UnitframeCreateIndicators then dodo.UnitframeCreateIndicators(self, unitKey) end
 
 	local showPower = self.showPower
 
@@ -289,14 +291,14 @@ local function create_ui()
 
 	for i = 1, 5 do
 		local bossFrame = oUF:Spawn('boss' .. i, 'dodoBossFrame' .. i)
-		bossFrame:SetPoint('TOPRIGHT', UIParent, 'TOPRIGHT', -300, -278 - (i - 1) * 70)
+		bossFrame:SetPoint('TOPLEFT', _G['Boss' .. i .. 'TargetFrame'], 'TOPLEFT', 20, -18)
 		table.insert(customFrames, bossFrame)
 	end
 end
 
 local function update_module_state()
-	if not dodo or not dodo.DB then return end
-	local isEnabled = (dodo.DB.enableUnitframeModule ~= false)
+	if not dodoDB then return end
+	local isEnabled = (dodoDB.enableUnitframeModule ~= false)
 
 	for _, frame in ipairs(customFrames) do
 		if frame then
@@ -369,12 +371,9 @@ initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:SetScript("OnEvent", function(self, event, arg1)
 	if event == "ADDON_LOADED" and arg1 == addonName then
 		dodoDB = dodoDB or {}
-		dodo.DB = dodo.DB or dodoDB
 	elseif event == "PLAYER_LOGIN" then
 		if isInitialized then return end
 		isInitialized = true
-
-		dodo.DB = dodo.DB or dodoDB or {}
 
 		create_ui()
 		update_module_state()
@@ -383,9 +382,9 @@ initFrame:SetScript("OnEvent", function(self, event, arg1)
 			dodo.RegisterEditModeModuleSetting("인터페이스", {
 				{
 					name = "유닛프레임",
-					get = function() return dodo.DB and dodo.DB.enableUnitframeModule ~= false end,
+					get = function() return dodoDB and dodoDB.enableUnitframeModule ~= false end,
 					set = function(checked)
-						if dodo.DB then dodo.DB.enableUnitframeModule = checked end
+						if dodoDB then dodoDB.enableUnitframeModule = checked end
 						update_module_state()
 					end
 				}
@@ -415,13 +414,13 @@ local function set_frames_edit_mode(alpha, mouseEnabled)
 end
 
 local function on_edit_mode_enter()
-	if dodo.DB and dodo.DB.enableUnitframeModule ~= false then
+	if dodoDB and dodoDB.enableUnitframeModule ~= false then
 		set_frames_edit_mode(EDIT_MODE_ALPHA, false)
 	end
 end
 
 local function on_edit_mode_exit()
-	if dodo.DB and dodo.DB.enableUnitframeModule ~= false then
+	if dodoDB and dodoDB.enableUnitframeModule ~= false then
 		set_frames_edit_mode(1, true)
 	end
 end

@@ -13,7 +13,6 @@ dodoDB = dodoDB or {}
 -- ==============================
 -- 캐싱
 -- ==============================
-local Checkbox = Checkbox
 local CreateFrame = CreateFrame
 local GameTooltip = GameTooltip
 local GetCVar = GetCVar
@@ -176,10 +175,8 @@ init:SetScript("OnEvent", on_login_event)
 -- ==============================
 -- 설정 등록
 -- ==============================
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
-    Checkbox(category, "useDeleteNow", "아이템 파괴 간소화", "아이템 파괴 확인창에서 확인 입력 없이 즉시 삭제합니다.", true, function(value)
+dodo.RegisterOption("편의기능.편의기능", function(category)
+    dodo.UI:SettingsCheckbox(category, "useDeleteNow", "아이템 파괴 간소화", "아이템 파괴 확인창에서 확인 입력 없이 즉시 삭제합니다.", true, function(value)
         set_hooks(value)
     end)
-end)
+end, 7004)

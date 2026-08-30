@@ -79,52 +79,51 @@ function dodo.UnitframeCreateBuffs(self, uWidth, unit)
 end
 
 -- ==============================
--- 설정 등록
+-- 약화효과 빌더
 -- ==============================
-local Enum_EditModeSystem_UnitFrame = (Enum and Enum.EditModeSystem and Enum.EditModeSystem.UnitFrame) or 3
-
-local BUFFS_SYSTEM_INDICES = {
-	player = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Player) or 1,
-	target = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Target) or 2,
-	boss   = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Boss) or 5,
-	focus  = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Focus) or 6,
+local DEBUFFS_DB_KEYS = {
+	player = "unitframeDebuffsPlayer",
+	target = "unitframeDebuffsTarget",
+	focus  = "unitframeDebuffsFocus",
+	boss   = "unitframeDebuffsBoss",
 }
 
-if dodo.RegisterEditModeSystemSetting then
-	for unit, sysIdx in pairs(BUFFS_SYSTEM_INDICES) do
-		local sysID = string_format("%d_%d", Enum_EditModeSystem_UnitFrame, sysIdx)
-		local dbKey = BUFFS_DB_KEYS[unit]
-		local default = BUFFS_DEFAULTS[unit]
-		dodo.RegisterEditModeSystemSetting(sysID, {
-			{
-				name = "버프 표시",
-				get = function()
-					if not dodoDB or not dbKey then return default or false end
-					local val = dodoDB[dbKey]
-					return val == nil and (default or false) or val
-				end,
-				set = function(checked)
-					if dodoDB and dbKey then dodoDB[dbKey] = checked end
-					local frameMap = {
-						player = dodo.PlayerFrame,
-						target = dodo.TargetFrame,
-						focus  = dodo.FocusFrame,
-					}
-					local frame = frameMap[unit]
-					if frame and frame.Buffs then
-						if checked then frame.Buffs:Show() else frame.Buffs:Hide() end
-					end
-					if unit == "boss" then
-						for i = 1, 5 do
-							local bFrame = _G["dodoBossFrame" .. i]
-							if bFrame and bFrame.Buffs then
-								if checked then bFrame.Buffs:Show() else bFrame.Buffs:Hide() end
-							end
-						end
-					end
-				end,
-				disabled = function() return dodo.DB and dodo.DB.enableUnitframeModule == false end
-			}
-		})
+local DEBUFFS_DEFAULTS = {
+	player = false, target = false, focus = false, boss = false,
+}
+
+local function is_debuffs_enabled(unit)
+	local dbKey = DEBUFFS_DB_KEYS[unit]
+	if not dbKey then return false end
+	if not dodoDB then return DEBUFFS_DEFAULTS[unit] or false end
+	local val = dodoDB[dbKey]
+	if val == nil then return DEBUFFS_DEFAULTS[unit] or false end
+	return val
+end
+
+function dodo.UnitframeCreateDebuffs(self, uWidth, unit)
+	if not BUFFS_UNITS[unit] then return end
+	if self.Debuffs then return end
+
+	local debuffs = self:CreateAuras({
+		initialAnchor = 'BOTTOMRIGHT',
+		growthX       = 'LEFT',
+		growthY       = 'UP',
+		layoutLimit   = uWidth,
+	})
+	debuffs:SetPoint('BOTTOMRIGHT', self, 'TOPRIGHT', 0, 24)
+	debuffs:SetSize(uWidth, 20)
+	debuffs.size           = 20
+	debuffs.showCount      = true
+	debuffs.elementSpacing = 1
+	debuffs.PostCreateButton = dodo.UnitframePostCreateButton
+	debuffs.__unitKey = unit
+
+	debuffs:AddGroup('HARMFUL', { maxFrameCount = 5 })
+
+	if not is_debuffs_enabled(unit) then
+		debuffs:Hide()
 	end
+
+	self.Debuffs = debuffs
 end

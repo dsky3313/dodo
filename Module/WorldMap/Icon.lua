@@ -20,7 +20,7 @@ local PinIcon = {
     bank     = { atlas = "Banker",                            name = "은행" },
     crafting = { atlas = "Professions-Crafting-Orders-Icon",  name = "주문제작" },
     delve    = { atlas = "poi-islands-table",                 name = "구렁" },
-    dummy    = { atlas = "Tormentors-Event",                  name = "허수아비" },
+    dummy    = { atlas = "Tormentors-Event",                  name = "허수아비", scale = 1.3 },
     inn      = { atlas = "Innkeeper",                         name = "여관" },
     portal_t = { atlas = "TaxiNode_Continent_Alliance_Timed", name = "차원문" },
     tier     = { atlas = "CreationCatalyst-32x32",            name = "티어변환" },
@@ -88,7 +88,8 @@ local function update_pin_sizes()
     for _, mapPins in pairs(pins) do
         for _, pin in ipairs(mapPins) do
             if pin:IsShown() then
-                pin:SetSize(size, size)
+                local s = size * (pin.pinScale or 1)
+                pin:SetSize(s, s)
             end
         end
     end
@@ -163,6 +164,7 @@ local function create_pins()
                 pin:SetSize(PinConfig.size, PinConfig.size)
                 pin:SetFrameLevel(2200)
                 pin.pinName  = def.name or def.icon.name
+                pin.pinScale = def.icon.scale or 1
                 pin.pinMapID = mapID
                 pin.pinX     = def.x
                 pin.pinY     = def.y

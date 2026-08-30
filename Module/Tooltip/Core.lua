@@ -36,17 +36,12 @@ init_frame:RegisterEvent("PLAYER_LOGIN")
 init_frame:SetScript("OnEvent", on_event)
 
 -- ==============================
--- 에딧모드 모듈 마스터 토글 등록
+-- 설정 등록
 -- ==============================
-if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("편의기능", {
-        {
-            name = "툴팁",
-            get = function() return dodoDB and dodoDB.enableTooltip ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.enableTooltip = checked end
-                dodo.UpdateTooltipAll()
-            end
-        }
-    })
-end
+dodo.RegisterOption("인터페이스.툴팁", function(category)
+    dodo.UI:SettingsCheckbox(category, "useTooltipHealthHide", "체력바 숨기기",  "", true, dodo.UpdateTooltipStatusBar)
+    dodo.UI:SettingsCheckbox(category, "useTooltipColor",      "색상 변경",      "", true, nil)
+    dodo.UI:SettingsCheckbox(category, "useTooltipID",         "ID 표시",        "", true, nil)
+    dodo.UI:SettingsCheckbox(category, "useTooltipIcon",       "아이콘 표시",    "", true, nil)
+    dodo.UI:SettingsCheckbox(category, "useTooltipMount",      "탈것 정보 표시", "", true, nil)
+end, 3900)

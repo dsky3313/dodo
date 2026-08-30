@@ -131,7 +131,6 @@ event_frame:SetScript("OnEvent", on_event)
 -- ==============================
 -- 설정 등록
 -- ==============================
-
 local function toggle_character_frame(checked)
     if checked then
         event_frame:RegisterEvent("UNIT_INVENTORY_CHANGED")
@@ -147,8 +146,6 @@ local function toggle_character_frame(checked)
     update_all_character_slots()
 end
 
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
-    Checkbox(category, "enableCharacterFrame", "아이템 레벨 및 마법부여", "캐릭터창과 가방에 아이템 레벨, 마법부여, 보석 정보를 표시합니다.", true, toggle_character_frame)
-end)
+dodo.RegisterOption("편의기능.편의기능", function(category)
+    dodo.UI:SettingsCheckbox(category, "enableCharacterFrame", "아이템 레벨 및 마법부여", "캐릭터창과 가방에 아이템 레벨, 마법부여, 보석 정보를 표시합니다.", true, toggle_character_frame)
+end, 7001)

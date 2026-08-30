@@ -127,6 +127,8 @@ local function initialize()
     update_visual()
 end
 
+dodo.GossipFrame.UpdateKeystoneLindormi = update_visual
+
 -- ==============================
 -- 이벤트 핸들러
 -- ==============================
@@ -156,13 +158,3 @@ event_frame:RegisterEvent("ADDON_LOADED")
 event_frame:RegisterEvent("PLAYER_LOGIN")
 event_frame:SetScript("OnEvent", on_event)
 
--- ==============================
--- 설정 등록
--- ==============================
-local Checkbox = Checkbox
-
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.NPC 대화"] = dodo.OptionRegistrations["인터페이스.NPC 대화"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.NPC 대화"], function(category)
-    Checkbox(category, "enableKeystoneLindormi", "린도르미 현재돌", "린도르미 NPC 대화창에 보유 쐐기돌 정보를 표시합니다.", true, update_visual)
-end)

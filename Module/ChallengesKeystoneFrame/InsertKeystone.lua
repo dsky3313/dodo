@@ -172,8 +172,6 @@ init_frame:SetScript("OnEvent", on_init_event)
 -- ==============================
 -- 설정 등록
 -- ==============================
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
-    Checkbox(category, "enableChallengesAutoInsert", "쐐기돌 자동 삽입", "쐐기돌 패널이 열릴 때 가방의 쐐기돌을 자동으로 슬롯에 삽입합니다.", true, update_visual)
-end)
+dodo.RegisterOption("편의기능.편의기능", function(category)
+    dodo.UI:SettingsCheckbox(category, "enableChallengesAutoInsert", "쐐기돌 자동 삽입", "쐐기돌 패널이 열릴 때 가방의 쐐기돌을 자동으로 슬롯에 삽입합니다.", true, update_visual)
+end, 7002)

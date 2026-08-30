@@ -29,7 +29,6 @@ end
 -- ABC 순 정렬
 local BNET_CLIENT_WOW = BNET_CLIENT_WOW
 local C_BattleNet = C_BattleNet
-local Checkbox = Checkbox
 local C_ClassColor = C_ClassColor
 local C_CreatureInfo = C_CreatureInfo
 local C_FriendList = C_FriendList
@@ -266,10 +265,8 @@ init_friends:SetScript("OnEvent", on_event)
 -- ==============================
 -- 설정 등록
 -- ==============================
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
-    Checkbox(category, "useFriends", "친구창+", "친구 목록에 클래스 색상 및 추가 정보를 표시합니다.", true, function()
+dodo.RegisterOption("편의기능.편의기능", function(category)
+    dodo.UI:SettingsCheckbox(category, "useFriends", "친구창+", "친구 목록에 클래스 색상 및 추가 정보를 표시합니다.", true, function()
         refresh_friends()
     end)
-end)
+end, 7005)

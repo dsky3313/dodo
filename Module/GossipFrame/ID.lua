@@ -81,6 +81,8 @@ local function refresh_gossip()
     end
 end
 
+GF.UpdateID = refresh_gossip
+
 -- ==============================
 -- 초기화
 -- ==============================
@@ -97,13 +99,3 @@ end
 
 init_frame:SetScript("OnEvent", on_init_event)
 
--- ==============================
--- 설정 등록
--- ==============================
-local Checkbox = Checkbox
-
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.NPC 대화"] = dodo.OptionRegistrations["인터페이스.NPC 대화"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.NPC 대화"], function(category)
-    Checkbox(category, "enableGossipID", "ID 표시", "NPC 대화창 선택지·퀘스트에 ID를 표시합니다.", true, refresh_gossip)
-end)

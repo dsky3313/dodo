@@ -192,7 +192,7 @@ if dodo.RegisterEditModeSystemSetting then
 					local frame = frameMap[unit]
 					if frame and frame.Health then frame.Health:ForceUpdate() end
 				end,
-				disabled = function() return dodo.DB and dodo.DB.enableUnitframeModule == false end
+				disabled = function() return dodoDB and dodoDB.enableUnitframeModule == false end
 			}
 		})
 	end

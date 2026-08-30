@@ -12,7 +12,7 @@ dodoDB = dodoDB or {}
 
 local Config = {
 	defaultSize = 16,
-	defaultX = 4,
+	defaultX = 3,
 	defaultY = 8,
 	defaultIconAnchor = "TOPLEFT",
 	defaultFrameAnchor = "TOPLEFT",

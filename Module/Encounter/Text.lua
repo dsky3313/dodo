@@ -147,6 +147,8 @@ local function refresh_rows()
     reposition_rows()
 end
 
+dodo.EncounterRefreshText = refresh_rows
+
 hide_alert = function(eventID)
     for i, entry in ipairs(active_alerts) do
         if entry.eventID == eventID then

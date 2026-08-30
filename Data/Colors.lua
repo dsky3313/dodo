@@ -125,6 +125,19 @@ dodo.Colors = {
     HealthColorExpiring = { r = 0.80, g = 0.20, b = 0.20, hex = "ffcc3333" },
     },
 
+    NamePlate = {
+    Boss                = { r = 0.80, g = 0.20, b = 1.00, hex = "ffcc33ff" },
+    MiniBoss            = { r = 0.20, g = 0.40, b = 1.00, hex = "ff3366ff" },
+    Caster              = { r = 0.00, g = 0.80, b = 1.00, hex = "ff00ccff" },
+    Standard            = { r = 0.80, g = 0.60, b = 1.00, hex = "ffcc99ff" },
+    TankOnOtherTank     = { r = 0.28, g = 0.59, b = 1.00, hex = "ff4796ff" },
+    Focus               = { r = 1.00, g = 0.30, b = 0.90, hex = "ffff4de6" },
+    CastStandard        = { r = 1.00, g = 0.70, b = 0.00, hex = "ffffb300" },
+    CastImportant       = { r = 1.00, g = 0.00, b = 1.00, hex = "ffff00ff" },
+    CastUninterruptible = { r = 0.28, g = 0.28, b = 0.28, hex = "ff474747" },
+    DispelGlow          = { r = 0.00, g = 0.50, b = 1.00, hex = "ff0080ff" },
+    },
+
     EncounterColor = { -- 보스 인카운터 타임라인 색상 (EXBoss 기본 색상)
     Tank     = { r = 0.78, g = 0.61, b = 0.43, hex = "ffc79c6e" }, -- Class.WARRIOR
     Heal     = { r = 0.00, g = 1.00, b = 0.60, hex = "ff00ff96" }, -- Class.MONK

@@ -15,7 +15,7 @@ local Config = {
     iconPositionX = 465,
     iconPositionY = 2,
     iconPadding   = 2,
-    iconsize      = {45, 45},
+    iconsize      = {46, 46},
     fontsize      = 12,
     soundPath     = "Interface\\AddOns\\" .. addonName .. "\\Media\\Sound\\Blood.mp3",
 }
@@ -200,6 +200,22 @@ local function apply_icons()
     brez_desat_cache = false
 end
 
+local function apply_size()
+    local sz  = (dodoDB and dodoDB.blbrIconSize)    or 46
+    local pad = (dodoDB and dodoDB.blbrIconPadding) or 2
+    Config.iconsize[1] = sz
+    Config.iconsize[2] = sz
+    Config.iconPadding = pad
+    if not main_frame then return end
+    main_frame:SetSize(sz * 2 + pad, sz)
+    if blood_icon then blood_icon:SetSize(sz, sz) end
+    if brez_icon then
+        brez_icon:SetSize(sz, sz)
+        brez_icon:ClearAllPoints()
+        brez_icon:SetPoint("LEFT", blood_icon, "RIGHT", pad, 0)
+    end
+end
+
 -- ==============================
 -- 기능 3: UI 생성
 -- ==============================
@@ -248,11 +264,13 @@ local function on_event(self, event, arg1)
             dodo.EditMode:CreateSystem("BloodBrez", "블러드 & 전투부활", "블러드 & 전투부활", UIParent, 100, 50, { point = "BOTTOMLEFT", relativeTo = "UIParent", relativePoint = "BOTTOMLEFT", xOfs = Config.iconPositionX, yOfs = Config.iconPositionY }, nil, function() return dodoDB and dodoDB.useBloodBrez ~= false end)
         end
         create_ui()
+        apply_size()
         apply_icons()
         dodo.BloodBrez() -- 초기 설정 적용
         self:UnregisterEvent("PLAYER_LOGIN")
     elseif event == "PLAYER_ENTERING_WORLD" then
         create_ui()
+        apply_size()
         apply_icons()
         dodo.BloodBrez() -- 초기 설정 적용
     end
@@ -307,33 +325,38 @@ dodo.BloodBrez = function()
     update_ticker_and_events()
 end
 
-local SettingsPanel = SettingsPanel
-local CreateSettingsListSectionHeaderInitializer = CreateSettingsListSectionHeaderInitializer
-local Checkbox = Checkbox
+dodo.RegisterOption("전투 (미완^^;)", function(category)
+    dodo.UI:SettingsSectionHeader(category, "블러드 & 전투부활")
+    dodo.UI:SettingsCheckbox(category, "useBloodBrez", "블러드 & 전투부활", "블러드 & 전투부활", true, dodo.BloodBrez)
+end, 3500)
 
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["combat"] = dodo.OptionRegistrations["combat"] or {}
-table.insert(dodo.OptionRegistrations["combat"], function(category)
-    local layoutCombat = SettingsPanel:GetLayout(category)
-    if not layoutCombat then return end
-
-    layoutCombat:AddInitializer(CreateSettingsListSectionHeaderInitializer("블러드 & 전투부활"))
-    Checkbox(category, "useBloodBrez", "블러드 & 전투부활", "블러드 & 전투부활", true, dodo.BloodBrez)
-end)
-
-if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("전투", {
+if dodo.RegisterEditModeSystemSetting then
+    dodo.RegisterEditModeSystemSetting("BloodBrez", {
         {
-            name = "블러드 & 전투부활",
-            get = function()
-                return dodoDB and dodoDB.useBloodBrez ~= false
+            name   = "아이콘 크기",
+            type   = "slider",
+            get    = function() return dodoDB and dodoDB.blbrIconSize    or 46 end,
+            set    = function(val)
+                if dodoDB then dodoDB.blbrIconSize = val end
+                apply_size()
             end,
-            set = function(checked)
-                if dodoDB then
-                    dodoDB.useBloodBrez = checked
-                end
-                dodo.BloodBrez()
-            end
-        }
+            minVal = 30,
+            maxVal = 60,
+            step   = 2,
+            disabled = function() return dodoDB and dodoDB.useBloodBrez == false end,
+        },
+        {
+            name   = "아이콘 간격",
+            type   = "slider",
+            get    = function() return dodoDB and dodoDB.blbrIconPadding or 2 end,
+            set    = function(val)
+                if dodoDB then dodoDB.blbrIconPadding = val end
+                apply_size()
+            end,
+            minVal = 0,
+            maxVal = 10,
+            step   = 1,
+            disabled = function() return dodoDB and dodoDB.useBloodBrez == false end,
+        },
     })
 end

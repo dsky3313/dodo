@@ -19,7 +19,6 @@ local Config = {
 -- ==============================
 -- 캐싱
 -- ==============================
-local Checkbox          = Checkbox
 local ColorPickerFrame  = ColorPickerFrame
 local CreateColor       = CreateColor
 local CreateFrame       = CreateFrame
@@ -596,14 +595,12 @@ init_frame:SetScript("OnEvent", on_event)
 -- ==============================
 -- 설정 등록
 -- ==============================
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
-table_insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
-    Checkbox(category, "enableColorPicker", "색상 팔레트", "색상 선택기에 팔레트, 수치 입력 패널을 추가합니다.", true, function(checked)
+dodo.RegisterOption("편의기능.편의기능", function(category)
+    dodo.UI:SettingsCheckbox(category, "enableColorPicker", "색상 팔레트", "색상 선택기에 팔레트, 수치 입력 패널을 추가합니다.", true, function(checked)
         if checked and not created then
             init_palettes()
             create_ui()
         end
         update_visibility()
     end)
-end)
+end, 7003)

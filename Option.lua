@@ -5,9 +5,9 @@
 local addonName, dodo = ...
 
 local CreateFrame = CreateFrame
-local CreateSettingsListSectionHeaderInitializer = CreateSettingsListSectionHeaderInitializer
 local InCombatLockdown = InCombatLockdown
 local ipairs = ipairs
+local table_sort = table.sort
 local type = type
 local ReloadUI = ReloadUI
 local Settings = Settings
@@ -17,22 +17,8 @@ local SlashCmdList = SlashCmdList
 -- ==============================
 -- 디스플레이
 -- ==============================
--- 메인
 local mainCategory = Settings.RegisterVerticalLayoutCategory("dodo")
 Settings.RegisterAddOnCategory(mainCategory)
-
--- 하위
-local subCategoryAudio     = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "음성")
-local subCategoryInterface = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "인터페이스")
-local subCategoryCommands  = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "명령어")
-
--- 인터페이스 카테고리 섹션 순서 (헤더 관리 일괄화)
-local interface_sections = {
-    { key = "인터페이스.편의기능",  header = "편의기능"  },
-    { key = "인터페이스.모험안내서", header = "모험안내서" },
-    { key = "인터페이스.파티모집창", header = "파티모집창" },
-    { key = "인터페이스.NPC 대화",  header = "NPC 대화"  },
-}
 
 -- 설정창 → 편집모드 진입 (설정창 먼저 닫고 /ed 슬래시 재사용, 전투 가드 포함)
 local function open_edit_mode_from_options()
@@ -52,32 +38,36 @@ function dodoCreateOptions()
         main_layout:AddInitializer(CreateSettingsButtonInitializer("", "UI설정 열기", open_edit_mode_from_options, "dodo 모듈 편집이 포함된 편집모드를 엽니다.", false))
     end
 
-    local layout = SettingsPanel:GetLayout(subCategoryInterface)
-    if layout then
-        for _, section in ipairs(interface_sections) do
-            local funcs = dodo.OptionRegistrations[section.key]
-            if funcs and #funcs > 0 then
-                layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(section.header))
-                for _, fn in ipairs(funcs) do
-                    if type(fn) == "function" then fn(subCategoryInterface) end
-                end
+    -- subCategory 캐시 (중복 생성 방지)
+    local subCats = {}
+    local function get_subcat(name)
+        if not subCats[name] then
+            subCats[name] = Settings.RegisterVerticalLayoutSubcategory(mainCategory, name)
+        end
+        return subCats[name]
+    end
+
+    -- SectionHeader 중복 방지
+    local rendered_headers = {}
+
+    -- 새 등록 API (_optionRegistry)
+    table_sort(dodo._optionRegistry, function(a, b) return a.order < b.order end)
+    for _, entry in ipairs(dodo._optionRegistry) do
+        local dot = entry.path:find(".", 1, true)
+        if dot then
+            local parent = entry.path:sub(1, dot - 1)
+            local header = entry.path:sub(dot + 1)
+            local subCat = get_subcat(parent)
+            if not rendered_headers[entry.path] then
+                dodo.UI:SettingsSectionHeader(subCat, header)
+                rendered_headers[entry.path] = true
             end
+            entry.build(subCat)
+        else
+            entry.build(get_subcat(entry.path))
         end
     end
 
-    local audio_funcs = dodo.OptionRegistrations["음성"]
-    if audio_funcs then
-        for _, fn in ipairs(audio_funcs) do
-            if type(fn) == "function" then fn(subCategoryAudio) end
-        end
-    end
-
-    local commands_funcs = dodo.OptionRegistrations["명령어"]
-    if commands_funcs then
-        for _, fn in ipairs(commands_funcs) do
-            if type(fn) == "function" then fn(subCategoryCommands) end
-        end
-    end
 end
 
 -- ==============================
@@ -112,4 +102,3 @@ end
 SLASH_dodo1 = "/dd"
 SLASH_dodo2 = "/ㅇㅇ"
 SlashCmdList["dodo"] = dodo.OpenOptions
-

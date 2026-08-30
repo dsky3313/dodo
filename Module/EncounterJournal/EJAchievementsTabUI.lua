@@ -979,15 +979,3 @@ ef:SetScript("OnEvent", on_ej_event)
 
 if _G.EncounterJournal then ensure_ui() end
 
--- ==============================
--- 설정 등록
--- ==============================
-local function update_achievements_enabled()
-    M.SetEnabled(dodoDB.enableEJAchievements ~= false)
-end
-
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.모험안내서"] = dodo.OptionRegistrations["인터페이스.모험안내서"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.모험안내서"], function(category)
-    Checkbox(category, "enableEJAchievements", "업적 탭 활성화", "모험 안내서에 업적 탭을 추가합니다.", true, update_achievements_enabled)
-end)

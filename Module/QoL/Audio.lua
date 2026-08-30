@@ -163,9 +163,6 @@ audio_frame:SetScript("OnEvent", on_event)
 -- ==============================
 -- 설정 등록
 -- ==============================
-local Checkbox = Checkbox
-local CheckBoxDropDown = CheckBoxDropDown
-
 local function on_audio_sync_change(checked)
     update_event_registration()
     if checked then
@@ -185,10 +182,8 @@ local function on_encounter_victory_change(checked)
     if checked then play_encounter_victory_sound() end
 end
 
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["음성"] = dodo.OptionRegistrations["음성"] or {}
-table.insert(dodo.OptionRegistrations["음성"], function(category)
-    Checkbox(category, "useAudioSync", "출력장치 동기화", "출력장치 변경 시 오디오를 자동 동기화합니다.", true, on_audio_sync_change)
-    CheckBoxDropDown(category, "useSoundEncounterStart", "useSoundEncounterStart_soundID", "보스전 시작", "보스전 시작 시 효과음을 재생합니다.", sound_encounter_start_table, true, "16971", on_encounter_start_change)
-    CheckBoxDropDown(category, "useSoundEncounterVictory", "useSoundEncounterVictory_soundID", "보스전 승리", "보스전 승리 시 효과음을 재생합니다.", sound_encounter_victory_table, true, "38352", on_encounter_victory_change)
-end)
+dodo.RegisterOption("음성", function(category)
+    dodo.UI:SettingsCheckbox(category, "useAudioSync", "출력장치 동기화", "출력장치 변경 시 오디오를 자동 동기화합니다.", true, on_audio_sync_change)
+    dodo.UI:SettingsCheckboxDropDown(category, "useSoundEncounterStart", "useSoundEncounterStart_soundID", "보스전 시작", "보스전 시작 시 효과음을 재생합니다.", sound_encounter_start_table, true, "16971", on_encounter_start_change)
+    dodo.UI:SettingsCheckboxDropDown(category, "useSoundEncounterVictory", "useSoundEncounterVictory_soundID", "보스전 승리", "보스전 승리 시 효과음을 재생합니다.", sound_encounter_victory_table, true, "38352", on_encounter_victory_change)
+end, 6900)

@@ -6,14 +6,10 @@ local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
 local CreateFrame = CreateFrame
-local Enum = Enum
 local issecretvalue = issecretvalue or function() return false end
-local pairs = pairs
-local string_format = string.format
 local UnitClass = UnitClass
 local UnitPowerMax = UnitPowerMax
 local UnitPowerType = UnitPowerType
-local _G = _G
 
 -- ==============================
 -- 설정 테이블
@@ -84,7 +80,7 @@ function dodo.UnitframeCreatePower(self, unit)
 	-- 플레이어 전용: 마나 2차 자원 처리
 	if unit == 'player' then
 		self.Power.GetDisplayPower = function(element, u)
-			if dodo and dodo.DB and dodo.DB.unitframePowerOnlyMana == false then return nil end
+			if dodoDB and dodoDB.unitframePowerOnlyMana == false then return nil end
 			local powerType = UnitPowerType('player')
 			local _, classFile = UnitClass('player')
 			if (classFile == "PRIEST" or classFile == "SHAMAN" or classFile == "DRUID") then
@@ -119,7 +115,7 @@ function dodo.UnitframeCreatePower(self, unit)
 				end
 			end
 			local showBar = false
-			if dodo and dodo.DB and dodo.DB.unitframePowerOnlyMana == false then
+			if dodoDB and dodoDB.unitframePowerOnlyMana == false then
 				showBar = true
 			else
 				if powerType == 0 or isManaSecondary then showBar = true end
@@ -134,54 +130,5 @@ function dodo.UnitframeCreatePower(self, unit)
 
 	if POWER_RESERVE_SPACE[unit] or is_power_enabled(unit) then
 		self.showPower = true
-	end
-end
-
--- ==============================
--- 설정 등록
--- ==============================
-local Enum_EditModeSystem_UnitFrame = (Enum and Enum.EditModeSystem and Enum.EditModeSystem.UnitFrame) or 3
-
-local POWER_SYSTEM_INDICES = {
-	player = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Player) or 1,
-	target = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Target) or 2,
-	boss   = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Boss) or 5,
-	focus  = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Focus) or 6,
-}
-
-if dodo.RegisterEditModeSystemSetting then
-	for unit, sysIdx in pairs(POWER_SYSTEM_INDICES) do
-		local sysID = string_format("%d_%d", Enum_EditModeSystem_UnitFrame, sysIdx)
-		local dbKey = POWER_DB_KEYS[unit]
-		local default = POWER_DEFAULTS[unit]
-		dodo.RegisterEditModeSystemSetting(sysID, {
-			{
-				name = "자원 바",
-				get = function()
-					if not dodoDB or not dbKey then return default or false end
-					local val = dodoDB[dbKey]
-					return val == nil and (default or false) or val
-				end,
-				set = function(checked)
-					if dodoDB and dbKey then dodoDB[dbKey] = checked end
-					local frameMap = {
-						player = dodo.PlayerFrame,
-						target = dodo.TargetFrame,
-						focus  = dodo.FocusFrame,
-					}
-					local frame = frameMap[unit]
-					if frame and frame.Power then
-						frame.Power:ForceUpdate()
-					end
-					if unit == "boss" then
-						for i = 1, 5 do
-							local bFrame = _G["dodoBossFrame" .. i]
-							if bFrame and bFrame.Power then bFrame.Power:ForceUpdate() end
-						end
-					end
-				end,
-				disabled = function() return dodo.DB and dodo.DB.enableUnitframeModule == false end
-			}
-		})
 	end
 end

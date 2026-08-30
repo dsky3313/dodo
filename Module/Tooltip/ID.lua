@@ -175,20 +175,4 @@ local init_frame = CreateFrame("Frame")
 init_frame:RegisterEvent("PLAYER_LOGIN")
 init_frame:SetScript("OnEvent", on_event)
 
--- ==============================
--- 설정 등록
--- ==============================
-if dodo.RegisterEditModeSystemSetting then
-    dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.HudTooltip, {
-        {
-            name = "ID 표시",
-            get = function() return dodoDB and dodoDB.useTooltipID ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.useTooltipID = checked end
-                update_id()
-            end,
-            disabled = function() return dodoDB and dodoDB.enableTooltip == false end,
-        }
-    })
-end
 

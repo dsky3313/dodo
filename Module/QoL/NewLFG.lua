@@ -40,7 +40,6 @@ local ipairs = ipairs
 local PlaySound = PlaySound
 local PlaySoundFile = PlaySoundFile
 local PVEFrame_ShowFrame = PVEFrame_ShowFrame
-local table = table
 local tonumber = tonumber
 local type = type
 local UnitIsGroupLeader = UnitIsGroupLeader
@@ -167,14 +166,11 @@ init_frame:SetScript("OnEvent", on_event)
 armed_at = GetTime() + 2
 
 -- ==============================
--- 외부 노출 (Option.lua용)
+-- 설정 등록
 -- ==============================
 dodo.UpdateNewLFG = update_registration
 dodo.NewLFG = play_lfg_alert
 
--- ==============================
--- 외부 노출 및 설정 동적 등록 (Option.lua 연동)
--- ==============================
 local setting_parent = nil
 local setting_child = nil
 
@@ -193,18 +189,9 @@ local function is_parent_active()
     return true
 end
 
-local SettingsPanel = SettingsPanel
-local Checkbox = Checkbox
-local CheckBoxDropDown = CheckBoxDropDown
-
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["음성"] = dodo.OptionRegistrations["음성"] or {}
-table.insert(dodo.OptionRegistrations["음성"], function(category)
-    local layout = SettingsPanel:GetLayout(category)
-    if not layout then return end
-
+dodo.RegisterOption("음성", function(category)
     local init_parent_lfg
-    setting_parent, _, init_parent_lfg = CheckBoxDropDown(
+    setting_parent, _, init_parent_lfg = dodo.UI:SettingsCheckboxDropDown(
         category,
         "useNewLFG",
         "soundID",
@@ -217,12 +204,12 @@ table.insert(dodo.OptionRegistrations["음성"], function(category)
     )
 
     local init_child_lfg
-    setting_child, init_child_lfg = Checkbox(
-        category, 
-        "useNewLFGLeader", 
+    init_child_lfg, setting_child = dodo.UI:SettingsCheckbox(
+        category,
+        "useNewLFGLeader",
         "파티원 기능 활성화",
-        "파티장원일 경우에도 활성화합니다. ", 
-        true, 
+        "파티원일 경우에도 활성화합니다. ",
+        true,
         play_lfg_alert
     )
 
@@ -230,4 +217,4 @@ table.insert(dodo.OptionRegistrations["음성"], function(category)
         setting_parent:SetValueChangedCallback(on_parent_changed)
         init_child_lfg:SetParentInitializer(init_parent_lfg, is_parent_active)
     end
-end)
+end, 6901)

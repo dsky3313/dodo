@@ -106,3 +106,12 @@ if try_install_hooks() then
     event_frame:UnregisterEvent("ADDON_LOADED")
     event_frame:UnregisterEvent("PLAYER_LOGIN")
 end
+
+-- ==============================
+-- 설정 등록
+-- ==============================
+dodo.RegisterOption("편의기능.NPC 대화창", function(category)
+    dodo.UI:SettingsCheckbox(category, "enableGossipID",        "NPC ID 표시",     "NPC 대화창 선택지·퀘스트에 ID를 표시합니다.", true, dodo.GossipFrame.UpdateID)
+    dodo.UI:SettingsCheckbox(category, "enableGossipAutoSelect", "NPC 자동 선택",   "M+ 던전 버프 NPC 대화를 자동으로 선택합니다.", true, nil)
+    dodo.UI:SettingsCheckbox(category, "enableKeystoneLindormi", "린도르미 현재돌", "린도르미 NPC 대화창에 보유 쐐기돌 정보를 표시합니다.", true, dodo.GossipFrame.UpdateKeystoneLindormi)
+end, 7700)

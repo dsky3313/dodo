@@ -12,10 +12,12 @@ dodoDB = dodoDB or {}
 
 local PRESET_IDS = {
     138618, 136301, 136271, 136316, 136280, 136624, -- 사론 포로구출
-    107065, 107081, 107082, 107083, 107088,         -- 알게타르 대학
-    137133,                                         -- 공결탑 제나스
-    107387, 107428, 137387,                         -- 마이사라동굴
 
+    107065, 107081, 107082, 107083, 107088, -- 알게타르 대학
+
+    137133, -- 공결탑 제나스
+    107387, 107428, 137387,  -- 마이사라동굴
+    131567, -- 죽음의 골짜기
     135865, -- 구렁 (대학 대소동)
 
     36888, -- 한여름 불꽃축제 (아훈 소환)
@@ -155,13 +157,3 @@ end
 
 init_frame:SetScript("OnEvent", on_init_event)
 
--- ==============================
--- 설정 등록
--- ==============================
-local Checkbox = Checkbox
-
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.NPC 대화"] = dodo.OptionRegistrations["인터페이스.NPC 대화"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.NPC 대화"], function(category)
-    Checkbox(category, "enableGossipAutoSelect", "자동 선택", "M+ 던전 버프 NPC 대화를 자동으로 선택합니다.", true, nil)
-end)

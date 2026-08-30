@@ -201,10 +201,6 @@ dodo.BrowseGroup = toggle_events
 -- ==============================
 -- 설정 등록
 -- ==============================
-local Checkbox = Checkbox
-
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.파티모집창"] = dodo.OptionRegistrations["인터페이스.파티모집창"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.파티모집창"], function(category)
-    Checkbox(category, "useBrowseGroup", "파티 탐색하기 버튼", "파티 탐색하기 / 파티로 돌아가기 버튼을 표시합니다.", true, dodo.BrowseGroup)
-end)
+dodo.RegisterOption("편의기능.파티모집창", function(category)
+    dodo.UI:SettingsCheckbox(category, "useBrowseGroup", "파티 탐색하기 버튼", "파티 탐색하기 / 파티로 돌아가기 버튼을 표시합니다.", true, dodo.BrowseGroup)
+end, 7600)

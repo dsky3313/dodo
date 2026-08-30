@@ -5,10 +5,8 @@ claude --dangerously-skip-permissions
 모듈 off시, 모듈 정지 및 백그라운드에서 작동하는지, 자원소모 하는지 확인.
 혹시 성능상 문제가 될만한 부분 제시.
 
-RegisterEditModeModuleSetting
+
 LEM
 RegisterEditModeSystemSetting
-OptionRegistrations
 
-AddInitializer
-
+dodo.RegisterOption

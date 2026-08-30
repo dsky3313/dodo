@@ -143,6 +143,8 @@ local function apply_sounds()
     current_events = all_events
 end
 
+dodo.EncounterApplySounds = apply_sounds
+
 -- ==============================
 -- 이벤트 핸들러
 -- ==============================

@@ -326,9 +326,6 @@ initFrame:SetScript("OnEvent", on_event)
 -- ==============================
 dodo.QuickSelectUpdate = update_visual
 
-local Checkbox = Checkbox
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.파티모집창"] = dodo.OptionRegistrations["인터페이스.파티모집창"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.파티모집창"], function(category)
-    Checkbox(category, "enableQuickselect", "파티만들기 빠른선택", "파티 만들기 창에서 던전 빠른선택 버튼을 표시합니다.", true, dodo.QuickSelectUpdate)
-end)
+dodo.RegisterOption("편의기능.파티모집창", function(category)
+    dodo.UI:SettingsCheckbox(category, "enableQuickselect", "파티만들기 빠른선택", "파티 만들기 창에서 던전 빠른선택 버튼을 표시합니다.", true, dodo.QuickSelectUpdate)
+end, 7602)

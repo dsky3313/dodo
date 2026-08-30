@@ -124,9 +124,9 @@ main_frame:SetScript("OnEvent", on_event)
 -- 설정 등록
 -- ==============================
 dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
-    Checkbox(category, "enableExpFilter", "확장팩 필터", "경매장/주문 제작창을 열 때 자동으로 현재 확장팩 필터를 적용합니다.", true, function(value)
+dodo.OptionRegistrations["편의기능.인터페이스"] = dodo.OptionRegistrations["편의기능.인터페이스"] or {}
+table.insert(dodo.OptionRegistrations["편의기능.인터페이스"], function(category)
+    dodo.UI:SettingsCheckbox(category, "enableExpFilter", "확장팩 필터", "경매장/주문 제작창을 열 때 자동으로 현재 확장팩 필터를 적용합니다.", true, function(value)
         update_events()
         if value then apply_all_filters() end
     end)

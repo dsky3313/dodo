@@ -154,15 +154,3 @@ init_frame:RegisterEvent("PLAYER_LOGIN")
 init_frame:SetScript("OnEvent", on_event)
 if EncounterJournal_ToggleHeaders then setup_hooks() end
 
--- ==============================
--- 설정 등록
--- ==============================
-local function update_enabled()
-    M.SetEnabled(dodoDB.enableEJID ~= false)
-end
-
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.모험안내서"] = dodo.OptionRegistrations["인터페이스.모험안내서"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.모험안내서"], function(category)
-    Checkbox(category, "enableEJID", "ID 표시", "모험 안내서에 우두머리와 능력의 ID를 표시합니다.", true, update_enabled)
-end)

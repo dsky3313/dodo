@@ -302,9 +302,6 @@ dodo.ESCTeleportFrame = esc_teleport_frame
 -- ==============================
 -- 설정 등록
 -- ==============================
-local Checkbox = Checkbox
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
-    Checkbox(category, "useTeleport", "던전 텔레포트 메뉴", "ESC 메뉴 옆에 던전 텔레포트 버튼을 표시합니다.", true, dodo.ESCTeleportFrame)
-end)
+dodo.RegisterOption("편의기능.편의기능", function(category)
+    dodo.UI:SettingsCheckbox(category, "useTeleport", "던전 텔레포트 메뉴", "ESC 메뉴 옆에 던전 텔레포트 버튼을 표시합니다.", true, dodo.ESCTeleportFrame)
+end, 7009)

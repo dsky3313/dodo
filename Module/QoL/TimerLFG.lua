@@ -13,7 +13,6 @@ dodoDB = dodoDB or {}
 -- ==============================
 -- 캐싱
 -- ==============================
-local Checkbox = Checkbox
 local CreateFrame = CreateFrame
 local GetTime = GetTime
 local LFGDungeonReadyPopup = LFGDungeonReadyPopup
@@ -172,10 +171,8 @@ initFrame:SetScript("OnEvent", on_event)
 -- ==============================
 -- 설정 등록
 -- ==============================
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
-    Checkbox(category, "enableLFGTimer", "던전찾기 타이머", "던전찾기 수락 팝업에 남은 시간 타이머를 표시합니다.", true, function()
+dodo.RegisterOption("편의기능.편의기능", function(category)
+    dodo.UI:SettingsCheckbox(category, "enableLFGTimer", "던전찾기 타이머", "던전찾기 수락 팝업에 남은 시간 타이머를 표시합니다.", true, function()
         update_visual()
     end)
-end)
+end, 7010)

@@ -280,7 +280,7 @@ if dodo.RegisterEditModeSystemSetting then
 					if dodoDB and dbKey then dodoDB[dbKey] = checked end
 					apply_castbar_state(unit)
 				end,
-				disabled = function() return dodo.DB and dodo.DB.enableUnitframeModule == false end
+				disabled = function() return dodoDB and dodoDB.enableUnitframeModule == false end
 			}
 		})
 	end

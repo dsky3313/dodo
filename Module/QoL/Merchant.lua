@@ -15,7 +15,6 @@ dodoDB = dodoDB or {}
 -- ==============================
 local CanGuildBankRepair = CanGuildBankRepair
 local CanMerchantRepair = CanMerchantRepair
-local Checkbox = Checkbox
 local format = string.format
 local GetGuildBankWithdrawMoney = GetGuildBankWithdrawMoney
 local GetGuildBankMoney = GetGuildBankMoney
@@ -82,8 +81,6 @@ hooksecurefunc(MerchantFrame, "Show", on_merchant_show)
 -- ==============================
 -- 설정 등록
 -- ==============================
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
-    Checkbox(category, "enableMerchant", "자동 판매 & 수리", "상인 창을 열 때 잡템 판매 및 장비 자동 수리를 진행합니다.", true, nil)
-end)
+dodo.RegisterOption("편의기능.편의기능", function(category)
+    dodo.UI:SettingsCheckbox(category, "enableMerchant", "자동 판매 & 수리", "상인 창을 열 때 잡템 판매 및 장비 자동 수리를 진행합니다.", true, nil)
+end, 7006)

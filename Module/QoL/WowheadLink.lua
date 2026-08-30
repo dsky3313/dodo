@@ -14,7 +14,6 @@ local lib_icon = dodo.LibIcon
 -- ==============================
 -- 캐싱
 -- ==============================
-local Checkbox = Checkbox
 local C_Timer = C_Timer
 local CreateFrame = CreateFrame
 local EventUtil = EventUtil
@@ -294,10 +293,8 @@ init_frame:SetScript("OnEvent", function(self, event)
     self:UnregisterAllEvents()
 end)
 
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
-    Checkbox(category, "useWowheadLink", "와우헤드 링크", "퀘스트·업적 창에 와우헤드 링크 입력창을 표시합니다.", true, function()
+dodo.RegisterOption("편의기능.편의기능", function(category)
+    dodo.UI:SettingsCheckbox(category, "useWowheadLink", "와우헤드 링크", "퀘스트·업적 창에 와우헤드 링크 입력창을 표시합니다.", true, function()
         WowheadLink()
     end)
-end)
+end, 7011)

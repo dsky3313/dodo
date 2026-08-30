@@ -156,7 +156,7 @@ dodo.Dungeons = {
     { name = "골짜기",   type = "spell", id = 1286801, category = "MN", mapID = 584, lfgID = 1701, isSeason = true },
     { name = "동굴",     type = "spell", id = 1254559, category = "MN", mapID = 560, lfgID = 1764 },
     { name = "마정",     type = "spell", id = 1254572, category = "MN", mapID = 558, lfgID = 1760 },
-    { name = "소굴",     type = "spell", id = 1286807, category = "MN", mapID = 646, lfgID = 1723, isSeason = true },
+    { name = "소굴",     type = "spell", id = 1286807, category = "MN", mapID = 586, lfgID = 1723, isSeason = true },
     { name = "송곳니",   type = "spell", id = 1286812, category = "MN", mapID = 588, lfgID = 1932, isSeason = true },
     { name = "제나스",   type = "spell", id = 1254563, category = "MN", mapID = 559, lfgID = 1768 },
     { name = "첨탑",     type = "spell", id = 1254400, category = "MN", mapID = 557, lfgID = 1542 },

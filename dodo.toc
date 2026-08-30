@@ -24,10 +24,9 @@ Libs/LibKeystone/LibKeystone/LibKeystone.lua
 # Data
 Data/Colors.lua
 Data/Icon.lua
-Data/OptionUI.xml
-Data/OptionUI.lua
+Data/UIUX.xml
+Data/UIUX.lua
 Data/Dungeons.lua
-Data/Widgets.lua
 
 # Editmode
 Module/Editmode/ModuleSettings.lua
@@ -35,14 +34,18 @@ Module/Editmode/SystemSettings.lua
 Module/Editmode/SystemSettingsPanel.lua
 
 # Actionbar
-Module/Actionbar/ActionBar.xml
-Module/Actionbar/Core.lua
-Module/Actionbar/IconColor.lua
-Module/Actionbar/IconText.lua
-Module/Actionbar/IconPadding.lua
-Module/Actionbar/OverlayCDM.lua
-Module/Actionbar/OverlayInterrupt.lua
-Module/Actionbar/OverlayPotion.lua
+Module/01 Actionbar/00 ActionBar.xml
+Module/01 Actionbar/01 Core.lua
+Module/01 Actionbar/02 IconPadding.lua
+Module/01 Actionbar/03 IconColor.lua
+Module/01 Actionbar/04 OverlayCDM.lua
+Module/01 Actionbar/05 OverlayInterrupt.lua
+Module/01 Actionbar/06 OverlayPotion.lua
+Module/01 Actionbar/07 IconText.lua
+Module/01 Actionbar/99 Options.lua
+
+
+Module/CursorSpellTracker/CursorSpellTracker.lua
 
 # CharacterFrame
 Module/CharacterFrame/Core.lua
@@ -53,11 +56,11 @@ Module/CharacterFrame/Enchant.lua
 Module/CharacterFrame/Gem.lua
 
 # ChatFrame
-Module/ChatFrame/Core.lua
-Module/ChatFrame/Font.lua
-Module/ChatFrame/GuildButton.lua
-# Module/ChatFrame/Short.lua
-Module/ChatFrame/URL.lua
+Module/Interface/ChatFrame/Core.lua
+Module/Interface/ChatFrame/Font.lua
+Module/Interface/ChatFrame/GuildButton.lua
+# Module/Interface/ChatFrame/Short.lua
+Module/Interface/ChatFrame/URL.lua
 
 # ChallengesKeystoneFrame
 Module/ChallengesKeystoneFrame/InsertKeystone.lua
@@ -66,11 +69,13 @@ Module/ChallengesKeystoneFrame/InsertKeystone.lua
 Module/Combat/BloodBrez.lua
 Module/Combat/Debuff.lua
 Module/Combat/Debuff.xml
+Module/Combat/Stance.lua
 
 # DamageMeter
-Module/DamageMeter/Core.lua
-Module/DamageMeter/Reset.lua
-Module/DamageMeter/Sync.lua
+Module/Interface/DamageMeter/Core.lua
+Module/Interface/DamageMeter/Reset.lua
+Module/Interface/DamageMeter/Sync.lua
+Module/Interface/DamageMeter/EnableAlways.lua
 
 # Encounter
 Module/Encounter/Core.lua
@@ -79,6 +84,7 @@ Module/Encounter/Sound.lua
 Module/Encounter/Text.lua
 #Module/Encounter/TimelineBar.lua
 Module/Encounter/TimelineColor.lua
+Module/Encounter/Options.lua
 
 # EncounterJournal
 Module/EncounterJournal/Core.lua
@@ -95,12 +101,12 @@ Module/GossipFrame/SelectAuto.lua
 Module/GossipFrame/KeystoneLindormi.lua
 
 # Minimap
-Module/Minimap/Core.lua
-Module/Minimap/FPS.lua
-Module/Minimap/IconAddons.lua
-Module/Minimap/MapCoords.lua
-Module/Minimap/Square.lua
-Module/Minimap/Zoom.lua
+Module/Interface/Minimap/Core.lua
+Module/Interface/Minimap/FPS.lua
+Module/Interface/Minimap/IconAddons.lua
+Module/Interface/Minimap/MinimapCoords.lua
+Module/Interface/Minimap/Square.lua
+Module/Interface/Minimap/Zoom.lua
 
 # PVEFrame
 Module/PVEFrame/BrowseGroup.lua
@@ -112,9 +118,7 @@ Module/QoL/Audio.lua
 Module/QoL/Camera.lua
 Module/QoL/ColorPicker.lua
 Module/QoL/ChatBubble.lua
-Module/QoL/CursorSpellTracker.lua
 Module/QoL/DeleteNow.lua
-Module/QoL/ExpFilter.lua
 Module/QoL/FrameOption.lua
 Module/QoL/Friends.lua
 Module/QoL/InsDifficulty.lua
@@ -124,8 +128,9 @@ Module/QoL/NewLFG.lua
 Module/QoL/QuickBobber.lua
 Module/QoL/Teleport.lua
 Module/QoL/TimerLFG.lua
+#Module/QoL/Token.lua
 Module/QoL/WMarker.lua
-Module/QoL/Stance.lua
+
 Module/QoL/WowheadLink.lua
 
 # ReadyCheck
@@ -146,14 +151,19 @@ Module/ResourceBar/BarMode/Stack.lua
 Module/ResourceBar/BarMode/Whirlwind.lua
 Module/ResourceBar/Power.lua
 Module/ResourceBar/Tracking.lua
+Module/ResourceBar/Options.lua
+
+# NamePlate
+# Module/Nameplate/Core.lua
+# Module/Nameplate/HealthColor.lua
 
 # Tooltip
-Module/Tooltip/Core.lua
-Module/Tooltip/Color.lua
-Module/Tooltip/Icon.lua
-Module/Tooltip/ID.lua
-Module/Tooltip/StatusBar.lua
-Module/Tooltip/Vehicle.lua
+#Module/Tooltip/Core.lua
+#Module/Tooltip/Color.lua
+#Module/Tooltip/Icon.lua
+#Module/Tooltip/ID.lua
+#Module/Tooltip/StatusBar.lua
+#Module/Tooltip/Vehicle.lua
 
 # Unitframe
 Module/Unitframe/Core.lua
@@ -165,11 +175,13 @@ Module/Unitframe/Unit/Player.lua
 Module/Unitframe/Unit/Target.lua
 Module/Unitframe/Unit/Boss.lua
 Module/Unitframe/Unit/ETC.lua
+Module/Unitframe/ETC/Indicator.lua
 Module/Unitframe/Party/AurasHealthColor.lua
 Module/Unitframe/Party/Leader.lua
 Module/Unitframe/Party/Overshield.lua
 #Module/Unitframe/Party/SoloMode.lua
 #Module/Unitframe/Raid/Anchor.lua
+Module/Unitframe/Options.lua
 
 # ObjectiveTracker
 Module/ObjectiveTracker/KeystoneTimer.lua
@@ -177,6 +189,7 @@ Module/ObjectiveTracker/KeystoneTimer.lua
 
 # WorldMap
 Module/WorldMap/Icon.lua
+Module/WorldMap/WorldMapCoords.lua
 
 # Configurations & Layout Anchoring (Last Load)
 Module/Slash.lua

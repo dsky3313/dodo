@@ -15,7 +15,6 @@ local lib_icon = dodo.LibIcon
 -- 캐싱
 -- ==============================
 local C_SpellBook = C_SpellBook
-local Checkbox = Checkbox
 local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
 
@@ -120,11 +119,9 @@ end
 -- ==============================
 -- 설정 등록
 -- ==============================
-dodo.OptionRegistrations = dodo.OptionRegistrations or {}
-dodo.OptionRegistrations["인터페이스.편의기능"] = dodo.OptionRegistrations["인터페이스.편의기능"] or {}
-table.insert(dodo.OptionRegistrations["인터페이스.편의기능"], function(category)
-    Checkbox(category, "useQuickBobber", "낚시찌 장난감", "직업 창이 열려 있을 때 낚시찌 아이템 버튼을 표시합니다.", true, function()
+dodo.RegisterOption("편의기능.편의기능", function(category)
+    dodo.UI:SettingsCheckbox(category, "useQuickBobber", "낚시찌 장난감", "직업 창이 열려 있을 때 낚시찌 아이템 버튼을 표시합니다.", true, function()
         update_events()
         quick_bobber()
     end)
-end)
+end, 7008)

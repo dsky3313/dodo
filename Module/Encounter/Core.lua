@@ -55,17 +55,3 @@ initFrame:RegisterEvent("ADDON_LOADED")
 initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:SetScript("OnEvent", on_event)
 
--- ==============================
--- 설정 등록
--- ==============================
-if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("전투", {
-        {
-            name = "우두머리 경보",
-            get = function() return dodoDB and dodoDB.enableEncounter ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.enableEncounter = checked end
-            end,
-        },
-    })
-end
