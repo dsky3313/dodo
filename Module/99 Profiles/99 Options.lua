@@ -70,7 +70,7 @@ dodo.RegisterOption("프로필", function(category)
         "", false
     ))
     layout:AddInitializer(CreateSettingsButtonInitializer(
-        "", "가져오기",
+        "", "편집모드 가져오기",
         function()
             HideUIPanel(SettingsPanel)
             EditModeManagerFrame:Show()
@@ -93,8 +93,20 @@ dodo.RegisterOption("프로필", function(category)
         "", false
     ))
     layout:AddInitializer(CreateSettingsButtonInitializer(
-        "", "플레이터",
-        function() end,
+        "", "플레이터 가져오기",
+        function()
+            if not (Plater and Plater.OpenOptionsPanel) then return end
+            Plater.OpenOptionsPanel(22)
+            local function try_import()
+                local f = _G["PlaterOptionsPanelContainerProfileManagement"]
+                if f and f.ImportProfile and not f.IsImporting then
+                    f.ImportProfile()
+                end
+            end
+            C_Timer.After(0.1, try_import)
+            C_Timer.After(0.5, try_import)
+            C_Timer.After(1.0, try_import)
+        end,
         "", false
     ))
 
