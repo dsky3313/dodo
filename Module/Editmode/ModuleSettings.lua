@@ -47,6 +47,7 @@ local CreateMinimalSliderFormatter = CreateMinimalSliderFormatter
 local EditModeManagerFrame = EditModeManagerFrame
 local EventRegistry = EventRegistry
 local hooksecurefunc = hooksecurefunc
+local C_Timer = C_Timer
 local ipairs = ipairs
 local issecretvalue = issecretvalue
 local math_abs = math.abs
@@ -70,6 +71,103 @@ function dodo.RegisterEditModeModuleSetting(categoryName, settingItems)
         registered_settings[categoryName] = {}
     end
     table_insert(registered_settings[categoryName], settingItems)
+end
+
+-- ==============================
+-- EditMode 시스템 설정 등록 API
+-- ==============================
+local pending_custom_settings   = {}
+local pending_blizzard_settings = {}
+
+local function is_custom_system(systemID)
+    if type(systemID) ~= "string" then return false end
+    if systemID:match("^%d+_%d+$") then return false end
+    if tonumber(systemID) then return false end
+    return true
+end
+
+local function convert_item(item, LEM)
+    if item.isSpacer then return nil end
+    local kind
+    if not item.type then
+        kind = LEM.SettingType.Checkbox
+    elseif item.type == "slider" then
+        kind = LEM.SettingType.Slider
+    elseif item.type == "dropdown" then
+        kind = LEM.SettingType.Dropdown
+    else
+        return nil
+    end
+    local default_val = item.get and item.get()
+    if default_val == nil then
+        default_val = (kind == LEM.SettingType.Checkbox) and false or (item.minVal or item.min or 0)
+    end
+    local entry = {
+        kind     = kind,
+        name     = item.name,
+        desc     = item.desc,
+        default  = default_val,
+        get      = function(layoutName) return item.get() end,
+        set      = function(layoutName, value, fromReset) item.set(value) end,
+        disabled = item.disabled,
+    }
+    if kind == LEM.SettingType.Slider then
+        entry.minValue  = item.minVal or item.min
+        entry.maxValue  = item.maxVal or item.max
+        entry.valueStep = item.step
+    elseif kind == LEM.SettingType.Dropdown then
+        entry.values    = item.values
+        entry.generator = item.generator
+    end
+    return entry
+end
+
+function dodo.RegisterEditModeSystemSetting(systemID, settingItems)
+    if is_custom_system(systemID) then
+        pending_custom_settings[systemID] = pending_custom_settings[systemID] or {}
+        table_insert(pending_custom_settings[systemID], settingItems)
+    else
+        pending_blizzard_settings[systemID] = pending_blizzard_settings[systemID] or {}
+        table_insert(pending_blizzard_settings[systemID], settingItems)
+    end
+end
+
+local function apply_pending_lem_settings()
+    local LEM = LibStub("LibEditMode")
+
+    for sysName, groups in pairs(pending_custom_settings) do
+        local frame = EditMode.systems and EditMode.systems[sysName]
+        if frame then
+            local flat = {}
+            for _, items in ipairs(groups) do
+                for _, item in ipairs(items) do
+                    local converted = convert_item(item, LEM)
+                    if converted then table_insert(flat, converted) end
+                end
+            end
+            if #flat > 0 then LEM:AddFrameSettings(frame, flat) end
+        end
+    end
+    pending_custom_settings = {}
+
+    for systemID, groups in pairs(pending_blizzard_settings) do
+        local flat = {}
+        for _, items in ipairs(groups) do
+            for _, item in ipairs(items) do
+                local converted = convert_item(item, LEM)
+                if converted then table_insert(flat, converted) end
+            end
+        end
+        if #flat > 0 then
+            if type(systemID) == "string" and systemID:match("^%d+_%d+$") then
+                local base, sub = systemID:match("^(%d+)_(%d+)$")
+                LEM:AddSystemSettings(tonumber(base), flat, tonumber(sub))
+            else
+                LEM:AddSystemSettings(systemID, flat)
+            end
+        end
+    end
+    pending_blizzard_settings = {}
 end
 
 -- ==============================
@@ -491,8 +589,6 @@ on_exit_edit_mode = function()
         EditMode.panel:Hide()
     end
 
-    -- dodo 모듈 편집 해제 시 세부설정창도 완벽히 동시 은닉
-    if EditMode.HideSystemWingPanel then EditMode.HideSystemWingPanel() end
 end
 
 on_checkbox_click = function(checked)
@@ -532,11 +628,15 @@ EditMode._on_exit  = on_exit_edit_mode
 -- ==============================
 local f = CreateFrame("Frame")
 f:RegisterEvent("ADDON_LOADED")
+f:RegisterEvent("PLAYER_LOGIN")
 
 f:SetScript("OnEvent", function(self, event, ...)
     local arg1 = ...
     if event == "ADDON_LOADED" and arg1 == addonName then
         dodoDB = dodoDB or {}
         dodoDB.editMode = dodoDB.editMode or {}
+    elseif event == "PLAYER_LOGIN" then
+        C_Timer.After(0, apply_pending_lem_settings)
+        self:UnregisterEvent("PLAYER_LOGIN")
     end
 end)

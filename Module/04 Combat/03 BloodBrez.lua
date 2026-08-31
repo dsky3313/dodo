@@ -325,37 +325,4 @@ dodo.BloodBrez = function()
     update_ticker_and_events()
 end
 
-dodo.RegisterOption("전투", function(category)
-    dodo.UI:SettingsCheckbox(category, "useBloodBrez", "블러드 & 전투부활", "블러드 & 전투부활", true, dodo.BloodBrez)
-end, 4030)
-
-if dodo.RegisterEditModeSystemSetting then
-    dodo.RegisterEditModeSystemSetting("BloodBrez", {
-        {
-            name   = "아이콘 크기",
-            type   = "slider",
-            get    = function() return dodoDB and dodoDB.blbrIconSize    or 46 end,
-            set    = function(val)
-                if dodoDB then dodoDB.blbrIconSize = val end
-                apply_size()
-            end,
-            minVal = 30,
-            maxVal = 60,
-            step   = 2,
-            disabled = function() return dodoDB and dodoDB.useBloodBrez == false end,
-        },
-        {
-            name   = "아이콘 간격",
-            type   = "slider",
-            get    = function() return dodoDB and dodoDB.blbrIconPadding or 2 end,
-            set    = function(val)
-                if dodoDB then dodoDB.blbrIconPadding = val end
-                apply_size()
-            end,
-            minVal = 0,
-            maxVal = 10,
-            step   = 1,
-            disabled = function() return dodoDB and dodoDB.useBloodBrez == false end,
-        },
-    })
-end
+dodo.BloodBrezApplySize = apply_size

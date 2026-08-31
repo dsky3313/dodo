@@ -31,7 +31,6 @@ Data/Dungeons.lua
 # Editmode
 Module/Editmode/ModuleSettings.lua
 Module/Editmode/SystemSettings.lua
-Module/Editmode/SystemSettingsPanel.lua
 
 # 01 Actionbar
 Module/01 Actionbar/00 ActionBar.xml
@@ -73,7 +72,6 @@ Module/04 Combat/01 ResourceBar/BarMode/Stack.lua
 Module/04 Combat/01 ResourceBar/BarMode/Whirlwind.lua
 Module/04 Combat/01 ResourceBar/Power.lua
 Module/04 Combat/01 ResourceBar/Tracking.lua
-Module/04 Combat/01 ResourceBar/Options.lua
 # Debuff
 Module/04 Combat/02 Debuff/Debuff.xml
 Module/04 Combat/02 Debuff/Debuff.lua
@@ -81,6 +79,27 @@ Module/04 Combat/02 Debuff/Debuff.lua
 Module/04 Combat/03 BloodBrez.lua
 # Stance
 Module/04 Combat/04 Stance.lua
+# Options
+Module/04 Combat/99 Options.lua
+
+
+
+
+
+
+# 99 Profiles
+Module/99 Profiles/01 Profile Editmode.lua
+Module/99 Profiles/02 Profile Plater.lua
+Module/99 Profiles/03 Profile CVar.lua
+Module/99 Profiles/99 Options.lua
+
+
+
+
+
+
+
+
 
 
 
@@ -196,6 +215,9 @@ Module/ObjectiveTracker/KeystoneTimer.lua
 # WorldMap
 Module/WorldMap/Icon.lua
 Module/WorldMap/WorldMapCoords.lua
+
+
+
 
 # Configurations & Layout Anchoring (Last Load)
 Module/Slash.lua

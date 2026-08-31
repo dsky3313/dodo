@@ -192,27 +192,10 @@ event_frame:SetScript("OnEvent", on_event)
 -- ==============================
 -- 설정 등록
 -- ==============================
-dodo.RegisterOption("전투", function(category)
-    dodo.UI:SettingsCheckbox(category, "enableStance", "태세 아이콘", "태세 아이콘", true, function(v)
-        if stance_icon then
-            if v then update_icon() else stance_icon:Hide() end
-        end
-    end)
-end, 4040)
-
-if dodo.RegisterEditModeSystemSetting then
-    dodo.RegisterEditModeSystemSetting("Stance", {
-        {
-            name   = "아이콘 크기",
-            type   = "slider",
-            get    = function() return dodoDB and dodoDB.stanceIconSize or 80 end,
-            set    = function(val)
-                dodoDB.stanceIconSize = val
-                apply_icon_size(val)
-            end,
-            minVal = 40,
-            maxVal = 100,
-            step   = 2,
-        },
-    })
+dodo.StanceApply = function(v)
+    if stance_icon then
+        if v then update_icon() else stance_icon:Hide() end
+    end
 end
+
+dodo.StanceApplyIconSize = apply_icon_size

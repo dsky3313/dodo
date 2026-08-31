@@ -67,7 +67,7 @@ function EditMode:CreateSystem(system_name, system_label, system_tooltip, parent
         point = (default_point and default_point.point) or "CENTER",
         x     = (default_point and default_point.xOfs) or 0,
         y     = (default_point and default_point.yOfs) or 0,
-    }, system_name)
+    }, system_label)
 
     local lem_selection = LEM.frameSelections and LEM.frameSelections[system]
     system.HighlightSystem = function(s)

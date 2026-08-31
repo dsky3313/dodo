@@ -12,7 +12,6 @@ local type = type
 local ReloadUI = ReloadUI
 local Settings = Settings
 local SettingsPanel = SettingsPanel
-local SlashCmdList = SlashCmdList
 
 -- ==============================
 -- 디스플레이
@@ -20,23 +19,10 @@ local SlashCmdList = SlashCmdList
 local mainCategory = Settings.RegisterVerticalLayoutCategory("dodo")
 Settings.RegisterAddOnCategory(mainCategory)
 
--- 설정창 → 편집모드 진입 (설정창 먼저 닫고 /ed 슬래시 재사용, 전투 가드 포함)
-local function open_edit_mode_from_options()
-    HideUIPanel(SettingsPanel)
-    local handler = SlashCmdList["EDITMODE"]
-    if handler then handler("") end
-end
-
 -- 설정 생성
 function dodoCreateOptions()
     if dodoOptionsCreated then return end
     dodoOptionsCreated = true
-
-    -- 메인 페이지: 편집모드 열기 버튼
-    local main_layout = SettingsPanel:GetLayout(mainCategory)
-    if main_layout and CreateSettingsButtonInitializer then
-        main_layout:AddInitializer(CreateSettingsButtonInitializer("", "UI설정 열기", open_edit_mode_from_options, "dodo 모듈 편집이 포함된 편집모드를 엽니다.", false))
-    end
 
     -- subCategory 캐시 (중복 생성 방지)
     local subCats = {}
