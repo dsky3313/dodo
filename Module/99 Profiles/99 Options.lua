@@ -67,7 +67,7 @@ dodo.RegisterOption("프로필", function(category)
     layout:AddInitializer(CreateSettingsButtonInitializer(
         "", "코드 복사",
         function() show_copy_popup(dodo.Profile.editmode, "편집모드 복사 (Ctrl+C)") end,
-        "", false
+        "dodo 편집모드 레이아웃 코드를 복사합니다.", false
     ))
     layout:AddInitializer(CreateSettingsButtonInitializer(
         "", "편집모드 가져오기",
@@ -83,14 +83,14 @@ dodo.RegisterOption("프로필", function(category)
             C_Timer.After(0.5, try_show)
             C_Timer.After(1.0, try_show)
         end,
-        "", false
+        "편집모드 가져오기 창을 엽니다.", false
     ))
 
     dodo.UI:SettingsSectionHeader(category, "플레이터")
     layout:AddInitializer(CreateSettingsButtonInitializer(
         "", "코드 복사",
         function() show_copy_popup(dodo.Profile.plater, "플레이터 복사 (Ctrl+C)") end,
-        "", false
+        "dodo 플레이터 프로필 코드를 복사합니다.", false
     ))
     layout:AddInitializer(CreateSettingsButtonInitializer(
         "", "플레이터 가져오기",
@@ -107,13 +107,36 @@ dodo.RegisterOption("프로필", function(category)
             C_Timer.After(0.5, try_import)
             C_Timer.After(1.0, try_import)
         end,
-        "", false
+        "플레이터 프로필 가져오기 창을 엽니다.", false
     ))
 
-    dodo.UI:SettingsSectionHeader(category, "CVar")
+    dodo.UI:SettingsSectionHeader(category, "게임설정")
     layout:AddInitializer(CreateSettingsButtonInitializer(
-        "", "적용",
+        "", "게임설정 적용",
         function() dodo:SetupCVars() end,
-        "", false
+        "게임설정 (CVar)를 적용합니다.", false
     ))
+    local cvar_restore_init = CreateSettingsButtonInitializer(
+        "", "게임설정 복원",
+        function() dodo:RestoreCVars() end,
+        "백업된 게임설정으로 복원합니다.", false
+    )
+    cvar_restore_init:AddModifyPredicate(function() return dodoDB.cvarBackup ~= nil end)
+    cvar_restore_init:AddEvaluateStateFrameEvent("CVAR_UPDATE")
+    layout:AddInitializer(cvar_restore_init)
+
+    dodo.UI:SettingsSectionHeader(category, "그래픽설정")
+    layout:AddInitializer(CreateSettingsButtonInitializer(
+        "", "그래픽설정 적용",
+        function() dodo:SetupGraphics() end,
+        "그래픽설정 (CVar)를 적용합니다.", false
+    ))
+    local gfx_restore_init = CreateSettingsButtonInitializer(
+        "", "그래픽설정 복원",
+        function() dodo:RestoreGraphics() end,
+        "백업된 그래픽설정으로 복원합니다.", false
+    )
+    gfx_restore_init:AddModifyPredicate(function() return dodoDB.graphicsBackup ~= nil end)
+    gfx_restore_init:AddEvaluateStateFrameEvent("CVAR_UPDATE")
+    layout:AddInitializer(gfx_restore_init)
 end, 9900)
