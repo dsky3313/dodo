@@ -1,4 +1,4 @@
----@diagnostic disable: lowercase-global, undefined-field, undefined-global
+﻿---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
@@ -139,4 +139,4 @@ dodo.RegisterOption("프로필", function(category)
     gfx_restore_init:AddModifyPredicate(function() return dodoDB.graphicsBackup ~= nil end)
     gfx_restore_init:AddEvaluateStateFrameEvent("CVAR_UPDATE")
     layout:AddInitializer(gfx_restore_init)
-end, 9900)
+end, 9950)

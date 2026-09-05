@@ -1,4 +1,3 @@
-
 claude --dangerously-skip-permissions
 
 와우-애드온 에이전트와 2도도 스킬 활용해서 코드 정리 및 인게임 성능 최적화 진행.
@@ -7,6 +6,7 @@ claude --dangerously-skip-permissions
 
 
 LEM
+RegisterEditModeModuleSetting
 RegisterEditModeSystemSetting
 
 dodo.RegisterOption

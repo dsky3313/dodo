@@ -388,19 +388,6 @@ initFrame:SetScript("OnEvent", function(self, event, arg1)
 
 		create_ui()
 		update_module_state()
-
-		if dodo.RegisterEditModeModuleSetting then
-			dodo.RegisterEditModeModuleSetting("인터페이스", {
-				{
-					name = "유닛프레임",
-					get = function() return dodoDB and dodoDB.enableUnitframeModule ~= false end,
-					set = function(checked)
-						if dodoDB then dodoDB.enableUnitframeModule = checked end
-						update_module_state()
-					end
-				}
-			})
-		end
 	end
 end)
 

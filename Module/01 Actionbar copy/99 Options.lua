@@ -463,40 +463,11 @@ dodo.RegisterOption("행동 단축바", function(category)
             end
         end
         if #cdm_items > 0 then
-            local cdm_init = dodo.UI:SettingsMultiDropDown(category, "강화 효과 표시", cdm_items, function(key, selected)
+            T(dodo.UI:SettingsMultiDropDown(category, "강화 효과 표시", cdm_items, function(key, selected)
                 if dodoDB then dodoDB[key] = selected end
                 if dodo.BuildSpecialButtonCache then dodo.BuildSpecialButtonCache() end
                 if dodo.ActionbarApplyCDM then dodo.ActionbarApplyCDM() end
-            end, "쿨다운 중인 스킬에 남은 시간과 중첩 수 오버레이를 표시합니다.")
-            T(cdm_init)
-
-            -- PanelInitializer는 GetSetting()이 nil → SetParentInitializer 에러
-            -- 더미 ProxySetting 주입으로 해결
-            local _cdm_sid = "dodo_ab_cdm_dd"
-            local _cdm_setting = Settings.GetSetting(_cdm_sid)
-                or Settings.RegisterProxySetting(category, _cdm_sid, Settings.VarType.Boolean, "",
-                    true, function() return true end, function() end)
-            cdm_init.GetSetting = function() return _cdm_setting end
-
-            local layout = SettingsPanel:GetLayout(category)
-            if layout and CreateSettingsButtonInitializer then
-                local cdm_btn = CreateSettingsButtonInitializer(
-                    "", "강화효과 추적설정",
-                    function()
-                        local s = _G.CooldownViewerSettings
-                        if not s then return end
-                        SettingsPanel:Close(true)
-                        ShowUIPanel(s)
-                        s:SetDisplayMode("dodoPageA")
-                    end,
-                    "강화효과 추적설정 창을 엽니다.", false
-                )
-                layout:AddInitializer(cdm_btn)
-                T(cdm_btn)
-                if cdm_btn.SetParentInitializer then
-                    cdm_btn:SetParentInitializer(cdm_init, function() return true end)
-                end
-            end
+            end, "쿨다운 중인 스킬에 남은 시간과 중첩 수 오버레이를 표시합니다."))
         end
     end
 

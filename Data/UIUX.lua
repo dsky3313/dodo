@@ -500,7 +500,7 @@ function dodo.UI:SettingsCheckboxSlider(category, varNameCB, varNameSlider, labe
     local sliderSetting = Settings.GetSetting(varID_Slider) or Settings.RegisterAddOnSetting(category, varID_Slider, varNameSlider, dodoDB, Settings.VarType.Number, label, tonumber(defaultSlider) or min)
     local sliderOptions = Settings.CreateSliderOptions(min, max, step)
     sliderOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, Formatters[formatType] or Formatters["Percent"])
-    local data = { name = label, tooltip = tooltip, cbSetting = cbSetting, sliderSetting = sliderSetting, sliderOptions = sliderOptions }
+    local data = { name = label, tooltip = tooltip, cbLabel = label, cbTooltip = tooltip, sliderLabel = label, sliderTooltip = tooltip, cbSetting = cbSetting, sliderSetting = sliderSetting, sliderOptions = sliderOptions }
     local initializer = Settings.CreateSettingInitializer("dodoCheckboxSliderTemplate", data)
     local function OnValueChanged()
         if type(func) == "function" then func(cbSetting:GetValue()) end
@@ -554,6 +554,13 @@ function dodoMultiDropDownMixin:Init(initializer)
         self.Dropdown = dd
     end
     self.Label:SetText(data.label)
+    local lbl, tt = data.label, data.tooltip
+    self.Dropdown:SetScript("OnEnter", function(s)
+        SettingsTooltip:SetOwner(s, "ANCHOR_RIGHT", -10, 0)
+        Settings.InitTooltip(lbl, tt)
+        SettingsTooltip:Show()
+    end)
+    self.Dropdown:SetScript("OnLeave", function() SettingsTooltip:Hide() end)
     local items = data.items
     local func  = data.func
     local mode  = data.mode
@@ -570,11 +577,17 @@ function dodoMultiDropDownMixin:Init(initializer)
                 cb:AddInitializer(multi_dd_cb_init)
             else
                 local key = item.key
+                local def = item.default  -- nil이면 기존 동작(nil → true), false/true이면 해당 기본값 사용
+                local function get_val()
+                    local v = dodoDB and dodoDB[key]
+                    if v == nil then return def ~= false end
+                    return v ~= false
+                end
                 local cb = rootDescription:CreateCheckbox(
                     item.text,
-                    function() return dodoDB and dodoDB[key] ~= false end,
+                    get_val,
                     function()
-                        local new_val = not (dodoDB and dodoDB[key] ~= false)
+                        local new_val = not get_val()
                         if dodoDB then dodoDB[key] = new_val end
                         if type(func) == "function" then func(key, new_val) end
                     end
@@ -583,18 +596,19 @@ function dodoMultiDropDownMixin:Init(initializer)
             end
         end
     end)
+
 end
 
-function dodo.UI:SettingsMultiDropDown(category, label, items, func)
-    local data = { label = label, items = items, func = func }
+function dodo.UI:SettingsMultiDropDown(category, label, items, func, tooltip)
+    local data = { label = label, tooltip = tooltip, items = items, func = func }
     local init = Settings.CreatePanelInitializer("dodoMultiDropDownTemplate", data)
     local layout = SettingsPanel:GetLayout(category)
     if layout then layout:AddInitializer(init) end
     return init
 end
 
-function dodo.UI:SettingsActionDropDown(category, label, items)
-    local data = { label = label, items = items, mode = "action" }
+function dodo.UI:SettingsActionDropDown(category, label, items, tooltip)
+    local data = { label = label, tooltip = tooltip, items = items, mode = "action" }
     local init = Settings.CreatePanelInitializer("dodoMultiDropDownTemplate", data)
     local layout = SettingsPanel:GetLayout(category)
     if layout then layout:AddInitializer(init) end

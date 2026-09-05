@@ -2,29 +2,7 @@
 <Ui xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.blizzard.com/wow/ui/" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 ..\FrameXML\UI.xsd">
     <!-- ============================== -->
-    <!-- CDM AuraContainer 슬롯 템플릿  -->
-    <!-- ============================== -->
-    <Button name="CDMOverlayAuraTemplate" virtual="true">
-        <Layers>
-            <Layer level="ARTWORK">
-                <Texture parentKey="auraBorder" atlas="UI-HUD-ActionBar-IconFrame-Mouseover" setAllPoints="true" alphaMode="BLEND">
-                    <Color r="0" g="1" b="0" a="1"/>
-                </Texture>
-            </Layer>
-            <Layer level="OVERLAY">
-                <FontString parentKey="durationText" inherits="NumberFontNormal" justifyH="LEFT">
-                    <Anchors><Anchor point="TOPLEFT" x="5" y="-5"/></Anchors>
-                    <Color r="0" g="1" b="0"/>
-                </FontString>
-                <FontString parentKey="stacksText" inherits="NumberFontNormal" justifyH="RIGHT">
-                    <Anchors><Anchor point="BOTTOMRIGHT" x="-5" y="5"/></Anchors>
-                </FontString>
-            </Layer>
-        </Layers>
-    </Button>
-
-    <!-- ============================== -->
-    <!-- CDM 커스텀(물약) 오버레이 템플릿 -->
+    <!-- CDM Overlay Template           -->
     <!-- ============================== -->
     <Frame name="CDMOverlayTemplate" mixin="CDMOverlayMixin" virtual="true">
         <Size x="1" y="1"/>
