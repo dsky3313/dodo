@@ -24,16 +24,8 @@ local CASTBAR_UNITS = {
 	player = true, target = true, focus = true, boss = true,
 }
 
-local CASTBAR_DB_KEYS = {
-	player = "unitframeCastbarPlayer",
-	target = "unitframeCastbarTarget",
-	focus  = "unitframeCastbarFocus",
-	boss   = "unitframeCastbarBoss",
-}
-
-local CASTBAR_DEFAULTS = {
-	player = false, target = true, focus = false, boss = true,
-}
+local CASTBAR_DB_KEYS  = dodo.UF_DB_KEYS.castbar
+local CASTBAR_DEFAULTS = dodo.UF_DEFAULTS.castbar
 
 local function is_castbar_enabled(unit)
 	local dbKey = CASTBAR_DB_KEYS[unit]

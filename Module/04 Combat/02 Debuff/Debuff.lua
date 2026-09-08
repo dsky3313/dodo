@@ -70,6 +70,7 @@ local debuff_container
 local debuff_anchor
 local debuff_buttons      = {}
 local debuff_preview_frames
+local anchor_frame        = nil
 local main_frame          = CreateFrame("Frame", nil, UIParent)
 local private_frame
 
@@ -499,16 +500,15 @@ local function save_position()
 end
 
 local function load_position()
-    local anchorFrame = dodo.EditMode and dodo.EditMode:GetSystem("Debuff")
     if not main_frame then return end
     main_frame:ClearAllPoints()
-    if anchorFrame then
+    if anchor_frame then
         local slot_w   = configs.size + configs.gap
         local offset_x = slot_w * (configs.max_debuffs - 1) / 2
-        main_frame:SetPoint("CENTER", anchorFrame, "CENTER", offset_x, 0)
+        main_frame:SetPoint("CENTER", anchor_frame, "CENTER", offset_x, 0)
     else
-        local tx = dodoDB.debuffX or (dodoDB.Debuff and dodoDB.Debuff.xpoint) or 350
-        local ty = dodoDB.debuffY or (dodoDB.Debuff and dodoDB.Debuff.ypoint) or 0
+        local tx = dodoDB.debuffX or (dodoDB.Debuff and dodoDB.Debuff.xpoint) or dodo.COMBAT_DEFAULTS.debuffX
+        local ty = dodoDB.debuffY or (dodoDB.Debuff and dodoDB.Debuff.ypoint) or dodo.COMBAT_DEFAULTS.debuffY
         main_frame:SetPoint("CENTER", UIParent, "CENTER", tx, ty)
     end
 end
@@ -519,8 +519,8 @@ end
 local function update_debuff_option()
     if not main_frame then return end
 
-    configs.size        = dodoDB.debuffSize or 56
-    configs.max_debuffs = dodoDB.debuffMax  or 6
+    configs.size        = dodoDB.debuffSize or dodo.COMBAT_DEFAULTS.debuffSize
+    configs.max_debuffs = dodoDB.debuffMax  or dodo.COMBAT_DEFAULTS.debuffMax
 
     load_position()
 
@@ -544,9 +544,8 @@ local function update_debuff_option()
         end
     end
 
-    local anchorFrame = dodo.EditMode and dodo.EditMode:GetSystem("Debuff")
-    if anchorFrame then
-        anchorFrame:SetSize(dw + (w + configs.gap) + configs.gap * 2, h)
+    if anchor_frame then
+        anchor_frame:SetSize(dw + (w + configs.gap) + configs.gap * 2, h)
     end
 
     local is_enabled = dodoDB and dodoDB.useDebuff ~= false
@@ -606,8 +605,8 @@ local function init_frames()
         dodoDB.Debuff = CopyTable(Options_Default)
     end
 
-    configs.size        = dodoDB.debuffSize or configs.size
-    configs.max_debuffs = dodoDB.debuffMax  or configs.max_debuffs
+    configs.size        = dodoDB.debuffSize or dodo.COMBAT_DEFAULTS.debuffSize
+    configs.max_debuffs = dodoDB.debuffMax  or dodo.COMBAT_DEFAULTS.debuffMax
 
     main_frame:SetFrameStrata("MEDIUM")
     main_frame:SetSize(1, 1)
@@ -626,9 +625,8 @@ local function init_frames()
     dodo.private_frame = private_frame
 
     local dw          = (w + configs.gap) * configs.max_debuffs
-    local anchorFrame = dodo.EditMode and dodo.EditMode:GetSystem("Debuff")
-    if anchorFrame then
-        anchorFrame:SetSize(dw + (w + configs.gap) + configs.gap * 2, h)
+    if anchor_frame then
+        anchor_frame:SetSize(dw + (w + configs.gap) + configs.gap * 2, h)
     end
 
     main_frame:SetScript("OnEvent", on_event)
@@ -643,26 +641,32 @@ local function init_frames()
 end
 
 local function on_login_event(self)
-    if dodo.EditMode then
-        dodo.EditMode:CreateSystem("Debuff", "디버프", "디버프 표시기", UIParent, 120, 60,
-            { point="RIGHT", relativeTo="UIParent", relativePoint="CENTER", xOfs=396, yOfs=0 },
-            function(point)
-                if dodoDB then
-                    dodoDB.debuffX = point.xOfs
-                    dodoDB.debuffY = point.yOfs
-                end
-                load_position()
-            end,
-            function() return dodoDB and dodoDB.useDebuff ~= false end
-        )
-    end
+    local LEM = LibStub("LibEditMode")
+    local _dp = { point="RIGHT", relativePoint="CENTER", xOfs=396, yOfs=0 }
+    local _sv = dodoDB.editMode and dodoDB.editMode["Debuff"]
+    local _pt = (_sv and _sv.point) and _sv or _dp
+    anchor_frame = CreateFrame("Frame", "dodoEditModeDebuff", UIParent)
+    anchor_frame:SetSize(120, 60)
+    anchor_frame:SetPoint(_pt.point, UIParent, _pt.relativePoint or _pt.point, _pt.xOfs or 0, _pt.yOfs or 0)
+    LEM:AddFrame(anchor_frame, function(f, l, p, x, y)
+        dodoDB.editMode = dodoDB.editMode or {}
+        dodoDB.editMode["Debuff"] = { point=p, relativeTo="UIParent", relativePoint=p, xOfs=x, yOfs=y }
+        if dodoDB then dodoDB.debuffX = x; dodoDB.debuffY = y end
+        load_position()
+    end, { point=_pt.point, x=_pt.xOfs or 0, y=_pt.yOfs or 0 }, "디버프")
+    LEM:AddFrameSettings(anchor_frame, {
+        { kind=LEM.SettingType.Slider, name="아이콘 크기", default=50, minValue=30, maxValue=80, valueStep=2,
+          disabled=function() return dodoDB and dodoDB.useDebuff == false end,
+          get=function(l) return dodoDB and dodoDB.debuffSize or dodo.COMBAT_DEFAULTS.debuffSize end,
+          set=function(l,v) if dodoDB then dodoDB.debuffSize=v end; if dodo.DebuffApply then dodo.DebuffApply() end end },
+        { kind=LEM.SettingType.Slider, name="최대 표시 개수", default=3, minValue=1, maxValue=6, valueStep=1,
+          disabled=function() return dodoDB and dodoDB.useDebuff == false end,
+          get=function(l) return dodoDB and dodoDB.debuffMax or dodo.COMBAT_DEFAULTS.debuffMax end,
+          set=function(l,v) if dodoDB then dodoDB.debuffMax=v end; if dodo.DebuffApply then dodo.DebuffApply() end end },
+    })
+    anchor_frame:HookScript("OnShow", show_preview_data)
+    anchor_frame:HookScript("OnHide", hide_preview_data)
     init_frames()
-
-    local em = _G.dodoEditModeDebuff
-    if em then
-        em:HookScript("OnShow", show_preview_data)
-        em:HookScript("OnHide", hide_preview_data)
-    end
 
     self:UnregisterEvent("PLAYER_LOGIN")
 end

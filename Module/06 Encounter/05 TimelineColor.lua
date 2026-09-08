@@ -102,8 +102,9 @@ local function on_event(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
         dodoDB = dodoDB or {}
     elseif event == "PLAYER_LOGIN" then
-        if dodoDB.enableEncounterTimelineColor == nil then dodoDB.enableEncounterTimelineColor = true end
-        if dodoDB.useEncounterTimelineColorHighlight == nil then dodoDB.useEncounterTimelineColorHighlight = true end
+        local D = dodo.EC_DEFAULTS
+        if dodoDB.enableEncounterTimelineColor == nil then dodoDB.enableEncounterTimelineColor = D.enableEncounterTimelineColor end
+        if dodoDB.useEncounterTimelineColorHighlight == nil then dodoDB.useEncounterTimelineColorHighlight = D.useEncounterTimelineColorHighlight end
         self:UnregisterEvent("PLAYER_LOGIN")
     elseif event == "PLAYER_ENTERING_WORLD" then
         update_visual()
@@ -114,4 +115,6 @@ initFrame:RegisterEvent("ADDON_LOADED")
 initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 initFrame:SetScript("OnEvent", on_event)
+
+dodo.EncounterUpdateTimelineVisual = update_visual
 

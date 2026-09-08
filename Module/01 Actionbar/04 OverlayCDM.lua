@@ -11,30 +11,8 @@ local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
 local BAR_INDEX_MAP = dodo.BAR_INDEX_MAP
-
-local CDM_DB_KEYS = {
-    ["MainActionBar"]       = "useActionbarCDMBar1",
-    ["MultiBarBottomLeft"]  = "useActionbarCDMBar2",
-    ["MultiBarBottomRight"] = "useActionbarCDMBar3",
-    ["MultiBarRight"]       = "useActionbarCDMBar4",
-    ["MultiBarLeft"]        = "useActionbarCDMBar5",
-    ["MultiBar5"]           = "useActionbarCDMBar6",
-    ["MultiBar6"]           = "useActionbarCDMBar7",
-    ["MultiBar7"]           = "useActionbarCDMBar8",
-}
-
-local CDM_DEFAULTS = {
-    ["MainActionBar"]       = true,
-    ["MultiBarBottomLeft"]  = true,
-    ["MultiBarBottomRight"] = false,
-    ["MultiBarRight"]       = false,
-    ["MultiBarLeft"]        = false,
-    ["MultiBar5"]           = false,
-    ["MultiBar6"]           = false,
-    ["MultiBar7"]           = false,
-    ["StanceBar"]           = false,
-    ["PetActionBar"]        = false,
-}
+local CDM_DB_KEYS   = dodo.AB_DB_KEYS.cdm
+local CDM_DEFAULTS  = dodo.AB_DEFAULTS.cdm
 
 local CustomCDMConfigs = { -- 물약 지속시간 (스펠ID - 아이템ID)
     [1236616] = { matchIDs = { 241308, 241309 }, duration = 30, type = 3 }, -- 빛의 잠재력
@@ -42,14 +20,14 @@ local CustomCDMConfigs = { -- 물약 지속시간 (스펠ID - 아이템ID)
 }
 
 local CDMMapping_defaults = { -- [specID] = { buffSpellID = actionBarSpellID }
-    [71] = { -- 무기전사 (Arms)
+    [71] = { -- 무전
         [386633] = 12294, -- 집행자의 정밀함 - 필사의 일격
     },
-    [72] = { -- 분노전사 (Fury)
+    [72] = { -- 분전
         [184361] = 1464,   -- 격노 - 광란
         [12950]  = 190411, -- 소용돌이 연마 - 소용돌이
     },
-    [73] = { -- 방어전사 (Protection)
+    [250] = { -- 혈죽
         [195181] = 195182, -- 뼈의 보호막 - 골수분쇄
     },
 }
@@ -127,8 +105,12 @@ end
 -- AuraContainer 방식 — LinkedSpells
 -- ==============================
 
--- [스펠명] = {[spellID]=true, ...}  CDM linkedSpellIDs 기반
+-- [스펠명] = {[spellID]=true, ...}  CDM 전체 카테고리 기반 (버프용)
 local linked_spell_ids = {}
+-- [스펠명] = {[spellID]=true, ...}  유저가 BuffBar/BuffIcon에 올린 항목만 (디버프용)
+local user_linked_spell_ids = {}
+-- BuffBar/BuffIcon의 cooldownViewerCategory ID (PLAYER_LOGIN 1회만 읽음, GetItemFrames() taint 방지)
+local user_cdm_categories = nil
 
 local function scan_linked_spells()
     wipe(linked_spell_ids)
@@ -152,7 +134,44 @@ local function scan_linked_spells()
     end
 end
 
--- 버튼 스펠 ID → 연관 버프 스펠 목록 (CDM linked + cdmMapping 수동 매핑 통합)
+-- PLAYER_LOGIN 때 1회만 호출 — 프레임 필드(숫자)만 읽고 GetItemFrames() 미호출
+local function init_user_cdm_categories()
+    user_cdm_categories = {}
+    if BuffBarCooldownViewer then
+        local cat = BuffBarCooldownViewer.cooldownViewerCategory
+        if cat then user_cdm_categories[cat] = true end
+    end
+    if BuffIconCooldownViewer then
+        local cat = BuffIconCooldownViewer.cooldownViewerCategory
+        if cat then user_cdm_categories[cat] = true end
+    end
+end
+
+-- GetItemFrames() 대신 C API만 사용 → taint 없음
+local function scan_user_linked_spells()
+    wipe(user_linked_spell_ids)
+    if not user_cdm_categories then return end
+    for catID in pairs(user_cdm_categories) do
+        local set = C_CooldownViewer.GetCooldownViewerCategorySet(catID, true)
+        if set then
+            for _, cooldownID in ipairs(set) do
+                local info = C_CooldownViewer.GetCooldownViewerCooldownInfo(cooldownID)
+                if info and info.spellID then
+                    local name = C_Spell.GetSpellName(info.spellID)
+                    if name then
+                        if not user_linked_spell_ids[name] then user_linked_spell_ids[name] = {} end
+                        user_linked_spell_ids[name][info.spellID] = true
+                        for _, sid in ipairs(info.linkedSpellIDs) do
+                            user_linked_spell_ids[name][sid] = true
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- 버프용: CDM 전체 + cdmMapping
 local function get_linked_spell_ids(spellID)
     local result = {}
     local name = C_Spell.GetSpellName(spellID)
@@ -162,11 +181,28 @@ local function get_linked_spell_ids(spellID)
     local cdmMap = get_cdm_map()
     if cdmMap then
         for buffID, skillID in pairs(cdmMap) do
-            if skillID == spellID then
-                result[buffID] = true
-            end
+            if skillID == spellID then result[buffID] = true end
         end
     end
+    return result
+end
+
+-- 디버프용: 유저 활성 CDM 항목 + cdmMapping, 버튼 자신 ID 제외
+local function get_user_linked_debuff_ids(spellID)
+    local result = {}
+    local name = C_Spell.GetSpellName(spellID)
+    if name and user_linked_spell_ids[name] then
+        Mixin(result, user_linked_spell_ids[name])
+    end
+    local cdmMap = get_cdm_map()
+    if cdmMap then
+        for buffID, skillID in pairs(cdmMap) do
+            if skillID == spellID then result[buffID] = true end
+        end
+    end
+    local baseSpellID = C_Spell.GetBaseSpell(spellID)
+    result[spellID] = nil
+    result[baseSpellID] = nil
     return result
 end
 
@@ -254,12 +290,15 @@ local function build_candidate_filters(btn, isHelpful)
     local filters = { includeSpellIDs = {} }
     if isHelpful then filters.isHelpful = true else filters.isHarmful = true end
 
-    filters.includeSpellIDs[spellID] = true
-    Mixin(filters.includeSpellIDs, get_linked_spell_ids(spellID))
     local baseSpellID = C_Spell.GetBaseSpell(spellID)
-    if baseSpellID ~= spellID then
-        filters.includeSpellIDs[baseSpellID] = true
-        Mixin(filters.includeSpellIDs, get_linked_spell_ids(baseSpellID))
+    if isHelpful then
+        filters.includeSpellIDs[spellID] = true
+        if baseSpellID ~= spellID then filters.includeSpellIDs[baseSpellID] = true end
+        Mixin(filters.includeSpellIDs, get_linked_spell_ids(spellID))
+        if baseSpellID ~= spellID then Mixin(filters.includeSpellIDs, get_linked_spell_ids(baseSpellID)) end
+    else
+        Mixin(filters.includeSpellIDs, get_user_linked_debuff_ids(spellID))
+        if baseSpellID ~= spellID then Mixin(filters.includeSpellIDs, get_user_linked_debuff_ids(baseSpellID)) end
     end
     return filters
 end
@@ -503,8 +542,10 @@ dodo.ActionbarInitCDM = function()
 
     init_custom_cdm_spells()
     scan_linked_spells()
+    init_user_cdm_categories() -- BuffBar/BuffIcon 카테고리 ID 1회 읽기
 
     C_Timer.After(0.5, function()
+        scan_user_linked_spells()
         create_aura_containers()
         update_overlay_filters()
     end)
@@ -518,14 +559,12 @@ end
 dodo.BuildSpecialButtonCache = function()
     if InCombatLockdown() then return end
     scan_linked_spells()
+    scan_user_linked_spells()
     create_aura_containers()
     update_overlay_filters()
 end
 
 -- ==============================
-dodo.AB_CDM_DB_KEYS  = CDM_DB_KEYS
-dodo.AB_CDM_DEFAULTS = CDM_DEFAULTS
-
 dodo.setCDMMapping = function(buffSpellID, actionBarSpellID)
     local cdmMap = get_cdm_map()
     if not cdmMap then return end

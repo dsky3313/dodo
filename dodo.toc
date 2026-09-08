@@ -30,12 +30,10 @@ Data/Dungeons.lua
 Data/CDM.lua
 
 # Editmode
-Module/09 QOL/Editmode/ModuleSettings.lua
-Module/09 QOL/Editmode/SystemSettings.lua
-Module/09 QOL/Editmode/SystemSettingsPanel.lua
 
 # 01 Actionbar
 Module/01 Actionbar/00 ActionBar.xml
+Module/01 Actionbar/00 Options.lua
 Module/01 Actionbar/01 Core.lua
 Module/01 Actionbar/02 IconPadding.lua
 Module/01 Actionbar/03 IconColor.lua
@@ -44,9 +42,9 @@ Module/01 Actionbar/04 OverlayCDMOptions.lua
 Module/01 Actionbar/05 OverlayInterrupt.lua
 Module/01 Actionbar/06 OverlayPotion.lua
 Module/01 Actionbar/07 IconText.lua
-Module/01 Actionbar/99 Options.lua
 
 # 03 Unitframe
+Module/03 Unitframe/00 Options.lua
 Module/03 Unitframe/01 UnitFrame/01 Component/01 Power.lua
 Module/03 Unitframe/01 UnitFrame/01 Component/02 Castbar.lua
 Module/03 Unitframe/01 UnitFrame/01 Component/03 Auras.lua
@@ -59,7 +57,6 @@ Module/03 Unitframe/02 PartyFrame/Leader.lua
 Module/03 Unitframe/02 PartyFrame/Overshield.lua
 #Module/03 Unitframe/02 PartyFrame/SoloMode.lua
 #Module/03 Unitframe/03 RaidFrame/Anchor.lua
-Module/03 Unitframe/99 Options.lua
 
 # 04 Combat / ResourceBar
 Module/04 Combat/01 ResourceBar/ResourceBar.xml
@@ -86,7 +83,7 @@ Module/04 Combat/03 BloodBrez.lua
 Module/04 Combat/04 Stance.lua
 
 # 04 Combat / Options
-Module/04 Combat/99 Options.lua
+Module/04 Combat/00 Options.lua
 
 # 05 Interface / DamageMeter
 Module/05 Interface/01 DamageMeter/Core.lua
@@ -118,19 +115,20 @@ Module/05 Interface/04 Tooltip/StatusBar.lua
 Module/05 Interface/04 Tooltip/Vehicle.lua
 
 # 05 Interface / Options
-Module/05 Interface/99 Options.lua
+Module/05 Interface/00 Options.lua
 
 # 06 Encounter
+Module/06 Encounter/00 Options.lua
 Module/06 Encounter/01 Core.lua
 Module/06 Encounter/02 Data.lua
 Module/06 Encounter/03 Sound.lua
 Module/06 Encounter/04 Text.lua
 #Module/06 Encounter/TimelineBar.lua
 Module/06 Encounter/05 TimelineColor.lua
-Module/06 Encounter/99 Options.lua
 
 # 07 CursorSpellTracker
 Module/07 CursorSpellTracker/CursorSpellTracker.lua
+Module/07 CursorSpellTracker/99 Options.lua
 
 # 08 Sound
 Module/08 Sound/Audio.lua
@@ -176,13 +174,12 @@ Module/09 QOL/05 ETC/TimerLFG.lua
 Module/09 QOL/05 ETC/WMarker.lua
 Module/09 QOL/05 ETC/WowheadLink.lua
 
-# 09 QOL / ReadyCheck
-Module/09 QOL/ReadyCheck/Timer.lua
-#Module/09 QOL/ReadyCheck/Consumeable.lua
-
-# 09 QOL / ObjectiveTracker
-Module/09 QOL/ObjectiveTracker/KeystoneTimer.lua
-#Module/09 QOL/ObjectiveTracker/Collapse.lua
+# 09 QOL / Mplus
+Module/09 QOL/02 Mplus/KeystoneTimer.lua
+#Module/09 QOL/02 Mplus/Collapse.lua
+Module/09 QOL/02 Mplus/Timer.lua
+#Module/09 QOL/02 Mplus/Consumeable.lua
+Module/09 QOL/02 Mplus/99 Options.lua
 
 # 09 QOL / WorldMap
 Module/09 QOL/WorldMap/Icon.lua
@@ -207,4 +204,4 @@ Module/99 Profiles/99 Options.lua
 Module/10 Command/Slash.lua
 Option.lua
 Module/09 QOL/99 Options.lua
-Module/09 QOL/Editmode/Position.lua
+#Module/09 QOL/Editmode/Position.lua

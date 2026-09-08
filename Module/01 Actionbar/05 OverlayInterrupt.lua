@@ -10,31 +10,9 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local BAR_INDEX_MAP = dodo.BAR_INDEX_MAP
-
-local INTERRUPT_DB_KEYS = {
-    ["MainActionBar"]       = "useActionbarInterruptBar1",
-    ["MultiBarBottomLeft"]  = "useActionbarInterruptBar2",
-    ["MultiBarBottomRight"] = "useActionbarInterruptBar3",
-    ["MultiBarRight"]       = "useActionbarInterruptBar4",
-    ["MultiBarLeft"]        = "useActionbarInterruptBar5",
-    ["MultiBar5"]           = "useActionbarInterruptBar6",
-    ["MultiBar6"]           = "useActionbarInterruptBar7",
-    ["MultiBar7"]           = "useActionbarInterruptBar8",
-}
-
-local INTERRUPT_DEFAULTS = {
-    ["MainActionBar"]       = true,
-    ["MultiBarBottomLeft"]  = false,
-    ["MultiBarBottomRight"] = false,
-    ["MultiBarRight"]       = false,
-    ["MultiBarLeft"]        = false,
-    ["MultiBar5"]           = false,
-    ["MultiBar6"]           = false,
-    ["MultiBar7"]           = false,
-    ["StanceBar"]           = false,
-    ["PetActionBar"]        = false,
-}
+local BAR_INDEX_MAP      = dodo.BAR_INDEX_MAP
+local INTERRUPT_DB_KEYS  = dodo.AB_DB_KEYS.interrupt
+local INTERRUPT_DEFAULTS = dodo.AB_DEFAULTS.interrupt
 
 local Interrupts = {
     [47528]  = true, -- Mind Freeze
@@ -319,8 +297,6 @@ dodo.ActionbarApplyInterrupt = function()
 end
 
 -- ==============================
-dodo.AB_INTERRUPT_DB_KEYS  = INTERRUPT_DB_KEYS
-dodo.AB_INTERRUPT_DEFAULTS = INTERRUPT_DEFAULTS
 
 -- ==============================
 -- 컨트롤러 동적 생성 및 실행

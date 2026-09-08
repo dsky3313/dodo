@@ -50,6 +50,15 @@ local function on_event(self, event, arg1)
     elseif event == "PLAYER_LOGIN" then
         if dodoDB.enableFrameOption == nil then dodoDB.enableFrameOption = true end
         frame_scale()
+        local LEM = LibStub("LibEditMode")
+        LEM:AddSystemSettings(Enum.EditModeSystem.TalkingHeadFrame, {
+            { kind=LEM.SettingType.Checkbox, name="말머리 크기 변경", default=true,
+              get=function(l) return dodoDB and dodoDB.enableFrameOption ~= false end,
+              set=function(l,v) if dodoDB then dodoDB.enableFrameOption=v end; frame_scale() end },
+            { kind=LEM.SettingType.Slider, name="크기", default=1.0, minValue=0.5, maxValue=1.5, valueStep=0.1,
+              get=function(l) return dodoDB and dodoDB.frameScale_th or Config.talkingHeadFrame end,
+              set=function(l,v) if dodoDB then dodoDB.frameScale_th=v end; frame_scale() end },
+        })
         self:UnregisterEvent("PLAYER_LOGIN")
     end
 end
@@ -58,29 +67,6 @@ init_frame:RegisterEvent("ADDON_LOADED")
 init_frame:SetScript("OnEvent", on_event)
 
 -- ==============================
--- 외부 노출 및 설정 등록
+-- 외부 노출
 -- ==============================
 dodo.FrameScale = frame_scale
-
--- 편집모드에서 TalkingHeadFrame 클릭 시 wing 패널
-dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.TalkingHeadFrame, {
-    {
-        name = "말머리 크기 변경",
-        get  = function() return dodoDB and dodoDB.enableFrameOption ~= false end,
-        set  = function(checked)
-            if dodoDB then dodoDB.enableFrameOption = checked end
-            frame_scale()
-        end,
-    },
-    {
-        type   = "slider",
-        minVal = 0.5,
-        maxVal = 1.5,
-        step   = 0.1,
-        get    = function() return dodoDB and dodoDB.frameScale_th or Config.talkingHeadFrame end,
-        set    = function(val)
-            if dodoDB then dodoDB.frameScale_th = val end
-            frame_scale()
-        end,
-    },
-})

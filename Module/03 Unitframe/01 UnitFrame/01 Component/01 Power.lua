@@ -18,16 +18,8 @@ local POWER_UNITS = {
 	player = true, target = true, focus = true, boss = true,
 }
 
-local POWER_DB_KEYS = {
-	player = "unitframePowerPlayer",
-	target = "unitframePowerTarget",
-	focus  = "unitframePowerFocus",
-	boss   = "unitframePowerBoss",
-}
-
-local POWER_DEFAULTS = {
-	player = false, target = true, focus = false, boss = true,
-}
+local POWER_DB_KEYS  = dodo.UF_DB_KEYS.power
+local POWER_DEFAULTS = dodo.UF_DEFAULTS.power
 
 -- player/target은 항상 프레임 공간 예약, focus/boss는 켜진 경우에만
 local POWER_RESERVE_SPACE = {

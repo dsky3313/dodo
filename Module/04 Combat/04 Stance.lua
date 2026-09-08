@@ -42,6 +42,7 @@ end
 -- ==============================
 -- 로컬 상태
 -- ==============================
+local anchor_frame = nil
 local stance_icon  = nil
 local last_texture = nil
 local warrior_spec = nil
@@ -54,8 +55,7 @@ local function apply_icon_size(val)
         stance_icon:SetSize(val, val)
         if stance_icon.RescaleIcon then stance_icon:RescaleIcon() end
     end
-    local anchor = dodo.EditMode and dodo.EditMode:GetSystem("Stance")
-    if anchor then anchor:SetSize(val, val) end
+    if anchor_frame then anchor_frame:SetSize(val, val) end
 end
 
 -- ==============================
@@ -112,8 +112,6 @@ local function on_event(self, event, arg1, _, spellID)
     if event == "ADDON_LOADED" then
         if arg1 == addonName then
             dodoDB = dodoDB or {}
-            if dodoDB.enableStance == nil then dodoDB.enableStance = true end
-            if dodoDB.stanceIconSize == nil then dodoDB.stanceIconSize = 80 end
             self:UnregisterEvent("ADDON_LOADED")
         end
 
@@ -125,27 +123,32 @@ local function on_event(self, event, arg1, _, spellID)
 
         refresh_warrior_spec()
 
-        local icon_size = dodoDB.stanceIconSize
+        local icon_size = dodoDB.stanceIconSize or dodo.COMBAT_DEFAULTS.stanceIconSize
 
-        if dodo.EditMode then
-            dodo.EditMode:CreateSystem("Stance", "스탠스", "스탠스", UIParent, icon_size, icon_size,
-                { point = "CENTER", relativeTo = "UIParent", relativePoint = "CENTER", xOfs = -185, yOfs = -100 },
-                nil,
-                stance_is_active)
-        end
+        local LEM = LibStub("LibEditMode")
+        local _dp = { point="CENTER", relativePoint="CENTER", xOfs=-185, yOfs=-100 }
+        local _sv = dodoDB.editMode and dodoDB.editMode["Stance"]
+        local _pt = (_sv and _sv.point) and _sv or _dp
+        anchor_frame = CreateFrame("Frame", "dodoEditModeStance", UIParent)
+        anchor_frame:SetSize(icon_size, icon_size)
+        anchor_frame:SetPoint(_pt.point, UIParent, _pt.relativePoint or _pt.point, _pt.xOfs or 0, _pt.yOfs or 0)
+        LEM:AddFrame(anchor_frame, function(f, l, p, x, y)
+            dodoDB.editMode = dodoDB.editMode or {}
+            dodoDB.editMode["Stance"] = { point=p, relativeTo="UIParent", relativePoint=p, xOfs=x, yOfs=y }
+        end, { point=_pt.point, x=_pt.xOfs or 0, y=_pt.yOfs or 0 }, "스탠스")
+        LEM:AddFrameSettings(anchor_frame, {
+            { kind=LEM.SettingType.Slider, name="아이콘 크기", default=60, minValue=40, maxValue=100, valueStep=2,
+              get=function(l) return dodoDB and dodoDB.stanceIconSize or dodo.COMBAT_DEFAULTS.stanceIconSize end,
+              set=function(l,v) if dodoDB then dodoDB.stanceIconSize=v end; if dodo.StanceApplyIconSize then dodo.StanceApplyIconSize(v) end end },
+        })
 
         stance_icon = dodo.LibIcon:Create("dodoStanceIcon", UIParent, { iconsize = { icon_size, icon_size } })
         stance_icon:SetFrameStrata("LOW")
         stance_icon:SetClampedToScreen(true)
         stance_icon:EnableMouse(false)
 
-        local anchor = dodo.EditMode and dodo.EditMode:GetSystem("Stance")
         stance_icon:ClearAllPoints()
-        if anchor then
-            stance_icon:SetPoint("CENTER", anchor, "CENTER", 0, 0)
-        else
-            stance_icon:SetPoint("CENTER", UIParent, "CENTER", -185, -100)
-        end
+        stance_icon:SetPoint("CENTER", anchor_frame, "CENTER", 0, 0)
 
         self:RegisterEvent("PLAYER_ENTERING_WORLD")
         self:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")

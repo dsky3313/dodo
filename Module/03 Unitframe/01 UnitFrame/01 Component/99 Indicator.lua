@@ -8,14 +8,12 @@ dodoDB = dodoDB or {}
 local CreateFrame = CreateFrame
 local _G          = _G
 
-local COMBAT_KEYS    = { player = "unitframeCombatPlayer", target = "unitframeCombatTarget", focus = "unitframeCombatFocus",  boss = "unitframeCombatBoss"  }
-local COMBAT_DEF     = { player = true,  target = false, focus = false, boss = false }
-
-local REST_KEYS      = { player = "unitframeRestPlayer" }
-local REST_DEF       = { player = true }
-
-local LEADER_KEYS    = { player = "unitframeLeaderPlayer", target = "unitframeLeaderTarget", focus = "unitframeLeaderFocus",  boss = "unitframeLeaderBoss"  }
-local LEADER_DEF     = { player = true,  target = true,  focus = false, boss = false }
+local COMBAT_KEYS = dodo.UF_DB_KEYS.combat
+local COMBAT_DEF  = dodo.UF_DEFAULTS.combat
+local REST_KEYS   = dodo.UF_DB_KEYS.rest
+local REST_DEF    = dodo.UF_DEFAULTS.rest
+local LEADER_KEYS = dodo.UF_DB_KEYS.leader
+local LEADER_DEF  = dodo.UF_DEFAULTS.leader
 
 -- ==============================
 -- 동적 정렬: 파티장 → 휴식 → 전투 (좌→우)

@@ -50,11 +50,15 @@ local function cdm()
         print("전투 중에는 열 수 없습니다.")
         return
     end
-
-    if CooldownViewerSettings then
-        ChatFrame1EditBox:SetText("/run ShowUIPanel(CooldownViewerSettings)")
-        ChatEdit_SendText(ChatFrame1EditBox)
+    local inInstance = IsInInstance()
+    if inInstance then
+        print("인스턴스 안에서는 /cd 를 사용할 수 없습니다. Blizzard 설정창에서 직접 여세요.")
+        return
     end
+    if SettingsPanel and SettingsPanel:IsShown() then
+        SettingsPanel:Close(true)
+    end
+    ShowUIPanel(CooldownViewerSettings)
 end
 
 SLASH_CDM1 = "/cd"
@@ -90,6 +94,14 @@ end
 SlashCmdList.RELOAD = ReloadUI
 SLASH_RELOAD1 = "/re"
 SLASH_RELOAD2 = "/ㄱㄷ"
+
+
+-- dodo DB 초기화
+SLASH_DODO_RESET1 = "/ddr"
+SlashCmdList["DODO_RESET"] = function()
+    dodoDB = nil
+    ReloadUI()
+end
 
 
 -- 매크로

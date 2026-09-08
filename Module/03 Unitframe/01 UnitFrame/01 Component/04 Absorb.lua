@@ -24,15 +24,8 @@ local ABSORB_UNITS = {
 	player = true, target = true, focus = true,
 }
 
-local ABSORB_DB_KEYS = {
-	player = "unitframeAbsorbPlayer",
-	target = "unitframeAbsorbTarget",
-	focus  = "unitframeAbsorbFocus",
-}
-
-local ABSORB_DEFAULTS = {
-	player = true, target = false, focus = false,
-}
+local ABSORB_DB_KEYS  = dodo.UF_DB_KEYS.absorb
+local ABSORB_DEFAULTS = dodo.UF_DEFAULTS.absorb
 
 local function is_absorb_enabled(unit)
 	local dbKey = ABSORB_DB_KEYS[unit]

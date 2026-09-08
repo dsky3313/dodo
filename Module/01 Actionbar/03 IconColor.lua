@@ -10,31 +10,9 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local BAR_INDEX_MAP = dodo.BAR_INDEX_MAP
-
-local COLOR_DEFAULTS = {
-    ["MainActionBar"]       = true,
-    ["MultiBarBottomLeft"]  = true,
-    ["MultiBarBottomRight"] = true,
-    ["MultiBarRight"]       = false,
-    ["MultiBarLeft"]        = false,
-    ["MultiBar5"]           = false,
-    ["MultiBar6"]           = false,
-    ["MultiBar7"]           = true,
-    ["StanceBar"]           = false,
-    ["PetActionBar"]        = false,
-}
-
-local COLOR_DB_KEYS = {
-    ["MainActionBar"]       = "useActionbarColorBar1",
-    ["MultiBarBottomLeft"]  = "useActionbarColorBar2",
-    ["MultiBarBottomRight"] = "useActionbarColorBar3",
-    ["MultiBarRight"]       = "useActionbarColorBar4",
-    ["MultiBarLeft"]        = "useActionbarColorBar5",
-    ["MultiBar5"]           = "useActionbarColorBar6",
-    ["MultiBar6"]           = "useActionbarColorBar7",
-    ["MultiBar7"]           = "useActionbarColorBar8",
-}
+local BAR_INDEX_MAP  = dodo.BAR_INDEX_MAP
+local COLOR_DB_KEYS  = dodo.AB_DB_KEYS.color
+local COLOR_DEFAULTS = dodo.AB_DEFAULTS.color
 
 -- ==============================
 -- 캐싱
@@ -124,19 +102,28 @@ end
 dodo.ActionbarUpdateState = update_state
 
 local function update_cooldown_state(btn)
-    if not btn.action then return end
-    local barName = dodo.get_bar_name_by_button(btn)
-    if not barName or not is_bar_color_enabled(barName) then
-        btn.__cdVal = nil
-        update_icon_color(btn)
-        if dodo.ActionbarUpdatePotionProc then dodo.ActionbarUpdatePotionProc(btn) end
-        return
-    end
-    local dur  = C_ActionBar.GetActionCooldownDuration(btn.action)
-    local info = C_ActionBar.GetActionCooldown(btn.action)
-    btn.__cdVal = (dur and info and not info.isOnGCD) and dur or nil
-    update_icon_color(btn)
-    if dodo.ActionbarUpdatePotionProc then dodo.ActionbarUpdatePotionProc(btn) end
+	if not btn.action then return end
+
+	local barName = dodo.get_bar_name_by_button(btn)
+	if not barName or not is_bar_color_enabled(barName) then
+		btn.__cdVal = nil
+		update_icon_color(btn)
+		if dodo.ActionbarUpdatePotionProc then dodo.ActionbarUpdatePotionProc(btn) end
+		return
+	end
+
+	local dur = C_ActionBar.GetActionCooldownDuration(btn.action)
+	local info = C_ActionBar.GetActionCooldown(btn.action)
+
+	if not dur then
+		btn.__cdVal = nil
+	elseif info and not info.isOnGCD then
+		btn.__cdVal = dur
+	end
+	-- isOnGCD 중에는 __cdVal 유지 (가속 환경에서 GCD 판정 타이밍 겹침 방지)
+
+	update_icon_color(btn)
+	if dodo.ActionbarUpdatePotionProc then dodo.ActionbarUpdatePotionProc(btn) end
 end
 dodo.ActionbarUpdateCooldownState = update_cooldown_state
 
@@ -154,5 +141,3 @@ dodo.ActionbarApplyColor = function()
     end
 end
 
-dodo.AB_COLOR_DB_KEYS  = COLOR_DB_KEYS
-dodo.AB_COLOR_DEFAULTS = COLOR_DEFAULTS

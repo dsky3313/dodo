@@ -10,42 +10,11 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local BAR_INDEX_MAP = dodo.BAR_INDEX_MAP
-
-local HOTKEY_DB_KEYS = {
-    ["MainActionBar"]       = "useActionbarHideHotkeysBar1",
-    ["MultiBarBottomLeft"]  = "useActionbarHideHotkeysBar2",
-    ["MultiBarBottomRight"] = "useActionbarHideHotkeysBar3",
-    ["MultiBarRight"]       = "useActionbarHideHotkeysBar4",
-    ["MultiBarLeft"]        = "useActionbarHideHotkeysBar5",
-    ["MultiBar5"]           = "useActionbarHideHotkeysBar6",
-    ["MultiBar6"]           = "useActionbarHideHotkeysBar7",
-    ["MultiBar7"]           = "useActionbarHideHotkeysBar8",
-}
-
-local HOTKEY_DEFAULTS = {
-    ["MainActionBar"]       = true,
-    ["MultiBarBottomLeft"]  = true,
-    ["MultiBarBottomRight"] = true,
-    ["MultiBarRight"]       = false,
-    ["MultiBarLeft"]        = false,
-    ["MultiBar5"]           = false,
-    ["MultiBar6"]           = false,
-    ["MultiBar7"]           = true,
-    ["StanceBar"]           = true,
-    ["PetActionBar"]        = true,
-}
-
-local MACRO_DB_KEYS = {
-    ["MainActionBar"]       = "useActionbarHideMacroNamesBar1",
-    ["MultiBarBottomLeft"]  = "useActionbarHideMacroNamesBar2",
-    ["MultiBarBottomRight"] = "useActionbarHideMacroNamesBar3",
-    ["MultiBarRight"]       = "useActionbarHideMacroNamesBar4",
-    ["MultiBarLeft"]        = "useActionbarHideMacroNamesBar5",
-    ["MultiBar5"]           = "useActionbarHideMacroNamesBar6",
-    ["MultiBar6"]           = "useActionbarHideMacroNamesBar7",
-    ["MultiBar7"]           = "useActionbarHideMacroNamesBar8",
-}
+local BAR_INDEX_MAP   = dodo.BAR_INDEX_MAP
+local HOTKEY_DB_KEYS  = dodo.AB_DB_KEYS.hotkey
+local HOTKEY_DEFAULTS = dodo.AB_DEFAULTS.hotkey
+local MACRO_DB_KEYS   = dodo.AB_DB_KEYS.macro
+local MACRO_DEFAULTS  = dodo.AB_DEFAULTS.macro
 
 local RANGE_INDICATOR = "●"
 
@@ -73,10 +42,11 @@ end
 local function is_bar_macro_enabled(barName)
     if not barName then return false end
     local dbKey = MACRO_DB_KEYS[barName]
-    if not dbKey then return false end
-    if not dodoDB then return false end
+    if not dbKey then return MACRO_DEFAULTS[barName] or false end
+    if not dodoDB then return MACRO_DEFAULTS[barName] or false end
     local val = dodoDB[dbKey]
-    return val == true
+    if val == nil then return MACRO_DEFAULTS[barName] or false end
+    return val
 end
 
 local function update_button_text(btn)
@@ -129,6 +99,3 @@ dodo.ActionbarApplyText = function()
     end
 end
 
-dodo.AB_HOTKEY_DB_KEYS  = HOTKEY_DB_KEYS
-dodo.AB_MACRO_DB_KEYS   = MACRO_DB_KEYS
-dodo.AB_HOTKEY_DEFAULTS = HOTKEY_DEFAULTS

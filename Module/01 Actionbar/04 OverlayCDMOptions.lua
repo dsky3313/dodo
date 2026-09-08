@@ -80,18 +80,30 @@ local function collect_spellbook_spells()
     return result
 end
 
+-- CDM에 등록된 스펠 목록 수집. [baseSpellID] = 이름
+-- CDM spellID(탤런트/패시브)와 실제 버프 ID가 다를 수 있어서
+-- linkedSpellIDs를 먼저 추가하고 메인 spellID는 이름 중복 시 스킵.
+-- (예: 집행자의 정밀함 — CDM=386634, 실제 버프=386633)
 local function collect_cdm_spells()
     local result = {}
+    local seen_names = {}
+    local function add(id)
+        local baseID = C_Spell.GetBaseSpell(id) or id
+        local name = C_Spell.GetSpellName(baseID) or tostring(baseID)
+        if not seen_names[name] then
+            seen_names[name] = true
+            result[baseID] = name
+        end
+    end
     local function scan(pool)
         if not pool or not pool.GetItemFrames then return end
         for _, item in ipairs(pool:GetItemFrames()) do
             if item.cooldownID and C_CooldownViewer then
                 local cdInfo = C_CooldownViewer.GetCooldownViewerCooldownInfo(item.cooldownID)
                 if cdInfo and cdInfo.spellID then
-                    local baseID = C_Spell.GetBaseSpell(cdInfo.spellID) or cdInfo.spellID
-                    if not result[baseID] then
-                        result[baseID] = C_Spell.GetSpellName(baseID) or tostring(baseID)
-                    end
+                    -- linked 먼저: 실제 버프 ID가 여기 있는 경우 우선 등록
+                    for _, sid in ipairs(cdInfo.linkedSpellIDs) do add(sid) end
+                    add(cdInfo.spellID)
                 end
             end
         end
@@ -162,18 +174,23 @@ local function create_skill_icon(parent)
                     if dodo.BuildSpecialButtonCache then dodo.BuildSpecialButtonCache() end
                     if self.__page_refresh then self.__page_refresh() end
                 end)
-                rootDescription:CreateDivider()
             end
+            rootDescription:CreateDivider()
 
             local cdm_spells = collect_cdm_spells()
             if next(cdm_spells) then
                 rootDescription:CreateTitle("강화효과 연결:")
                 for buffID, buffName in pairs(cdm_spells) do
                     local bid = buffID
-                    rootDescription:CreateButton(buffName, function()
+                    local icon = C_Spell.GetSpellTexture(buffID)
+                    local label = icon and ("|T" .. icon .. ":14:14:0:0|t " .. buffName) or buffName
+                    local btn = rootDescription:CreateButton(label, function()
                         if dodo.setCDMMapping then dodo.setCDMMapping(bid, spellID) end
                         if dodo.BuildSpecialButtonCache then dodo.BuildSpecialButtonCache() end
                         if self.__page_refresh then self.__page_refresh() end
+                    end)
+                    btn:SetTooltip(function(tooltip)
+                        tooltip:SetSpellByID(bid)
                     end)
                 end
                 rootDescription:CreateDivider()

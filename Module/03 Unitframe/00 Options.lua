@@ -1,3 +1,6 @@
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 ---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
@@ -8,52 +11,54 @@ local NineSliceUtil = NineSliceUtil
 local _G            = _G
 
 -- ==============================
--- 설정 키 / 기본값
+-- 설정 기본값
 -- ==============================
-local POWER_KEYS = {
-	player = "unitframePowerPlayer",
-	target = "unitframePowerTarget",
-	focus  = "unitframePowerFocus",
-	boss   = "unitframePowerBoss",
+dodo.UF_DEFAULTS = {
+    enableUnitframeModule = true,
+    power   = { player = true,  target = true,  focus = false, boss = true  },
+    castbar = { player = true,  target = true,  focus = false, boss = true  },
+    buffs   = { player = false, target = true,  focus = false, boss = true  },
+    debuffs = { player = false, target = false, focus = false, boss = false },
+    absorb  = { player = true,  target = false, focus = false, boss = false },
+    combat  = { player = true,  target = false, focus = false, boss = false },
+    rest    = { player = true,  target = false, focus = false, boss = false },
+    leader  = { player = true,  target = true,  focus = false, boss = false },
 }
-local POWER_DEFAULTS = { player = false, target = true, focus = false, boss = true }
 
-local CASTBAR_KEYS = {
-	player = "unitframeCastbarPlayer",
-	target = "unitframeCastbarTarget",
-	focus  = "unitframeCastbarFocus",
-	boss   = "unitframeCastbarBoss",
+-- ==============================
+-- 설정 키
+-- ==============================
+dodo.UF_DB_KEYS = {
+    power   = { player = "unitframePowerPlayer",   target = "unitframePowerTarget",   focus = "unitframePowerFocus",   boss = "unitframePowerBoss"   },
+    castbar = { player = "unitframeCastbarPlayer",  target = "unitframeCastbarTarget",  focus = "unitframeCastbarFocus",  boss = "unitframeCastbarBoss"  },
+    buffs   = { player = "unitframeBuffsPlayer",   target = "unitframeBuffsTarget",   focus = "unitframeBuffsFocus",   boss = "unitframeBuffsBoss"   },
+    debuffs = { player = "unitframeDebuffsPlayer",  target = "unitframeDebuffsTarget",  focus = "unitframeDebuffsFocus",  boss = "unitframeDebuffsBoss"  },
+    absorb  = { player = "unitframeAbsorbPlayer",  target = "unitframeAbsorbTarget",  focus = "unitframeAbsorbFocus"  },
+    combat  = { player = "unitframeCombatPlayer",  target = "unitframeCombatTarget",  focus = "unitframeCombatFocus",  boss = "unitframeCombatBoss"  },
+    rest    = { player = "unitframeRestPlayer"  },
+    leader  = { player = "unitframeLeaderPlayer",  target = "unitframeLeaderTarget",  focus = "unitframeLeaderFocus",  boss = "unitframeLeaderBoss"  },
 }
-local CASTBAR_DEFAULTS = { player = false, target = true, focus = false, boss = true }
 
-local BUFFS_KEYS = {
-	player = "unitframeBuffsPlayer",
-	target = "unitframeBuffsTarget",
-	focus  = "unitframeBuffsFocus",
-	boss   = "unitframeBuffsBoss",
-}
-local BUFFS_DEFAULTS = { player = false, target = true, focus = false, boss = true }
-
-local DEBUFFS_KEYS = {
-	player = "unitframeDebuffsPlayer",
-	target = "unitframeDebuffsTarget",
-	focus  = "unitframeDebuffsFocus",
-	boss   = "unitframeDebuffsBoss",
-}
-local DEBUFFS_DEFAULTS = { player = false, target = false, focus = false, boss = false }
-
-local ABSORB_KEYS = {
-	player = "unitframeAbsorbPlayer",
-	target = "unitframeAbsorbTarget",
-	focus  = "unitframeAbsorbFocus",
-}
-local ABSORB_DEFAULTS = { player = true, target = false, focus = false }
+local POWER_KEYS     = dodo.UF_DB_KEYS.power
+local POWER_DEFAULTS = dodo.UF_DEFAULTS.power
+local CASTBAR_KEYS     = dodo.UF_DB_KEYS.castbar
+local CASTBAR_DEFAULTS = dodo.UF_DEFAULTS.castbar
+local BUFFS_KEYS     = dodo.UF_DB_KEYS.buffs
+local BUFFS_DEFAULTS = dodo.UF_DEFAULTS.buffs
+local DEBUFFS_KEYS     = dodo.UF_DB_KEYS.debuffs
+local DEBUFFS_DEFAULTS = dodo.UF_DEFAULTS.debuffs
+local ABSORB_KEYS     = dodo.UF_DB_KEYS.absorb
+local ABSORB_DEFAULTS = dodo.UF_DEFAULTS.absorb
+local SIM_COMBAT_KEYS = dodo.UF_DB_KEYS.combat
+local SIM_COMBAT_DEF  = dodo.UF_DEFAULTS.combat
+local SIM_REST_KEYS   = dodo.UF_DB_KEYS.rest
+local SIM_REST_DEF    = dodo.UF_DEFAULTS.rest
+local SIM_LEADER_KEYS = dodo.UF_DB_KEYS.leader
+local SIM_LEADER_DEF  = dodo.UF_DEFAULTS.leader
 
 -- MultiDropDown은 nil을 true(체크)로 해석 — false 기본값 항목 초기화 필요
 local FALSE_DEFAULTS = {
-	unitframePowerPlayer   = false,
 	unitframePowerFocus    = false,
-	unitframeCastbarPlayer = false,
 	unitframeCastbarFocus  = false,
 	unitframeBuffsPlayer   = false,
 	unitframeBuffsFocus    = false,
@@ -96,13 +101,6 @@ local BUFF_ICONS   = { 132341, 132362, 132352, 132351, 613534 }
 local DEBUFF_ICONS = { 237517, 136105, 132344, 132090, 237553 }
 
 local HEALTH_FILL_COLOR = { 0.25, 0.70, 0.25 }
-
-local SIM_COMBAT_KEYS = { player = "unitframeCombatPlayer", target = "unitframeCombatTarget", focus = "unitframeCombatFocus", boss = "unitframeCombatBoss" }
-local SIM_COMBAT_DEF  = { player = true,  target = false, focus = false, boss = false }
-local SIM_REST_KEYS   = { player = "unitframeRestPlayer" }
-local SIM_REST_DEF    = { player = true }
-local SIM_LEADER_KEYS = { player = "unitframeLeaderPlayer", target = "unitframeLeaderTarget", focus = "unitframeLeaderFocus", boss = "unitframeLeaderBoss" }
-local SIM_LEADER_DEF  = { player = true, target = true, focus = false, boss = false }
 
 local function preview_get(db_keys, defaults, unit)
 	local key = db_keys[unit]
@@ -572,6 +570,8 @@ end
 -- /dd 설정 등록
 -- ==============================
 dodo.RegisterOption("유닛프레임", function(category)
+	local D = dodo.UF_DEFAULTS
+
 	-- false가 기본인 항목 초기화 (nil → MultiDropDown이 체크로 오인 방지)
 	if dodoDB then
 		for key, val in pairs(FALSE_DEFAULTS) do
@@ -582,7 +582,7 @@ dodo.RegisterOption("유닛프레임", function(category)
 	-- 마스터 토글
 	local _, master_setting = dodo.UI:SettingsCheckbox(category, "enableUnitframeModule", "유닛프레임 활성화",
 		"유닛프레임 모듈을 활성화합니다.",
-		true, function(val)
+		D.enableUnitframeModule, function(val)
 			if dodoDB then dodoDB.enableUnitframeModule = val end
 			if dodo.UpdateUnitframeModuleState then dodo.UpdateUnitframeModuleState() end
 			refresh_preview()
@@ -609,7 +609,7 @@ dodo.RegisterOption("유닛프레임", function(category)
 			if k == key then apply_power(unit) end
 		end
 		refresh_preview()
-	end))
+	end, "유닛프레임 아래에 자원 바를 표시합니다."))
 	-- PanelInitializer는 GetSetting 없음 → SetParentInitializer 내부 크래시 방지
 	if power_init then power_init.GetSetting = function() return nil end end
 
@@ -647,7 +647,7 @@ dodo.RegisterOption("유닛프레임", function(category)
 		local unit = unit_map[key]
 		if unit then apply_castbar(unit, selected) end
 		refresh_preview()
-	end))
+	end, "주문을 시전할 때, 시전바를 표시합니다."))
 
 	-- 보호막
 	T(dodo.UI:SettingsMultiDropDown(category, "보호막 표시", {
@@ -660,7 +660,7 @@ dodo.RegisterOption("유닛프레임", function(category)
 			if k == key then apply_absorb(unit) end
 		end
 		refresh_preview()
-	end))
+	end, "생명력 바에 보호막과 흡수량을 표시합니다."))
 
 	-- 강화 및 약화 효과 섹션
 	T(dodo.UI:SettingsSectionHeader(category, "강화 및 약화 효과"))
@@ -677,7 +677,7 @@ dodo.RegisterOption("유닛프레임", function(category)
 			if k == key then apply_buffs(unit, selected) end
 		end
 		refresh_preview()
-	end))
+	end, "강화효과 아이콘을 표시합니다."))
 
 	-- 약화효과
 	T(dodo.UI:SettingsMultiDropDown(category, "약화효과", {
@@ -691,7 +691,7 @@ dodo.RegisterOption("유닛프레임", function(category)
 			if k == key then apply_debuffs(unit, selected) end
 		end
 		refresh_preview()
-	end))
+	end, "약화효과 아이콘을 표시합니다."))
 
 	-- 추가기능 섹션
 	T(dodo.UI:SettingsSectionHeader(category, "추가기능"))
@@ -711,7 +711,7 @@ dodo.RegisterOption("유닛프레임", function(category)
 		local map = { unitframeLeaderPlayer = dodo.PlayerFrame, unitframeLeaderTarget = dodo.TargetFrame, unitframeLeaderFocus = dodo.FocusFrame }
 		if map[key] then toggle(map[key], 'LeaderIndicator', selected) end
 		refresh_preview()
-	end))
+	end, "파티장 아이콘을 표시합니다."))
 
 	-- 휴식 표시
 	T(dodo.UI:SettingsMultiDropDown(category, "휴식 표시", {
@@ -722,7 +722,7 @@ dodo.RegisterOption("유닛프레임", function(category)
 		if dodoDB then dodoDB[key] = selected end
 		if key == "unitframeRestPlayer" then toggle(dodo.PlayerFrame, 'RestingIndicator', selected) end
 		refresh_preview()
-	end))
+	end, "휴식장소 아이콘을 표시합니다."))
 
 	-- 전투 표시
 	T(dodo.UI:SettingsMultiDropDown(category, "전투 표시", {
@@ -739,7 +739,7 @@ dodo.RegisterOption("유닛프레임", function(category)
 			for i = 1, 5 do toggle(_G['dodoBossFrame'..i], 'CombatIndicator', selected) end
 		end
 		refresh_preview()
-	end))
+	end, "전투 중 아이콘을 표시합니다."))
 
 	local function _shown() return master_setting:GetValue() end
 	for _, v in ipairs(_sub) do if v.AddShownPredicate then v:AddShownPredicate(_shown) end end

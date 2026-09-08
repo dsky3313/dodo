@@ -36,12 +36,6 @@ local function checkbox_on_click(self)
     if self.set_func then
         self.set_func(self:GetChecked())
     end
-    if _G.dodoEditModePanel and _G.dodoEditModePanel.UpdateDisabledStates then
-        _G.dodoEditModePanel:UpdateDisabledStates()
-    end
-    if _G.dodoEditModeSystemPanel and _G.dodoEditModeSystemPanel.UpdateDisabledStates then
-        _G.dodoEditModeSystemPanel:UpdateDisabledStates()
-    end
 end
 
 local function dropdown_refresh_text(dropdown)
@@ -67,9 +61,6 @@ local function dropdown_menu_setup(owner, root_description)
             function()
                 set_func(item.value)
                 owner:RefreshText()
-                if _G.dodoEditModePanel and _G.dodoEditModePanel.UpdateDisabledStates then
-                    _G.dodoEditModePanel:UpdateDisabledStates()
-                end
             end
         )
     end
@@ -85,9 +76,6 @@ local function slider_on_value_changed(self, value)
     slider_container:FormatValue(value)
     if main_frame.set_func then
         main_frame.set_func(value)
-    end
-    if _G.dodoEditModePanel and _G.dodoEditModePanel.UpdateDisabledStates then
-        _G.dodoEditModePanel:UpdateDisabledStates()
     end
 end
 
@@ -109,12 +97,6 @@ local function editbox_on_enter_pressed(self)
         self.set_func(self:GetText())
     end
     self:ClearFocus()
-    if _G.dodoEditModePanel and _G.dodoEditModePanel.UpdateDisabledStates then
-        _G.dodoEditModePanel:UpdateDisabledStates()
-    end
-    if _G.dodoEditModeSystemPanel and _G.dodoEditModeSystemPanel.UpdateDisabledStates then
-        _G.dodoEditModeSystemPanel:UpdateDisabledStates()
-    end
 end
 
 local function editbox_on_focus_gained(self)
@@ -319,6 +301,7 @@ local Formatters = {
     ["Decimal2"] = function(v) return string_format("%.2f", v or 0) end,
 }
 
+-- 설정 항목들 사이 섹션 구분 제목 텍스트
 function dodo.UI:SettingsSectionHeader(category, text)
     local layout = SettingsPanel:GetLayout(category)
     local init = CreateSettingsListSectionHeaderInitializer(text)
@@ -326,6 +309,7 @@ function dodo.UI:SettingsSectionHeader(category, text)
     return init
 end
 
+-- 자유형 커스텀 프레임 삽입 — mixin_ref에 OnLoad/Update/GetExtent 구현해서 전달
 function dodo.UI:SettingsAddPreview(category, mixin_ref)
     local layout = SettingsPanel:GetLayout(category)
     if not layout then return end
@@ -350,6 +334,7 @@ function dodo.UI:SettingsAddPreview(category, mixin_ref)
     layout:AddInitializer(initializer)
 end
 
+-- 탭 전환 가능한 커스텀 미리보기 프레임 — 탭 클릭 시 OnTabSelected(tabIndex) 호출
 ---@param tabs string[] 탭 레이블 배열 (예: {"기본", "공격대 및 전장"})
 ---@param mixin_ref table OnLoad / Update / GetExtent / OnTabSelected(tabIndex) 구현
 function dodo.UI:SettingsTabbedPreview(category, tabs, mixin_ref)
@@ -420,6 +405,7 @@ function dodo.UI:SettingsTabbedPreview(category, tabs, mixin_ref)
     return initializer
 end
 
+-- 체크박스 — dodoDB[varName]에 bool 저장
 ---@return table initializer, table setting
 function dodo.UI:SettingsCheckbox(category, varName, label, tooltip, default, func)
     local varID = "dodo_" .. varName
@@ -433,6 +419,7 @@ function dodo.UI:SettingsCheckbox(category, varName, label, tooltip, default, fu
     return initializer, setting
 end
 
+-- 드롭다운 — dodoDB[varName]에 string 저장, options = { {value, text}, ... }
 ---@return table setting, table initializer
 function dodo.UI:SettingsDropDown(category, varName, label, tooltip, options, default, func)
     local varID = "dodo_" .. varName
@@ -451,6 +438,7 @@ function dodo.UI:SettingsDropDown(category, varName, label, tooltip, options, de
     return setting, initializer
 end
 
+-- 슬라이더 — dodoDB[varName]에 number 저장, formatType: "Decimal1"/"Percent" 등
 ---@return table initializer, table setting
 function dodo.UI:SettingsSlider(category, varName, label, tooltip, min, max, step, default, formatType, func)
     local varID = "dodo_" .. varName
@@ -466,6 +454,7 @@ function dodo.UI:SettingsSlider(category, varName, label, tooltip, min, max, ste
     return initializer, setting
 end
 
+-- 체크박스+드롭다운 결합 한 행 — CB bool, DD string 각각 별도 DB키로 저장
 ---@return table cbSetting, table ddSetting, table initializer
 function dodo.UI:SettingsCheckboxDropDown(category, varNameCB, varNameDD, label, tooltip, options, defaultCB, defaultDD, func)
     local varID_CB = "dodo_" .. varNameCB
@@ -492,6 +481,7 @@ function dodo.UI:SettingsCheckboxDropDown(category, varNameCB, varNameDD, label,
     return cbSetting, ddSetting, initializer
 end
 
+-- 체크박스+슬라이더 결합 한 행 — CB bool, Slider number 각각 별도 DB키로 저장
 ---@return table cbSetting, table sliderSetting, table initializer
 function dodo.UI:SettingsCheckboxSlider(category, varNameCB, varNameSlider, label, tooltip, min, max, step, defaultCB, defaultSlider, formatType, func)
     local varID_CB = "dodo_" .. varNameCB
@@ -512,6 +502,7 @@ function dodo.UI:SettingsCheckboxSlider(category, varNameCB, varNameSlider, labe
     return cbSetting, sliderSetting, initializer
 end
 
+-- 색상 선택 행 — dodoDB[varName]에 "rrggbbaa" hex string 저장
 ---@return table setting, table initializer
 function dodo.UI:SettingsColorRow(category, varName, label, tooltip, default, func)
     local varID = "dodo_" .. varName
@@ -599,6 +590,7 @@ function dodoMultiDropDownMixin:Init(initializer)
 
 end
 
+-- 멀티 체크박스 드롭다운 — items = { {text, key, default?}, ... }, 항목별 bool을 dodoDB[key]에 저장
 function dodo.UI:SettingsMultiDropDown(category, label, items, func, tooltip)
     local data = { label = label, tooltip = tooltip, items = items, func = func }
     local init = Settings.CreatePanelInitializer("dodoMultiDropDownTemplate", data)
@@ -607,10 +599,20 @@ function dodo.UI:SettingsMultiDropDown(category, label, items, func, tooltip)
     return init
 end
 
+-- 액션 드롭다운 — items = { {text, onClick}, ... }, 선택 시 onClick() 실행 (DB 저장 없음)
 function dodo.UI:SettingsActionDropDown(category, label, items, tooltip)
     local data = { label = label, tooltip = tooltip, items = items, mode = "action" }
     local init = Settings.CreatePanelInitializer("dodoMultiDropDownTemplate", data)
     local layout = SettingsPanel:GetLayout(category)
     if layout then layout:AddInitializer(init) end
+    return init
+end
+
+-- 버튼 — label은 버튼 왼쪽 설명 텍스트, text는 버튼 위에 표시될 텍스트
+function dodo.UI:SettingsButton(category, label, text, on_click_func, tooltip)
+    local layout = SettingsPanel:GetLayout(category)
+    if not layout or not CreateSettingsButtonInitializer then return end
+    local init = CreateSettingsButtonInitializer(label, text, on_click_func, tooltip, false)
+    layout:AddInitializer(init)
     return init
 end

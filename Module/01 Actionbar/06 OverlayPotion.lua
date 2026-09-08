@@ -10,31 +10,9 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local BAR_INDEX_MAP = dodo.BAR_INDEX_MAP
-
-local POTION_DB_KEYS = {
-    ["MainActionBar"]       = "useActionbarPotionProcBar1",
-    ["MultiBarBottomLeft"]  = "useActionbarPotionProcBar2",
-    ["MultiBarBottomRight"] = "useActionbarPotionProcBar3",
-    ["MultiBarRight"]       = "useActionbarPotionProcBar4",
-    ["MultiBarLeft"]        = "useActionbarPotionProcBar5",
-    ["MultiBar5"]           = "useActionbarPotionProcBar6",
-    ["MultiBar6"]           = "useActionbarPotionProcBar7",
-    ["MultiBar7"]           = "useActionbarPotionProcBar8",
-}
-
-local POTION_DEFAULTS = {
-    ["MainActionBar"]       = false,
-    ["MultiBarBottomLeft"]  = false,
-    ["MultiBarBottomRight"] = false,
-    ["MultiBarRight"]       = false,
-    ["MultiBarLeft"]        = false,
-    ["MultiBar5"]           = false,
-    ["MultiBar6"]           = false,
-    ["MultiBar7"]           = true,
-    ["StanceBar"]           = false,
-    ["PetActionBar"]        = false,
-}
+local BAR_INDEX_MAP    = dodo.BAR_INDEX_MAP
+local POTION_DB_KEYS   = dodo.AB_DB_KEYS.potion
+local POTION_DEFAULTS  = dodo.AB_DEFAULTS.potion
 
 local PotionIds = { -- 물약 사용가능 알림
     [241308] = true, -- 빛의 잠재력 2성
@@ -149,5 +127,3 @@ dodo.ActionbarApplyPotionProc = function()
 end
 
 -- ==============================
-dodo.AB_POTION_DB_KEYS  = POTION_DB_KEYS
-dodo.AB_POTION_DEFAULTS = POTION_DEFAULTS

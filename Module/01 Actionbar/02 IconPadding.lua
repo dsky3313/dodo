@@ -10,59 +10,11 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local BAR_INDEX_MAP = dodo.BAR_INDEX_MAP
-
-local PADDING_DEFAULTS = {
-    ["MainActionBar"]       = true,
-    ["MultiBarBottomLeft"]  = true,
-    ["MultiBarBottomRight"] = true,
-    ["MultiBarRight"]       = true,
-    ["MultiBarLeft"]        = true,
-    ["MultiBar5"]           = true,
-    ["MultiBar6"]           = true,
-    ["MultiBar7"]           = true,
-    ["StanceBar"]           = true,
-    ["PetActionBar"]        = true,
-}
-
-local PADDING_VAL_DEFAULTS = {
-    ["MainActionBar"]       = 0,
-    ["MultiBarBottomLeft"]  = 0,
-    ["MultiBarBottomRight"] = 0,
-    ["MultiBarRight"]       = 0,
-    ["MultiBarLeft"]        = 0,
-    ["MultiBar5"]           = 0,
-    ["MultiBar6"]           = 0,
-    ["MultiBar7"]           = 0,
-    ["StanceBar"]           = 0,
-    ["PetActionBar"]        = 0,
-}
-
-local PADDING_DB_KEYS = {
-    ["MainActionBar"]       = "useActionbarPaddingBar1",
-    ["MultiBarBottomLeft"]  = "useActionbarPaddingBar2",
-    ["MultiBarBottomRight"] = "useActionbarPaddingBar3",
-    ["MultiBarRight"]       = "useActionbarPaddingBar4",
-    ["MultiBarLeft"]        = "useActionbarPaddingBar5",
-    ["MultiBar5"]           = "useActionbarPaddingBar6",
-    ["MultiBar6"]           = "useActionbarPaddingBar7",
-    ["MultiBar7"]           = "useActionbarPaddingBar8",
-    ["StanceBar"]           = "useActionbarPaddingBarStance",
-    ["PetActionBar"]        = "useActionbarPaddingBarPet",
-}
-
-local PADDING_VAL_KEYS = {
-    ["MainActionBar"]       = "actionbarPaddingBar1",
-    ["MultiBarBottomLeft"]  = "actionbarPaddingBar2",
-    ["MultiBarBottomRight"] = "actionbarPaddingBar3",
-    ["MultiBarRight"]       = "actionbarPaddingBar4",
-    ["MultiBarLeft"]        = "actionbarPaddingBar5",
-    ["MultiBar5"]           = "actionbarPaddingBar6",
-    ["MultiBar6"]           = "actionbarPaddingBar7",
-    ["MultiBar7"]           = "actionbarPaddingBar8",
-    ["StanceBar"]           = "actionbarPaddingBarStance",
-    ["PetActionBar"]        = "actionbarPaddingBarPet",
-}
+local BAR_INDEX_MAP        = dodo.BAR_INDEX_MAP
+local PADDING_DB_KEYS      = dodo.AB_DB_KEYS.padding
+local PADDING_VAL_KEYS     = dodo.AB_DB_KEYS.paddingVal
+local PADDING_DEFAULTS     = dodo.AB_DEFAULTS.padding
+local PADDING_VAL_DEFAULTS = dodo.AB_DEFAULTS.paddingVal
 
 
 
@@ -156,8 +108,4 @@ dodo.ActionbarApplyPadding = function()
     end
 end
 
-dodo.AB_PADDING_DB_KEYS      = PADDING_DB_KEYS
-dodo.AB_PADDING_VAL_KEYS     = PADDING_VAL_KEYS
-dodo.AB_PADDING_DEFAULTS     = PADDING_DEFAULTS
-dodo.AB_PADDING_VAL_DEFAULTS = PADDING_VAL_DEFAULTS
 dodo.AB_is_bar_padding_enabled = is_bar_padding_enabled

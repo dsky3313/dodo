@@ -29,6 +29,7 @@ local Config = {
 }
 
 -- 현 시즌 M+ 던전은 initialize()에서 dodo.Dungeons 순회해 동적 주입
+local anchor_frame = nil
 local dungeon_list = {}
 
 -- ==============================
@@ -480,19 +481,13 @@ end
 local function create_ui()
     if main_frame then return end
 
-    local anchorFrame
-    if dodo.EditMode then
-        anchorFrame = dodo.EditMode:GetSystem("Keystone")
-    end
-
     main_frame = CreateFrame("Frame", "dodo_KeystoneMainFrame", UIParent, "BackdropTemplate")
     main_frame:SetSize(200, 220)
     main_frame:SetFrameStrata(Config.frameStrata)
 
-    -- EditMode 앵커 프레임에 종속되도록 위치 설정
     main_frame:ClearAllPoints()
-    if anchorFrame then
-        main_frame:SetPoint("CENTER", anchorFrame, "CENTER", 0, 0)
+    if anchor_frame then
+        main_frame:SetPoint("CENTER", anchor_frame, "CENTER", 0, 0)
     else
         local savedX = (dodoDB and dodoDB.keystoneX) or Config.defaultX
         local savedY = (dodoDB and dodoDB.keystoneY) or Config.defaultY
@@ -739,9 +734,17 @@ local function on_init_event(self, event, arg1)
         dodoDB = dodoDB or {}
         self:UnregisterEvent("ADDON_LOADED")
     elseif event == "PLAYER_LOGIN" then
-        if dodo.EditMode then
-            dodo.EditMode:CreateSystem("Keystone", "쐐기돌 목록", "쐐기돌 목록", UIParent, 200, 220, { point = "TOPLEFT", relativeTo = "UIParent", relativePoint = "TOPLEFT", xOfs = 20, yOfs = -140 }, nil, function() return dodoDB and dodoDB.enableKeystoneModule ~= false end)
-        end
+        local LEM = LibStub("LibEditMode")
+        local _dp = { point="TOPLEFT", relativePoint="TOPLEFT", xOfs=20, yOfs=-140 }
+        local _sv = dodoDB.editMode and dodoDB.editMode["Keystone"]
+        local _pt = (_sv and _sv.point) and _sv or _dp
+        anchor_frame = CreateFrame("Frame", "dodoEditModeKeystone", UIParent)
+        anchor_frame:SetSize(200, 220)
+        anchor_frame:SetPoint(_pt.point, UIParent, _pt.relativePoint or _pt.point, _pt.xOfs or 0, _pt.yOfs or 0)
+        LEM:AddFrame(anchor_frame, function(f, l, p, x, y)
+            dodoDB.editMode = dodoDB.editMode or {}
+            dodoDB.editMode["Keystone"] = { point=p, relativeTo="UIParent", relativePoint=p, xOfs=x, yOfs=y }
+        end, { point=_pt.point, x=_pt.xOfs or 0, y=_pt.yOfs or 0 }, "쐐기돌 목록")
         initialize()
         local activeLevel = C_ChallengeMode and C_ChallengeMode.GetActiveKeystoneInfo and C_ChallengeMode.GetActiveKeystoneInfo()
         is_challenge_active = (activeLevel and activeLevel > 0)

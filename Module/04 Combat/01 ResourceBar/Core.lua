@@ -29,6 +29,8 @@ RB.barConfigs = {
     { name = "ResourceBar2", width = 272, height = 7, y = -4, template = "ResourceBar2Template" }
 }
 
+local anchor_frame = nil
+
 -- ==============================
 -- 캐싱
 -- ==============================
@@ -96,7 +98,7 @@ local function update_option()
     RB.bar2Frame:SetSize(width, height2)
 
     -- 폰트 크기 변경
-    local fontSize = (db and db.resourceBarFontSize) or 12
+    local fontSize = (db and db.resourceBarFontSize) or dodo.COMBAT_DEFAULTS.resourceBarFontSize
     if RB.bar1Frame.countPower then
         local font, _, flags = RB.bar1Frame.countPower:GetFont()
         if font then
@@ -117,7 +119,7 @@ local function update_option()
     end
 
     -- EditMode 가상 앵커 연동 및 물리 격리 배치
-    local anchorFrame = dodo.EditMode and dodo.EditMode:GetSystem("ResourceBar")
+    local anchorFrame = anchor_frame
     if anchorFrame then
         -- 앵커 크기 동적 갱신 (두 바의 높이 + 간격 포함)
         anchorFrame:SetSize(width, height + 4 + height2)
@@ -194,7 +196,7 @@ dodo.UpdateResourceBarVisibility = update_visibility
 local function create_ui()
     if RB.bar1Frame then return end
 
-    local anchorFrame = dodo.EditMode and dodo.EditMode:GetSystem("ResourceBar")
+    local anchorFrame = anchor_frame
 
     -- 자원바1 생성
     RB.bar1Frame = CreateFrame("StatusBar", "ResourceBar1", UIParent, RB.barConfigs[1].template)
@@ -231,10 +233,38 @@ local function on_event(self, event, arg1)
         dodo.DB = dodo.DB or dodoDB or {}
         update_smooth()
 
-        -- EditMode 시스템 가상 앵커 등록 (2dodo 9번 규칙)
-        if dodo.EditMode then
-            dodo.EditMode:CreateSystem("ResourceBar", "자원바", "자원바와 버프 추적바의 위치를 조정합니다.", UIParent, 272, 21, { point = "CENTER", relativeTo = "UIParent", relativePoint = "CENTER", xOfs = 0, yOfs = RB.barConfigs[1].y }, nil, function() return dodo.DB and dodo.DB.enableResourceBarModule ~= false end)
-        end
+        local LEM = LibStub("LibEditMode")
+        local _dp = { point="CENTER", relativePoint="CENTER", xOfs=0, yOfs=RB.barConfigs[1].y }
+        local _sv = dodoDB.editMode and dodoDB.editMode["ResourceBar"]
+        local _pt = (_sv and _sv.point) and _sv or _dp
+        anchor_frame = CreateFrame("Frame", "dodoEditModeResourceBar", UIParent)
+        anchor_frame:SetSize(272, 21)
+        anchor_frame:SetPoint(_pt.point, UIParent, _pt.relativePoint or _pt.point, _pt.xOfs or 0, _pt.yOfs or 0)
+        LEM:AddFrame(anchor_frame, function(f, l, p, x, y)
+            dodoDB.editMode = dodoDB.editMode or {}
+            dodoDB.editMode["ResourceBar"] = { point=p, relativeTo="UIParent", relativePoint=p, xOfs=x, yOfs=y }
+            update_option()
+        end, { point=_pt.point, x=_pt.xOfs or 0, y=_pt.yOfs or 0 }, "자원바")
+        LEM:AddFrameSettings(anchor_frame, {
+            { kind=LEM.SettingType.Checkbox, name="직업자원 막대", default=true,
+              get=function(l) return dodoDB and dodoDB.useResourceBar1 ~= false end,
+              set=function(l,v) if dodoDB then dodoDB.useResourceBar1=v end; if dodo.UpdateResourceBarVisibility then dodo.UpdateResourceBarVisibility() end end },
+            { kind=LEM.SettingType.Checkbox, name="보조자원 막대", default=true,
+              get=function(l) return dodoDB and dodoDB.useResourceBar2 ~= false end,
+              set=function(l,v) if dodoDB then dodoDB.useResourceBar2=v end; if dodo.UpdateResourceBarVisibility then dodo.UpdateResourceBarVisibility() end end },
+            { kind=LEM.SettingType.Checkbox, name="부드러운 증감", default=true,
+              get=function(l) return dodoDB and dodoDB.useResourceBarSmooth ~= false end,
+              set=function(l,v) if dodoDB then dodoDB.useResourceBarSmooth=v end; if dodo.ResourceBar and dodo.ResourceBar.UpdateSmooth then dodo.ResourceBar.UpdateSmooth() end end },
+            { kind=LEM.SettingType.Slider, name="바 가로 크기", default=272, minValue=200, maxValue=300, valueStep=2,
+              get=function(l) return dodoDB and dodoDB.resourceBarWidth or dodo.COMBAT_DEFAULTS.resourceBarWidth end,
+              set=function(l,v) if dodoDB then dodoDB.resourceBarWidth=v end; if dodo.ResourceBar and dodo.ResourceBar.UpdateOption then dodo.ResourceBar.UpdateOption() end end },
+            { kind=LEM.SettingType.Slider, name="바 세로 크기", default=10, minValue=6, maxValue=20, valueStep=1,
+              get=function(l) return dodoDB and dodoDB.resourceBarHeight or dodo.COMBAT_DEFAULTS.resourceBarHeight end,
+              set=function(l,v) if dodoDB then dodoDB.resourceBarHeight=v end; if dodo.ResourceBar and dodo.ResourceBar.UpdateOption then dodo.ResourceBar.UpdateOption() end end },
+            { kind=LEM.SettingType.Slider, name="수치 글자 크기", default=12, minValue=8, maxValue=18, valueStep=1,
+              get=function(l) return dodoDB and dodoDB.resourceBarFontSize or dodo.COMBAT_DEFAULTS.resourceBarFontSize end,
+              set=function(l,v) if dodoDB then dodoDB.resourceBarFontSize=v end; if dodo.ResourceBar and dodo.ResourceBar.UpdateOption then dodo.ResourceBar.UpdateOption() end end },
+        })
 
         initialize()
 

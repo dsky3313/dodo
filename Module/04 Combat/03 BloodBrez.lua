@@ -54,6 +54,7 @@ local brez_desat_cache = nil
 local is_sated_active  = false
 
 -- UI 객체 local 캡슐화
+local anchor_frame     = nil
 local main_frame       = nil
 local blood_icon       = nil
 local brez_icon        = nil
@@ -66,11 +67,10 @@ local ticker_obj       = nil
 -- 기능 2: 상태 업데이트
 -- ==============================
 local function update_position()
-    local anchorFrame = dodo.EditMode and dodo.EditMode:GetSystem("BloodBrez")
     if not main_frame then return end
     main_frame:ClearAllPoints()
-    if anchorFrame then
-        main_frame:SetPoint("CENTER", anchorFrame, "CENTER", 0, 0)
+    if anchor_frame then
+        main_frame:SetPoint("CENTER", anchor_frame, "CENTER", 0, 0)
     else
         main_frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", Config.iconPositionX, Config.iconPositionY)
     end
@@ -201,8 +201,8 @@ local function apply_icons()
 end
 
 local function apply_size()
-    local sz  = (dodoDB and dodoDB.blbrIconSize)    or 46
-    local pad = (dodoDB and dodoDB.blbrIconPadding) or 2
+    local sz  = (dodoDB and dodoDB.blbrIconSize)    or dodo.COMBAT_DEFAULTS.blbrIconSize
+    local pad = (dodoDB and dodoDB.blbrIconPadding) or dodo.COMBAT_DEFAULTS.blbrIconPadding
     Config.iconsize[1] = sz
     Config.iconsize[2] = sz
     Config.iconPadding = pad
@@ -260,9 +260,28 @@ local function on_event(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
         dodoDB = dodoDB or {}
     elseif event == "PLAYER_LOGIN" then
-        if dodo.EditMode then
-            dodo.EditMode:CreateSystem("BloodBrez", "블러드 & 전투부활", "블러드 & 전투부활", UIParent, 100, 50, { point = "BOTTOMLEFT", relativeTo = "UIParent", relativePoint = "BOTTOMLEFT", xOfs = Config.iconPositionX, yOfs = Config.iconPositionY }, nil, function() return dodoDB and dodoDB.useBloodBrez ~= false end)
-        end
+        local LEM = LibStub("LibEditMode")
+        local _dp = { point="BOTTOMLEFT", relativePoint="BOTTOMLEFT", xOfs=Config.iconPositionX, yOfs=Config.iconPositionY }
+        local _sv = dodoDB.editMode and dodoDB.editMode["BloodBrez"]
+        local _pt = (_sv and _sv.point) and _sv or _dp
+        anchor_frame = CreateFrame("Frame", "dodoEditModeBloodBrez", UIParent)
+        anchor_frame:SetSize(100, 50)
+        anchor_frame:SetPoint(_pt.point, UIParent, _pt.relativePoint or _pt.point, _pt.xOfs or 0, _pt.yOfs or 0)
+        LEM:AddFrame(anchor_frame, function(f, l, p, x, y)
+            dodoDB.editMode = dodoDB.editMode or {}
+            dodoDB.editMode["BloodBrez"] = { point=p, relativeTo="UIParent", relativePoint=p, xOfs=x, yOfs=y }
+            update_position()
+        end, { point=_pt.point, x=_pt.xOfs or 0, y=_pt.yOfs or 0 }, "블러드 & 전투부활")
+        LEM:AddFrameSettings(anchor_frame, {
+            { kind=LEM.SettingType.Slider, name="아이콘 크기", default=50, minValue=30, maxValue=60, valueStep=2,
+              disabled=function() return dodoDB and dodoDB.useBloodBrez == false end,
+              get=function(l) return dodoDB and dodoDB.blbrIconSize or dodo.COMBAT_DEFAULTS.blbrIconSize end,
+              set=function(l,v) if dodoDB then dodoDB.blbrIconSize=v end; if dodo.BloodBrezApplySize then dodo.BloodBrezApplySize() end end },
+            { kind=LEM.SettingType.Slider, name="아이콘 간격", default=4, minValue=0, maxValue=10, valueStep=1,
+              disabled=function() return dodoDB and dodoDB.useBloodBrez == false end,
+              get=function(l) return dodoDB and dodoDB.blbrIconPadding or dodo.COMBAT_DEFAULTS.blbrIconPadding end,
+              set=function(l,v) if dodoDB then dodoDB.blbrIconPadding=v end; if dodo.BloodBrezApplySize then dodo.BloodBrezApplySize() end end },
+        })
         create_ui()
         apply_size()
         apply_icons()

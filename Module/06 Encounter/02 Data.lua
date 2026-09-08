@@ -4,9 +4,12 @@
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 
---[[ eventID > spellID 역조회 매크로
-/run local t={298,299,300,301} for _,id in ipairs(t) do local i=C_EncounterEvents.GetEventInfo(id) print(id.."→"..(i and tostring(i.spellID) or "nil")) end
-]]
+-- eventID > spellID 역조회 매크로
+-- /run local t={298,299,300,301} for _,id in ipairs(t) do local i=C_EncounterEvents.GetEventInfo(id) print(id.."→"..(i and tostring(i.spellID) or "nil")) end
+
+-- 스킬명 조회 매크로
+-- /run local t={1301111,1301350} for _,id in ipairs(t) do print(id, C_Spell.GetSpellName(id)) end
+
 
 -- role 기준으로 타임라인 막대 색상 자동 적용
 -- sound = "Tank" 지정하면 "탱커" 텍스트 자동. text 필드로 오버라이드 가능.
@@ -740,14 +743,14 @@ dodo.EncounterData = {
     },
 
     -- 세스랄리스 사원 (mapID 1877)
-    [2124] = { -- 아드리스와 아스픽스
+    [2124] = { -- 애더리스와 아스픽스
         events = {
-            { spellID = 1288049, role = "Heal",     sound = "AOE"   }, -- 번개와 천둥
-            { spellID = 1311804, role = "Heal",     sound = "AOE"   }, -- 과부하
-            { spellID = 1311805, role = "Other"                     }, -- 폭풍
-            { spellID = 1289059, role = "Heal",     sound = "AOE"   }, -- 강풍의 힘
-            { spellID = 1289754, role = "Other"                     }, -- 폭풍
-            { spellID = 1292518, role = "Heal",     sound = "AOE"   }, -- 번개와 천둥
+            { spellID = 1288049, role = "Heal",     sound = "Soak"  }, -- 천둥과 번개
+            { spellID = 1311804, role = "Tank",     sound = "Tank"  }, -- 과부하
+            { spellID = 1311805, role = "Other",    sound = "Pool"  }, -- 뇌우의 바람
+            { spellID = 1289059, role = "Heal",     sound = "AOE"   }, -- 풍력
+            { spellID = 1289754, role = "Other"                     }, -- 뇌우의 바람
+            { spellID = 1292518, role = "Heal",     sound = "AOE"   }, -- 천둥과 번개
         },
         rules = {
             { dur = 5,  eID = 1289059 }, { dur = 9,  eID = 1288049 }, { dur = 29, eID = 1311805 }, { dur = 39, eID = 1311804 },
@@ -757,34 +760,34 @@ dodo.EncounterData = {
             { dur = 19, eID = 1289059, seq = 1 }, { dur = 19, eID = 1311805, seq = 2 }, -- P2 loop
         },
     },
-    [2125] = { -- 밀리크사
+    [2125] = { -- 메레크타
         events = {
-            { spellID = 264172,  role = "Mechanic", sound = "Phase" }, -- 굴파기
-            { spellID = 1290029, role = "Other"                     }, -- 뱀 무리 휘감기
-            { spellID = 1289109, role = "Other"                     }, -- 뇌격 분사
+            { spellID = 264172,  role = "Mechanic", sound = "Phase" }, -- 잠복
+            { spellID = 1290029, role = "Other"                     }, -- 뱀들의 똬리
+            { spellID = 1289109, role = "Other"                     }, -- 천둥 타액
             { spellID = 1289205, role = "Mechanic", sound = "Adds"  }, -- 부화
-            { spellID = 1290797, role = "Tank",     sound = "Tank"  }, -- 번개 물어뜯기
-            { spellID = 1293048, role = "Heal",     sound = "AOE"   }, -- 독사 폭풍
+            { spellID = 1290797, role = "Tank",     sound = "Tank"  }, -- 번개 물기
+            { spellID = 1293048, role = "Heal",     sound = "AOE"   }, -- 뱀의 폭풍
         },
         rules = {
             { dur = 5,  eID = 1290797 }, { dur = 13, eID = 1290029 }, { dur = 25, eID = 1289109 },
             { dur = 36, eID = 1293048 }, { dur = 44, eID = 1289205 }, { dur = 49, eID = 264172  },
         },
     },
-    [2126] = { -- 가바즈트
+    [2126] = { -- 갈바즈트
         events = {
-            { spellID = 1309525, role = "Heal",     sound = "AOE"   }, -- 유도
-            { spellID = 1291618, role = "Mechanic", sound = "Phase" }, -- 번개 첨탑
+            { spellID = 1309525, role = "Heal",     sound = "AOE"   }, -- 전기 유도
+            { spellID = 1291618, role = "Mechanic", sound = "Phase" }, -- 번개의 첨탑
         },
         rules = {
             { dur = 5,  eID = 1291618 }, { dur = 20, eID = 1309525 },
             { dur = 22, eID = 1291618, seq = 1 }, { dur = 22, eID = 1309525, seq = 2 },
         },
     },
-    [2127] = { -- 세트랄리스의 화신
+    [2127] = { -- 세스랄리스의 화신
         events = {
-            { spellID = 1301963, role = "Other"                     }, -- 정화
-            { spellID = 1301202, role = "Other"                     }, -- 오염된 오물
+            { spellID = 1301963, role = "Other"                     }, -- 청소 완료
+            { spellID = 1301202, role = "Other"                     }, -- 모독의 오염
         },
         rules = {
             { dur = 15, eID = 1301202 },
@@ -886,20 +889,20 @@ dodo.EncounterData = {
     -- 날로라크의 소굴 (mapID 2825)
     [3207] = { -- 비축광
         events = {
-            { spellID = 1234233, role = "Heal",     sound = "AOE"    }, -- 부패한 보급
-            { spellID = 1253268, role = "Other",    sound = "Frontal" }, -- 대지 가르기
-            { spellID = 1235118, role = "Heal",     sound = "AOE"    }, -- 탐욕의 포효
+            { spellID = 1234233, role = "Heal",     sound = "AOE"    }, -- 더럽혀진 보급품
+            { spellID = 1253268, role = "Other",    sound = "Frontal" }, -- 대지를 가르는 격돌
+            { spellID = 1235118, role = "Heal",     sound = "AOE"    }, -- 게걸스러운 고함
         },
         rules = {
             { dur = 6,  eID = 1235118 }, { dur = 16, eID = 1253268 }, { dur = 30, eID = 1234233 },
         },
     },
-    [3208] = { -- 혹한 보초
+    [3208] = { -- 겨울의 파수꾼
         events = {
-            { spellID = 1235548, role = "Other",    sound = "Dispel" }, -- 빙하 고통
-            { spellID = 1235623, role = "Other"                      }, -- 격노한 돌풍
-            { spellID = 1235783, role = "Mechanic", sound = "Adds"   }, -- 얼음 가시 분쇄
-            { spellID = 1235656, role = "Heal",     sound = "AOE"    }, -- 차가운 얼음 폭우
+            { spellID = 1235548, role = "Heal",     sound = "Dispel" }, -- 혹한의 고문
+            { spellID = 1235623, role = "Other",    sound = "Pool"   }, -- 분노하는 돌풍
+            { spellID = 1235783, role = "Adds",     sound = "Adds"   }, -- 분쇄의 혹한째기
+            { spellID = 1235656, role = "Mechanic", sound = "Phase"  }, -- 얼어붙은 폭풍우
         },
         rules = {
             { dur = 7,  eID = 1235548 }, { dur = 13, eID = 1235623 },
@@ -908,11 +911,11 @@ dodo.EncounterData = {
     },
     [3209] = { -- 날로라크
         events = {
-            { spellID = 1255385, role = "Other"                     }, -- 강력한 포효
-            { spellID = 1242860, role = "Other"                     }, -- 메아리치는 강타
-            { spellID = 1243011, role = "Mechanic", sound = "Phase" }, -- 전쟁의 신의 분노
-            { spellID = 1243569, role = "Mechanic", sound = "Phase" }, -- 압도적 강공
-            { spellID = 1262846, role = "Other"                     }, -- 영혼 채찍질
+            { spellID = 1255385, role = "Other"                     }, -- 강대한 포효
+            { spellID = 1242860, role = "Other",    sound = "Pool"  }, -- 메아리치는 후려갈기기
+            { spellID = 1243011, role = "Mechanic", sound = "Phase" }, -- 전쟁 신의 격노
+            { spellID = 1243569, role = "Tank",     sound = "Tank"  }, -- 압도적인 맹공
+            { spellID = 1262846, role = "Other"                     }, -- 영혼 난타
         },
         rules = {
             { dur = 5,  eID = 1242860 }, { dur = 13, eID = 1243569 }, { dur = 54, eID = 1243011 },
@@ -1023,25 +1026,25 @@ dodo.EncounterData = {
     -- 송곳니의 제단 (mapID 2993)
     [3456] = { -- 라비
         events = {
-            { spellID = 1309522, role = "Mechanic", sound = "Phase"   }, -- 쉭쉭거리는 탐식
-            { spellID = 1296219, role = "Other"                       }, -- 악취 포효
-            { spellID = 1296220, role = "Heal",     sound = "AOE"    }, -- 삼중 분사
-            { spellID = 1296050, role = "Other",    sound = "Frontal" }, -- 되새김
-            { spellID = 1307894, role = "Mechanic", sound = "Phase"   }, -- 탐욕 짓밟기
+            { spellID = 1309522, role = "Mechanic", sound = "Phase"   }, -- 뱀의 탐색
+            { spellID = 1296219, role = "Other"                       }, -- 악취 나는 포효
+            { spellID = 1296220, role = "Heal",     sound = "AOE"    },  -- 삼중 사격
+            { spellID = 1296050, role = "Other",    sound = "Frontal" }, -- 게워내기
+            { spellID = 1307894, role = "Heal",     sound = "AOE"   }, -- 게걸스러운 발구르기
         },
         rules = {
             { dur = 8,  eID = 1296220 }, { dur = 13, eID = 1296050 }, { dur = 23, eID = 1307894 },
             { dur = 24, eID = 1296220 }, { dur = 25, eID = 1309522 }, { dur = 45, eID = 1309522 },
         },
     },
-    [3457] = { -- 뒤틀린 반뱀
+    [3457] = { -- 격동하는 똬리
         events = {
-            { spellID = 1299154, role = "Heal",     sound = "AOE"       }, -- 동기화 독액
-            { spellID = 1298949, role = "Tank",     sound = "Tank"      }, -- 낫 꼬리
-            { spellID = 1299940, role = "Other"                         }, -- 복수 맹공
-            { spellID = 1299053, role = "Mechanic", sound = "Phase"     }, -- 빈사 헐떡임
-            { spellID = 1310357, role = "Other",    sound = "Interrupt" }, -- 극독 탄막
-            { spellID = 1310547, role = "Other",    sound = "Interrupt" }, -- 극독 위축
+            { spellID = 1299154, role = "Heal",     sound = "AOE"       }, -- 동화된 맹독
+            { spellID = 1298949, role = "Tank",     sound = "Tank"      }, -- 꼬리 낫
+            { spellID = 1299940, role = "Other",    sound = "Frontal"   }, -- 원한 서린 공세
+            { spellID = 1299053, role = "Mechanic", sound = "Phase"     }, -- 죽음의 방울 소리
+            { spellID = 1310357, role = "Other",    sound = "Interrupt" }, -- 맹독 포화
+            { spellID = 1310547, role = "Other",    sound = "Interrupt" }, -- 유독한 쇠약
         },
         rules = {
             { dur = 1,  eID = 1299154 }, { dur = 7,  eID = 1298949 }, { dur = 14, eID = 1310357 },
@@ -1049,12 +1052,12 @@ dodo.EncounterData = {
             { dur = 10, eID = 1310547 }, -- P2
         },
     },
-    [3458] = { -- 줄가
+    [3458] = { -- 줄잔
         events = {
-            { spellID = 1301413, role = "Other"                     }, -- 뼈 베는 자
-            { spellID = 1300876, role = "Mechanic", sound = "Phase" }, -- 독아 의식
-            { spellID = 1301111, role = "Mechanic", sound = "Phase" }, -- 도끼 파쇄
-            { spellID = 1301350, role = "Tank",     sound = "Tank"  }, -- 베어 쓰러뜨리기
+            { spellID = 1301413, role = "Heal",     sound = "Soak"    }, -- 뼈절단자
+            { spellID = 1300876, role = "Mechanic", sound = "Phase"   }, -- 송곳니의 의식
+            { spellID = 1301111, role = "Other",    sound = "Frontal" }, -- 도끼분쇄자
+            { spellID = 1301350, role = "Tank",     sound = "Tank"    }, -- 찍어 넘기기
         },
         rules = {
             { dur = 32, eID = 1301413 },

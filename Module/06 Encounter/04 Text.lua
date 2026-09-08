@@ -45,6 +45,7 @@ local ROW_GAP           = 4
 local DEFAULT_ICON_SIZE = 30
 local DEFAULT_FONT_SIZE = 15
 
+local anchor_frame   = nil
 local active_alerts  = {}
 local frame_pool     = {}
 local icon_count     = 0
@@ -71,7 +72,7 @@ local function get_row_h()
 end
 
 local function get_anchor()
-    return dodo.EditMode and dodo.EditMode:GetSystem("EncounterText")
+    return anchor_frame
 end
 
 local function resize_row(row)
@@ -482,50 +483,29 @@ local function on_event(self, event, arg1)
         dodoDB = dodoDB or {}
     elseif event == "PLAYER_LOGIN" then
         if dodoDB.enableEncounterText == nil then dodoDB.enableEncounterText = true end
-        if dodo.EditMode then
-            dodo.EditMode:CreateSystem(
-                "EncounterText", "보스 알림", "보스 알림",
-                UIParent, ROW_W, DEFAULT_ICON_SIZE,
-                { point = "CENTER", relativeTo = "UIParent", relativePoint = "CENTER", xOfs = 10, yOfs = -170 }, -- 기본 위치
-                nil,
-                function() return dodo.Encounter.IsEnabled() and (dodoDB and dodoDB.enableEncounterText ~= false) end
-            )
-        end
-        local em_frame = _G.dodoEditModeEncounterText
-        if em_frame then
-            em_frame:HookScript("OnShow", show_preview)
-            em_frame:HookScript("OnHide", hide_preview)
-        end
-        if dodo.RegisterEditModeSystemSetting then
-            dodo.RegisterEditModeSystemSetting("EncounterText", {
-                {
-                    name = "아이콘 크기",
-                    type = "slider",
-                    get  = function() return get_icon_size() end,
-                    set  = function(v)
-                        if dodoDB then dodoDB.encounterTextIconSize = v end
-                        refresh_rows()
-                    end,
-                    minVal   = 16,
-                    maxVal   = 48,
-                    step     = 1,
-                    disabled = function() return not dodo.Encounter.IsEnabled() end,
-                },
-                {
-                    name = "텍스트 크기",
-                    type = "slider",
-                    get  = function() return get_font_size() end,
-                    set  = function(v)
-                        if dodoDB then dodoDB.encounterTextFontSize = v end
-                        refresh_rows()
-                    end,
-                    minVal   = 10,
-                    maxVal   = 24,
-                    step     = 1,
-                    disabled = function() return not dodo.Encounter.IsEnabled() end,
-                },
-            })
-        end  -- RegisterEditModeSystemSetting
+        local LEM = LibStub("LibEditMode")
+        local _dp = { point="CENTER", relativePoint="CENTER", xOfs=10, yOfs=-170 }
+        local _sv = dodoDB.editMode and dodoDB.editMode["EncounterText"]
+        local _pt = (_sv and _sv.point) and _sv or _dp
+        anchor_frame = CreateFrame("Frame", "dodoEditModeEncounterText", UIParent)
+        anchor_frame:SetSize(ROW_W, DEFAULT_ICON_SIZE)
+        anchor_frame:SetPoint(_pt.point, UIParent, _pt.relativePoint or _pt.point, _pt.xOfs or 0, _pt.yOfs or 0)
+        LEM:AddFrame(anchor_frame, function(f, l, p, x, y)
+            dodoDB.editMode = dodoDB.editMode or {}
+            dodoDB.editMode["EncounterText"] = { point=p, relativeTo="UIParent", relativePoint=p, xOfs=x, yOfs=y }
+        end, { point=_pt.point, x=_pt.xOfs or 0, y=_pt.yOfs or 0 }, "보스 알림")
+        LEM:AddFrameSettings(anchor_frame, {
+            { kind=LEM.SettingType.Slider, name="아이콘 크기", default=DEFAULT_ICON_SIZE, minValue=16, maxValue=48, valueStep=1,
+              disabled=function() return not dodo.Encounter.IsEnabled() end,
+              get=function(l) return get_icon_size() end,
+              set=function(l,v) if dodoDB then dodoDB.encounterTextIconSize=v end; refresh_rows() end },
+            { kind=LEM.SettingType.Slider, name="텍스트 크기", default=DEFAULT_FONT_SIZE, minValue=10, maxValue=24, valueStep=1,
+              disabled=function() return not dodo.Encounter.IsEnabled() end,
+              get=function(l) return get_font_size() end,
+              set=function(l,v) if dodoDB then dodoDB.encounterTextFontSize=v end; refresh_rows() end },
+        })
+        anchor_frame:HookScript("OnShow", show_preview)
+        anchor_frame:HookScript("OnHide", hide_preview)
         self:UnregisterEvent("PLAYER_LOGIN")
     elseif event == "PLAYER_ENTERING_WORLD" then
         hide_all_alerts()

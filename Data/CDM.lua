@@ -22,7 +22,19 @@ local function make_tab(settings, anchor_to, display_mode, tooltip, atlas, icon_
     tab:SetPoint("TOP", anchor_to, "BOTTOM", 0, -3)
     tab:SetCustomOnMouseUpHandler(function(t, button, upInside)
         if button == "LeftButton" and upInside then
-            settings:SetDisplayMode(t.displayMode)
+            local displayMode = t.displayMode
+            if settings.displayMode == displayMode then return end
+            -- SetDisplayMode 직접 호출 안 함 (addon taint 방지)
+            settings.displayMode = displayMode
+            for _, frame in ipairs(settings.TabButtons) do
+                frame:SetChecked(frame.displayMode == displayMode)
+            end
+            CooldownViewerSettingsEditAlert:Hide()
+            GroupBuffFilterEditVisualAlert:Hide()
+            settings.CooldownScroll:Hide()
+            settings.GroupBuffFilter:Hide()
+            if settings.dodoPageA then settings.dodoPageA:SetShown(displayMode == "dodoPageA") end
+            if settings.dodoPageB then settings.dodoPageB:SetShown(displayMode == "dodoPageB") end
         end
     end)
     table.insert(settings.TabButtons, tab)
@@ -39,33 +51,11 @@ local function make_page(settings)
 end
 
 local function hook_set_display_mode(settings)
-    local orig = settings.SetDisplayMode
-    settings.SetDisplayMode = function(self, displayMode)
-        local is_dodo = displayMode == "dodoPageA" or displayMode == "dodoPageB"
-
-        if is_dodo then
-            if self.displayMode == displayMode then return end
-
-            if self.dodoPageA then self.dodoPageA:Hide() end
-            if self.dodoPageB then self.dodoPageB:Hide() end
-
-            CooldownViewerSettingsEditAlert:Hide()
-            GroupBuffFilterEditVisualAlert:Hide()
-
-            self.displayMode = displayMode
-            for _, frame in ipairs(self.TabButtons) do
-                frame:SetChecked(frame.displayMode == displayMode)
-            end
-            self.CooldownScroll:Hide()
-            self.GroupBuffFilter:Hide()
-            if self.dodoPageA then self.dodoPageA:SetShown(displayMode == "dodoPageA") end
-            if self.dodoPageB then self.dodoPageB:SetShown(displayMode == "dodoPageB") end
-        else
-            if self.dodoPageA then self.dodoPageA:Hide() end
-            if self.dodoPageB then self.dodoPageB:Hide() end
-            orig(self, displayMode)
-        end
-    end
+    -- 표준 탭 클릭 시 (Blizzard secure 컨텍스트에서 실행됨): dodo 페이지만 숨김
+    hooksecurefunc(settings, "SetDisplayMode", function(self, displayMode)
+        if self.dodoPageA then self.dodoPageA:Hide() end
+        if self.dodoPageB then self.dodoPageB:Hide() end
+    end)
 end
 
 -- ==============================

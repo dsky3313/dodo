@@ -159,10 +159,6 @@ local function update_cdm_item(item)
 end
 
 local function hook_cdm_item(item)
-    if not item.__dodoCSTHooked then
-        item.__dodoCSTHooked = true
-        hooksecurefunc(item, "RefreshData", function() update_cdm_item(item) end)
-    end
     update_cdm_item(item)
 end
 
@@ -508,22 +504,13 @@ initFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 initFrame:SetScript("OnEvent", on_event)
 
 -- ==============================
--- 설정 등록
+-- 공개 API
 -- ==============================
-if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("편의기능", {
-        {
-            name = "커서 스펠 트래커",
-            get = function() return dodoDB.enableCursorSpellTracker ~= false end,
-            set = function(checked)
-                dodoDB.enableCursorSpellTracker = checked
-                if checked then
-                    trackerFrame:Show()
-                else
-                    trackerFrame:Hide()
-                    hide_all_icons()
-                end
-            end
-        },
-    })
+function dodo.CursorSpellTrackerSetEnabled(val)
+    if val then
+        trackerFrame:Show()
+    else
+        trackerFrame:Hide()
+        hide_all_icons()
+    end
 end

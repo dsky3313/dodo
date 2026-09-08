@@ -184,17 +184,6 @@ initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:SetScript("OnEvent", on_event)
 
 -- ==============================
--- 설정 등록
+-- 공개 API
 -- ==============================
-if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("편의기능", {
-        {
-            name = "전투준비 타이머 활성화",
-            get = function() return dodoDB and dodoDB.enableReadyCheckTimer ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.enableReadyCheckTimer = checked end
-                update_visual()
-            end
-        }
-    })
-end
+dodo.ReadyCheckTimerUpdateVisual = update_visual

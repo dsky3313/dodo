@@ -10,6 +10,8 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
+local anchor_frame = nil
+
 dodo.difficultyTable = {
     dungeon = {
         { label = "일반", value = "1" },
@@ -161,16 +163,11 @@ end
 create_ui = function()
     if difficulty_frame then return end
 
-    local anchor_frame
-    if dodo.EditMode then
-        anchor_frame = dodo.EditMode:GetSystem("InsDifficulty")
-    end
-
     -- dodo.UI 표준 포트레이트 패널로 전환 (닫기 버튼 숨김 옵션 true 전달)
     difficulty_frame = dodo.UI:CreatePortraitPanel("DifficultySelector", "인스턴스 난이도", true)
     difficulty_frame:SetFrameStrata("LOW")
     difficulty_frame:SetSize(230, 124)
-    
+
     difficulty_frame:ClearAllPoints()
     if anchor_frame then
         difficulty_frame:SetPoint("CENTER", anchor_frame, "CENTER", 0, 0)
@@ -379,9 +376,17 @@ local function on_event(self, event, arg1)
         end
     elseif event == "PLAYER_LOGIN" then
         if dodoDB.useInsDifficultyFrame == nil then dodoDB.useInsDifficultyFrame = true end
-        if dodo.EditMode then
-            dodo.EditMode:CreateSystem("InsDifficulty", "인스턴스 난이도", "인스턴스 난이도", UIParent, 230, 124, { point = "TOPLEFT", relativeTo = "UIParent", relativePoint = "TOPLEFT", xOfs = 5, yOfs = -5 }, nil, function() return dodoDB and dodoDB.useInsDifficultyFrame ~= false end)
-        end
+        local LEM = LibStub("LibEditMode")
+        local _dp = { point="TOPLEFT", relativePoint="TOPLEFT", xOfs=5, yOfs=-5 }
+        local _sv = dodoDB.editMode and dodoDB.editMode["InsDifficulty"]
+        local _pt = (_sv and _sv.point) and _sv or _dp
+        anchor_frame = CreateFrame("Frame", "dodoEditModeInsDifficulty", UIParent)
+        anchor_frame:SetSize(230, 124)
+        anchor_frame:SetPoint(_pt.point, UIParent, _pt.relativePoint or _pt.point, _pt.xOfs or 0, _pt.yOfs or 0)
+        LEM:AddFrame(anchor_frame, function(f, l, p, x, y)
+            dodoDB.editMode = dodoDB.editMode or {}
+            dodoDB.editMode["InsDifficulty"] = { point=p, relativeTo="UIParent", relativePoint=p, xOfs=x, yOfs=y }
+        end, { point=_pt.point, x=_pt.xOfs or 0, y=_pt.yOfs or 0 }, "인스턴스 난이도")
         update_event_registration()
         self:UnregisterEvent("PLAYER_LOGIN")
     elseif event == "PLAYER_ENTERING_WORLD" then

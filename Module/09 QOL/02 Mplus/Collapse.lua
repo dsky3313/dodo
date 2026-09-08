@@ -165,17 +165,6 @@ initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:SetScript("OnEvent", on_event)
 
 -- ==============================
--- 설정 등록
+-- 공개 API
 -- ==============================
-if dodo.RegisterEditModeSystemSetting then
-    dodo.RegisterEditModeSystemSetting(Enum.EditModeSystem.ObjectiveTracker, {
-        {
-            name = "퀘스트 목록 접기",
-            get = function() return dodoDB and dodoDB.enableCollapse ~= false end,
-            set = function(checked)
-                if dodoDB then dodoDB.enableCollapse = checked end
-                update_visual()
-            end
-        },
-    })
-end
+dodo.CollapseUpdateVisual = update_visual

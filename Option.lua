@@ -19,6 +19,19 @@ local SettingsPanel = SettingsPanel
 local mainCategory = Settings.RegisterVerticalLayoutCategory("dodo")
 Settings.RegisterAddOnCategory(mainCategory)
 
+StaticPopupDialogs["DODO_RESET_CONFIRM"] = {
+    text = "dodo의 모든 설정을 초기화하고 UI를 재로드합니다. 계속하시겠습니까?",
+    button1 = "초기화",
+    button2 = "취소",
+    OnAccept = function()
+        dodoDB = nil
+        ReloadUI()
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+}
+
 -- 설정 생성
 function dodoCreateOptions()
     if dodoOptionsCreated then return end
@@ -32,6 +45,10 @@ function dodoCreateOptions()
         end
         return subCats[name]
     end
+
+    dodo.UI:SettingsButton(mainCategory, "설정 초기화", "초기화", function()
+        StaticPopup_Show("DODO_RESET_CONFIRM")
+    end)
 
     -- SectionHeader 중복 방지
     local rendered_headers = {}

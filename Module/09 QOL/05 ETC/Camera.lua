@@ -10,7 +10,7 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local CAMERA_TILT_ANGLE = 0.55
+local CAMERA_TILT_ANGLE = 0.65
 
 -- ==============================
 -- 캐싱

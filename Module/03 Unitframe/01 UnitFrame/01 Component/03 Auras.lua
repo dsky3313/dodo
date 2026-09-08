@@ -31,16 +31,8 @@ local BUFFS_UNITS = {
 	player = true, target = true, focus = true, boss = true,
 }
 
-local BUFFS_DB_KEYS = {
-	player = "unitframeBuffsPlayer",
-	target = "unitframeBuffsTarget",
-	focus  = "unitframeBuffsFocus",
-	boss   = "unitframeBuffsBoss",
-}
-
-local BUFFS_DEFAULTS = {
-	player = false, target = true, focus = false, boss = true,
-}
+local BUFFS_DB_KEYS  = dodo.UF_DB_KEYS.buffs
+local BUFFS_DEFAULTS = dodo.UF_DEFAULTS.buffs
 
 local function is_buffs_enabled(unit)
 	local dbKey = BUFFS_DB_KEYS[unit]
@@ -81,16 +73,8 @@ end
 -- ==============================
 -- 약화효과 빌더
 -- ==============================
-local DEBUFFS_DB_KEYS = {
-	player = "unitframeDebuffsPlayer",
-	target = "unitframeDebuffsTarget",
-	focus  = "unitframeDebuffsFocus",
-	boss   = "unitframeDebuffsBoss",
-}
-
-local DEBUFFS_DEFAULTS = {
-	player = false, target = false, focus = false, boss = false,
-}
+local DEBUFFS_DB_KEYS  = dodo.UF_DB_KEYS.debuffs
+local DEBUFFS_DEFAULTS = dodo.UF_DEFAULTS.debuffs
 
 local function is_debuffs_enabled(unit)
 	local dbKey = DEBUFFS_DB_KEYS[unit]
