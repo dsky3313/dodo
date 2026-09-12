@@ -166,15 +166,18 @@ Module/09 QOL/99 ETC/WowheadLink.lua
 Module/09 QOL/99 ETC/WorldMapCoords.lua
 Module/09 QOL/99 ETC/WorldMapIcon.lua
 
+# 98 Command
+Module/98 Command/Slash.lua
+
 # 99 Profiles
 Module/99 Profiles/01 Profile Editmode.lua
 Module/99 Profiles/02 Profile Plater.lua
 Module/99 Profiles/03 Profile CVar.lua
 Module/99 Profiles/99 Options.lua
 
-
-# Configurations & Layout Anchoring (Last Load)
-Module/10 Command/Slash.lua
+# Configurations (Last Load)
 Option.lua
+
+# temp
 #Module/09 QOL/Editmode/Position.lua
 #Module/09 QOL/99 ETC/ExpFilter.lua
