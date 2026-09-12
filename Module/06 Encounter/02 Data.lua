@@ -17,7 +17,7 @@ local addonName, dodo = ...
 
 ---@class EncounterEvent
 ---@field eventID number
----@field role "Tank"|"Heal"|"Mechanic"|"Adds"|"ETC"|"Other"
+---@field role "Tank"|"Heal"|"Phase"|"Adds"|"ETC"|"Other"
 ---@field sound "Tank"|"Phase"|"AOE"|"Frontal"|"Mechanic"|"Adds"|"Dispel"|"Interrupt"|"Soak"|"Pool"|"Target"
 ---@field text? string
 
@@ -41,7 +41,7 @@ dodo.EncounterData = {
             { spellID = 1261546, role = "Tank",     sound = "Tank"  }, -- 광석 파괴자
             { spellID = 1261847, role = "Heal",     sound = "AOE"   }, -- 냉각 발구르기
             { spellID = 1261299, role = "Other",    sound = "Pool" },  -- 사로나이트 던지기
-            { spellID = 1262029, role = "Mechanic", sound = "Phase" }, -- 빙하 과잉
+            { spellID = 1262029, role = "Phase", sound = "Phase" }, -- 빙하 과잉
         },
         rules = {
             { dur = 7,  eID = 1261299 },
@@ -52,11 +52,11 @@ dodo.EncounterData = {
     },
     [2001] = { -- 이크와 크리크
         events = {
-            { spellID = 1264363, role = "Mechanic", sound = "Phase" }, -- 이크, 물어뜯어!
+            { spellID = 1264363, role = "Phase", sound = "Phase" }, -- 이크, 물어뜯어!
             { spellID = 1264027, role = "Other" },                     -- 망령의 이동
             { spellID = 1264336, role = "Heal",     sound = "AOE"   }, -- 역병 배출
             { spellID = 1264287, role = "Tank",     sound = "Tank"  }, -- 역병 강타
-            { spellID = 1264453, role = "Mechanic" },                  -- 육중한 집착
+            { spellID = 1264453, role = "Phase" },                  -- 육중한 집착
         },
         rules = {
             { dur = 11, eID = 1264287 },
@@ -69,7 +69,7 @@ dodo.EncounterData = {
     [2000] = { -- 스컬지군주 티라누스
         events = {
             { spellID = 1262582, role = "Tank" ,    sound = "Tank"  },  -- 스컬지군주의 낙인
-            { spellID = 1263406, role = "Mechanic", sound = "Phase" },  -- 사자의 군대
+            { spellID = 1263406, role = "Phase", sound = "Phase" },  -- 사자의 군대
             { spellID = 1262745, role = "Heal",     sound = "Pool"   }, -- 서릿발 작렬
             { spellID = 1276648, role = "Heal",     sound = "AOE"   },  -- 해골 주입
             { spellID = 1263756, role = "Other",    text = "바닥"   },  -- 망자의 손아귀
@@ -92,7 +92,7 @@ dodo.EncounterData = {
             { spellID = 1252733, role = "Other",    sound = "Pool" },    -- 강풍의 쇄도
             { spellID = 153757,  role = "Heal",     sound = "AOE" },     -- 칼날 뿌리기
             { spellID = 1258148, role = "Other",    sound = "Frontal" }, -- 바람 차크람
-            { spellID = 156793,  role = "Mechanic", sound = "Phase" },   -- 회전 표창의 회오리
+            { spellID = 156793,  role = "Phase", sound = "Phase" },   -- 회전 표창의 회오리
         },
         rules = {
             { dur = 5, eID = 1252733 },
@@ -122,7 +122,7 @@ dodo.EncounterData = {
         events = {
             { spellID = 1253510, role = "Heal",     sound = "Adds"  }, -- 태양의 도래
             { spellID = 1253519, role = "Tank",     sound = "Tank"  }, -- 타오르는 발톱
-            { spellID = 1253527, role = "Mechanic", sound = "Phase" }, -- 타오르는 깃털
+            { spellID = 1253527, role = "Phase", sound = "Phase" }, -- 타오르는 깃털
             { spellID = 1283787, role = "Other"                     }, -- 영광의 불꽃
         },
         rules = {
@@ -135,7 +135,7 @@ dodo.EncounterData = {
     [1701] = { -- 대현자 비릭스
         events = {
             { spellID = 1253538, role = "Heal", },                         -- 이글거리는 광선
-            { spellID = 1253998, role = "Mechanic", sound = "Adds" },      -- 아래로 던지기
+            { spellID = 1253998, role = "Phase", sound = "Adds" },      -- 아래로 던지기
             { spellID = 154396,  role = "Tank",     sound = "Interrupt" }, -- 태양 작렬
             { spellID = 1253840, role = "Other",    sound = "Pool" },      -- 렌즈 반사광 (바닥)
         },
@@ -154,10 +154,10 @@ dodo.EncounterData = {
     [2065] = { -- 승천자 주라알
         events = {
             { spellID = 1268916, role = "Other",    sound = "Frontal"               }, -- 무효의 손바닥
-            { spellID = 1263282, role = "Mechanic",                                 }, -- 척살
+            { spellID = 1263282, role = "Phase",                                 }, -- 척살
             { spellID = 1263399, role = "Heal",     sound = "AOE", text = "쫄 & 광역딜" }, -- 수액 격돌
             { spellID = 1263440, role = "Tank",     sound = "Tank"                  }, -- 공허의 습격
-            { spellID = 1263304, role = "Mechanic", sound = "Phase"                 }, -- 밀어닥치는 공허
+            { spellID = 1263304, role = "Phase", sound = "Phase"                 }, -- 밀어닥치는 공허
         },
         rules = {
             { dur = 4,  eID = 1263440 }, { dur = 7,  eID = 1263282 },
@@ -168,7 +168,7 @@ dodo.EncounterData = {
     [2066] = { -- 사프리쉬
         events = {
             { spellID = 247175,  role = "Other"                     }, -- 공허 폭탄
-            { spellID = 1263509, role = "Mechanic", sound = "Phase" }, -- 위상 질주
+            { spellID = 1263509, role = "Phase", sound = "Phase" }, -- 위상 질주
             { spellID = 248831,  role = "Tank",     sound = "Interrupt" }, -- 섬뜩한 비명
             { spellID = 245738,  role = "Heal"                      }, -- 어둠의 암습
             { spellID = 1263523, role = "Heal",     sound = "AOE"   }, -- 과부하
@@ -184,7 +184,7 @@ dodo.EncounterData = {
             { spellID = 244750,  role = "Tank",     sound = "Interrupt" }, -- 정신 분열
             { spellID = 1263542, role = "Heal",     sound = "AOE"       }, -- 대규모 공허 주입
             { spellID = 1263538, role = "Adds",     sound = "Adds"      }, -- 암영 촉수
-            { spellID = 1263528, role = "Mechanic", sound = "Phase"     }, -- 공허의 폭풍
+            { spellID = 1263528, role = "Phase", sound = "Phase"     }, -- 공허의 폭풍
             { spellID = 1277358, role = "Other"                         }, -- 심연의 관문
         },
         rules = {
@@ -200,8 +200,8 @@ dodo.EncounterData = {
             { spellID = 1265426, role = "Other",    text = "선"         }, -- 불협의 광선
             { spellID = 1264151, role = "Heal",     sound = "AOE"       }, -- 파열 (할키야스)
             { spellID = 1265689, role = "Other",    text = "바닥"       }, -- 암울한 합창
-            { spellID = 1266003, role = "Mechanic", sound = "Phase"     }, -- 영원한 밤의 교향곡
-            { spellID = 1266001, role = "Mechanic", sound = "Phase"     }, -- 반발력
+            { spellID = 1266003, role = "Phase", sound = "Phase"     }, -- 영원한 밤의 교향곡
+            { spellID = 1266001, role = "Phase", sound = "Phase"     }, -- 반발력
         },
         rules = {
             { dur = 1.5, eID = 1265421 }, { dur = 1.5, eID = 1266003 },
@@ -218,8 +218,8 @@ dodo.EncounterData = {
         events = {
             { spellID = 1307297, role = "Other",    sound = "Pool"  }, -- 우박 파열
             { spellID = 1307308, role = "Heal",     sound = "Pool"  }, -- 냉기폭풍
-            { spellID = 373686,  role = "Mechanic", sound = "Phase" }, -- 서리 과부하
-            { spellID = 373046,  role = "Mechanic", sound = "Adds"  }, -- 새끼용 깨우기
+            { spellID = 373686,  role = "Phase", sound = "Phase" }, -- 서리 과부하
+            { spellID = 373046,  role = "Phase", sound = "Adds"  }, -- 새끼용 깨우기
         },
         rules = {
             { dur = 5,  eID = 1307297 }, { dur = 12, eID = 373686  }, { dur = 15, eID = 1307308 },
@@ -240,8 +240,8 @@ dodo.EncounterData = {
     },
     [2623] = { -- 카이락카와 에크하트 스톰베인
         events = {
-            { spellID = 381516,  role = "Mechanic", sound = "Phase"   }, -- 방해의 소나기구름
-            { spellID = 381517,  role = "Mechanic", sound = "Phase"   }, -- 변화의 바람
+            { spellID = 381516,  role = "Phase", sound = "Phase"   }, -- 방해의 소나기구름
+            { spellID = 381517,  role = "Phase", sound = "Phase"   }, -- 변화의 바람
             { spellID = 381512,  role = "Tank",     sound = "Tank"    }, -- 폭풍강타
             { spellID = 381862,  role = "Other",    sound = "Pool"    }, -- 지옥불 타격
             { spellID = 381525,  role = "Other",    sound = "Frontal" }, -- 우렁찬 불꽃숨결
@@ -260,7 +260,7 @@ dodo.EncounterData = {
             { spellID = 387691, role = "Other",    text = "구슬" },      -- 비전 보주
             { spellID = 386173, role = "Heal",     sound = "AOE"      }, -- 마나 폭탄
             { spellID = 385958, role = "Tank",     sound = "Frontal"  }, -- 비전 방출
-            { spellID = 388537, role = "Mechanic", sound = "Phase" },    -- 비전 균열
+            { spellID = 388537, role = "Phase", sound = "Phase" },    -- 비전 균열
         },
         rules = {
             { dur = 2,  eID = 387691 },
@@ -275,7 +275,7 @@ dodo.EncounterData = {
             { spellID = 388544, role = "Tank",     sound = "Tank" }, -- 나무껍질 파괴자
             { spellID = 388567, role = "Heal",     sound = "Adds" }, -- 가지 뻗기
             { spellID = 388796, role = "Other",    sound = "Pool" }, -- 발아
-            { spellID = 388923, role = "Mechanic", sound = "AOE"  }, -- 밀려드는 분출
+            { spellID = 388923, role = "Phase", sound = "AOE"  }, -- 밀려드는 분출
         },
         rules = {
             { dur = 9,  eID = 388544 },
@@ -291,7 +291,7 @@ dodo.EncounterData = {
             { spellID = 376997, role = "Tank"    , sound = "Tank"    }, -- 흉포한 쪼기
             { spellID = 377004, role = "Heal"    , sound = "AOE"     }, -- 귀청 터질듯한 비명
             { spellID = 377034, role = "Other"   , sound = "Frontal" }, -- 압도적인 돌풍
-            { spellID = 377182, role = "Mechanic", sound = "Phase"   }, -- 공놀이
+            { spellID = 377182, role = "Phase", sound = "Phase"   }, -- 공놀이
         },
         rules = {
             { dur = 5,  eID = 376997 }, { dur = 14, eID = 377004 }, { dur = 20, eID = 377034 },
@@ -302,7 +302,7 @@ dodo.EncounterData = {
             { spellID = 373325,  role = "Other" },                      -- 신비한 화살
             { spellID = 1282251, role = "Tank",     sound = "Tank" },   -- 천공의 작렬
             { spellID = 374341,  role = "Heal",     sound = "Dispel" }, -- 마력 폭탄
-            { spellID = 388820,  role = "Mechanic", sound = "Phase" },  -- 힘의 공백
+            { spellID = 388820,  role = "Phase", sound = "Phase" },  -- 힘의 공백
         },
         rules = {
             { dur = 7,  eID = 373325  },
@@ -320,7 +320,7 @@ dodo.EncounterData = {
         events = {
             { spellID = 466064, role = "Tank"    , sound = "Tank"  }, -- 불타는 부리
             { spellID = 466556, role = "Heal",     sound = "Pool"  }, -- 불타는 상승 기류
-            { spellID = 467040, role = "Mechanic", sound = "Phase" }, -- 불타는 강풍
+            { spellID = 467040, role = "Phase", sound = "Phase" }, -- 불타는 강풍
             { spellID = 466559, role = "Other" },                     -- 불타는 상승 기류
         },
         rules = {
@@ -333,7 +333,7 @@ dodo.EncounterData = {
         events = {
             { spellID = 472888, role = "Tank"    , sound = "Tank"  }, -- 뼈 베기
             { spellID = 474105, role = "Other" },                     -- 어둠의 저주
-            { spellID = 472736, role = "Mechanic", sound = "Phase" }, -- 쇠약의 절규
+            { spellID = 472736, role = "Phase", sound = "Phase" }, -- 쇠약의 절규
             { spellID = 472745, role = "Heal",     sound = "Pool"  }, -- 흩어지는 분출
             { spellID = 472795, role = "Other" },                     -- 힘껏 당기기
         },
@@ -346,11 +346,11 @@ dodo.EncounterData = {
     [3058] = { -- 지휘관 크롤루크
         events = {
             { spellID = 467620,  role = "Tank"    , sound = "Tank"  }, -- 광란
-            { spellID = 1253026, role = "Mechanic" },                  -- 위협의 외침
+            { spellID = 1253026, role = "Phase" },                  -- 위협의 외침
             { spellID = 472081,  role = "Heal" },                      -- 무모한 도약
-            { spellID = 1253272, role = "Mechanic" },                  -- 위협의 외침
+            { spellID = 1253272, role = "Phase" },                  -- 위협의 외침
             { spellID = 1253270, role = "Heal" },                      -- 무모한 도약
-            { spellID = 472043,  role = "Mechanic", sound = "Phase" }, -- 재집결의 고함
+            { spellID = 472043,  role = "Phase", sound = "Phase" }, -- 재집결의 고함
             { spellID = 470963,  role = "Other" },                     -- 칼날폭풍
             { spellID = 1283335, role = "Tank"    , sound = "Tank"  }, -- 광란
         },
@@ -362,7 +362,7 @@ dodo.EncounterData = {
     },
     [3059] = { -- 잠 못 드는 심장
         events = {
-            { spellID = 468429,  role = "Mechanic", sound = "Phase" }, -- 백발백중 바람작렬
+            { spellID = 468429,  role = "Phase", sound = "Phase" }, -- 백발백중 바람작렬
             { spellID = 474528,  role = "Heal" },                      -- 화살 강풍
             { spellID = 472556,  role = "Other" },                     -- 화살의 비
             { spellID = 472662,  role = "Tank"    , sound = "Tank"  }, -- 폭풍의 베기
@@ -379,7 +379,7 @@ dodo.EncounterData = {
     -- 마법학자의 정원 (mapID 2811)
     [3071] = { -- 비전골렘 쿠스토스
         events = {
-            { spellID = 474345,  role = "Mechanic", sound = "Phase" }, -- 연료 보급 프로토콜
+            { spellID = 474345,  role = "Phase", sound = "Phase" }, -- 연료 보급 프로토콜
             { spellID = 474496,  role = "Tank"    , sound = "Tank"  }, -- 반발하는 격돌
             { spellID = 1214032, role = "Heal" },                      -- 에테리얼 구속
             { spellID = 1214081, role = "Other" },                     -- 비전 방출
@@ -395,7 +395,7 @@ dodo.EncounterData = {
             { spellID = 1224903, role = "Other" },                     -- 억제 지대
             { spellID = 1248689, role = "Tank"    , sound = "Tank"  }, -- 쾌속의 수호물
             { spellID = 1225787, role = "Heal" },                      -- 룬 징표
-            { spellID = 1225193, role = "Mechanic", sound = "Phase" }, -- 침묵의 물결
+            { spellID = 1225193, role = "Phase", sound = "Phase" }, -- 침묵의 물결
         },
         rules = {
             { dur = 7,  eID = 1225787 }, { dur = 17, eID = 1224903 },
@@ -406,7 +406,7 @@ dodo.EncounterData = {
     [3073] = { -- 제멜루스
         events = {
             { spellID = 1253705, role = "Other" },                     -- 신경 연결
-            { spellID = 1224129, role = "Mechanic", sound = "Phase" }, -- 천공의 손아귀
+            { spellID = 1224129, role = "Phase", sound = "Phase" }, -- 천공의 손아귀
             { spellID = 1224088, role = "Other" },                     -- 공허의 분비물
             { spellID = 1223961, role = "Heal" },                      -- 우주의 독침
             { spellID = 1223847, role = "Other" },                     -- 3중 복제
@@ -437,7 +437,7 @@ dodo.EncounterData = {
             { spellID = 1266731, role = "Other" },                     -- 빙결 덫
             { spellID = 1260643, role = "Heal" },                      -- 탄막
             { spellID = 1246666, role = "Heal", sound = "Dispel" },    -- 감염된 독
-            { spellID = 1249479, role = "Mechanic", sound = "Phase" }, -- 썩어가는 강하
+            { spellID = 1249479, role = "Phase", sound = "Phase" }, -- 썩어가는 강하
         },
         rules = {
             { dur = 5,  eID = 1266480 }, { dur = 12, eID = 1246666 },
@@ -453,7 +453,7 @@ dodo.EncounterData = {
             { spellID = 1252054, role = "Other",    sound = "Frontal" }, -- 해체
             --{ eventID = 18,      role = "Other" },                       -- 죽음의 은총 (spellID 미확인)
             { spellID = 1251204, role = "Heal",     sound = "Adds"    }, -- 악령 왜곡
-            { spellID = 1250708, role = "Mechanic", sound = "Phase"   }, -- 괴저의 수렴
+            { spellID = 1250708, role = "Phase", sound = "Phase"   }, -- 괴저의 수렴
             --{ eventID = 429,     role = "Other" },                       -- 최후의 추적 (spellID 미확인)
             --{ eventID = 688,     role = "Other" },                       -- 최후의 추적 (spellID 미확인)
         },
@@ -467,7 +467,7 @@ dodo.EncounterData = {
         events = {
             { spellID = 1251023, role = "Tank"    , sound = "Tank"  }, -- 영혼파괴자
             { spellID = 1252676, role = "Heal" },                      -- 영혼 분쇄하기
-            { spellID = 1253788, role = "Mechanic", sound = "Phase" }, -- 영혼을 찢는 포효
+            { spellID = 1253788, role = "Phase", sound = "Phase" }, -- 영혼을 찢는 포효
         },
         rules = {
             { dur = 4,  eID = 1251023 }, { dur = 17, eID = 1252676 }, { dur = 70, eID = 1253788 },
@@ -478,7 +478,7 @@ dodo.EncounterData = {
     -- 공결탑 제나스 (mapID 2915)
     [3328] = { -- 수석 핵장인 카스레스
         events = {
-            { spellID = 1257512, role = "Mechanic", sound = "Phase" },    -- 핵심불꽃 폭발
+            { spellID = 1257512, role = "Phase", sound = "Phase" },    -- 핵심불꽃 폭발
             { spellID = 1251767, role = "Heal",     text = "선 지우기" }, -- 역류 돌진
             { spellID = 1251183, role = "Other",    text = "선" },        -- 지맥 배열
             { spellID = 1264048, role = "Other" },                        -- 용제 붕괴
@@ -492,7 +492,7 @@ dodo.EncounterData = {
     [3332] = { -- 핵감시관 니사라
         events = {
             { spellID = 1249014, role = "Other" },                     -- 일식의 발걸음
-            { spellID = 1264439, role = "Mechanic", sound = "Phase" }, -- 빛흉터 섬광
+            { spellID = 1264439, role = "Phase", sound = "Phase" }, -- 빛흉터 섬광
             { spellID = 1247937, role = "Tank",     sound = "Tank"  }, -- 암영의 채찍
             { spellID = 1252703, role = "Adds",     sound = "Adds"  }, -- 무위의 선봉대
             { spellID = 1271684, role = "Other" },                     -- 무가치한 자는 포식당하리
@@ -507,7 +507,7 @@ dodo.EncounterData = {
     [3333] = { -- 로스락시온
         events = {
             { spellID = 1253848, role = "Heal" },                      -- 찬란한 분산
-            { spellID = 1257567, role = "Mechanic", sound = "Phase" }, -- 천상의 기만
+            { spellID = 1257567, role = "Phase", sound = "Phase" }, -- 천상의 기만
             { spellID = 1253950, role = "Tank"    , sound = "Tank"  }, -- 이글거리는 분쇄
             { spellID = 1255531, role = "Other" },                     -- 깜빡임
         },
@@ -521,13 +521,13 @@ dodo.EncounterData = {
     --진균나락 (mapID 1592)
     [3159] = { -- 부식수렁
         events = {
-            { spellID = 1221637, role = "Mechanic", sound = "Phase" }, -- 균류 만개
-            { spellID = 1221622, role = "Mechanic", sound = "Phase" }, -- 균류 소환
+            { spellID = 1221637, role = "Phase", sound = "Phase" }, -- 균류 만개
+            { spellID = 1221622, role = "Phase", sound = "Phase" }, -- 균류 소환
             { spellID = 1221787, role = "Heal" },                      -- 농포 폭발
             { spellID = 1221781, role = "Tank",     sound = "Tank"  }, -- 부패의 주먹
             { spellID = 1222088, role = "Heal" },                      -- 부패한 덩굴
-            { spellID = 1299508, role = "Mechanic", sound = "Phase" }, -- 균류인 유충
-            { spellID = 1221639, role = "Mechanic", sound = "Phase" }, -- 버섯인 유충
+            { spellID = 1299508, role = "Phase", sound = "Phase" }, -- 균류인 유충
+            { spellID = 1221639, role = "Phase", sound = "Phase" }, -- 버섯인 유충
         },
         rules = {
             { dur = 41,  eID = 1222088 }, { dur = 21, eID = 1221781 },
@@ -547,15 +547,15 @@ dodo.EncounterData = {
             { spellID = 1245452, role = "Other" },                     -- 부패와 파괴
             { spellID = 1249017, role = "Other" },                     -- 끔찍한 전쟁의 함성
             { spellID = 1249207, role = "Heal" },                      -- 불협화음의 포효
-            { spellID = 1257085, role = "Mechanic", sound = "Phase" }, -- 장기를 포식
+            { spellID = 1257085, role = "Phase", sound = "Phase" }, -- 장기를 포식
             { spellID = 1245771, role = "Other" },                     -- 부패의 깃털
-            { spellID = 1262289, role = "Mechanic", sound = "Phase" }, -- 엘린더스트의 격변
+            { spellID = 1262289, role = "Phase", sound = "Phase" }, -- 엘린더스트의 격변
             { spellID = 1260088, role = "Other" },                     -- 균열 대격변
             { spellID = 1262616, role = "Other" },                     -- 부패한 산성액
-            { spellID = 1268905, role = "Mechanic", sound = "Phase" }, -- 균열의 광기
+            { spellID = 1268905, role = "Phase", sound = "Phase" }, -- 균열의 광기
             { spellID = 1245396, role = "Heal" },                      -- 포식
-            { spellID = 1280127, role = "Mechanic", sound = "Phase" }, -- 2페이즈
-            { spellID = 1282001, role = "Mechanic", sound = "Phase" }, -- 엘린더스트의 격변
+            { spellID = 1280127, role = "Phase", sound = "Phase" }, -- 2페이즈
+            { spellID = 1282001, role = "Phase", sound = "Phase" }, -- 엘린더스트의 격변
             { spellID = 1282856, role = "Other" },                     -- 부패와 파괴
             { spellID = 1245844, role = "Other" },                     -- 삼켜진 정수
         },
@@ -564,17 +564,17 @@ dodo.EncounterData = {
     -- 공허 첨탑 (mapID 2912, rules 없음)
     [3176] = { -- 아베르지안
         events = {
-            { spellID = 1262776, role = "Mechanic", sound = "Phase" }, -- 어둠의 진격
-            { spellID = 1251361, role = "Mechanic", sound = "Phase" }, -- 어둠의 진격
+            { spellID = 1262776, role = "Phase", sound = "Phase" }, -- 어둠의 진격
+            { spellID = 1251361, role = "Phase", sound = "Phase" }, -- 어둠의 진격
             { spellID = 1249251, role = "Heal" },                      -- 어둠의 지각 변동
-            { spellID = 1249265, role = "Mechanic", sound = "Phase" }, -- 암영 붕괴
+            { spellID = 1249265, role = "Phase", sound = "Phase" }, -- 암영 붕괴
             { spellID = 1260712, role = "Other" },                     -- 망각의 분노
             { spellID = 1258880, role = "Other" },                     -- 공허 추락
             { spellID = 1251583, role = "Other" },                     -- 끝없는 행진
             { spellID = 1255702, role = "Other" },                     -- 칠흑 보루
             { spellID = 1266786, role = "Other" },                     -- 공허 추락
             { spellID = 1270949, role = "Other" },                     -- 황폐화
-            { spellID = 1280015, role = "Mechanic", sound = "Phase" }, -- 공허 징표
+            { spellID = 1280015, role = "Phase", sound = "Phase" }, -- 공허 징표
             { spellID = 1283069, role = "Tank"    , sound = "Tank"  }, -- 약화됨
         },
     },
@@ -592,12 +592,12 @@ dodo.EncounterData = {
     },
     [3179] = { -- 몰락한 왕 살라다르
         events = {
-            { spellID = 1243453, role = "Mechanic", sound = "Phase" }, -- 공허의 수렴
+            { spellID = 1243453, role = "Phase", sound = "Phase" }, -- 공허의 수렴
             { spellID = 1260823, role = "Heal" },                      -- 폭군의 지배
             { spellID = 1245081, role = "Other" },                     -- 분열된 투영
             { spellID = 1253911, role = "Other" },                     -- 부서지는 황혼
             { spellID = 1250686, role = "Heal" },                      -- 뒤틀린 암연
-            { spellID = 1246175, role = "Mechanic", sound = "Phase" }, -- 무질서의 해체
+            { spellID = 1246175, role = "Phase", sound = "Phase" }, -- 무질서의 해체
             { spellID = 64238,   role = "Other" },                     -- 광폭화
             { spellID = 1272338, role = "Other" },                     -- 맹세를 저버리다
         },
@@ -605,41 +605,41 @@ dodo.EncounterData = {
     [3178] = { -- 바엘고어와 에조라크
         events = {
             { spellID = 1262623, role = "Other" },                     -- 공허 빔
-            { spellID = 1244917, role = "Mechanic", sound = "Phase" }, -- 공허의 울부짖음
-            { spellID = 1245391, role = "Mechanic", sound = "Phase" }, -- 안개
+            { spellID = 1244917, role = "Phase", sound = "Phase" }, -- 공허의 울부짖음
+            { spellID = 1245391, role = "Phase", sound = "Phase" }, -- 안개
             { spellID = 1244221, role = "Other" },                     -- 죽은 자의 숨결
             { spellID = 1249748, role = "Heal" },                      -- 한밤의 불꽃
             { spellID = 1280458, role = "Other" },                     -- 갈고리 턱
             { spellID = 1245645, role = "Tank"    , sound = "Tank"  }, -- 락팽
             { spellID = 1265131, role = "Tank"    , sound = "Tank"  }, -- 위어의 날개
-            { spellID = 1277470, role = "Mechanic", sound = "Phase" }, -- 우주 침투: 안개
+            { spellID = 1277470, role = "Phase", sound = "Phase" }, -- 우주 침투: 안개
             { spellID = 1277471, role = "Other" },                     -- 우주 침투: 공허 빔
             { spellID = 1277472, role = "Other" },                     -- 우주 침투: 망자의 숨결
-            { spellID = 1277473, role = "Mechanic", sound = "Phase" }, -- 우주 침투: 공허의 포효
-            { spellID = 1248847, role = "Mechanic", sound = "Phase" }, -- 광역 장벽
+            { spellID = 1277473, role = "Phase", sound = "Phase" }, -- 우주 침투: 공허의 포효
+            { spellID = 1248847, role = "Phase", sound = "Phase" }, -- 광역 장벽
         },
     },
     [3180] = { -- 빛에 눈이 먼 선봉대
         events = {
-            { spellID = 1248451, role = "Mechanic", sound = "Phase" }, -- 평화로운 후광
+            { spellID = 1248451, role = "Phase", sound = "Phase" }, -- 평화로운 후광
             --{ eventID = 72,      role = "Other" },                     -- 이벤트 72 (spellID 미확인)
             { spellID = 1249130, role = "Other" },                     -- 천둥 코끼리 돌격
-            { spellID = 1248674, role = "Mechanic", sound = "Phase" }, -- 거룩한 방패
+            { spellID = 1248674, role = "Phase", sound = "Phase" }, -- 거룩한 방패
             { spellID = 1276831, role = "Heal" },                      -- 티르의 분노
-            { spellID = 1246162, role = "Mechanic", sound = "Phase" }, -- 경건의 아우라
+            { spellID = 1246162, role = "Phase", sound = "Phase" }, -- 경건의 아우라
             { spellID = 1155738, role = "Heal" },                      -- 뜨거운 빛
             { spellID = 1251857, role = "Tank"    , sound = "Tank"  }, -- 심판
-            { spellID = 1246485, role = "Mechanic", sound = "Phase" }, -- 복수의 방패
-            { spellID = 1248644, role = "Mechanic", sound = "Phase" }, -- 거룩한 종
-            { spellID = 1248449, role = "Mechanic", sound = "Phase" }, -- 분노의 아우라
+            { spellID = 1246485, role = "Phase", sound = "Phase" }, -- 복수의 방패
+            { spellID = 1248644, role = "Phase", sound = "Phase" }, -- 거룩한 종
+            { spellID = 1248449, role = "Phase", sound = "Phase" }, -- 분노의 아우라
             { spellID = 1246736, role = "Tank"    , sound = "Tank"  }, -- 심판
-            { spellID = 1246765, role = "Mechanic", sound = "Phase" }, -- 신성한 폭풍
+            { spellID = 1246765, role = "Phase", sound = "Phase" }, -- 신성한 폭풍
             { spellID = 1246749, role = "Heal" },                      -- 거룩한 죄
             { spellID = 1276368, role = "Heal" },                      -- 사형 선고
-            { spellID = 1272380, role = "Mechanic", sound = "Phase" }, -- 열성적인 영혼
-            { spellID = 1272423, role = "Mechanic", sound = "Phase" }, -- 열성적인 영혼
-            { spellID = 1272425, role = "Mechanic", sound = "Phase" }, -- 열성적인 영혼
-            { spellID = 1276635, role = "Mechanic", sound = "Phase" }, -- 복수의 방패
+            { spellID = 1272380, role = "Phase", sound = "Phase" }, -- 열성적인 영혼
+            { spellID = 1272423, role = "Phase", sound = "Phase" }, -- 열성적인 영혼
+            { spellID = 1272425, role = "Phase", sound = "Phase" }, -- 열성적인 영혼
+            { spellID = 1276635, role = "Phase", sound = "Phase" }, -- 복수의 방패
             { spellID = 1276639, role = "Heal" },                      -- 뜨거운 빛
             { spellID = 1272310, role = "Other" },                     -- 신성한 폭풍
         },
@@ -647,24 +647,24 @@ dodo.EncounterData = {
     [3181] = { -- 우주의 왕관
         events = {
             { spellID = 1233865, role = "Heal" },                      -- 무의 왕관
-            { spellID = 1233819, role = "Mechanic", sound = "Phase" }, -- 공허한 반발
-            { spellID = 1233602, role = "Mechanic", sound = "Phase" }, -- 은화살
+            { spellID = 1233819, role = "Phase", sound = "Phase" }, -- 공허한 반발
+            { spellID = 1233602, role = "Phase", sound = "Phase" }, -- 은화살
             { spellID = 1234564, role = "Other" },                     -- 은화살 탄막
             { spellID = 1235622, role = "Other" },                     -- 특이점 폭발
             { spellID = 1237035, role = "Heal" },                      -- 공허추적자 스파이크
-            { spellID = 1237837, role = "Mechanic", sound = "Phase" }, -- 공허의 부름
+            { spellID = 1237837, role = "Phase", sound = "Phase" }, -- 공허의 부름
             { spellID = 1237614, role = "Heal" },                      -- 레인저 캡틴의 마크
             { spellID = 1246918, role = "Heal" },                      -- 우주 장벽
-            { spellID = 1239080, role = "Mechanic", sound = "Phase" }, -- 최종 수호자
+            { spellID = 1239080, role = "Phase", sound = "Phase" }, -- 최종 수호자
             { spellID = 1232467, role = "Heal" },                      -- 공허함의 파악
-            { spellID = 1238843, role = "Mechanic", sound = "Phase" }, -- 우주를 삼켜라
+            { spellID = 1238843, role = "Phase", sound = "Phase" }, -- 우주를 삼켜라
             { spellID = 1243787, role = "Tank"    , sound = "Tank"  }, -- 어둠의 손
-            { spellID = 1243753, role = "Mechanic", sound = "Phase" }, -- 폭식의 심연
+            { spellID = 1243753, role = "Phase", sound = "Phase" }, -- 폭식의 심연
             { spellID = 1243743, role = "Heal" },                      -- 간섭 진동
             { spellID = 1260010, role = "Heal" },                      -- 레인저 캡틴의 마크
             { spellID = 1260026, role = "Heal" },                      -- 공허함의 파악
-            { spellID = 1261016, role = "Mechanic", sound = "Phase" }, -- 균열 환영
-            { spellID = 1261339, role = "Mechanic", sound = "Phase" }, -- 우주 포털
+            { spellID = 1261016, role = "Phase", sound = "Phase" }, -- 균열 환영
+            { spellID = 1261339, role = "Phase", sound = "Phase" }, -- 우주 포털
             { spellID = 1246461, role = "Tank"    , sound = "Tank"  }, -- 균열 베기
             { spellID = 1239582, role = "Other" },                     -- 우주 에너지 과부하
         },
@@ -673,49 +673,49 @@ dodo.EncounterData = {
     -- 쿠엘다나스 진격로 (mapID 2913, rules 없음)
     [3182] = { -- 알라르의 자손 벨로렌
         events = {
-            { spellID = 1241282, role = "Mechanic", sound = "Phase" }, -- 벨로란의 불씨
-            { spellID = 1242981, role = "Mechanic", sound = "Phase" }, -- 빛나는 메아리
+            { spellID = 1241282, role = "Phase", sound = "Phase" }, -- 벨로란의 불씨
+            { spellID = 1242981, role = "Phase", sound = "Phase" }, -- 빛나는 메아리
             { spellID = 1260763, role = "Tank"    , sound = "Tank"  }, -- 수호자 칙령
             { spellID = 1244344, role = "Heal" },                      -- 영원한 소각
-            { spellID = 1242260, role = "Mechanic", sound = "Phase" }, -- 주입된 깃털
+            { spellID = 1242260, role = "Phase", sound = "Phase" }, -- 주입된 깃털
             { spellID = 1242515, role = "Heal" },                      -- 공허빛 합류
-            { spellID = 1246709, role = "Mechanic", sound = "Phase" }, -- 죽음의 낙하
+            { spellID = 1246709, role = "Phase", sound = "Phase" }, -- 죽음의 낙하
             { spellID = 1242792, role = "Other" },                     -- 화염 부화
-            { spellID = 1241992, role = "Mechanic", sound = "Phase" }, -- 성광의 깃털
-            { spellID = 1242091, role = "Mechanic", sound = "Phase" }, -- 공허의 깃털
+            { spellID = 1241992, role = "Phase", sound = "Phase" }, -- 성광의 깃털
+            { spellID = 1242091, role = "Phase", sound = "Phase" }, -- 공허의 깃털
             --{ eventID = 417,     role = "Other" },                     -- 이벤트 417 (spellID 미확인)
             --{ eventID = 418,     role = "Other" },                     -- 이벤트 418 (spellID 미확인)
-            { spellID = 1241162, role = "Mechanic", sound = "Phase" }, -- 성광의 깃털
-            { spellID = 1241163, role = "Mechanic", sound = "Phase" }, -- 공허의 깃털
+            { spellID = 1241162, role = "Phase", sound = "Phase" }, -- 성광의 깃털
+            { spellID = 1241163, role = "Phase", sound = "Phase" }, -- 공허의 깃털
             { spellID = 1241292, role = "Heal" },                      -- 성광의 급습
             { spellID = 1241339, role = "Heal" },                      -- 공허 강하
-            { spellID = 1241313, role = "Mechanic", sound = "Phase" }, -- 부활
-            { spellID = 1241267, role = "Mechanic", sound = "Phase" }, -- 공허빛의 분노
+            { spellID = 1241313, role = "Phase", sound = "Phase" }, -- 부활
+            { spellID = 1241267, role = "Phase", sound = "Phase" }, -- 공허빛의 분노
             { spellID = 1241320, role = "Other" },                     -- 부활
         },
     },
     [3183] = { -- 한밤의 도래
         events = {
-            { spellID = 1244412, role = "Mechanic", sound = "Phase" }, -- 죽음의 만가
+            { spellID = 1244412, role = "Phase", sound = "Phase" }, -- 죽음의 만가
             { spellID = 1253915, role = "Other" },                     -- 하늘의 대검
             { spellID = 1251386, role = "Other" },                     -- 수호 각기둥
             { spellID = 1249796, role = "Heal" },                      -- 부서진 하늘
             { spellID = 1261871, role = "Heal" },                      -- 개기일식
-            { spellID = 1266622, role = "Mechanic", sound = "Phase" }, -- 가장 어두운 밤
-            { spellID = 1266897, role = "Mechanic", sound = "Phase" }, -- 빛의 사이펀
+            { spellID = 1266622, role = "Phase", sound = "Phase" }, -- 가장 어두운 밤
+            { spellID = 1266897, role = "Phase", sound = "Phase" }, -- 빛의 사이펀
             { spellID = 1266388, role = "Other" },                     -- 어두운 별자리
             { spellID = 1250898, role = "Other" },                     -- 암흑 대천사
-            { spellID = 1273158, role = "Mechanic", sound = "Phase" }, -- 죽음의 레퀴엠
+            { spellID = 1273158, role = "Phase", sound = "Phase" }, -- 죽음의 레퀴엠
             { spellID = 1276202, role = "Heal" },                      -- 연결 끊기
             { spellID = 1267049, role = "Tank"    , sound = "Tank"  }, -- 하늘의 창
-            { spellID = 1282047, role = "Mechanic", sound = "Phase" }, -- 어둠의 우물 깊이
+            { spellID = 1282047, role = "Phase", sound = "Phase" }, -- 어둠의 우물 깊이
             { spellID = 1282249, role = "Heal" },                      -- 우주 핵분열
             { spellID = 1282412, role = "Heal" },                      -- 핵심 수확
             { spellID = 1281194, role = "Other" },                     -- 암흑 붕괴
             { spellID = 1282441, role = "Heal" },                      -- 별조각
             { spellID = 1284525, role = "Heal" },                      -- 충전
             { spellID = 1284931, role = "Other" },                     -- 종단 각기둥
-            { spellID = 1284980, role = "Mechanic", sound = "Phase" }, -- 말살 협주곡
+            { spellID = 1284980, role = "Phase", sound = "Phase" }, -- 말살 협주곡
             { spellID = 1279420, role = "Other" },                     -- 암흑 퀘이사
             { spellID = 1249609, role = "Heal" },                      -- 어두운 룬
             { spellID = 1295191, role = "Other" },                     -- 불협의 자장가
@@ -729,7 +729,7 @@ dodo.EncounterData = {
             { spellID = 265773,  role = "Other"                     }, -- 황금 분사
             { spellID = 265910,  role = "Tank",     sound = "Tank"  }, -- 꼬리 강타
             { spellID = 1311987, role = "Heal",     sound = "AOE"   }, -- 뱀의 바람
-            { spellID = 265923,  role = "Mechanic", sound = "Phase" }, -- 루체의 소환
+            { spellID = 265923,  role = "Phase", sound = "Phase" }, -- 루체의 소환
         },
         rules = {
             { dur = 5,  eID = 265773  }, { dur = 8,  eID = 265910  },
@@ -741,7 +741,7 @@ dodo.EncounterData = {
     [2142] = { -- 흑멸자 무친바
         events = {
             { spellID = 1311956, role = "Other"                     }, -- 불타는 부패
-            { spellID = 267702,  role = "Mechanic", sound = "Phase" }, -- 매장
+            { spellID = 267702,  role = "Phase", sound = "Phase" }, -- 매장
             { spellID = 267618,  role = "Other"                     }, -- 체액 배출
             { spellID = 1312146, role = "Adds",     sound = "Adds"  }, -- 각성 강타
         },
@@ -756,11 +756,11 @@ dodo.EncounterData = {
         events = {
             { spellID = 266206,  role = "Other"                     }, -- 회전 날도끼
             { spellID = 266231,  role = "Other"                     }, -- 참수 도끼
-            { spellID = 267494,  role = "Mechanic", sound = "Phase" }, -- 구르기
+            { spellID = 267494,  role = "Phase", sound = "Phase" }, -- 구르기
             { spellID = 266237,  role = "Tank",     sound = "Tank"  }, -- 약화 채찍질
             { spellID = 1305810, role = "Other"                     }, -- 전기 방전
-            { spellID = 267273,  role = "Mechanic", sound = "Interrupt" }, -- 독성 신성
-            { spellID = 267060,  role = "Mechanic", sound = "Phase" }, -- 정령 소환
+            { spellID = 267273,  role = "Phase", sound = "Interrupt" }, -- 독성 신성
+            { spellID = 267060,  role = "Phase", sound = "Phase" }, -- 정령 소환
         },
         rules = {
             { dur = 8,  eID = 266206  }, { dur = 15, eID = 266231  }, -- P1
@@ -772,7 +772,7 @@ dodo.EncounterData = {
         events = {
             { spellID = 1303115, role = "Other"                     }, -- 허공 강타
             { spellID = 268586,  role = "Tank",     sound = "Tank"  }, -- 칼날 연타
-            { spellID = 1303267, role = "Mechanic", sound = "Phase" }, -- 황금 파멸
+            { spellID = 1303267, role = "Phase", sound = "Phase" }, -- 황금 파멸
             { spellID = 269230,  role = "Other",    sound = "Frontal" }, -- 사냥 도약
             { spellID = 1303488, role = "Tank",     sound = "Tank"  }, -- 야만 망치
         },
@@ -803,7 +803,7 @@ dodo.EncounterData = {
     },
     [2125] = { -- 메레크타
         events = {
-            { spellID = 264172,  role = "Mechanic", sound = "Phase" }, -- 잠복
+            { spellID = 264172,  role = "Phase", sound = "Phase" }, -- 잠복
             { spellID = 1290029, role = "Other",    text  = "CC"    }, -- 뱀들의 똬리
             { spellID = 1289109, role = "Other",    sound = "Pool"  }, -- 천둥 타액
             { spellID = 1289205, role = "Other",                    }, -- 부화
@@ -818,7 +818,7 @@ dodo.EncounterData = {
     [2126] = { -- 갈바즈트
         events = {
             { spellID = 1309525, role = "Heal",     sound = "AOE"   }, -- 전기 유도
-            { spellID = 1291618, role = "Mechanic", sound = "Phase" }, -- 번개의 첨탑
+            { spellID = 1291618, role = "Phase", sound = "Phase" }, -- 번개의 첨탑
         },
         rules = {
             { dur = 5,  eID = 1291618 }, { dur = 20, eID = 1309525 },
@@ -849,8 +849,8 @@ dodo.EncounterData = {
             { spellID = 1297017, role = "Tank",     sound = "Tank"  }, -- 공허 충격
             { spellID = 1262901, role = "Other"                     }, -- 암영 집결
             { spellID = 1300259, role = "Other"                     }, -- 어둠 폭발
-            { spellID = 1225011, role = "Mechanic", sound = "Phase" }, -- 공허 영혼 파편
-            { spellID = 1222098, role = "Mechanic", sound = "Phase" }, -- 유령 돌진
+            { spellID = 1225011, role = "Phase", sound = "Phase" }, -- 공허 영혼 파편
+            { spellID = 1222098, role = "Phase", sound = "Phase" }, -- 유령 돌진
             { spellID = 1296963, role = "Other"                     }, -- 유령 파열
         },
         rules = {
@@ -860,7 +860,7 @@ dodo.EncounterData = {
     },
     [3286] = { -- 아트로수스
         events = {
-            { spellID = 1222371, role = "Mechanic", sound = "Adds"   }, -- 격노한 기어가는 자
+            { spellID = 1222371, role = "Phase", sound = "Adds"   }, -- 격노한 기어가는 자
             { spellID = 1222642, role = "Tank",     sound = "Tank"   }, -- 거대한 발톱 타격
             { spellID = 1222721, role = "Other",    sound = "Frontal" }, -- 독성 숨결
             { spellID = 1226120, role = "Heal",     sound = "AOE"    }, -- 독액 분사
@@ -874,9 +874,9 @@ dodo.EncounterData = {
     },
     [3287] = { -- 사로누스
         events = {
-            { spellID = 1282770, role = "Mechanic", sound = "Phase"   }, -- 불안정한 특이점
+            { spellID = 1282770, role = "Phase", sound = "Phase"   }, -- 불안정한 특이점
             { spellID = 1227264, role = "Heal",     sound = "AOE"    }, -- 별 낙하 강타
-            { spellID = 1263982, role = "Mechanic", sound = "Phase"   }, -- 중력 보주
+            { spellID = 1263982, role = "Phase", sound = "Phase"   }, -- 중력 보주
             { spellID = 1222758, role = "Other",    sound = "Frontal" }, -- 공허 급류
             { spellID = 1311923, role = "Tank",     sound = "Tank"   }, -- 암영의 파도
         },
@@ -902,7 +902,7 @@ dodo.EncounterData = {
             { spellID = 1235548, role = "Heal",     sound = "Dispel" }, -- 혹한의 고문
             { spellID = 1235623, role = "Other",    sound = "Pool"   }, -- 분노하는 돌풍
             { spellID = 1235783, role = "Adds",     sound = "Adds"   }, -- 분쇄의 혹한째기
-            { spellID = 1235656, role = "Mechanic", sound = "Phase"  }, -- 얼어붙은 폭풍우
+            { spellID = 1235656, role = "Phase", sound = "Phase"  }, -- 얼어붙은 폭풍우
         },
         rules = {
             { dur = 7,  eID = 1235548 }, { dur = 13, eID = 1235623 },
@@ -913,7 +913,7 @@ dodo.EncounterData = {
         events = {
             { spellID = 1255385, role = "Other"                     }, -- 강대한 포효
             { spellID = 1242860, role = "Other",    sound = "Pool"  }, -- 메아리치는 후려갈기기
-            { spellID = 1243011, role = "Mechanic", sound = "Phase" }, -- 전쟁 신의 격노
+            { spellID = 1243011, role = "Phase", sound = "Phase" }, -- 전쟁 신의 격노
             { spellID = 1243569, role = "Tank",     sound = "Tank"  }, -- 압도적인 맹공
             { spellID = 1262846, role = "Other"                     }, -- 영혼 난타
         },
@@ -930,7 +930,7 @@ dodo.EncounterData = {
             { spellID = 1234850, role = "Other",    sound = "Frontal" }, -- 빛을 흩뿌리는 질주
             { spellID = 1235640, role = "Other",    sound = "Pool"    }, -- 뾰족칼
             { spellID = 1261276, role = "Other",    sound = "Pool"    }, -- 뾰족칼
-            { spellID = 1235564, role = "Mechanic", sound = "Phase"   }, -- 빛송이 광선
+            { spellID = 1235564, role = "Phase", sound = "Phase"   }, -- 빛송이 광선
         },
         rules = {
             { dur = 5,  eID = 1234753 }, { dur = 8,  eID = 1235640 }, { dur = 20, eID = 1234850 }, { dur = 35, eID = 1235564 },
@@ -942,7 +942,7 @@ dodo.EncounterData = {
         events = {
             { spellID = 1236746, role = "Heal",     sound = "AOE" }, -- 신록의 발구르기
             { spellID = 1236709, role = "Heal",     sound = "AOE" }, -- 가시 상사 포효
-            { spellID = 1237090, role = "Mechanic", sound = "Phase"   }, -- 피에 굶주린 눈길
+            { spellID = 1237090, role = "Phase", sound = "Phase"   }, -- 피에 굶주린 눈길
         },
         rules = {
             { dur = 6,  eID = 1236746 }, { dur = 22, eID = 1236709 }, { dur = 50, eID = 1237090 },
@@ -955,10 +955,10 @@ dodo.EncounterData = {
             { spellID = 1240098, role = "Other"                       }, -- 빛내림
             { spellID = 1240210, role = "Other",    sound = "Frontal" }, -- 짓이기는 일격
             { spellID = 1241058, role = "Heal",     sound = "AOE"    }, -- 치명적인 난타
-            { spellID = 1239885, role = "Mechanic", sound = "Phase"   }, -- 변신: 곰
-            { spellID = 1239882, role = "Mechanic", sound = "Phase"   }, -- 변신: 달빛야수
-            { spellID = 1239883, role = "Mechanic", sound = "Phase"   }, -- 변신: 하라니르
-            { spellID = 1241067, role = "Mechanic", sound = "Phase"   }, -- 골짜기의 영혼
+            { spellID = 1239885, role = "Phase", sound = "Phase"   }, -- 변신: 곰
+            { spellID = 1239882, role = "Phase", sound = "Phase"   }, -- 변신: 달빛야수
+            { spellID = 1239883, role = "Phase", sound = "Phase"   }, -- 변신: 하라니르
+            { spellID = 1241067, role = "Phase", sound = "Phase"   }, -- 골짜기의 영혼
         },
         rules = {
             { dur = 0.5, eID = 1239882 }, { dur = 5,   eID = 1239824 }, { dur = 18,  eID = 1240098 }, -- P1
@@ -968,7 +968,7 @@ dodo.EncounterData = {
     },
     [3202] = { -- 지케트
         events = {
-            { spellID = 1246372, role = "Mechanic", sound = "Adds" }, -- 빛만개 깨우기
+            { spellID = 1246372, role = "Phase", sound = "Adds" }, -- 빛만개 깨우기
             { spellID = 1247685, role = "Tank",     sound = "Tank"  }, -- 가시 볼
             { spellID = 1246607, role = "Tank",     sound = "Frontal"  }, -- 진중된 빛줄기
             { spellID = 1246858, role = "Heal",     text = "구슬"}, -- 빛만개의 정수
@@ -983,7 +983,7 @@ dodo.EncounterData = {
     -- 송곳니의 제단 (mapID 2993)
     [3456] = { -- 라비
         events = {
-            { spellID = 1309522, role = "Mechanic", sound = "Phase"   }, -- 뱀의 탐색
+            { spellID = 1309522, role = "Phase", sound = "Phase"   }, -- 뱀의 탐색
             { spellID = 1296219, role = "Other"                       }, -- 악취 나는 포효
             { spellID = 1296220, role = "Heal",     sound = "AOE"    },  -- 삼중 사격
             { spellID = 1296050, role = "Other",    sound = "Frontal" }, -- 게워내기
@@ -999,7 +999,7 @@ dodo.EncounterData = {
             { spellID = 1299154, role = "Heal",     sound = "AOE"       }, -- 동화된 맹독
             { spellID = 1298949, role = "Tank",     sound = "Tank"      }, -- 꼬리 낫
             { spellID = 1299940, role = "Other",    sound = "Frontal"   }, -- 원한 서린 공세
-            { spellID = 1299053, role = "Mechanic", sound = "Phase"     }, -- 죽음의 방울 소리
+            { spellID = 1299053, role = "Phase", sound = "Phase"     }, -- 죽음의 방울 소리
             { spellID = 1310357, role = "Other",    sound = "Interrupt" }, -- 맹독 포화
             { spellID = 1310547, role = "Other",    sound = "Interrupt" }, -- 유독한 쇠약
         },
@@ -1012,7 +1012,7 @@ dodo.EncounterData = {
     [3458] = { -- 줄잔
         events = {
             { spellID = 1301413, role = "Heal",     sound = "Soak"    }, -- 뼈절단자
-            { spellID = 1300876, role = "Mechanic", sound = "Phase"   }, -- 송곳니의 의식
+            { spellID = 1300876, role = "Phase", sound = "Phase"   }, -- 송곳니의 의식
             { spellID = 1301111, role = "Other",    sound = "Frontal" }, -- 도끼분쇄자
             { spellID = 1301350, role = "Tank",     sound = "Tank"    }, -- 찍어 넘기기
         },
@@ -1029,7 +1029,7 @@ dodo.EncounterData = {
             { spellID = 1264095, role = "Heal", sound = "Interrupt"   }, -- 환영 복제
             { spellID = 1253811, role = "Other",    sound = "Frontal" }, -- 지옥 분사
             { spellID = 474240,  role = "Other"                       }, -- 지옥 회오리
-            { spellID = 1230304, role = "Mechanic", sound = "Phase"   }, -- 빛 주입
+            { spellID = 1230304, role = "Phase", sound = "Phase"   }, -- 빛 주입
         },
         rules = {
             { dur = 8,    eID = 1253811 }, { dur = 12,   eID = 474240  }, { dur = 15,   eID = 1264095 },
@@ -1040,7 +1040,7 @@ dodo.EncounterData = {
         events = {
             { spellID = 1214357, role = "Other"                     }, -- 불폭탄
             { spellID = 474765,  role = "Other"                     }, -- 당일 배송
-            { spellID = 1218347, role = "Mechanic", sound = "Phase" }, -- 죽음의 사선
+            { spellID = 1218347, role = "Phase", sound = "Phase" }, -- 죽음의 사선
             { spellID = 474478,  role = "Heal",     sound = "AOE"   }, -- 광기의 학살자
             { spellID = 1222795, role = "Tank",     sound = "Tank"  }, -- 독사
         },
@@ -1053,7 +1053,7 @@ dodo.EncounterData = {
     [3103] = { -- 파멸자 자투스
         events = {
             { spellID = 473898,  role = "Tank",     sound = "Tank"  }, -- 군단의 일격
-            { spellID = 474197,  role = "Mechanic", sound = "Phase" }, -- 악마의 분노
+            { spellID = 474197,  role = "Phase", sound = "Phase" }, -- 악마의 분노
             { spellID = 1214641, role = "Adds",     sound = "Adds"  }, -- 도끼 던지기
             { spellID = 1295452, role = "Heal",     sound = "AOE"   }, -- 불지옥 충돌
         },
@@ -1066,7 +1066,7 @@ dodo.EncounterData = {
         events = {
             { spellID = 1218203, role = "Heal",     sound = "AOE"  }, -- 굴단의 손가락
             { spellID = 474408,  role = "Adds",     sound = "Adds" }, -- 썩은마귀 소환
-            { spellID = 1224478, role = "Mechanic", sound = "Phase" }, -- 사악한 파장
+            { spellID = 1224478, role = "Phase", sound = "Phase" }, -- 사악한 파장
         },
         rules = {
             { dur = 10, eID = 474408  }, { dur = 15, eID = 1218203 }, { dur = 24, eID = 1224478 },
@@ -1080,10 +1080,10 @@ dodo.EncounterData = {
     [3379] = { -- 파도 부르는 자 니므레샤
         events = {
             { spellID = 1257608, role = "Other"                     }, -- 서리 탄막
-            { spellID = 1257717, role = "Mechanic", sound = "Phase" }, -- 유혹하는 물방울
-            { spellID = 1258668, role = "Mechanic", sound = "Phase" }, -- 격동하는 소용돌이
+            { spellID = 1257717, role = "Phase", sound = "Phase" }, -- 유혹하는 물방울
+            { spellID = 1258668, role = "Phase", sound = "Phase" }, -- 격동하는 소용돌이
             { spellID = 1260837, role = "Other"                     }, -- 심연의 비
-            { spellID = 1276710, role = "Mechanic", sound = "Phase" }, -- 유혹하는 물방울
+            { spellID = 1276710, role = "Phase", sound = "Phase" }, -- 유혹하는 물방울
             { spellID = 1313393, role = "Other"                     }, -- 뼛속을 파고드는 한기
         },
     },
@@ -1092,13 +1092,13 @@ dodo.EncounterData = {
     [3470] = { -- 영혼 감는 자 내크잘리
         events = {
             { spellID = 1287426, role = "Other"                     }, -- 정수 찢기
-            { spellID = 1285681, role = "Mechanic", sound = "Phase" }, -- 영혼 감기 점화
-            { spellID = 1289923, role = "Mechanic", sound = "Phase" }, -- 경건한 소환
-            { spellID = 1295397, role = "Mechanic", sound = "Phase" }, -- 잠들지 않는 아마니
+            { spellID = 1285681, role = "Phase", sound = "Phase" }, -- 영혼 감기 점화
+            { spellID = 1289923, role = "Phase", sound = "Phase" }, -- 경건한 소환
+            { spellID = 1295397, role = "Phase", sound = "Phase" }, -- 잠들지 않는 아마니
             { spellID = 1290679, role = "Other"                     }, -- 복수의 울부짖음
             { spellID = 1292036, role = "Other"                     }, -- 빙의 탄막
             { spellID = 1290001, role = "Other"                     }, -- 똬리 풀기
-            { spellID = 1299673, role = "Mechanic", sound = "Phase" }, -- 기원
+            { spellID = 1299673, role = "Phase", sound = "Phase" }, -- 기원
             { spellID = 1305421, role = "Other"                     }, -- 흡멸의 불꽃
         },
     },
@@ -1110,24 +1110,24 @@ dodo.EncounterData = {
             { spellID = 1284487, role = "Other"                     }, -- 선혈 독액 주사
             { spellID = 1284483, role = "Other"                     }, -- 시듦의 피
             { spellID = 1284485, role = "Other"                     }, -- 약화 독기
-            { spellID = 1284588, role = "Mechanic", sound = "Phase" }, -- 강산 정체
-            { spellID = 26662,   role = "Mechanic", sound = "Phase" }, -- 광분
+            { spellID = 1284588, role = "Phase", sound = "Phase" }, -- 강산 정체
+            { spellID = 26662,   role = "Phase", sound = "Phase" }, -- 광분
             { spellID = 1288232, role = "Other"                     }, -- 불안정한 독기
-            { spellID = 1296878, role = "Mechanic", sound = "Phase" }, -- 변화하는 원형 독액
+            { spellID = 1296878, role = "Phase", sound = "Phase" }, -- 변화하는 원형 독액
         },
     },
     [3497] = { -- 길 잃은 탐험가
         events = {
-            { spellID = 1291390, role = "Mechanic", sound = "Phase" }, -- 재앙 기원
+            { spellID = 1291390, role = "Phase", sound = "Phase" }, -- 재앙 기원
             { spellID = 1296025, role = "Other"                     }, -- 번쩍이는 신성
             { spellID = 1296092, role = "Other"                     }, -- 거대한 힘의 강타
-            { spellID = 1295817, role = "Mechanic", sound = "Phase" }, -- 물고기 던지기
-            { spellID = 1292104, role = "Mechanic", sound = "Phase" }, -- 버섯 투척
+            { spellID = 1295817, role = "Phase", sound = "Phase" }, -- 물고기 던지기
+            { spellID = 1292104, role = "Phase", sound = "Phase" }, -- 버섯 투척
             { spellID = 1295854, role = "Other"                     }, -- 찢겨진 파편
             { spellID = 1295886, role = "Other"                     }, -- 서리불꽃 연사
             { spellID = 1295935, role = "Other"                     }, -- 서리불꽃 연사
-            { spellID = 1297625, role = "Mechanic", sound = "Phase" }, -- 폭발 서프라이즈
-            { spellID = 1292779, role = "Mechanic", sound = "Phase" }, -- 최후의 승천
+            { spellID = 1297625, role = "Phase", sound = "Phase" }, -- 폭발 서프라이즈
+            { spellID = 1292779, role = "Phase", sound = "Phase" }, -- 최후의 승천
         },
     },
     [3455] = { -- 만독 저주술사 바슈니크
@@ -1138,27 +1138,27 @@ dodo.EncounterData = {
     [3420] = { -- 스소락
         events = {
             { spellID = 1285425, role = "Other"                     }, -- 분노하는 측면 바람
-            { spellID = 1305959, role = "Mechanic", sound = "Phase" }, -- 극독 용솟음
+            { spellID = 1305959, role = "Phase", sound = "Phase" }, -- 극독 용솟음
             { spellID = 1277025, role = "Other"                     }, -- 최상위 포식자
-            { spellID = 1285732, role = "Mechanic", sound = "Phase" }, -- 포효하는 소용돌이
-            { spellID = 1296898, role = "Mechanic", sound = "Phase" }, -- 억제할 수 없는 분노
+            { spellID = 1285732, role = "Phase", sound = "Phase" }, -- 포효하는 소용돌이
+            { spellID = 1296898, role = "Phase", sound = "Phase" }, -- 억제할 수 없는 분노
         },
     },
     [3421] = { -- 쌍둥이 독아
         events = {
             { spellID = 1289192, role = "Other"                     }, -- 부식하는 홍수
             { spellID = 1288484, role = "Other"                     }, -- 쇄석 강타
-            { spellID = 1294293, role = "Mechanic", sound = "Phase" }, -- 사악한 홍수
-            { spellID = 1294921, role = "Mechanic", sound = "Phase" }, -- 홍수
+            { spellID = 1294293, role = "Phase", sound = "Phase" }, -- 사악한 홍수
+            { spellID = 1294921, role = "Phase", sound = "Phase" }, -- 홍수
             { spellID = 1290956, role = "Other"                     }, -- 심연 휘젓기
             { spellID = 1290809, role = "Other"                     }, -- 똬리 고름
             { spellID = 1291404, role = "Adds",     sound = "Adds"  }, -- 극독 용솟음
-            { spellID = 1290516, role = "Mechanic", sound = "Phase" }, -- 탐욕의 잔치
+            { spellID = 1290516, role = "Phase", sound = "Phase" }, -- 탐욕의 잔치
             { spellID = 1291478, role = "Other"                     }, -- 부식하는 침
             { spellID = 1303230, role = "Other"                     }, -- 선혈 홍수
-            { spellID = 1306872, role = "Mechanic", sound = "Phase" }, -- 핏빛 폭풍
+            { spellID = 1306872, role = "Phase", sound = "Phase" }, -- 핏빛 폭풍
             { spellID = 1308356, role = "Other"                     }, -- 자식 깨우기
-            { spellID = 1308556, role = "Mechanic", sound = "Phase" }, -- 잠수
+            { spellID = 1308556, role = "Phase", sound = "Phase" }, -- 잠수
         },
     },
     [3429] = { -- 똬리 제단
@@ -1170,7 +1170,7 @@ dodo.EncounterData = {
             { spellID = 1298381, role = "Other"                     }, -- 똬리 제단의 더럽힘
             { spellID = 1283485, role = "Other"                     }, -- 처형
             { spellID = 1299266, role = "Other"                     }, -- 냉혹한 처형
-            { spellID = 1286918, role = "Mechanic", sound = "Phase" }, -- 영원한 밤의 장막
+            { spellID = 1286918, role = "Phase", sound = "Phase" }, -- 영원한 밤의 장막
             { spellID = 1289900, role = "Other"                     }, -- 공포의 행군
             { spellID = 1286573, role = "Other"                     }, -- 영혼 찢기
             { spellID = 1286441, role = "Other"                     }, -- 정령 광소
@@ -1179,23 +1179,24 @@ dodo.EncounterData = {
             { spellID = 1307279, role = "Other"                     }, -- 시듦 찢기
         },
     },
-    [3492] = { -- 울라테크
+    [3492] = { -- 울라텍
         events = {
-            { spellID = 1298367, role = "Mechanic", sound = "Phase" }, -- 뱀 어미의 분노
-            { spellID = 1311037, role = "Mechanic", sound = "Phase" }, -- 뱀 어미의 분노
-            { spellID = 1286860, role = "Mechanic", sound = "Phase" }, -- 결박된 분노
-            { spellID = 1292188, role = "Mechanic", sound = "Phase" }, -- 부식하는 조류
-            { spellID = 1286905, role = "Mechanic", sound = "Phase" }, -- 분노의 불꽃 해방
-            { spellID = 1298559, role = "Mechanic", sound = "Phase" }, -- 피비린내 나는 방울뱀 꼬리
-            { spellID = 1304527, role = "Mechanic", sound = "Phase" }, -- 피비린내 나는 방울뱀 꼬리
-            { spellID = 1295905, role = "Other"                     }, -- 독사의 물기
-            { spellID = 1299757, role = "Other"                     }, -- 극독 부화
-            { spellID = 1300530, role = "Other"                     }, -- 유령 똬리
-            { spellID = 1300751, role = "Other"                     }, -- 독사 소환
-            { spellID = 1301510, role = "Mechanic", sound = "Phase" }, -- 감고 조르는 먹이
-            { spellID = 1302982, role = "Other"                     }, -- 극독 분사
-            { spellID = 1296301, role = "Other"                     }, -- 악취 강타
-            { spellID = 1287265, role = "Other"                     }, -- 유령 똬리
+            { spellID = 1298367, role = "Tank", sound = "Tank" }, -- 어미의 분노
+            { spellID = 1311037, role = "Tank", sound = "Tank" }, -- 어미의 분노
+            { spellID = 1286860, role = "Phase", sound = "Phase" }, -- 구속된 자의 격노
+            { spellID = 1292188, role = "Heal", sound = "Frontal" }, -- 부식의 파도
+            { spellID = 1286905, role = "Other", }, -- 해방된 격노
+            { spellID = 1298559, role = "Other", }, -- 선혈 방울꼬리
+            { spellID = 1304527, role = "Other", }, -- 선혈 방울꼬리
+            { spellID = 1295905, role = "Other"                     }, -- 뱀의 물어뜯기
+            { spellID = 1299757, role = "Other"                     }, -- 독성 배양
+            { spellID = 1300530, role = "Heal", sound = "Soak" }, -- 유령의 똬리
+            { spellID = 1300751, role = "Other"                     }, -- 독사의 부름
+            { spellID = 1301510, role = "Heal", sound = "AOE" }, -- 사냥감 포위
+            { spellID = 1302982, role = "Other"                     }, -- 악성 타액
+            { spellID = 1296301, role = "Other"                     }, -- 유해한 난타
+            { spellID = 1287265, role = "Other"                     }, -- 유령의 똬리
+            { spellID = 1287265, role = "Phase", sound = "Phase" }, -- 잠복
         },
     },
 }

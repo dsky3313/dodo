@@ -10,7 +10,6 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local BAR_INDEX_MAP = dodo.BAR_INDEX_MAP
 local CDM_DB_KEYS   = dodo.AB_DB_KEYS.cdm
 local CDM_DEFAULTS  = dodo.AB_DEFAULTS.cdm
 
@@ -39,21 +38,18 @@ local C_CooldownViewer = C_CooldownViewer
 local C_Item = C_Item
 local C_Spell = C_Spell
 local C_Timer = C_Timer
-local GetSpecialization = GetSpecialization
-local GetSpecializationInfo = GetSpecializationInfo
 local CreateFrame = CreateFrame
 local Enum = Enum
 local GetActionInfo = GetActionInfo
+local GetSpecialization = GetSpecialization
+local GetSpecializationInfo = GetSpecializationInfo
 local GetTime = GetTime
 local hooksecurefunc = hooksecurefunc
 local InCombatLockdown = InCombatLockdown
 local ipairs = ipairs
-local issecretvalue = issecretvalue
 local Item = Item
 local Mixin = Mixin
 local pairs = pairs
-local PixelUtil = PixelUtil
-local type = type
 local wipe = wipe
 
 local custom_cdmauras    = dodo.customCDMAuras
@@ -62,15 +58,25 @@ local custom_cdmspell_map = dodo.customCDMSpellMap
 -- ==============================
 -- 헬퍼
 -- ==============================
+local bar_cdm_cache = {}
 local function is_bar_cdm_enabled(barName)
     if not barName then return false end
+    local cached = bar_cdm_cache[barName]
+    if cached ~= nil then return cached end
     local dbKey = CDM_DB_KEYS[barName]
-    if not dbKey then return CDM_DEFAULTS[barName] or false end
-    if not dodoDB then return CDM_DEFAULTS[barName] or false end
-    local val = dodoDB[dbKey]
-    if val == nil then return CDM_DEFAULTS[barName] or false end
-    return val
+    local result
+    if not dbKey then
+        result = CDM_DEFAULTS[barName] or false
+    elseif not dodoDB then
+        result = CDM_DEFAULTS[barName] or false
+    else
+        local val = dodoDB[dbKey]
+        result = (val == nil) and (CDM_DEFAULTS[barName] or false) or val
+    end
+    bar_cdm_cache[barName] = result
+    return result
 end
+dodo.ActionbarInvalidateCDMCache = function() bar_cdm_cache = {} end
 
 local function get_cdm_map()
     if not dodoDB then return nil end
@@ -350,8 +356,14 @@ local function update_overlay_filters()
         end
         return
     end
-    for btn in pairs(dodo.registeredButtons) do
-        update_button_filter(btn)
+    if not dodo.barButtons then return end
+    for _, barInfo in ipairs(dodo.AB_BAR_ORDER) do
+        local btns = dodo.barButtons[barInfo.name]
+        if btns then
+            for _, btn in ipairs(btns) do
+                update_button_filter(btn)
+            end
+        end
     end
 end
 
@@ -606,14 +618,24 @@ local rescan_events = {
     "PLAYER_TARGET_CHANGED",
     "UNIT_FACTION",
 }
+local function update_debuff_for_enabled_bars()
+    if not dodo.barButtons then return end
+    for _, barInfo in ipairs(dodo.AB_BAR_ORDER) do
+        if is_bar_cdm_enabled(barInfo.name) then
+            local btns = dodo.barButtons[barInfo.name]
+            if btns then
+                for _, btn in ipairs(btns) do update_debuff_filter(btn) end
+            end
+        end
+    end
+end
+
 for _, ev in ipairs(rescan_events) do rescan_frame:RegisterEvent(ev) end
 rescan_frame:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_TARGET_CHANGED" then
-        for btn in pairs(dodo.registeredButtons) do update_debuff_filter(btn) end
+        update_debuff_for_enabled_bars()
     elseif event == "UNIT_FACTION" then
-        if ... == "target" then
-            for btn in pairs(dodo.registeredButtons) do update_debuff_filter(btn) end
-        end
+        if ... == "target" then update_debuff_for_enabled_bars() end
     else
         if InCombatLockdown() then return end
         if event == "ACTIVE_PLAYER_SPECIALIZATION_CHANGED" then

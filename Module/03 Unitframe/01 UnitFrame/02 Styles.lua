@@ -2,11 +2,15 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local CreateFrame        = CreateFrame
-local EventRegistry      = EventRegistry
-local InCombatLockdown   = InCombatLockdown
-local RegisterUnitWatch  = RegisterUnitWatch
+-- ==============================
+-- 캐싱
+-- ==============================
+local CreateFrame         = CreateFrame
+local EventRegistry       = EventRegistry
+local InCombatLockdown    = InCombatLockdown
+local RegisterUnitWatch   = RegisterUnitWatch
 local UnregisterUnitWatch = UnregisterUnitWatch
+local _G                  = _G
 
 -- ==============================
 -- 플레이어

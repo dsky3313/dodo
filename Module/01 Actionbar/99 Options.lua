@@ -280,6 +280,7 @@ dodo.RegisterOption("행동 단축바", function(category)
                 local bar = get_selected_bar()
                 local key = PADDING_DB_KEYS[bar]
                 if key and dodoDB then dodoDB[key] = val end
+                if dodo.ActionbarInvalidatePaddingCache then dodo.ActionbarInvalidatePaddingCache() end
                 local frame = _G[bar]
                 if frame and dodo.ActionbarUpdatePadding then dodo.ActionbarUpdatePadding(frame) end
                 dodo.ActionbarRefreshPreview()
@@ -396,6 +397,7 @@ dodo.RegisterOption("행동 단축바", function(category)
             local _blue = _c and ("|c" .. _c.Mana.hex  .. "■|r") or "■"
             T(dodo.UI:SettingsMultiDropDown(category, "아이콘 색상", color_items, function(key, selected)
                 if dodoDB then dodoDB[key] = selected end
+                if dodo.ActionbarInvalidateColorCache then dodo.ActionbarInvalidateColorCache() end
                 if dodo.ActionbarApplyColor then dodo.ActionbarApplyColor() end
                 dodo.ActionbarRefreshPreview()
             end, "조건에 따라 아이콘 색상을 변경합니다. \n \n쿨다운, 사용불가 : ■ 회색 \n사거리 부족 : " .. _red .. " 빨간색 \n자원 부족 : " .. _blue .. " 파란색"))
@@ -413,6 +415,7 @@ dodo.RegisterOption("행동 단축바", function(category)
         if #cdm_items > 0 then
             local cdm_init = dodo.UI:SettingsMultiDropDown(category, "강화 효과 표시", cdm_items, function(key, selected)
                 if dodoDB then dodoDB[key] = selected end
+                if dodo.ActionbarInvalidateCDMCache then dodo.ActionbarInvalidateCDMCache() end
                 if dodo.BuildSpecialButtonCache then dodo.BuildSpecialButtonCache() end
                 if dodo.ActionbarApplyCDM then dodo.ActionbarApplyCDM() end
             end, "아이콘에 강화효과의 남은 시간과 중첩 수를 표시합니다.")
@@ -459,6 +462,7 @@ dodo.RegisterOption("행동 단축바", function(category)
         if #intr_items > 0 then
             T(dodo.UI:SettingsMultiDropDown(category, "차단 알림", intr_items, function(key, selected)
                 if dodoDB then dodoDB[key] = selected end
+                if dodo.ActionbarInvalidateInterruptCache then dodo.ActionbarInvalidateInterruptCache() end
                 if dodo.ActionbarApplyInterrupt then dodo.ActionbarApplyInterrupt() end
             end, "적이 차단 가능한 주문을 시전할 때, \n차단 스킬 아이콘에 알림 효과를 표시합니다."))
         end
@@ -475,6 +479,7 @@ dodo.RegisterOption("행동 단축바", function(category)
         if #pot_items > 0 then
             T(dodo.UI:SettingsMultiDropDown(category, "물약 사용가능 알림", pot_items, function(key, selected)
                 if dodoDB then dodoDB[key] = selected end
+                if dodo.ActionbarInvalidatePotionCache then dodo.ActionbarInvalidatePotionCache() end
                 if dodo.ActionbarApplyPotionProc then dodo.ActionbarApplyPotionProc() end
             end, "물약을 사용할 수 있는 상태일 때, \n물약 아이콘에 알림 효과를 표시합니다."))
         end
@@ -494,6 +499,7 @@ dodo.RegisterOption("행동 단축바", function(category)
         if #hk_items > 0 then
             T(dodo.UI:SettingsMultiDropDown(category, "단축키 숨기기", hk_items, function(key, selected)
                 if dodoDB then dodoDB[key] = selected end
+                if dodo.ActionbarInvalidateHotkeyCache then dodo.ActionbarInvalidateHotkeyCache() end
                 if dodo.ActionbarApplyText then dodo.ActionbarApplyText() end
             end, "아이콘의 단축키 텍스트를 숨깁니다."))
         end
@@ -510,6 +516,7 @@ dodo.RegisterOption("행동 단축바", function(category)
         if #macro_items > 0 then
             T(dodo.UI:SettingsMultiDropDown(category, "매크로명 숨기기", macro_items, function(key, selected)
                 if dodoDB then dodoDB[key] = selected end
+                if dodo.ActionbarInvalidateMacroCache then dodo.ActionbarInvalidateMacroCache() end
                 if dodo.ActionbarApplyText then dodo.ActionbarApplyText() end
             end, "아이콘의 매크로 이름 텍스트를 숨깁니다."))
         end

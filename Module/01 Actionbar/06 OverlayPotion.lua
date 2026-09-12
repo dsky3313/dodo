@@ -10,7 +10,6 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local BAR_INDEX_MAP    = dodo.BAR_INDEX_MAP
 local POTION_DB_KEYS   = dodo.AB_DB_KEYS.potion
 local POTION_DEFAULTS  = dodo.AB_DEFAULTS.potion
 
@@ -28,22 +27,37 @@ local C_Container = C_Container
 local C_Item = C_Item
 local C_Timer = C_Timer
 local CreateFrame = CreateFrame
-local Enum = Enum
 local GetActionInfo = GetActionInfo
-local InCombatLockdown = InCombatLockdown
+local ipairs = ipairs
 local pairs = pairs
 
 -- ==============================
 -- 기능 구현
 -- ==============================
+local bar_potion_cache = {}
 local function is_bar_potion_proc_enabled(barName)
     if not barName then return false end
+    local cached = bar_potion_cache[barName]
+    if cached ~= nil then return cached end
     local dbKey = POTION_DB_KEYS[barName]
-    if not dbKey then return POTION_DEFAULTS[barName] or false end
-    if not dodoDB then return POTION_DEFAULTS[barName] or false end
-    local val = dodoDB[dbKey]
-    if val == nil then return POTION_DEFAULTS[barName] or false end
-    return val
+    local result
+    if not dbKey then
+        result = POTION_DEFAULTS[barName] or false
+    elseif not dodoDB then
+        result = POTION_DEFAULTS[barName] or false
+    else
+        local val = dodoDB[dbKey]
+        result = (val == nil) and (POTION_DEFAULTS[barName] or false) or val
+    end
+    bar_potion_cache[barName] = result
+    return result
+end
+dodo.ActionbarInvalidatePotionCache = function() bar_potion_cache = {} end
+dodo.ActionbarInvalidatePotionButtonCache = function()
+    for btn in pairs(dodo.registeredButtons) do
+        btn.__isPotion = nil
+        btn.__potionItemID = nil
+    end
 end
 dodo.is_bar_potion_proc_enabled = is_bar_potion_proc_enabled
 
@@ -99,22 +113,29 @@ end
 dodo.ActionbarUpdatePotionProc = update_potion_proc
 
 local function update_all_potion_procs()
-    for btn in pairs(dodo.registeredButtons) do
-        if btn:IsVisible() then
-            update_potion_proc(btn)
+    if not dodo.barButtons then return end
+    for _, barInfo in ipairs(dodo.AB_BAR_ORDER) do
+        if is_bar_potion_proc_enabled(barInfo.name) then
+            local btns = dodo.barButtons[barInfo.name]
+            if btns then
+                for _, btn in ipairs(btns) do
+                    if btn:IsVisible() then update_potion_proc(btn) end
+                end
+            end
         end
     end
 end
 dodo.ActionbarUpdateAllPotionProcs = update_all_potion_procs
 
 local is_potion_pending = false
+local function on_bag_update_tick()
+    is_potion_pending = false
+    update_all_potion_procs()
+end
 dodo.TriggerBagUpdate = function()
     if not is_potion_pending then
         is_potion_pending = true
-        C_Timer.After(0.1, function()
-            is_potion_pending = false
-            update_all_potion_procs()
-        end)
+        C_Timer.After(0.1, on_bag_update_tick)
     end
 end
 
@@ -125,5 +146,3 @@ end
 dodo.ActionbarApplyPotionProc = function()
     update_all_potion_procs()
 end
-
--- ==============================

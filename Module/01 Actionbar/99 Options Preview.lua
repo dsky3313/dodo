@@ -1,10 +1,17 @@
----@diagnostic disable: lowercase-global, undefined-field, undefined-global
+-- ==============================
+-- Inspired
+-- ==============================
+---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
+-- ==============================
+-- 캐싱
+-- ==============================
 local CreateFrame = CreateFrame
 local math_ceil   = math.ceil
 local math_floor  = math.floor
+local math_max    = math.max
 
 -- 아이콘 색상 시뮬레이션 인덱스 맵 (12버튼 기준, nil = 풀컬러)
 local SIM_COLORS = {
@@ -27,7 +34,7 @@ dodoActionbarPreviewMixin = {}
 dodoActionbarPreviewMixin.GetExtent = function()
     local barName    = (dodoDB and dodoDB.actionbarOptionSelectedBar) or "MainActionBar"
     local barFrame   = _G[barName]
-    local num_rows   = math.max(1, (barFrame and barFrame.numRows) or 1)
+    local num_rows   = math_max(1, (barFrame and barFrame.numRows) or 1)
     local spacing    = (barFrame and barFrame.buttonPadding) or 2
     local btn_size   = 36
     local containers = barFrame and barFrame.shownButtonContainers

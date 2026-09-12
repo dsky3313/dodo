@@ -9,10 +9,7 @@ dodoDB = dodoDB or {}
 -- 캐싱
 -- ==============================
 local CreateFrame = CreateFrame
-local Enum = Enum
 local issecretvalue = issecretvalue or function() return false end
-local pairs = pairs
-local string_format = string.format
 local type = type
 local UnitGetTotalAbsorbs = UnitGetTotalAbsorbs
 local UnitGetTotalHealAbsorbs = UnitGetTotalHealAbsorbs

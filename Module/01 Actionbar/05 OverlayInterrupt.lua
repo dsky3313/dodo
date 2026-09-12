@@ -10,7 +10,6 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local BAR_INDEX_MAP      = dodo.BAR_INDEX_MAP
 local INTERRUPT_DB_KEYS  = dodo.AB_DB_KEYS.interrupt
 local INTERRUPT_DEFAULTS = dodo.AB_DEFAULTS.interrupt
 
@@ -56,7 +55,6 @@ local IntUnitEvents = {
 -- ==============================
 -- 캐싱
 -- ==============================
-local ActionBarButtonEventsFrame = ActionBarButtonEventsFrame
 local CreateColor = CreateColor
 local CreateFrame = CreateFrame
 local CreateFramePool = CreateFramePool
@@ -70,7 +68,6 @@ local UnitCastingInfo = UnitCastingInfo
 local UnitChannelDuration = UnitChannelDuration
 local UnitChannelInfo = UnitChannelInfo
 local UnitExists = UnitExists
-local UnitGUID = UnitGUID
 
 local ReadyCurve = C_CurveUtil.CreateCurve()
 ReadyCurve:SetType(Enum.LuaCurveType.Step)
@@ -94,15 +91,25 @@ local watched_unit = 'target'
 -- ==============================
 -- 기능 구현
 -- ==============================
+local bar_interrupt_cache = {}
 local function is_bar_interrupt_enabled(barName)
     if not barName then return false end
+    local cached = bar_interrupt_cache[barName]
+    if cached ~= nil then return cached end
     local dbKey = INTERRUPT_DB_KEYS[barName]
-    if not dbKey then return INTERRUPT_DEFAULTS[barName] or false end
-    if not dodoDB then return INTERRUPT_DEFAULTS[barName] or false end
-    local val = dodoDB[dbKey]
-    if val == nil then return INTERRUPT_DEFAULTS[barName] or false end
-    return val
+    local result
+    if not dbKey then
+        result = INTERRUPT_DEFAULTS[barName] or false
+    elseif not dodoDB then
+        result = INTERRUPT_DEFAULTS[barName] or false
+    else
+        local val = dodoDB[dbKey]
+        result = (val == nil) and (INTERRUPT_DEFAULTS[barName] or false) or val
+    end
+    bar_interrupt_cache[barName] = result
+    return result
 end
+dodo.ActionbarInvalidateInterruptCache = function() bar_interrupt_cache = {} end
 
 InterruptOverlayMixin = {}
 
@@ -215,16 +222,20 @@ function dodoAB3ControllerMixin:is_relevant_action_id(actionID)
 end
 
 function dodoAB3ControllerMixin:create_overlays()
-    if not self.overlayPool then return end
+    if not self.overlayPool or not dodo.barButtons then return end
     self.overlayPool:ReleaseAll()
-    for _, actionButton in pairs(ActionBarButtonEventsFrame.frames) do
-        local barName = dodo.get_bar_name_by_button(actionButton)
-        if barName and is_bar_interrupt_enabled(barName) then
-            local _, spellID = GetActionInfo(actionButton.action)
-            if Interrupts[spellID] then
-                local overlay = self.overlayPool:Acquire()
-                overlay.spellID = spellID
-                overlay:Attach(actionButton)
+    for _, barInfo in ipairs(dodo.AB_BAR_ORDER) do
+        if is_bar_interrupt_enabled(barInfo.name) then
+            local btns = dodo.barButtons[barInfo.name]
+            if btns then
+                for _, actionButton in ipairs(btns) do
+                    local _, spellID = GetActionInfo(actionButton.action)
+                    if Interrupts[spellID] then
+                        local overlay = self.overlayPool:Acquire()
+                        overlay.spellID = spellID
+                        overlay:Attach(actionButton)
+                    end
+                end
             end
         end
     end
@@ -295,8 +306,6 @@ dodo.ActionbarApplyInterrupt = function()
         dodoAB3ControllerMixin.controller:update()
     end
 end
-
--- ==============================
 
 -- ==============================
 -- 컨트롤러 동적 생성 및 실행

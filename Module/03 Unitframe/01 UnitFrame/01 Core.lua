@@ -294,7 +294,7 @@ local function create_ui()
 		if i == 1 then
 			bossFrame:SetPoint('TOPLEFT', _G['Boss1TargetFrame'], 'TOPLEFT', 20, -18)
 		else
-			bossFrame:SetPoint('TOPLEFT', prevBossFrame, 'BOTTOMLEFT', 0, -10)
+			bossFrame:SetPoint('TOPLEFT', prevBossFrame, 'BOTTOMLEFT', 0, -20)
 		end
 		prevBossFrame = bossFrame
 		table.insert(customFrames, bossFrame)

@@ -16,6 +16,7 @@ dodo.INTERFACE_DEFAULTS = {
     dmgMeterSyncSize        = true,
     dmgMeterSnap            = true,
     dmgMeterResetButton     = true,
+    dmgMeterAutoResetMplus  = true,
 
     -- 대화창
     useFontOutline          = true,
@@ -60,6 +61,7 @@ dodo.RegisterOption("인터페이스", function(category)
     T(dodo.UI:SettingsCheckbox(category, "dmgMeterSnap",            "창 붙이기",        "피해량 전투기 창을 화면 가장자리에 자동으로 붙입니다.",               D.dmgMeterSnap,            dodo.UpdateDamageMeterSyncState))
     T(dodo.UI:SettingsCheckbox(category, "dmgMeterSyncSize",        "창 크기 동기화",   "피해량 전투기 창 크기를 dodo와 동기화합니다.",                       D.dmgMeterSyncSize,        dodo.UpdateDamageMeterSyncState))
     T(dodo.UI:SettingsCheckbox(category, "dmgMeterResetButton",     "초기화 버튼 생성", "피해량 전투기에 전투 데이터 초기화 버튼을 추가합니다.",               D.dmgMeterResetButton,     dodo.UpdateDamageMeterResetState))
+    T(dodo.UI:SettingsCheckbox(category, "dmgMeterAutoResetMplus", "쐐기 시작 시 자동 초기화", "쐐기 던전 시작 시 피해량 전투기를 자동으로 초기화합니다.", D.dmgMeterAutoResetMplus,  nil))
 
     -- 대화창
     T(dodo.UI:SettingsSectionHeader(category, "대화창"))

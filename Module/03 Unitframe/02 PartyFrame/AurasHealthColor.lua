@@ -21,13 +21,6 @@ local HealthColorWatchlist = {
 	},
 }
 
-local Enum_EditModeSystem_UnitFrame      = (Enum and Enum.EditModeSystem and Enum.EditModeSystem.UnitFrame) or 3
-local Enum_EditModeUnitFrameSystem_Raid  = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Raid) or 4
-local Enum_EditModeUnitFrameSystem_Party = (Enum and Enum.EditModeUnitFrameSystem and Enum.EditModeUnitFrameSystem.Party) or 3
-
-local party_system_id = string.format("%d_%d", Enum_EditModeSystem_UnitFrame, Enum_EditModeUnitFrameSystem_Party)
-local raid_system_id  = string.format("%d_%d", Enum_EditModeSystem_UnitFrame, Enum_EditModeUnitFrameSystem_Raid)
-
 -- ==============================
 -- 캐싱
 -- ==============================

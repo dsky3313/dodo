@@ -10,7 +10,6 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local BAR_INDEX_MAP   = dodo.BAR_INDEX_MAP
 local HOTKEY_DB_KEYS  = dodo.AB_DB_KEYS.hotkey
 local HOTKEY_DEFAULTS = dodo.AB_DEFAULTS.hotkey
 local MACRO_DB_KEYS   = dodo.AB_DB_KEYS.macro
@@ -21,33 +20,52 @@ local RANGE_INDICATOR = "●"
 -- ==============================
 -- 캐싱
 -- ==============================
-local Enum = Enum
+local ipairs = ipairs
 local pairs = pairs
-
 local registeredButtons = dodo.registeredButtons
 
 -- ==============================
 -- 기능 구현
 -- ==============================
+local bar_hotkey_cache = {}
 local function is_bar_hotkey_enabled(barName)
     if not barName then return false end
+    local cached = bar_hotkey_cache[barName]
+    if cached ~= nil then return cached end
     local dbKey = HOTKEY_DB_KEYS[barName]
-    if not dbKey then return HOTKEY_DEFAULTS[barName] or false end
-    if not dodoDB then return HOTKEY_DEFAULTS[barName] or false end
-    local val = dodoDB[dbKey]
-    if val == nil then return HOTKEY_DEFAULTS[barName] or false end
-    return val
+    local result
+    if not dbKey then
+        result = HOTKEY_DEFAULTS[barName] or false
+    elseif not dodoDB then
+        result = HOTKEY_DEFAULTS[barName] or false
+    else
+        local val = dodoDB[dbKey]
+        result = (val == nil) and (HOTKEY_DEFAULTS[barName] or false) or val
+    end
+    bar_hotkey_cache[barName] = result
+    return result
 end
+dodo.ActionbarInvalidateHotkeyCache = function() bar_hotkey_cache = {} end
 
+local bar_macro_cache = {}
 local function is_bar_macro_enabled(barName)
     if not barName then return false end
+    local cached = bar_macro_cache[barName]
+    if cached ~= nil then return cached end
     local dbKey = MACRO_DB_KEYS[barName]
-    if not dbKey then return MACRO_DEFAULTS[barName] or false end
-    if not dodoDB then return MACRO_DEFAULTS[barName] or false end
-    local val = dodoDB[dbKey]
-    if val == nil then return MACRO_DEFAULTS[barName] or false end
-    return val
+    local result
+    if not dbKey then
+        result = MACRO_DEFAULTS[barName] or false
+    elseif not dodoDB then
+        result = MACRO_DEFAULTS[barName] or false
+    else
+        local val = dodoDB[dbKey]
+        result = (val == nil) and (MACRO_DEFAULTS[barName] or false) or val
+    end
+    bar_macro_cache[barName] = result
+    return result
 end
+dodo.ActionbarInvalidateMacroCache = function() bar_macro_cache = {} end
 
 local function update_button_text(btn)
     if not btn.HotKey then return end
@@ -81,21 +99,26 @@ end
 dodo.ActionbarUpdateButtonText = update_button_text
 
 dodo.ActionbarApplyText = function()
-    for btn in pairs(registeredButtons) do
-        local isEnabled = (dodoDB and dodoDB.enableActionbar ~= false)
-        if isEnabled then
-            if btn:IsVisible() then update_button_text(btn) end
-        else
+    local isEnabled = (dodoDB and dodoDB.enableActionbar ~= false)
+    if not isEnabled then
+        for btn in pairs(registeredButtons) do
             if btn.HotKey then
                 btn.HotKey:SetAlpha(1)
                 if _G.ActionButton_UpdateHotkeys then
                     _G.ActionButton_UpdateHotkeys(btn)
                 end
             end
-            if btn.Name then
-                btn.Name:SetAlpha(1)
+            if btn.Name then btn.Name:SetAlpha(1) end
+        end
+        return
+    end
+    if not dodo.barButtons then return end
+    for _, barInfo in ipairs(dodo.AB_BAR_ORDER) do
+        local btns = dodo.barButtons[barInfo.name]
+        if btns then
+            for _, btn in ipairs(btns) do
+                if btn:IsVisible() then update_button_text(btn) end
             end
         end
     end
 end
-

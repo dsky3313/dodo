@@ -88,7 +88,7 @@ end, 40)
 
 **음성** (order: 8000)
 - [x] `Module/08 Sound/Audio.lua`
-- [x] `Module/09 QOL/05 ETC/NewLFG.lua`
+- [x] `Module/09 QOL/99 ETC/NewLFG.lua`
 
 **편의기능.캐릭터 정보** (order: 9000)
 **편의기능.쐐기돌** (order: 9010)
@@ -96,26 +96,26 @@ end, 40)
 **편의기능.NPC 대화창** (order: 9030)
 **편의기능.모험안내서** (order: 9040)
 **편의기능.편의기능** (order: 9500)
-- [ ] `Module/09 QOL/05 ETC/Camera.lua`
-- [x] `Module/09 QOL/01 CharacterFrame/Core.lua`
-- [x] `Module/09 QOL/ChallengesKeystoneFrame/InsertKeystone.lua`
-- [x] `Module/09 QOL/05 ETC/ColorPicker.lua`
-- [x] `Module/09 QOL/05 ETC/DeleteNow.lua`
-<!-- - [ ] `Module/09 QOL/05 ETC/ExpFilter.lua` --> -- 블리자드 기본기능으로 편입. toc에서 비활성화.
-- [x] `Module/09 QOL/05 ETC/Friends.lua`
-- [x] `Module/09 QOL/05 ETC/Merchant.lua`
-- [x] `Module/09 QOL/05 ETC/PartyKeystone.lua`
-- [x] `Module/09 QOL/05 ETC/QuickBobber.lua`
-- [x] `Module/09 QOL/05 ETC/Teleport.lua`
-- [x] `Module/09 QOL/05 ETC/TimerLFG.lua`
-<!-- - [ ] `Module/09 QOL/05 ETC/Token.lua` --> -- 나중에 모듈 업데이트할거임. toc에서 비활성화.
-- [x] `Module/09 QOL/05 ETC/WowheadLink.lua`
-- [ ] `Module/09 QOL/WorldMap/Icon.lua`
-- [ ] `Module/09 QOL/ReadyCheck/Timer.lua`
-- [ ] `Module/09 QOL/ReadyCheck/Consumeable.lua`  -- 나중에 모듈 업데이트할거임
-- [ ] `Module/09 QOL/ObjectiveTracker/KeystoneTimer.lua`  -- 나중에 모듈 업데이트할거임
-- [ ] `Module/09 QOL/05 ETC/InsDifficulty.lua`
-- [ ] `Module/09 QOL/Editmode/Position.lua`
+- [ ] `Module/09 QOL/99 ETC/Camera.lua`
+- [x] `Module/09 QOL/01 CharacterFrame/01 Core.lua`
+- [x] `Module/09 QOL/02 Mplus/03 InsertKeystone.lua`
+- [x] `Module/09 QOL/99 ETC/ColorPicker.lua`
+- [x] `Module/09 QOL/99 ETC/DeleteNow.lua`
+<!-- - [ ] `Module/09 QOL/99 ETC/ExpFilter.lua` --> -- 블리자드 기본기능으로 편입. toc에서 비활성화.
+- [x] `Module/09 QOL/99 ETC/Friends.lua`
+- [x] `Module/09 QOL/99 ETC/Merchant.lua`
+- [x] `Module/09 QOL/99 ETC/PartyKeystone.lua`
+- [x] `Module/09 QOL/99 ETC/QuickBobber.lua`
+- [x] `Module/09 QOL/99 ETC/Teleport.lua`
+- [x] `Module/09 QOL/99 ETC/TimerLFG.lua`
+<!-- - [ ] `Module/09 QOL/99 ETC/Token.lua` --> -- 나중에 모듈 업데이트할거임. toc에서 비활성화.
+- [x] `Module/09 QOL/99 ETC/WowheadLink.lua`
+- [ ] `Module/09 QOL/99 ETC/WorldMapIcon.lua`
+- [ ] `Module/09 QOL/02 Mplus/05 TimerReadyCheck.lua`
+- [ ] `Module/00 coming soon/99 Consumeable.lua`  -- 나중에 모듈 업데이트할거임
+- [ ] `Module/09 QOL/02 Mplus/04 KeystoneTimer.lua`  -- 나중에 모듈 업데이트할거임
+- [ ] `Module/09 QOL/99 ETC/InsDifficulty.lua`
+- [ ] `Module/09 QOL/99 ETC/Position.lua`
 
 **명령어** (order: 9900)
 <!-- - [ ] `Module/10 Command/Slash.lua` --> -- 나중에 모듈 업데이트할거임. 일단 보류.
@@ -146,19 +146,19 @@ end, 40)
 - [ ] `Module/06 Encounter/01 Core.lua`
 
 **인터페이스** (order: 50)
-- [ ] `Module/09 QOL/Editmode/Position.lua`
+- [ ] `Module/09 QOL/99 ETC/Position.lua`
 - [x] `Module/05 Interface/03 Minimap/Core.lua`
-- [ ] `Module/03 Unitframe/03 RaidFrame/Anchor.lua`
+- [ ] `Module/00 coming soon/03 RaidFrame/Anchor.lua`
 - [ ] `Module/03 Unitframe/01 UnitFrame/01 Core.lua`
-- [ ] `Module/09 QOL/05 ETC/Camera.lua`
+- [ ] `Module/09 QOL/99 ETC/Camera.lua`
 
 **편의기능** (order: 60)
 - [ ] `Module/05 Interface/04 Tooltip/Core.lua`
-- [ ] `Module/09 QOL/ReadyCheck/Timer.lua`
-- [ ] `Module/09 QOL/ReadyCheck/Consumeable.lua`
-- [ ] `Module/09 QOL/ObjectiveTracker/KeystoneTimer.lua`
-- [ ] `Module/09 QOL/05 ETC/InsDifficulty.lua`
-- [ ] `Module/09 QOL/05 ETC/PartyKeystone.lua` (3단계와 중복 → 통합)
+- [ ] `Module/09 QOL/02 Mplus/05 TimerReadyCheck.lua`
+- [ ] `Module/00 coming soon/99 Consumeable.lua`
+- [ ] `Module/09 QOL/02 Mplus/04 KeystoneTimer.lua`
+- [ ] `Module/09 QOL/99 ETC/InsDifficulty.lua`
+- [ ] `Module/09 QOL/99 ETC/PartyKeystone.lua` (3단계와 중복 → 통합)
 - [ ] `Module/04 Combat/04 Stance.lua`
 
 **기타**
@@ -198,7 +198,7 @@ items의 get/set 콜백이 단순 `dodoDB[key]` 패턴이면 → `Checkbox()` �
 
 채팅창
 - [ ] `Module/05 Interface/02 ChatFrame/URL.lua`
-- [ ] `Module/05 Interface/02 ChatFrame/Short.lua`
+- [ ] `Module/00 coming soon/Short.lua`
 - [ ] `Module/05 Interface/02 ChatFrame/Font.lua`
 - [ ] `Module/05 Interface/02 ChatFrame/GuildButton.lua`
 
@@ -234,19 +234,19 @@ items의 get/set 콜백이 단순 `dodoDB[key]` 패턴이면 → `Checkbox()` �
 - [ ] `Module/03 Unitframe/01 UnitFrame/01 Component/02 Castbar.lua`
 - [ ] `Module/03 Unitframe/01 UnitFrame/01 Component/03 Auras.lua`
 - [ ] `Module/03 Unitframe/01 UnitFrame/01 Component/04 Absorb.lua`
-- [ ] `Module/03 Unitframe/03 RaidFrame/Anchor.lua`
+- [ ] `Module/00 coming soon/03 RaidFrame/Anchor.lua`
 - [ ] `Module/03 Unitframe/02 PartyFrame/AurasHealthColor.lua`
 - [ ] `Module/03 Unitframe/02 PartyFrame/Leader.lua`
 - [ ] `Module/03 Unitframe/02 PartyFrame/Overshield.lua`
-- [ ] `Module/03 Unitframe/02 PartyFrame/SoloMode.lua`
+- [ ] `Module/00 coming soon/SoloMode.lua`
 
 기타 커스텀 시스템
 - [ ] `Module/04 Combat/01 ResourceBar/Core.lua` (`"ResourceBar"` → `"전투"`)
 - [ ] `Module/05 Interface/01 DamageMeter/Core.lua` (`"전투.딜미터"`)
 - [ ] `Module/04 Combat/02 Debuff/Debuff.lua` (`"Debuff"` → `"전투"`)
 - [ ] `Module/04 Combat/04 Stance.lua` (`"Stance"` → `"편의기능"`)
-- [ ] `Module/09 QOL/05 ETC/FrameOption.lua` (TalkingHeadFrame → `"인터페이스"`)
-- [ ] `Module/09 QOL/ObjectiveTracker/Collapse.lua` (→ `"편의기능"`)
+- [ ] `Module/09 QOL/99 ETC/FrameOption.lua` (TalkingHeadFrame → `"인터페이스"`)
+- [ ] `Module/00 coming soon/99 Collapse.lua` (→ `"편의기능"`)
 
 ---
 
@@ -309,7 +309,7 @@ end, 1000)
 - [ ] `Module/03 Unitframe/02 PartyFrame/AurasHealthColor.lua`
 - [ ] `Module/03 Unitframe/02 PartyFrame/Overshield.lua`
 - [ ] `Module/03 Unitframe/02 PartyFrame/Leader.lua`
-- [ ] `Module/03 Unitframe/02 PartyFrame/SoloMode.lua`
+- [ ] `Module/00 coming soon/SoloMode.lua`
 
 관련 Blizzard 소스:
 - `Blizzard_SettingsDefinitions_Frame/Interface.xml` — `RaidFramePreviewTemplate` 정의
@@ -345,9 +345,9 @@ end, 1000)
 - `dodo.RegisterOption`은 `ADDON_LOADED` 전에 호출 → `dodo._optionRegistry` 먼저 초기화 필수
 - subCategory는 `dodoCreateOptions()` 시점에 생성 (ADDON_LOADED 이후) — 안전
 - 6단계 ProxySetting 변수명 충돌: `"DODO_SYS_"` 접두사 + systemID + item.name 조합
-- `SetParentInitializer` 사용 모듈: `Module/09 QOL/05 ETC/NewLFG.lua` 1개뿐 — `buildFn(category)` 그대로 호출 구조라 별도 처리 불필요
+- `SetParentInitializer` 사용 모듈: `Module/09 QOL/99 ETC/NewLFG.lua` 1개뿐 — `buildFn(category)` 그대로 호출 구조라 별도 처리 불필요
 - `Module/04 Combat/03 BloodBrez.lua`의 `"combat"` → `"전투"` 확정
-- 5단계 `Module/09 QOL/05 ETC/PartyKeystone.lua`는 3단계(`"인터페이스.편의기능"`)와 5단계(`"편의기능"`) 양쪽에 걸침 — 하나로 통합 필요
+- 5단계 `Module/09 QOL/99 ETC/PartyKeystone.lua`는 3단계(`"인터페이스.편의기능"`)와 5단계(`"편의기능"`) 양쪽에 걸침 — 하나로 통합 필요
 - 6단계 `Module/06 Encounter/04 Text.lua`는 `RegisterEditModeSystemSetting`을 조건부로 여러 번 호출 — 마이그레이션 시 주의
 - 6단계는 복잡도 최고 (ActionBar `"N_M"` 다수, Encounter 중복 등록, 복잡한 get/set) — 5단계 완전 완료 후 시작
 - `dodo.EditMode` 시스템(위치 앵커 프레임)은 설정창과 무관 — 별도 판단 대상. 패널만 제거하고 앵커는 존치 가능

@@ -14,7 +14,6 @@ local ipairs = ipairs
 local issecretvalue = issecretvalue or function() return false end
 local NineSliceUtil = NineSliceUtil
 local pairs = pairs
-local string_format = string.format
 local _G = _G
 
 -- ==============================

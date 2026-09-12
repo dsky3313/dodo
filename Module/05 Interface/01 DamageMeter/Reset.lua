@@ -135,3 +135,21 @@ end
 
 -- 외부 바인딩 노출
 dodo.UpdateDamageMeterResetState = update_state
+
+-- ==============================
+-- 쐐기 시작 자동 초기화
+-- ==============================
+local function on_auto_reset_event(self, event)
+    if event == "PLAYER_LOGIN" then
+        if dodoDB.dmgMeterAutoResetMplus == nil then dodoDB.dmgMeterAutoResetMplus = true end
+    elseif event == "CHALLENGE_MODE_START" then
+        if dodoDB.enableDamageMeter ~= false and dodoDB.dmgMeterAutoResetMplus ~= false then
+            C_DamageMeter.ResetAllCombatSessions()
+        end
+    end
+end
+
+local auto_reset_frame = CreateFrame("Frame")
+auto_reset_frame:RegisterEvent("PLAYER_LOGIN")
+auto_reset_frame:RegisterEvent("CHALLENGE_MODE_START")
+auto_reset_frame:SetScript("OnEvent", on_auto_reset_event)

@@ -5,11 +5,6 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local Enum = Enum
-local pairs = pairs
-local string_format = string.format
-local _G = _G
-
 -- ==============================
 -- 아우라 버튼 공통 스타일
 -- ==============================

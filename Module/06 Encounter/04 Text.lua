@@ -384,6 +384,7 @@ local function show_preview()
     if not dodo.Encounter.IsEnabled() then return end
     if not (dodoDB and dodoDB.enableEncounterText ~= false) then return end
     if is_preview then return end
+    if not (EditModeManagerFrame and EditModeManagerFrame.editModeActive) then return end
     is_preview = true
     local row   = create_row()
     row.eventID = PREVIEW_ID

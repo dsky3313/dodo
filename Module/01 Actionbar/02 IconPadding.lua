@@ -10,39 +10,44 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local BAR_INDEX_MAP        = dodo.BAR_INDEX_MAP
 local PADDING_DB_KEYS      = dodo.AB_DB_KEYS.padding
 local PADDING_VAL_KEYS     = dodo.AB_DB_KEYS.paddingVal
 local PADDING_DEFAULTS     = dodo.AB_DEFAULTS.padding
 local PADDING_VAL_DEFAULTS = dodo.AB_DEFAULTS.paddingVal
 
-
-
 -- ==============================
 -- 캐싱
 -- ==============================
 local AnchorUtil = AnchorUtil
-local Enum = Enum
 local GridLayoutUtil = GridLayoutUtil
 local InCombatLockdown = InCombatLockdown
 local ipairs = ipairs
 local math_ceil = math.ceil
-local pairs = pairs
-
 local anchor_cache = {}
 local layout_cache = {}
 
 -- ==============================
 -- 기능 구현
 -- ==============================
+local bar_padding_cache = {}
 local function is_bar_padding_enabled(barName)
+    if not barName then return false end
+    local cached = bar_padding_cache[barName]
+    if cached ~= nil then return cached end
     local dbKey = PADDING_DB_KEYS[barName]
-    if not dbKey then return PADDING_DEFAULTS[barName] or false end
-    if not dodoDB then return PADDING_DEFAULTS[barName] or false end
-    local val = dodoDB[dbKey]
-    if val == nil then return PADDING_DEFAULTS[barName] or false end
-    return val
+    local result
+    if not dbKey then
+        result = PADDING_DEFAULTS[barName] or false
+    elseif not dodoDB then
+        result = PADDING_DEFAULTS[barName] or false
+    else
+        local val = dodoDB[dbKey]
+        result = (val == nil) and (PADDING_DEFAULTS[barName] or false) or val
+    end
+    bar_padding_cache[barName] = result
+    return result
 end
+dodo.ActionbarInvalidatePaddingCache = function() bar_padding_cache = {} end
 
 local function get_cached_anchor(anchor_point, frame)
     local key = anchor_point .. "_" .. frame:GetName()
@@ -95,16 +100,15 @@ local function update_padding(frame)
 end
 dodo.ActionbarUpdatePadding = update_padding
 
+local PADDING_BARS = {
+    MainActionBar, MultiBarBottomLeft, MultiBarBottomRight,
+    MultiBarRight, MultiBarLeft, MultiBar5, MultiBar6, MultiBar7,
+    StanceBar, PetActionBar
+}
+
 dodo.ActionbarApplyPadding = function()
-    local bars = {
-        MainActionBar, MultiBarBottomLeft, MultiBarBottomRight,
-        MultiBarRight, MultiBarLeft, MultiBar5, MultiBar6, MultiBar7,
-        StanceBar, PetActionBar
-    }
-    for _, bar in ipairs(bars) do
-        if bar then
-            update_padding(bar)
-        end
+    for _, bar in ipairs(PADDING_BARS) do
+        if bar then update_padding(bar) end
     end
 end
 

@@ -2,10 +2,12 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
+-- ==============================
+-- 캐싱
+-- ==============================
 local CreateFrame   = CreateFrame
 local math_floor    = math.floor
 local NineSliceUtil = NineSliceUtil
-local _G            = _G
 
 local _preview_ref   = nil
 local _tab_change_fn = nil

@@ -29,7 +29,7 @@ local SOUND_ROOT = "Interface\\AddOns\\" .. addonName .. "\\Media\\Sound\\Encoun
 
 ---@class dodo.EncounterEntry
 ---@field eventID integer
----@field role    "Tank"|"Heal"|"Mechanic"|"Other"
+---@field role    "Tank"|"Heal"|"Phase"|"Other"
 ---@field sound   dodo.SoundKey|nil
 ---@field enable  boolean|nil
 

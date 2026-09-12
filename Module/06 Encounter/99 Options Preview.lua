@@ -90,7 +90,7 @@ local TROW_WIDTH_SCALE = 0.82  -- 편집모드 막대 가로 길이 = 82%
 local TIMELINE_ROWS = {
 	{ role = "Tank",     label = "보스 능력명 (1)", timer = "45", fill = 0.80 },
 	{ role = "Heal",     label = "보스 능력명 (2)", timer = "28", fill = 0.50 },
-	{ role = "Mechanic", label = "보스 능력명 (3)", timer = "12", fill = 0.25 },
+	{ role = "Phase",    label = "보스 능력명 (3)", timer = "12", fill = 0.25 },
 	{ role = "Adds",     label = "보스 능력명 (4)", timer = "4",  fill = 0.10 },
 }
 

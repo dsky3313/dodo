@@ -11,6 +11,7 @@ dodoDB = dodoDB or {}
 -- 캐싱
 -- ==============================
 local CreateFrame = CreateFrame
+local hooksecurefunc = hooksecurefunc
 
 -- ==============================
 -- 로컬 상태

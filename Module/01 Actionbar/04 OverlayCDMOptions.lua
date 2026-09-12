@@ -1,4 +1,7 @@
----@diagnostic disable: undefined-global
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
+---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
 
 -- ==============================

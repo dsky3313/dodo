@@ -5,6 +5,9 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
+-- ==============================
+-- 캐싱
+-- ==============================
 local CreateFrame = CreateFrame
 local issecretvalue = issecretvalue or function() return false end
 local UnitClass = UnitClass
