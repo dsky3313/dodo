@@ -10,8 +10,7 @@ dodoDB = dodoDB or {}
 -- ==============================
 -- 캐싱
 -- ==============================
-local CreateFrame      = CreateFrame
-local InCombatLockdown = InCombatLockdown
+local CreateFrame = CreateFrame
 
 -- ==============================
 -- 로컬 상태
@@ -55,14 +54,6 @@ local function build_bar()
     end
 end
 
-local function destroy_bar()
-    if not _orig_parent or InCombatLockdown() then return end
-    TotemFrame:SetParent(_orig_parent)
-    TotemFrame:ClearAllPoints()
-    _orig_parent = nil
-    if container then container:Hide() end
-end
-
 -- ==============================
 -- 이벤트
 -- ==============================
@@ -84,9 +75,7 @@ local function on_event(self, event, arg1)
         container:SetFrameStrata("MEDIUM")
         container:Hide()
 
-        if dodoDB.enableTotem ~= false then
-            build_bar()
-        end
+        build_bar()
 
         self:UnregisterEvent("PLAYER_ENTERING_WORLD")
     end
@@ -131,23 +120,3 @@ dodo.TotemDebug = function()
 end
 _G.dodoTotemDebug = dodo.TotemDebug
 
--- ==============================
--- 설정 등록
--- ==============================
-dodo.TotemApply = function(val)
-    if val then
-        if not _orig_parent then build_bar() end
-        if container then container:Show() end
-    else
-        destroy_bar()
-    end
-end
-
-dodo.RegisterOption("전투", function(category)
-    dodo.UI:SettingsCheckbox(category, "enableTotem", "토템 바",
-        "활성화된 토템을 아이콘으로 표시합니다. 우클릭으로 소환 해제.",
-        true, function(val)
-            if dodoDB then dodoDB.enableTotem = val end
-            if dodo.TotemApply then dodo.TotemApply(val) end
-        end)
-end, 4050)

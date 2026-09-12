@@ -112,18 +112,11 @@ local function update_cooldown_state(btn)
 		return
 	end
 
-	local dur = C_ActionBar.GetActionCooldownDuration(btn.action)
-	local info = C_ActionBar.GetActionCooldown(btn.action)
-
-	if not dur then
-		btn.__cdVal = nil
-	elseif info and not info.isOnGCD then
-		btn.__cdVal = dur
-	end
-	-- isOnGCD 중에는 __cdVal 유지 (가속 환경에서 GCD 판정 타이밍 겹침 방지)
-
-	update_icon_color(btn)
-	if dodo.ActionbarUpdatePotionProc then dodo.ActionbarUpdatePotionProc(btn) end
+    local dur  = C_ActionBar.GetActionCooldownDuration(btn.action)
+    local info = C_ActionBar.GetActionCooldown(btn.action)
+    btn.__cdVal = (dur and info and not info.isOnGCD) and dur or nil
+    update_icon_color(btn)
+    if dodo.ActionbarUpdatePotionProc then dodo.ActionbarUpdatePotionProc(btn) end
 end
 dodo.ActionbarUpdateCooldownState = update_cooldown_state
 

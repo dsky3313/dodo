@@ -560,9 +560,7 @@ dodo.BuildSpecialButtonCache = function()
     if InCombatLockdown() then return end
     scan_linked_spells()
     scan_user_linked_spells()
-    -- create_aura_containers는 Blizzard 보안 프레임(AddAuraSlot 반환값)에 SetSize를 호출하므로
-    -- tainted 컨텍스트(시네마틱 스킵 등)에서 직접 호출 시 forbidden 에러 발생 → 1프레임 지연
-    C_Timer.After(0, create_aura_containers)
+    create_aura_containers()
     update_overlay_filters()
 end
 

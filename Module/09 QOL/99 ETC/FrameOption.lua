@@ -7,9 +7,6 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local Config = {
-    talkingHeadFrame = 0.8,
-}
 
 -- ==============================
 -- 캐싱
@@ -29,7 +26,7 @@ local function frame_scale()
 
     local thf = _G["TalkingHeadFrame"]
     if thf then
-        thf:SetScale(enabled and (dodoDB.frameScale_th or Config.talkingHeadFrame) or 1.0)
+        thf:SetScale(enabled and (dodoDB.frameScale_th or (dodo.QOL_DEFAULTS and dodo.QOL_DEFAULTS.frameScale_th) or 0.8) or 1.0)
     end
 end
 
@@ -56,7 +53,7 @@ local function on_event(self, event, arg1)
               get=function(l) return dodoDB and dodoDB.enableFrameOption ~= false end,
               set=function(l,v) if dodoDB then dodoDB.enableFrameOption=v end; frame_scale() end },
             { kind=LEM.SettingType.Slider, name="크기", default=1.0, minValue=0.5, maxValue=1.5, valueStep=0.1,
-              get=function(l) return dodoDB and dodoDB.frameScale_th or Config.talkingHeadFrame end,
+              get=function(l) return dodoDB and dodoDB.frameScale_th or (dodo.QOL_DEFAULTS and dodo.QOL_DEFAULTS.frameScale_th) or 0.8 end,
               set=function(l,v) if dodoDB then dodoDB.frameScale_th=v end; frame_scale() end },
         })
         self:UnregisterEvent("PLAYER_LOGIN")

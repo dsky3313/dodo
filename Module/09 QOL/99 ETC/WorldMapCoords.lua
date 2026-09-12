@@ -4,6 +4,7 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local addonName, dodo = ...
+dodoDB = dodoDB or {}
 
 local PANEL_WIDTH = 160
 
@@ -19,6 +20,7 @@ local issecretvalue = issecretvalue or function() return false end
 -- OnUpdate 후크 — 텍스트 포맷 덮어쓰기
 -- ==============================
 local function on_coords_update(self)
+    if dodoDB and dodoDB.useWorldMapCoords == false then return end
     local map_id = self:GetParent():GetMapID()
 
     if self.CursorCoords:IsShown() then

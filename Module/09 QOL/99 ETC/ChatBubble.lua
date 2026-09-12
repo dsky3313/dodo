@@ -10,7 +10,6 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local DEFAULT_CHATBUBBLE_FONT_SIZE = 10
 
 dodo.chatbubbleFontTable = {
     { label = "2002", text = "2002", value = "Fonts\\2002.TTF" },
@@ -45,11 +44,11 @@ local function chat_bubble()
 
     -- 1. 글꼴 설정 적용 여부 확인
     local use_font = (dodoDB.useChatbubbleFont ~= false)
-    local font_path = use_font and (dodoDB.chatbubbleFontPath or "Fonts\\2002.TTF") or default_font_path
+    local font_path = use_font and (dodoDB.chatbubbleFontPath or (dodo.QOL_DEFAULTS and dodo.QOL_DEFAULTS.chatbubbleFontPath) or "Fonts\\2002.TTF") or default_font_path
 
     -- 2. 글꼴 크기 설정 적용 여부 확인
     local use_size = (dodoDB.useChatbubbleFontSize ~= false)
-    local font_size = use_size and (dodoDB.chatbubbleFontSize or DEFAULT_CHATBUBBLE_FONT_SIZE) or default_font_size
+    local font_size = use_size and (dodoDB.chatbubbleFontSize or (dodo.QOL_DEFAULTS and dodo.QOL_DEFAULTS.chatbubbleFontSize) or 10) or default_font_size
 
     local font_flag = "OUTLINE"
 

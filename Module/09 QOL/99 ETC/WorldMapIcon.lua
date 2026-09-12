@@ -233,18 +233,4 @@ init_frame:RegisterEvent("ADDON_LOADED")
 init_frame:RegisterEvent("PLAYER_LOGIN")
 init_frame:SetScript("OnEvent", on_event)
 
--- ==============================
--- 설정 등록
--- ==============================
-if dodo.RegisterEditModeModuleSetting then
-    dodo.RegisterEditModeModuleSetting("지도", {
-        {
-            name = "월드맵 커스텀 아이콘 활성화",
-            get  = function() return dodoDB and dodoDB.enableWorldMapIcon ~= false end,
-            set  = function(checked)
-                if dodoDB then dodoDB.enableWorldMapIcon = checked end
-                update_visual()
-            end,
-        },
-    })
-end
+dodo.WorldMapIconUpdateVisual = update_visual

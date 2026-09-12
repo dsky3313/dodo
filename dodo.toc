@@ -32,8 +32,9 @@ Data/CDM.lua
 # Editmode
 
 # 01 Actionbar
+Module/01 Actionbar/99 Options Preview.lua
+Module/01 Actionbar/99 Options.lua
 Module/01 Actionbar/00 ActionBar.xml
-Module/01 Actionbar/00 Options.lua
 Module/01 Actionbar/01 Core.lua
 Module/01 Actionbar/02 IconPadding.lua
 Module/01 Actionbar/03 IconColor.lua
@@ -44,12 +45,14 @@ Module/01 Actionbar/06 OverlayPotion.lua
 Module/01 Actionbar/07 IconText.lua
 
 # 03 Unitframe
-Module/03 Unitframe/00 Options.lua
+Module/03 Unitframe/99 Options Preview.lua
+Module/03 Unitframe/99 Options.lua
 Module/03 Unitframe/01 UnitFrame/01 Component/01 Power.lua
 Module/03 Unitframe/01 UnitFrame/01 Component/02 Castbar.lua
 Module/03 Unitframe/01 UnitFrame/01 Component/03 Auras.lua
 Module/03 Unitframe/01 UnitFrame/01 Component/04 Absorb.lua
-Module/03 Unitframe/01 UnitFrame/01 Component/99 Indicator.lua
+Module/03 Unitframe/01 UnitFrame/01 Component/05 Indicator.lua
+Module/03 Unitframe/01 UnitFrame/01 Component/06 Totem.lua
 Module/03 Unitframe/01 UnitFrame/01 Core.lua
 Module/03 Unitframe/01 UnitFrame/02 Styles.lua
 Module/03 Unitframe/02 PartyFrame/AurasHealthColor.lua
@@ -58,7 +61,9 @@ Module/03 Unitframe/02 PartyFrame/Overshield.lua
 #Module/03 Unitframe/02 PartyFrame/SoloMode.lua
 #Module/03 Unitframe/03 RaidFrame/Anchor.lua
 
-# 04 Combat / ResourceBar
+# 04 Combat
+Module/04 Combat/99 Options Preview.lua
+Module/04 Combat/99 Options.lua
 Module/04 Combat/01 ResourceBar/ResourceBar.xml
 Module/04 Combat/01 ResourceBar/Core.lua
 Module/04 Combat/01 ResourceBar/BarMode/Rune.lua
@@ -71,42 +76,27 @@ Module/04 Combat/01 ResourceBar/BarMode/Stack.lua
 Module/04 Combat/01 ResourceBar/BarMode/Whirlwind.lua
 Module/04 Combat/01 ResourceBar/Power.lua
 Module/04 Combat/01 ResourceBar/Tracking.lua
-
-# 04 Combat / Debuff
 Module/04 Combat/02 Debuff/Debuff.xml
 Module/04 Combat/02 Debuff/Debuff.lua
-
-# 04 Combat / BloodBrez
 Module/04 Combat/03 BloodBrez.lua
-
-# 04 Combat / Stance
 Module/04 Combat/04 Stance.lua
 
-# 04 Combat / Options
-Module/04 Combat/00 Options.lua
-
-# 05 Interface / DamageMeter
+# 05 Interface
+Module/05 Interface/99 Options.lua
 Module/05 Interface/01 DamageMeter/Core.lua
 Module/05 Interface/01 DamageMeter/Reset.lua
 Module/05 Interface/01 DamageMeter/Sync.lua
 Module/05 Interface/01 DamageMeter/EnableAlways.lua
-
-# 05 Interface /ChatFrame
 Module/05 Interface/02 ChatFrame/Core.lua
 Module/05 Interface/02 ChatFrame/Font.lua
 Module/05 Interface/02 ChatFrame/GuildButton.lua
-# Module/05 Interface/02 ChatFrame/Short.lua
 Module/05 Interface/02 ChatFrame/URL.lua
-
-# 05 Interface / Minimap
 Module/05 Interface/03 Minimap/Core.lua
 Module/05 Interface/03 Minimap/FPS.lua
 Module/05 Interface/03 Minimap/IconAddons.lua
 Module/05 Interface/03 Minimap/MinimapCoords.lua
 Module/05 Interface/03 Minimap/Square.lua
 Module/05 Interface/03 Minimap/Zoom.lua
-
-# 05 Interface / Tooltip
 Module/05 Interface/04 Tooltip/Core.lua
 Module/05 Interface/04 Tooltip/Color.lua
 Module/05 Interface/04 Tooltip/Icon.lua
@@ -114,11 +104,9 @@ Module/05 Interface/04 Tooltip/ID.lua
 Module/05 Interface/04 Tooltip/StatusBar.lua
 Module/05 Interface/04 Tooltip/Vehicle.lua
 
-# 05 Interface / Options
-Module/05 Interface/00 Options.lua
-
 # 06 Encounter
-Module/06 Encounter/00 Options.lua
+Module/06 Encounter/99 Options Preview.lua
+Module/06 Encounter/99 Options.lua
 Module/06 Encounter/01 Core.lua
 Module/06 Encounter/02 Data.lua
 Module/06 Encounter/03 Sound.lua
@@ -127,71 +115,56 @@ Module/06 Encounter/04 Text.lua
 Module/06 Encounter/05 TimelineColor.lua
 
 # 07 CursorSpellTracker
-Module/07 CursorSpellTracker/CursorSpellTracker.lua
 Module/07 CursorSpellTracker/99 Options.lua
+Module/07 CursorSpellTracker/CursorSpellTracker.lua
 
 # 08 Sound
 Module/08 Sound/Audio.lua
 
-# 09 QOL / CharacterFrame
-Module/09 QOL/01 CharacterFrame/Core.lua
-Module/09 QOL/01 CharacterFrame/Layout.lua
-Module/09 QOL/01 CharacterFrame/Ilvl.lua
-Module/09 QOL/01 CharacterFrame/IlvlBag.lua
-Module/09 QOL/01 CharacterFrame/Enchant.lua
-Module/09 QOL/01 CharacterFrame/Gem.lua
-
-# 09 QOL / ChallengesKeystoneFrame
-Module/09 QOL/ChallengesKeystoneFrame/InsertKeystone.lua
-
-# 09 QOL / PVEFrame
-Module/09 QOL/03 PVEFrame/BrowseGroup.lua
-Module/09 QOL/03 PVEFrame/PartyClass.lua
-Module/09 QOL/03 PVEFrame/QuickSelectDungeons.lua
-
-# 09 QOL / GossipFrame
+# 09 QOL
+Module/09 QOL/99 Options.lua
+Module/09 QOL/01 CharacterFrame/01 Core.lua
+Module/09 QOL/01 CharacterFrame/02 Enchant.lua
+Module/09 QOL/01 CharacterFrame/03 Gem.lua
+Module/09 QOL/01 CharacterFrame/04 Ilvl.lua
+Module/09 QOL/01 CharacterFrame/05 IlvlBag.lua
+Module/09 QOL/01 CharacterFrame/06 Layout.lua
+Module/09 QOL/02 Mplus/01 InsDifficulty.lua
+Module/09 QOL/02 Mplus/02 PartyKeystone.lua
+Module/09 QOL/02 Mplus/03 InsertKeystone.lua
+Module/09 QOL/02 Mplus/04 KeystoneTimer.lua
+Module/09 QOL/02 Mplus/05 TimerReadyCheck.lua
+Module/09 QOL/02 Mplus/06 CinematicSkip.lua
+#Module/09 QOL/02 Mplus/99 Consumeable.lua
+#Module/09 QOL/02 Mplus/99 Collapse.lua
+Module/09 QOL/03 PVEFrame/01 PartyClass.lua
+Module/09 QOL/03 PVEFrame/02 BrowseGroup.lua
+Module/09 QOL/03 PVEFrame/03 QuickSelectDungeons.lua
 Module/09 QOL/04 GossipFrame/Core.lua
 Module/09 QOL/04 GossipFrame/ID.lua
 Module/09 QOL/04 GossipFrame/SelectAuto.lua
 Module/09 QOL/04 GossipFrame/KeystoneLindormi.lua
-
-# 09 QOL / ETC
-Module/09 QOL/05 ETC/Camera.lua
-Module/09 QOL/05 ETC/ChatBubble.lua
-Module/09 QOL/05 ETC/ColorPicker.lua
-Module/09 QOL/05 ETC/DeleteNow.lua
-Module/09 QOL/05 ETC/ExpFilter.lua
-Module/09 QOL/05 ETC/FrameOption.lua
-Module/09 QOL/05 ETC/Friends.lua
-Module/09 QOL/05 ETC/InsDifficulty.lua
-Module/09 QOL/05 ETC/Merchant.lua
-Module/09 QOL/05 ETC/NewLFG.lua
-Module/09 QOL/05 ETC/PartyKeystone.lua
-Module/09 QOL/05 ETC/QuickBobber.lua
-Module/09 QOL/05 ETC/Teleport.lua
-Module/09 QOL/05 ETC/TimerLFG.lua
-#Module/09 QOL/05 ETC/Token.lua
-Module/09 QOL/05 ETC/WMarker.lua
-Module/09 QOL/05 ETC/WowheadLink.lua
-
-# 09 QOL / Mplus
-Module/09 QOL/02 Mplus/KeystoneTimer.lua
-#Module/09 QOL/02 Mplus/Collapse.lua
-Module/09 QOL/02 Mplus/Timer.lua
-#Module/09 QOL/02 Mplus/Consumeable.lua
-Module/09 QOL/02 Mplus/99 Options.lua
-
-# 09 QOL / WorldMap
-Module/09 QOL/WorldMap/Icon.lua
-Module/09 QOL/WorldMap/WorldMapCoords.lua
-
-# 09 QOL / EncounterJournal
 Module/09 QOL/05 EncounterJournal/Core.lua
 Module/09 QOL/05 EncounterJournal/EJAchievementsTabData.lua
 Module/09 QOL/05 EncounterJournal/EJAchievementsTabCategory.lua
 Module/09 QOL/05 EncounterJournal/EJAchievementsTabRowBuilder.lua
 Module/09 QOL/05 EncounterJournal/EJAchievementsTabUI.lua
 Module/09 QOL/05 EncounterJournal/ID.lua
+Module/09 QOL/99 ETC/Camera.lua
+Module/09 QOL/99 ETC/ChatBubble.lua
+Module/09 QOL/99 ETC/ColorPicker.lua
+Module/09 QOL/99 ETC/DeleteNow.lua
+Module/09 QOL/99 ETC/FrameOption.lua
+Module/09 QOL/99 ETC/Friends.lua
+Module/09 QOL/99 ETC/Merchant.lua
+Module/09 QOL/99 ETC/NewLFG.lua
+Module/09 QOL/99 ETC/QuickBobber.lua
+Module/09 QOL/99 ETC/Teleport.lua
+Module/09 QOL/99 ETC/TimerLFG.lua
+Module/09 QOL/99 ETC/WMarker.lua
+Module/09 QOL/99 ETC/WowheadLink.lua
+Module/09 QOL/99 ETC/WorldMapCoords.lua
+Module/09 QOL/99 ETC/WorldMapIcon.lua
 
 # 99 Profiles
 Module/99 Profiles/01 Profile Editmode.lua
@@ -203,5 +176,5 @@ Module/99 Profiles/99 Options.lua
 # Configurations & Layout Anchoring (Last Load)
 Module/10 Command/Slash.lua
 Option.lua
-Module/09 QOL/99 Options.lua
 #Module/09 QOL/Editmode/Position.lua
+#Module/09 QOL/99 ETC/ExpFilter.lua

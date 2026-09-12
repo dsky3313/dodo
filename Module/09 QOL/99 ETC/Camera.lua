@@ -10,7 +10,6 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local CAMERA_TILT_ANGLE = 0.65
 
 -- ==============================
 -- 캐싱
@@ -26,6 +25,7 @@ local CAM_FOV_PAD = "test_cameraDynamicPitchBaseFovPad"
 local CAM_FOV_PAD_DOWN = "test_cameraDynamicPitchBaseFovPadDownScale"
 local CAM_FOV_PAD_FLYING = "test_cameraDynamicPitchBaseFovPadFlying"
 local CAM_KEEP_CENTERED = "CameraKeepCharacterCentered"
+local CAM_MAX_ZOOM = "cameraDistanceMaxZoomFactor"
 
 -- ==============================
 -- 동작
@@ -41,7 +41,7 @@ end
 local function camera_tilt()
     local is_enabled = (dodoDB and dodoDB.useCameraTilt ~= false)
     if is_enabled then
-        local angle = dodoDB.cameraAngle or CAMERA_TILT_ANGLE
+        local angle = dodoDB.cameraAngle or (dodo.QOL_DEFAULTS and dodo.QOL_DEFAULTS.cameraAngle) or 0.65
 
         if GetCVar(CAM_DYNAMIC_PITCH) ~= "1" then
             safe_set_cvar(CAM_DYNAMIC_PITCH, 1)
@@ -63,6 +63,12 @@ local function camera_tilt()
     end
 end
 
+local function camera_max_zoom()
+    local is_enabled = (dodoDB and dodoDB.useCameraMaxZoom ~= false)
+    local val = tostring((dodoDB and dodoDB.cameraMaxZoom) or (dodo.QOL_DEFAULTS and dodo.QOL_DEFAULTS.cameraMaxZoom) or 2.6)
+    safe_set_cvar(CAM_MAX_ZOOM, is_enabled and val or "1.9")
+end
+
 -- ==============================
 -- 이벤트 핸들러
 -- ==============================
@@ -74,6 +80,7 @@ local function on_event(self, event, arg1)
     elseif event == "PLAYER_LOGIN" then
         UIParent:UnregisterEvent("EXPERIMENTAL_CVAR_CONFIRMATION_NEEDED")
         camera_tilt()
+        camera_max_zoom()
         self:RegisterEvent("FIRST_FRAME_RENDERED")
         self:UnregisterEvent("PLAYER_LOGIN")
     elseif event == "FIRST_FRAME_RENDERED" then
@@ -92,4 +99,5 @@ init_camera:SetScript("OnEvent", on_event)
 
 -- 외부 노출 (호환성 유지)
 dodo.CameraTilt = camera_tilt
+dodo.CameraMaxZoom = camera_max_zoom
 

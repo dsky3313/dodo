@@ -482,7 +482,9 @@ local function on_event(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
         dodoDB = dodoDB or {}
     elseif event == "PLAYER_LOGIN" then
-        if dodoDB.enableEncounterText == nil then dodoDB.enableEncounterText = true end
+        if dodoDB.enableEncounterText    == nil then dodoDB.enableEncounterText    = true             end
+        if dodoDB.encounterTextIconSize  == nil then dodoDB.encounterTextIconSize  = DEFAULT_ICON_SIZE end
+        if dodoDB.encounterTextFontSize  == nil then dodoDB.encounterTextFontSize  = DEFAULT_FONT_SIZE end
         local LEM = LibStub("LibEditMode")
         local _dp = { point="CENTER", relativePoint="CENTER", xOfs=10, yOfs=-170 }
         local _sv = dodoDB.editMode and dodoDB.editMode["EncounterText"]

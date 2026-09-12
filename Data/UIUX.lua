@@ -405,6 +405,51 @@ function dodo.UI:SettingsTabbedPreview(category, tabs, mixin_ref)
     return initializer
 end
 
+-- 미리보기 Mixin 팩토리 — spec 기반으로 탭 미리보기 Mixin 생성
+-- spec.GetExtent  : function() → number        미리보기 총 높이
+-- spec.ref        : function(frame)            OnLoad 시 _preview_ref 저장 콜백
+-- spec.trigger    : function()                 OnTabSelected 시 predicate 재평가 트리거
+-- spec.panels     : { { OnLoad(p,ns), Update(p,ns) }, ... }  탭 순서대로 패널 정의
+function dodo.UI:CreatePreviewMixin(spec)
+    local mixin = {}
+    mixin.GetExtent = spec.GetExtent or function() return 120 end
+
+    function mixin:OnLoad()
+        if spec.ref then spec.ref(self) end
+        local ns = self.NineSlice
+        self._panels = {}
+        for i, pd in ipairs(spec.panels) do
+            local p = CreateFrame("Frame", nil, self)
+            p:SetAllPoints(ns)
+            p:SetShown(i == 1)
+            if pd.OnLoad then pd.OnLoad(p, ns) end
+            self._panels[i] = p
+        end
+        self._current_tab = 1
+    end
+
+    function mixin:OnTabSelected(tabIndex)
+        self._current_tab = tabIndex
+        if self._panels then
+            for i, p in ipairs(self._panels) do
+                p:SetShown(i == tabIndex)
+            end
+        end
+        if spec.trigger then spec.trigger() end
+    end
+
+    function mixin:Update()
+        if not self._panels then return end
+        local tab = self._current_tab or 1
+        local pd  = spec.panels[tab]
+        if pd and pd.Update then
+            pd.Update(self._panels[tab], self.NineSlice)
+        end
+    end
+
+    return mixin
+end
+
 -- 체크박스 — dodoDB[varName]에 bool 저장
 ---@return table initializer, table setting
 function dodo.UI:SettingsCheckbox(category, varName, label, tooltip, default, func)

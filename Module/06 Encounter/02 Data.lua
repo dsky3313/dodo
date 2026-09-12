@@ -213,6 +213,47 @@ dodo.EncounterData = {
     },
 
     -- 용군단
+    -- 루비 생명의 웅덩이 (mapID 2521)
+    [2609] = { -- 멜리드루사 칠원
+        events = {
+            { spellID = 1307297, role = "Other",    sound = "Pool"  }, -- 우박 파열
+            { spellID = 1307308, role = "Heal",     sound = "Pool"  }, -- 냉기폭풍
+            { spellID = 373686,  role = "Mechanic", sound = "Phase" }, -- 서리 과부하
+            { spellID = 373046,  role = "Mechanic", sound = "Adds"  }, -- 새끼용 깨우기
+        },
+        rules = {
+            { dur = 5,  eID = 1307297 }, { dur = 12, eID = 373686  }, { dur = 15, eID = 1307308 },
+            { dur = 24, eID = 1307297, seq = 1 }, { dur = 24, eID = 1307308, seq = 2 },
+        },
+    },
+    [2606] = { -- 코키아 블레이즈후프
+        events = {
+            { spellID = 372864,  role = "Adds",     sound = "Adds"    }, -- 화염결속의 의식
+            { spellID = 372110,  role = "Other",    sound = "Frontal" }, -- 타오르는 바위
+            { spellID = 372858,  role = "Tank",     sound = "Tank"    }, -- 이글거리는 강타
+        },
+        rules = {
+            { dur = 8,  eID = 372864 }, { dur = 19, eID = 372110 }, { dur = 28, eID = 372858 },
+            { dur = 20, eID = 372110 },
+            { dur = 40, eID = 372864, seq = 1 }, { dur = 40, eID = 372858, seq = 2 },
+        },
+    },
+    [2623] = { -- 카이락카와 에크하트 스톰베인
+        events = {
+            { spellID = 381516,  role = "Mechanic", sound = "Phase"   }, -- 방해의 소나기구름
+            { spellID = 381517,  role = "Mechanic", sound = "Phase"   }, -- 변화의 바람
+            { spellID = 381512,  role = "Tank",     sound = "Tank"    }, -- 폭풍강타
+            { spellID = 381862,  role = "Other",    sound = "Pool"    }, -- 지옥불 타격
+            { spellID = 381525,  role = "Other",    sound = "Frontal" }, -- 우렁찬 불꽃숨결
+            { spellID = 381605,  role = "Other"                       }, -- 지옥불 타격
+        },
+        rules = {
+            { dur = 0.8,  eID = 381525 }, { dur = 5,  eID = 381512 }, { dur = 9,  eID = 381605 },
+            { dur = 10, eID = 381517 }, { dur = 12, eID = 381862 }, { dur = 21, eID = 381516 },
+            { dur = 20, eID = 381525, seq = 1 }, { dur = 20, eID = 381602, seq = 2 },
+        },
+    },
+
     -- 알게타르 대학 (mapID 2526)
     [2562] = { -- 벡사무스
         events = {
@@ -763,9 +804,9 @@ dodo.EncounterData = {
     [2125] = { -- 메레크타
         events = {
             { spellID = 264172,  role = "Mechanic", sound = "Phase" }, -- 잠복
-            { spellID = 1290029, role = "Other"                     }, -- 뱀들의 똬리
-            { spellID = 1289109, role = "Other"                     }, -- 천둥 타액
-            { spellID = 1289205, role = "Mechanic", sound = "Adds"  }, -- 부화
+            { spellID = 1290029, role = "Other",    text  = "CC"    }, -- 뱀들의 똬리
+            { spellID = 1289109, role = "Other",    sound = "Pool"  }, -- 천둥 타액
+            { spellID = 1289205, role = "Other",                    }, -- 부화
             { spellID = 1290797, role = "Tank",     sound = "Tank"  }, -- 번개 물기
             { spellID = 1293048, role = "Heal",     sound = "AOE"   }, -- 뱀의 폭풍
         },
@@ -787,198 +828,20 @@ dodo.EncounterData = {
     [2127] = { -- 세스랄리스의 화신
         events = {
             { spellID = 1301963, role = "Other"                     }, -- 청소 완료
-            { spellID = 1301202, role = "Other"                     }, -- 모독의 오염
+            { spellID = 1301202, role = "Adds", sound = "Adds"      }, -- 모독의 오염
         },
         rules = {
             { dur = 15, eID = 1301202 },
         },
     },
 
-    -- 루비 생명의 웅덩이 (mapID 2521)
-    [2609] = { -- 메리두사 한빙
-        events = {
-            { spellID = 1307297, role = "Other"                     }, -- 우박 폭발
-            { spellID = 1307308, role = "Heal",     sound = "AOE"   }, -- 서리 바람
-            { spellID = 373686,  role = "Mechanic", sound = "Phase" }, -- 서리 과부하
-            { spellID = 373046,  role = "Mechanic", sound = "Adds"  }, -- 어린 용 소환
-        },
-        rules = {
-            { dur = 5,  eID = 1307297 }, { dur = 12, eID = 373686  }, { dur = 15, eID = 1307308 },
-            { dur = 24, eID = 1307297, seq = 1 }, { dur = 24, eID = 1307308, seq = 2 },
-        },
-    },
-    [2606] = { -- 코쿠야 염제
-        events = {
-            { spellID = 372864,  role = "Heal",     sound = "AOE"   }, -- 불꽃 포박 의식
-            { spellID = 372110,  role = "Mechanic", sound = "Phase" }, -- 용암 바위
-            { spellID = 372858,  role = "Tank",     sound = "Tank"  }, -- 작열하는 타격
-        },
-        rules = {
-            { dur = 8,  eID = 372864 }, { dur = 19, eID = 372110 }, { dur = 28, eID = 372858 },
-            { dur = 20, eID = 372110 },
-            { dur = 40, eID = 372864, seq = 1 }, { dur = 40, eID = 372858, seq = 2 },
-        },
-    },
-    [2623] = { -- 기라카와 에르크하트
-        events = {
-            { spellID = 381516,  role = "Mechanic", sound = "Phase"   }, -- 폭풍우 저지
-            { spellID = 381517,  role = "Mechanic", sound = "Phase"   }, -- 변화하는 바람
-            { spellID = 381512,  role = "Tank",     sound = "Tank"    }, -- 폭풍 강타
-            { spellID = 381602,  role = "Other"                       }, -- 화염 분사
-            { spellID = 381525,  role = "Other",    sound = "Frontal" }, -- 포효 화염 숨결
-            { spellID = 381605,  role = "Other"                       }, -- 화염 분사
-        },
-        rules = {
-            { dur = 1,  eID = 381525 }, { dur = 5,  eID = 381512 }, { dur = 9,  eID = 381605 },
-            { dur = 10, eID = 381517 }, { dur = 12, eID = 381602 }, { dur = 21, eID = 381516 },
-            { dur = 20, eID = 381525, seq = 1 }, { dur = 20, eID = 381602, seq = 2 },
-        },
-    },
+    
 
-    -- 죽음의 골목 (mapID 2813)
-    [3101] = { -- 케스티아 마력심장
-        events = {
-            { spellID = 1264095, role = "Mechanic", sound = "Phase"   }, -- 거울 형상
-            { spellID = 1253811, role = "Other",    sound = "Frontal" }, -- 마력 비산
-            { spellID = 474240,  role = "Other"                       }, -- 마력 신성
-            { spellID = 1230304, role = "Mechanic", sound = "Phase"   }, -- 빛 주입
-        },
-        rules = {
-            { dur = 8,    eID = 1253811 }, { dur = 12,   eID = 474240  }, { dur = 15,   eID = 1264095 },
-            { dur = 27.5, eID = 1253811 }, { dur = 30,   eID = 1264095 },
-        },
-    },
-    [3102] = { -- 잔 인부슬픔
-        events = {
-            { spellID = 1214357, role = "Other"                     }, -- 화염 폭탄
-            { spellID = 474765,  role = "Other"                     }, -- 당일 배송
-            { spellID = 1218347, role = "Mechanic", sound = "Phase" }, -- 절명 흉계
-            { spellID = 474478,  role = "Heal",     sound = "AOE"   }, -- 그림자 춤 발걸음
-            { spellID = 1222795, role = "Tank",     sound = "Tank"  }, -- 독 상처
-        },
-        rules = {
-            { dur = 8,  eID = 474478  }, { dur = 12, eID = 474765  }, { dur = 18, eID = 1214357 },
-            { dur = 26, eID = 1222795 }, { dur = 36, eID = 1218347 },
-            { dur = 16, eID = 474765  },
-        },
-    },
-    [3103] = { -- 섬멸자 사주크스
-        events = {
-            { spellID = 473898,  role = "Tank",     sound = "Tank"  }, -- 군단 타격
-            { spellID = 474197,  role = "Mechanic", sound = "Phase" }, -- 마력 광분
-            { spellID = 1214641, role = "Other"                     }, -- 날선 도끼 투척
-            { spellID = 1295452, role = "Heal",     sound = "AOE"   }, -- 지옥 화염 압궤
-        },
-        rules = {
-            { dur = 6,  eID = 473898  }, { dur = 15, eID = 1214641 }, { dur = 30, eID = 1295452 }, { dur = 35, eID = 474197  },
-            { dur = 27, eID = 473898  },
-        },
-    },
-    [3105] = { -- 리히르 잔분노
-        events = {
-            { spellID = 1218203, role = "Heal",     sound = "AOE"  }, -- 굴단의 손가락
-            { spellID = 474408,  role = "Mechanic", sound = "Adds" }, -- 마왕 개 소환
-            { spellID = 1224478, role = "Mechanic", sound = "Phase" }, -- 재앙의 파도
-        },
-        rules = {
-            { dur = 10, eID = 474408  }, { dur = 15, eID = 1218203 }, { dur = 24, eID = 1224478 },
-            { dur = 55, eID = 1218203 }, { dur = 57, eID = 474408  }, { dur = 59, eID = 1224478 },
-        },
-    },
 
-    -- 날로라크의 소굴 (mapID 2825)
-    [3207] = { -- 비축광
-        events = {
-            { spellID = 1234233, role = "Heal",     sound = "AOE"    }, -- 더럽혀진 보급품
-            { spellID = 1253268, role = "Other",    sound = "Frontal" }, -- 대지를 가르는 격돌
-            { spellID = 1235118, role = "Heal",     sound = "AOE"    }, -- 게걸스러운 고함
-        },
-        rules = {
-            { dur = 6,  eID = 1235118 }, { dur = 16, eID = 1253268 }, { dur = 30, eID = 1234233 },
-        },
-    },
-    [3208] = { -- 겨울의 파수꾼
-        events = {
-            { spellID = 1235548, role = "Heal",     sound = "Dispel" }, -- 혹한의 고문
-            { spellID = 1235623, role = "Other",    sound = "Pool"   }, -- 분노하는 돌풍
-            { spellID = 1235783, role = "Adds",     sound = "Adds"   }, -- 분쇄의 혹한째기
-            { spellID = 1235656, role = "Mechanic", sound = "Phase"  }, -- 얼어붙은 폭풍우
-        },
-        rules = {
-            { dur = 7,  eID = 1235548 }, { dur = 13, eID = 1235623 },
-            { dur = 25, eID = 1235783 }, { dur = 50, eID = 1235656 },
-        },
-    },
-    [3209] = { -- 날로라크
-        events = {
-            { spellID = 1255385, role = "Other"                     }, -- 강대한 포효
-            { spellID = 1242860, role = "Other",    sound = "Pool"  }, -- 메아리치는 후려갈기기
-            { spellID = 1243011, role = "Mechanic", sound = "Phase" }, -- 전쟁 신의 격노
-            { spellID = 1243569, role = "Tank",     sound = "Tank"  }, -- 압도적인 맹공
-            { spellID = 1262846, role = "Other"                     }, -- 영혼 난타
-        },
-        rules = {
-            { dur = 5,  eID = 1242860 }, { dur = 13, eID = 1243569 }, { dur = 54, eID = 1243011 },
-            { dur = 25, eID = 1242860, seq = 1 }, { dur = 25, eID = 1243569, seq = 2 },
-        },
-    },
 
-    -- 눈부신 골짜기 (mapID 2859)
-    [3199] = { -- 빛의 꽃들
-        events = {
-            { spellID = 1234753, role = "Tank",     sound = "Tank"    }, -- 기반암 강타
-            { spellID = 1234850, role = "Mechanic", sound = "Phase"   }, -- 빛의 급습
-            { spellID = 1235640, role = "Other"                       }, -- 가시 칼날
-            { spellID = 1261276, role = "Other"                       }, -- 가시 칼날
-            { spellID = 1235564, role = "Mechanic", sound = "Phase"   }, -- 빛의 꽃 광선
-        },
-        rules = {
-            { dur = 5,  eID = 1234753 }, { dur = 8,  eID = 1235640 }, { dur = 20, eID = 1234850 }, { dur = 35, eID = 1235564 },
-            { dur = 45, eID = 1234753, seq = 1 }, { dur = 45, eID = 1235640, seq = 2 },
-            { dur = 45, eID = 1234850, seq = 3 }, { dur = 45, eID = 1235564, seq = 4 },
-        },
-    },
-    [3200] = { -- 성광 사냥꾼 이쿠즈
-        events = {
-            { spellID = 1236746, role = "Heal",  sound = "AOE" }, -- 초록 짓밟기
-            { spellID = 1236709, role = "Heal",  sound = "AOE" }, -- 가시 소환사 포효
-            { spellID = 1237090, role = "Other"                }, -- 살기의 응시
-        },
-        rules = {
-            { dur = 6,  eID = 1236746 }, { dur = 22, eID = 1236709 }, { dur = 50, eID = 1237090 },
-            { dur = 29, eID = 1236746 },
-        },
-    },
-    [3201] = { -- 수광자 루이야
-        events = {
-            { spellID = 1239824, role = "Mechanic", sound = "Phase"   }, -- 빛의 불꽃
-            { spellID = 1240098, role = "Other"                       }, -- 빛의 낙하
-            { spellID = 1240210, role = "Other",    sound = "Frontal" }, -- 분쇄 강타
-            { spellID = 1241058, role = "Heal",     sound = "AOE"    }, -- 잔혹한 강타
-            { spellID = 1239885, role = "Mechanic", sound = "Phase"   }, -- 변형: 곰
-            { spellID = 1239882, role = "Mechanic", sound = "Phase"   }, -- 변형: 부엉이곰
-            { spellID = 1239883, role = "Mechanic", sound = "Phase"   }, -- 변형: 할라이니르
-            { spellID = 1241067, role = "Mechanic", sound = "Phase"   }, -- 협곡의 영
-        },
-        rules = {
-            { dur = 0.5, eID = 1239882 }, { dur = 5,   eID = 1239824 }, { dur = 18,  eID = 1240098 }, -- P1
-            { dur = 3,   eID = 1241058 }, { dur = 9,   eID = 1240210 }, -- P2
-            { dur = 2.5, eID = 1241067 }, -- P3
-        },
-    },
-    [3202] = { -- 즈요케트
-        events = {
-            { spellID = 1246372, role = "Mechanic", sound = "Phase" }, -- 빛 폭발 깨우기
-            { spellID = 1247685, role = "Tank",     sound = "Tank"  }, -- 가시
-            { spellID = 1246607, role = "Other"                     }, -- 응집 광선
-            { spellID = 1246858, role = "Heal",     sound = "AOE"   }, -- 빛 폭발 정수
-        },
-        rules = {
-            { dur = 4,  eID = 1246372 }, { dur = 14, eID = 1246858 }, { dur = 26, eID = 1247685 }, { dur = 40, eID = 1246607 },
-            { dur = 50, eID = 1246372, seq = 1 }, { dur = 50, eID = 1246858, seq = 2 },
-            { dur = 50, eID = 1247685, seq = 3 }, { dur = 50, eID = 1246607, seq = 4 },
-        },
-    },
+
+
+
 
     -- 공허흉터 투기장 (mapID 2923)
     [3285] = { -- 타즈라르
@@ -1020,6 +883,100 @@ dodo.EncounterData = {
         rules = {
             { dur = 5,  eID = 1282770 }, { dur = 17, eID = 1227264 }, { dur = 28, eID = 1263982 },
             { dur = 34, eID = 1311923 }, { dur = 43, eID = 1222758 },
+        },
+    },
+
+    -- 날로라크의 소굴 (mapID 2825)
+    [3207] = { -- 비축광
+        events = {
+            { spellID = 1234233, role = "Heal",     sound = "AOE"    }, -- 더럽혀진 보급품
+            { spellID = 1253268, role = "Other",    sound = "Frontal" }, -- 대지를 가르는 격돌
+            { spellID = 1235118, role = "Heal",     sound = "AOE"    }, -- 게걸스러운 고함
+        },
+        rules = {
+            { dur = 6,  eID = 1235118 }, { dur = 16, eID = 1253268 }, { dur = 30, eID = 1234233 },
+        },
+    },
+    [3208] = { -- 겨울의 파수꾼
+        events = {
+            { spellID = 1235548, role = "Heal",     sound = "Dispel" }, -- 혹한의 고문
+            { spellID = 1235623, role = "Other",    sound = "Pool"   }, -- 분노하는 돌풍
+            { spellID = 1235783, role = "Adds",     sound = "Adds"   }, -- 분쇄의 혹한째기
+            { spellID = 1235656, role = "Mechanic", sound = "Phase"  }, -- 얼어붙은 폭풍우
+        },
+        rules = {
+            { dur = 7,  eID = 1235548 }, { dur = 13, eID = 1235623 },
+            { dur = 25, eID = 1235783 }, { dur = 50, eID = 1235656 },
+        },
+    },
+    [3209] = { -- 날로라크
+        events = {
+            { spellID = 1255385, role = "Other"                     }, -- 강대한 포효
+            { spellID = 1242860, role = "Other",    sound = "Pool"  }, -- 메아리치는 후려갈기기
+            { spellID = 1243011, role = "Mechanic", sound = "Phase" }, -- 전쟁 신의 격노
+            { spellID = 1243569, role = "Tank",     sound = "Tank"  }, -- 압도적인 맹공
+            { spellID = 1262846, role = "Other"                     }, -- 영혼 난타
+        },
+        rules = {
+            { dur = 5,  eID = 1242860 }, { dur = 13, eID = 1243569 }, { dur = 54, eID = 1243011 },
+            { dur = 25, eID = 1242860, seq = 1 }, { dur = 25, eID = 1243569, seq = 2 },
+        },
+    },
+
+    -- 눈부신 골짜기 (mapID 2859)
+    [3199] = { -- 빛송위 삼위일체
+        events = {
+            { spellID = 1234753, role = "Tank",     sound = "Tank"    }, -- 기반암 격돌
+            { spellID = 1234850, role = "Other",    sound = "Frontal" }, -- 빛을 흩뿌리는 질주
+            { spellID = 1235640, role = "Other",    sound = "Pool"    }, -- 뾰족칼
+            { spellID = 1261276, role = "Other",    sound = "Pool"    }, -- 뾰족칼
+            { spellID = 1235564, role = "Mechanic", sound = "Phase"   }, -- 빛송이 광선
+        },
+        rules = {
+            { dur = 5,  eID = 1234753 }, { dur = 8,  eID = 1235640 }, { dur = 20, eID = 1234850 }, { dur = 35, eID = 1235564 },
+            { dur = 45, eID = 1234753, seq = 1 }, { dur = 45, eID = 1235640, seq = 2 },
+            { dur = 45, eID = 1234850, seq = 3 }, { dur = 45, eID = 1235564, seq = 4 },
+        },
+    },
+    [3200] = { -- 빛 사냥꾼 이쿠즈
+        events = {
+            { spellID = 1236746, role = "Heal",     sound = "AOE" }, -- 신록의 발구르기
+            { spellID = 1236709, role = "Heal",     sound = "AOE" }, -- 가시 상사 포효
+            { spellID = 1237090, role = "Mechanic", sound = "Phase"   }, -- 피에 굶주린 눈길
+        },
+        rules = {
+            { dur = 6,  eID = 1236746 }, { dur = 22, eID = 1236709 }, { dur = 50, eID = 1237090 },
+            { dur = 29, eID = 1236746 },
+        },
+    },
+    [3201] = { -- 빛의 감시자 루이야
+        events = {
+            { spellID = 1239824, role = "Other",     }, -- 빛화염
+            { spellID = 1240098, role = "Other"                       }, -- 빛내림
+            { spellID = 1240210, role = "Other",    sound = "Frontal" }, -- 짓이기는 일격
+            { spellID = 1241058, role = "Heal",     sound = "AOE"    }, -- 치명적인 난타
+            { spellID = 1239885, role = "Mechanic", sound = "Phase"   }, -- 변신: 곰
+            { spellID = 1239882, role = "Mechanic", sound = "Phase"   }, -- 변신: 달빛야수
+            { spellID = 1239883, role = "Mechanic", sound = "Phase"   }, -- 변신: 하라니르
+            { spellID = 1241067, role = "Mechanic", sound = "Phase"   }, -- 골짜기의 영혼
+        },
+        rules = {
+            { dur = 0.5, eID = 1239882 }, { dur = 5,   eID = 1239824 }, { dur = 18,  eID = 1240098 }, -- P1
+            { dur = 3,   eID = 1241058 }, { dur = 9,   eID = 1240210 }, -- P2
+            { dur = 2.5, eID = 1241067 }, -- P3
+        },
+    },
+    [3202] = { -- 지케트
+        events = {
+            { spellID = 1246372, role = "Mechanic", sound = "Adds" }, -- 빛만개 깨우기
+            { spellID = 1247685, role = "Tank",     sound = "Tank"  }, -- 가시 볼
+            { spellID = 1246607, role = "Tank",     sound = "Frontal"  }, -- 진중된 빛줄기
+            { spellID = 1246858, role = "Heal",     text = "구슬"}, -- 빛만개의 정수
+        },
+        rules = {
+            { dur = 4,  eID = 1246372 }, { dur = 14, eID = 1246858 }, { dur = 26, eID = 1247685 }, { dur = 40, eID = 1246607 },
+            { dur = 50, eID = 1246372, seq = 1 }, { dur = 50, eID = 1246858, seq = 2 },
+            { dur = 50, eID = 1247685, seq = 3 }, { dur = 50, eID = 1246607, seq = 4 },
         },
     },
 
@@ -1065,6 +1022,58 @@ dodo.EncounterData = {
             { dur = 26, eID = 1301350 }, { dur = 30, eID = 1301350 }, { dur = 64, eID = 1300876 },
         },
     },
+
+    -- 죽음의 골목 (mapID 2813)
+    [3101] = { -- 키스티아 마나하트
+        events = {
+            { spellID = 1264095, role = "Heal", sound = "Interrupt"   }, -- 환영 복제
+            { spellID = 1253811, role = "Other",    sound = "Frontal" }, -- 지옥 분사
+            { spellID = 474240,  role = "Other"                       }, -- 지옥 회오리
+            { spellID = 1230304, role = "Mechanic", sound = "Phase"   }, -- 빛 주입
+        },
+        rules = {
+            { dur = 8,    eID = 1253811 }, { dur = 12,   eID = 474240  }, { dur = 15,   eID = 1264095 },
+            { dur = 27.5, eID = 1253811 }, { dur = 30,   eID = 1264095 },
+        },
+    },
+    [3102] = { -- 자엔 블레이드소로우
+        events = {
+            { spellID = 1214357, role = "Other"                     }, -- 불폭탄
+            { spellID = 474765,  role = "Other"                     }, -- 당일 배송
+            { spellID = 1218347, role = "Mechanic", sound = "Phase" }, -- 죽음의 사선
+            { spellID = 474478,  role = "Heal",     sound = "AOE"   }, -- 광기의 학살자
+            { spellID = 1222795, role = "Tank",     sound = "Tank"  }, -- 독사
+        },
+        rules = {
+            { dur = 8,  eID = 474478  }, { dur = 12, eID = 474765  }, { dur = 18, eID = 1214357 },
+            { dur = 26, eID = 1222795 }, { dur = 36, eID = 1218347 },
+            { dur = 16, eID = 474765  },
+        },
+    },
+    [3103] = { -- 파멸자 자투스
+        events = {
+            { spellID = 473898,  role = "Tank",     sound = "Tank"  }, -- 군단의 일격
+            { spellID = 474197,  role = "Mechanic", sound = "Phase" }, -- 악마의 분노
+            { spellID = 1214641, role = "Adds",     sound = "Adds"  }, -- 도끼 던지기
+            { spellID = 1295452, role = "Heal",     sound = "AOE"   }, -- 불지옥 충돌
+        },
+        rules = {
+            { dur = 6,  eID = 473898  }, { dur = 15, eID = 1214641 }, { dur = 30, eID = 1295452 }, { dur = 35, eID = 474197  },
+            { dur = 27, eID = 473898  },
+        },
+    },
+    [3105] = { -- 리시엘 선더퓨리
+        events = {
+            { spellID = 1218203, role = "Heal",     sound = "AOE"  }, -- 굴단의 손가락
+            { spellID = 474408,  role = "Adds",     sound = "Adds" }, -- 썩은마귀 소환
+            { spellID = 1224478, role = "Mechanic", sound = "Phase" }, -- 사악한 파장
+        },
+        rules = {
+            { dur = 10, eID = 474408  }, { dur = 15, eID = 1218203 }, { dur = 24, eID = 1224478 },
+            { dur = 55, eID = 1218203 }, { dur = 57, eID = 474408  }, { dur = 59, eID = 1224478 },
+        },
+    },
+
 
     -- 한밤의 전쟁 2시즌 레이드
     -- 파도속박 석굴 (mapID 2987)

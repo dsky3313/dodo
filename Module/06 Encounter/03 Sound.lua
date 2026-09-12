@@ -11,6 +11,7 @@ local GetInstanceInfo        = GetInstanceInfo
 local GetSpecialization      = GetSpecialization
 local GetSpecializationInfo  = GetSpecializationInfo
 local IsInInstance           = IsInInstance
+local PlaySoundFile          = PlaySoundFile
 local UnitGroupRolesAssigned = UnitGroupRolesAssigned
 local ipairs                 = ipairs
 local select                 = select
@@ -50,6 +51,13 @@ local SOUND_MAP = {
     Soak      = { file = SOUND_ROOT .. "Soak.mp3",      channel = "Master" },
     Tank      = { file = SOUND_ROOT .. "Tank.mp3",      channel = "Master" },
 }
+
+local function get_sound(key)
+    if not key then return nil end
+    local mapped = dodoDB and dodoDB["soundEncounter" .. key]
+    if mapped == "none" then return nil end
+    return SOUND_MAP[mapped or key]
+end
 
 ---@type dodo.EncounterEntry[]|nil
 local current_events = nil
@@ -127,7 +135,7 @@ local function apply_sounds()
         local eids = entry.eventID and { entry.eventID }
             or (entry.spellID and spell_map[entry.spellID])
         if eids then
-            local sound1 = SOUND_MAP[entry.sound or entry.role]
+            local sound1 = get_sound(entry.sound or entry.role)
             if is_dps and entry.role == "Tank" then sound1 = nil end
             for _, encounter_eid in ipairs(eids) do
                 C_EncounterEvents.SetEventSound(encounter_eid, 0, nil)
@@ -143,6 +151,12 @@ end
 
 dodo.EncounterApplySounds = apply_sounds
 
+dodo.EncounterPlaySoundKey = function(key)
+    if not key or key == "none" then return end
+    local s = SOUND_MAP[key]
+    if s then PlaySoundFile(s.file, s.channel) end
+end
+
 -- ==============================
 -- 이벤트 핸들러
 -- ==============================
@@ -156,6 +170,10 @@ local function on_event(self, event, arg1)
         dodoDB = dodoDB or {}
     elseif event == "PLAYER_LOGIN" then
         if dodoDB.enableEncounterSound == nil then dodoDB.enableEncounterSound = true end
+        local D = dodo.EC_DEFAULTS or {}
+        for k, v in pairs(D) do
+            if k:sub(1, 14) == "soundEncounter" and dodoDB[k] == nil then dodoDB[k] = v end
+        end
         self:UnregisterEvent("PLAYER_LOGIN")
     elseif event == "PLAYER_ENTERING_WORLD" then
         apply_sounds()

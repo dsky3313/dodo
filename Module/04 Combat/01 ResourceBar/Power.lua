@@ -150,7 +150,8 @@ local function update_bar1()
         local r = c.r or c[1] or 1
         local g = c.g or c[2] or 1
         local b = c.b or c[3] or 1
-        
+
+        RB.cachedPowerColor = { r = r, g = g, b = b }
         bar1Frame:SetStatusBarColor(r, g, b)
     end
 
