@@ -90,7 +90,9 @@ local function update_icon_color(btn)
 end
 dodo.ActionbarUpdateIconColor = update_icon_color
 
+local _dbg_us_count, _dbg_us_time = 0, 0
 local function update_state(btn)
+    local _t = GetTimePreciseSec()
     if not btn.action then return end
     local isEnabled = (dodoDB and dodoDB.enableActionbar ~= false)
     if not isEnabled then
@@ -99,23 +101,44 @@ local function update_state(btn)
             btn.icon:SetDesaturation(0)
         end
         if dodo.ActionbarUpdateButtonText then dodo.ActionbarUpdateButtonText(btn) end
+        _dbg_us_count = _dbg_us_count + 1; _dbg_us_time = _dbg_us_time + GetTimePreciseSec() - _t
         return
     end
     local barName = dodo.get_bar_name_by_button(btn)
     if not barName or not is_bar_color_enabled(barName) then
         update_icon_color(btn)
         if dodo.ActionbarUpdateButtonText then dodo.ActionbarUpdateButtonText(btn) end
+        _dbg_us_count = _dbg_us_count + 1; _dbg_us_time = _dbg_us_time + GetTimePreciseSec() - _t
         return
     end
     local isUsable, notEnoughMana = C_ActionBar.IsUsableAction(btn.action)
-    local inRange = C_ActionBar.IsActionInRange(btn.action)
     btn.__isUsable = isUsable
     btn.__isNotEnoughMana = notEnoughMana
-    btn.__isOutOfRange = (inRange == false)
     update_icon_color(btn)
     if dodo.ActionbarUpdateButtonText then dodo.ActionbarUpdateButtonText(btn) end
+    _dbg_us_count = _dbg_us_count + 1; _dbg_us_time = _dbg_us_time + GetTimePreciseSec() - _t
 end
 dodo.ActionbarUpdateState = update_state
+
+C_Timer.NewTicker(15, function()
+    if _dbg_us_count > 0 then
+        print(string.format("|cffff9900[dodoAB DBG]|r update_state: %d calls / 15s, total=%.2fms, avg=%.3fms/call",
+            _dbg_us_count, _dbg_us_time*1000, _dbg_us_time/_dbg_us_count*1000))
+        _dbg_us_count, _dbg_us_time = 0, 0
+    end
+end)
+
+local function update_range_state(btn)
+    if not btn.action then return end
+    local isEnabled = (dodoDB and dodoDB.enableActionbar ~= false)
+    if not isEnabled then return end
+    local barName = dodo.get_bar_name_by_button(btn)
+    if not barName or not is_bar_color_enabled(barName) then return end
+    local inRange = C_ActionBar.IsActionInRange(btn.action)
+    btn.__isOutOfRange = (inRange == false)
+    update_icon_color(btn)
+end
+dodo.ActionbarUpdateRangeState = update_range_state
 
 local function update_cooldown_state(btn)
     if not btn.action then return end

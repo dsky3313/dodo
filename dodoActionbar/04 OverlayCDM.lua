@@ -285,7 +285,10 @@ end
 
 local function create_aura_containers()
     for btn in pairs(dodo.registeredButtons) do
-        create_button_containers(btn)
+        local barName = dodo.get_bar_name_by_button(btn)
+        if barName and is_bar_cdm_enabled(barName) then
+            create_button_containers(btn)
+        end
     end
 end
 
@@ -310,13 +313,14 @@ local function build_candidate_filters(btn, isHelpful)
 end
 
 local function update_buff_filter(btn)
-    local c = btn.cdmContainer
-    if not c then return end
     local barName = dodo.get_bar_name_by_button(btn)
     if not barName or not is_bar_cdm_enabled(barName) or not btn:IsVisible() then
-        c:SetEnabled(false)
+        if btn.cdmContainer then btn.cdmContainer:SetEnabled(false) end
         return
     end
+    if not btn.cdmContainer then create_button_containers(btn) end
+    local c = btn.cdmContainer
+    if not c then return end
     local filters = build_candidate_filters(btn, true)
     if not filters then c:SetEnabled(false); return end
     c:SetAuraSlotFilterString("CDM", "HELPFUL|PLAYER")
@@ -325,13 +329,14 @@ local function update_buff_filter(btn)
 end
 
 local function update_debuff_filter(btn)
-    local cd = btn.cdmContainerDebuff
-    if not cd then return end
     local barName = dodo.get_bar_name_by_button(btn)
     if not barName or not is_bar_cdm_enabled(barName) or not btn:IsVisible() then
-        cd:SetEnabled(false)
+        if btn.cdmContainerDebuff then btn.cdmContainerDebuff:SetEnabled(false) end
         return
     end
+    if not btn.cdmContainerDebuff then create_button_containers(btn) end
+    local cd = btn.cdmContainerDebuff
+    if not cd then return end
     if UnitCanAssist("player", "target", true, true) then
         cd:SetEnabled(false)
         return

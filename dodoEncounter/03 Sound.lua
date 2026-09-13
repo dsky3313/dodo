@@ -19,7 +19,7 @@ local select                 = select
 -- ==============================
 -- 설정 및 테이블
 -- ==============================
-local SOUND_ROOT = "Interface\\AddOns\\" .. addonName .. "\\Media\\Sound\\Encounter\\"
+local SOUND_ROOT = "Interface\\AddOns\\dodo\\Media\\Sound\\Encounter\\"
 
 ---@class dodo.SoundData
 ---@field file    string 사운드 파일 경로

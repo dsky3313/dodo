@@ -1,20 +1,13 @@
 # LICENSE
 
 > [!WARNING]
-> 본 애드온은 **Gemini 3.5 Flash** 바이브코딩으로 작성하였으며, 최적화 문제 및 버그가 있을 수 있습니다.
->
-> This AddOn was written using **Gemini 3.5 Flash** vibe coding, and there may be optimization issues and bugs.
-
-`dodo` AddOn is licensed under the **GNU General Public License version 3 (GPLv3)**.
-(`dodo` 애드온은 **GNU 일반 공중 사용 허가서 버전 3 (GPLv3)** 라이선스를 따릅니다.)
-
-Copyright (c) 2026 dodo Author
+> 본 애드온은 **Gemini**, **Claude** 바이브코딩으로 작성하였으며, 최적화 문제 및 버그가 있을 수 있습니다.
 
 ## Inspired Addon
 
 ### Actionbar
 * **ActionBarsEnhanced** - https://www.curseforge.com/wow/addons/actionbarsenhanced
-* **CDMButtonAuras** - https://www.curseforge.com/wow/addons/cdmbuttonauras
+* **ActionBarAuras** - https://www.curseforge.com/wow/addons/actionbarauras
 * **ActionBar Interrupt Highlight** - https://www.curseforge.com/wow/addons/actionbarinterrupthighlight
 
 ### CharacterFrame

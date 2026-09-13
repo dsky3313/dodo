@@ -17,7 +17,7 @@ local Config = {
     iconPadding   = 2,
     iconsize      = {46, 46},
     fontsize      = 12,
-    soundPath     = "Interface\\AddOns\\" .. addonName .. "\\Media\\Sound\\Blood.mp3",
+    soundPath     = "Interface\\AddOns\\dodo\\Media\\Sound\\Blood.mp3",
 }
 
 local BL_DEBUFFS = {

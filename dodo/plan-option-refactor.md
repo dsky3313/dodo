@@ -56,133 +56,60 @@ end, 40)
 - [x] 구버전 `OptionRegistrations` 루프 제거
 - [x] `/reload` 테스트
 
-### 3단계 — 기존 OptionRegistrations 모듈 마이그레이션 (25개 파일)
+### 3단계 — 기존 OptionRegistrations 모듈 마이그레이션 ✅ 완료
 
-각 파일: `OptionRegistrations` 3줄 → `dodo.RegisterOption(...)` 1줄  
-한 파일 수정 후 `/reload` 확인.
+> **2025-09 애드온 분할로 모든 활성 모듈이 각자 분할 애드온으로 이동됨.**  
+> 각 분할 애드온의 `99 Options.lua`에서 `dodo.RegisterOption` 사용. 완료.
 
-**행동 단축바** (order: 1000) -- 나중에 모듈 업데이트할거임
-- [x] `Module/01 Actionbar/99 Options.lua`
-
-**이름표** (order: 2000) -- 나중에 모듈 업데이트할거임
-<!-- - [ ] `Module/02 Nameplate/Core.lua` -->
-
-**유닛프레임** (order: 3000) -- 나중에 모듈 업데이트할거임
-- [x] `Module/03 Unitframe/99 Options.lua` -->
-
-**전투** (order: 4000)
-- [x] `Module/04 Combat/99 Options.lua` (order: 4010)
-- [x] `Module/04 Combat/02 Debuff/Debuff.lua` (order: 4020)
-- [x] `Module/04 Combat/03 BloodBrez.lua` (order: 4030)
-- [x] `Module/04 Combat/04 Stance.lua` (order: 4040)
-
-**인터페이스** (order: 5000~5300)
-- [x] `Module/05 Interface/99 Options.lua`
-
-**우두머리 경고** (order: 6000)
-- [x] `Module/06 Encounter/99 Options.lua`
-
-**커서 스펠트래커** (order: 7000) -- 나중에 모듈 업데이트할거임
-- [x] `Module/07 CursorSpellTracker/99 Options.lua` (카테고리 생성 완료)
-<!-- - [ ] `Module/07 CursorSpellTracker/CursorSpellTracker.lua` -->
-
-**음성** (order: 8000)
-- [x] `Module/08 Sound/Audio.lua`
-- [x] `Module/09 QOL/99 ETC/NewLFG.lua`
-
-**편의기능.캐릭터 정보** (order: 9000)
-**편의기능.쐐기돌** (order: 9010)
-**편의기능.파티모집창** (order: 9020)
-**편의기능.NPC 대화창** (order: 9030)
-**편의기능.모험안내서** (order: 9040)
-**편의기능.편의기능** (order: 9500)
-- [ ] `Module/09 QOL/99 ETC/Camera.lua`
-- [x] `Module/09 QOL/01 CharacterFrame/01 Core.lua`
-- [x] `Module/09 QOL/02 Mplus/03 InsertKeystone.lua`
-- [x] `Module/09 QOL/99 ETC/ColorPicker.lua`
-- [x] `Module/09 QOL/99 ETC/DeleteNow.lua`
-<!-- - [ ] `Module/09 QOL/99 ETC/ExpFilter.lua` --> -- 블리자드 기본기능으로 편입. toc에서 비활성화.
-- [x] `Module/09 QOL/99 ETC/Friends.lua`
-- [x] `Module/09 QOL/99 ETC/Merchant.lua`
-- [x] `Module/09 QOL/99 ETC/PartyKeystone.lua`
-- [x] `Module/09 QOL/99 ETC/QuickBobber.lua`
-- [x] `Module/09 QOL/99 ETC/Teleport.lua`
-- [x] `Module/09 QOL/99 ETC/TimerLFG.lua`
-<!-- - [ ] `Module/09 QOL/99 ETC/Token.lua` --> -- 나중에 모듈 업데이트할거임. toc에서 비활성화.
-- [x] `Module/09 QOL/99 ETC/WowheadLink.lua`
-- [ ] `Module/09 QOL/99 ETC/WorldMapIcon.lua`
-- [ ] `Module/09 QOL/02 Mplus/05 TimerReadyCheck.lua`
-- [ ] `Module/00 coming soon/99 Consumeable.lua`  -- 나중에 모듈 업데이트할거임
-- [ ] `Module/09 QOL/02 Mplus/04 KeystoneTimer.lua`  -- 나중에 모듈 업데이트할거임
-- [ ] `Module/09 QOL/99 ETC/InsDifficulty.lua`
-- [ ] `Module/09 QOL/99 ETC/Position.lua`
-
-**명령어** (order: 9900)
-<!-- - [ ] `Module/10 Command/Slash.lua` --> -- 나중에 모듈 업데이트할거임. 일단 보류.
-
-**프로필** (order: 9950)
-- [x] `Module/99 Profiles/99 Options.lua`
+| 분할 애드온 | 카테고리 | RegisterOption 파일 |
+|---|---|---|
+| `dodoActionbar` | 행동 단축바 | `99 Options.lua:221` |
+| `dodoCombat` | 전투 | `99 Options.lua:43` |
+| `dodoCursorSpellTracker` | 커서 스펠트래커 | `99 Options.lua:5` |
+| `dodoEncounter` | 우두머리 경보 | `99 Options.lua:36` |
+| `dodoInterface` | 인터페이스 | `99 Options.lua:47` |
+| `dodoProfiles` | 프로필 | `99 Options.lua:62` |
+| `dodoQOL` | 편의기능 | `99 Options.lua:33` (Camera/WorldMapIcon/InsDifficulty/KeystoneTimer/TimerReadyCheck/Position 포함) |
+| `dodoQOL` | 음성 | `99 ETC/NewLFG.lua:192` |
+| `dodoSound` | 음성 | `Audio.lua:176` |
+| `dodoUnitframe` | 유닛프레임 | `99 Options.lua:157` |
 
 ### 4단계 — 구버전 OptionRegistrations 제거
 
-- [x] `dodo.OptionRegistrations` 전역 테이블 참조 전부 제거 확인 (Nameplate/Token/ExpFilter는 toc 비활성)
+- [x] `dodo.OptionRegistrations` 전역 테이블 참조 전부 제거 확인
 - [x] Option.lua에서 OptionRegistrations 루프 제거
 - [x] 2dodo SKILL.md에서 deprecated 섹션 제거
 - [x] 최종 `/reload` 전체 설정창 점검
 
 ---
 
-### 5단계 — RegisterEditModeModuleSetting → /dd 이관 후 제거 (~25개 파일)
+### 5단계 — RegisterEditModeModuleSetting → /dd 이관 후 제거 ✅ 완료
 
-`RegisterEditModeModuleSetting` 항목은 `dodo.RegisterOption`으로 직접 교체.  
-각 파일 수정 후 `/reload` — EditMode 패널에서 사라지고 `/dd`에 표시되는지 확인.
+> **2025-09 애드온 분할 과정에서 완료.**  
+> `dodo.RegisterEditModeModuleSetting` 함수 자체가 dodo 메인 애드온에서 제거됨.  
+> 모든 활성 분할 애드온에 해당 함수 호출 없음.
 
-**전투** (order: 40)
-- [ ] `Module/01 Actionbar/01 Core.lua` — `enableActionbar`
-- [ ] `Module/04 Combat/03 BloodBrez.lua` — `useBloodBrez` (3단계에서 이미 처리)
-- [ ] `Module/04 Combat/02 Debuff/Debuff.lua`
-- [x] `Module/05 Interface/01 DamageMeter/Core.lua`
-- [ ] `Module/04 Combat/01 ResourceBar/Core.lua`
-- [ ] `Module/06 Encounter/01 Core.lua`
+**잔존 구버전 호출 (TOC-disabled — 당장 무해)**
+- `Module/00 coming soon/99 Consumeable.lua:494` — `RegisterEditModeModuleSetting`
+- `Module/00 coming soon/03 RaidFrame/Anchor.lua:223` — `RegisterEditModeModuleSetting`
 
-**인터페이스** (order: 50)
-- [ ] `Module/09 QOL/99 ETC/Position.lua`
-- [x] `Module/05 Interface/03 Minimap/Core.lua`
-- [ ] `Module/00 coming soon/03 RaidFrame/Anchor.lua`
-- [ ] `Module/03 Unitframe/01 UnitFrame/01 Core.lua`
-- [ ] `Module/09 QOL/99 ETC/Camera.lua`
-
-**편의기능** (order: 60)
-- [ ] `Module/05 Interface/04 Tooltip/Core.lua`
-- [ ] `Module/09 QOL/02 Mplus/05 TimerReadyCheck.lua`
-- [ ] `Module/00 coming soon/99 Consumeable.lua`
-- [ ] `Module/09 QOL/02 Mplus/04 KeystoneTimer.lua`
-- [ ] `Module/09 QOL/99 ETC/InsDifficulty.lua`
-- [ ] `Module/09 QOL/99 ETC/PartyKeystone.lua` (3단계와 중복 → 통합)
-- [ ] `Module/04 Combat/04 Stance.lua`
-
-**기타**
-
-
-
-**5단계 완료 후**
-- [ ] `dodo.RegisterEditModeModuleSetting` 함수 및 `registered_settings` 테이블 제거
-- [ ] `create_edit_mode_panel()` 내 메뉴 렌더링 코드 제거 (스크롤 패널 전체)
-- [ ] EditMode 패널을 최소화 — "일반설정" 버튼만 남긴 단순 패널로 축소 또는 완전 제거
-- [ ] `Module/09 QOL/Editmode/ModuleSettings.lua` 정리
+**5단계 완료 사항**
+- [x] `dodo.RegisterEditModeModuleSetting` 함수 및 `registered_settings` 테이블 제거
+- [x] `create_edit_mode_panel()` 내 메뉴 렌더링 코드 제거
+- [x] EditMode 패널 관련 모듈 파일 제거 (`Module/09 QOL/Editmode/` 디렉토리 없음)
 
 ---
 
-### 6단계 — RegisterEditModeSystemSetting → /dd 이관 후 제거 (~35개 파일)
+### 6단계 — RegisterEditModeSystemSetting → /dd 이관 후 제거 ✅ 완료
 
-> 복잡도 높음. 5단계 완료 후 진행.
+> **2025-09 애드온 분할 과정에서 완료.**  
+> `dodo.RegisterEditModeSystemSetting` 함수 자체가 dodo 메인 애드온에서 제거됨.  
+> 모든 활성 분할 애드온에 해당 함수 호출 없음.
 
-**방식**: `RegisterEditModeSystemSetting` 블록 전체를 `dodo.RegisterOption` 으로 교체.  
-items의 get/set 콜백이 단순 `dodoDB[key]` 패턴이면 → `Checkbox()` 직접 사용.  
-복잡한 콜백(nil 기본값, 다중 함수 호출 등)이면 → `Settings.RegisterProxySetting` 래핑.  
-변수명: `"DODO_SYS_" .. tostring(systemID) .. "_" .. item.name`
+**잔존 구버전 호출 (TOC-disabled — 당장 무해)**
+- `Module/00 coming soon/Short.lua:95` — `RegisterEditModeSystemSetting`
 
-**경로 매핑**
+**경로 매핑** (참고용 — 이미 완료)
 
 | EditMode 시스템 | /dd 경로 | order |
 |---|---|---|
@@ -194,74 +121,21 @@ items의 get/set 콜백이 단순 `dodoDB[key]` 패턴이면 → `Checkbox()` �
 | ActionBar `"N_M"` 형식 | `"전투.행동단축바"` | 42 |
 | 커스텀 문자열 (`"Debuff"`, `"Stance"` 등) | 파일별 결정 | — |
 
-**마이그레이션 대상**
-
-채팅창
-- [ ] `Module/05 Interface/02 ChatFrame/URL.lua`
-- [ ] `Module/00 coming soon/Short.lua`
-- [ ] `Module/05 Interface/02 ChatFrame/Font.lua`
-- [ ] `Module/05 Interface/02 ChatFrame/GuildButton.lua`
-
-미니맵
-- [x] `Module/05 Interface/03 Minimap/Zoom.lua`
-- [x] `Module/05 Interface/03 Minimap/Square.lua`
-- [x] `Module/05 Interface/03 Minimap/IconAddons.lua`
-- [x] `Module/05 Interface/03 Minimap/FPS.lua`
-- [x] `Module/05 Interface/03 Minimap/MinimapCoords.lua`
-
-툴팁
-- [ ] `Module/05 Interface/04 Tooltip/Color.lua`
-- [ ] `Module/05 Interface/04 Tooltip/Icon.lua`
-- [ ] `Module/05 Interface/04 Tooltip/StatusBar.lua`
-- [ ] `Module/05 Interface/04 Tooltip/ID.lua`
-- [ ] `Module/05 Interface/04 Tooltip/Vehicle.lua`
-
-행동단축바
-- [ ] `Module/01 Actionbar/04 OverlayCDM.lua`
-- [ ] `Module/01 Actionbar/06 OverlayPotion.lua`
-- [ ] `Module/01 Actionbar/03 IconColor.lua`
-- [ ] `Module/01 Actionbar/02 IconPadding.lua`
-- [ ] `Module/01 Actionbar/05 OverlayInterrupt.lua`
-- [ ] `Module/01 Actionbar/07 IconText.lua`
-
-전투일지
-- [ ] `Module/06 Encounter/05 TimelineColor.lua`
-- [ ] `Module/06 Encounter/04 Text.lua`
-- [ ] `Module/06 Encounter/03 Sound.lua`
-
-유닛프레임
-- [ ] `Module/03 Unitframe/01 UnitFrame/01 Component/01 Power.lua`
-- [ ] `Module/03 Unitframe/01 UnitFrame/01 Component/02 Castbar.lua`
-- [ ] `Module/03 Unitframe/01 UnitFrame/01 Component/03 Auras.lua`
-- [ ] `Module/03 Unitframe/01 UnitFrame/01 Component/04 Absorb.lua`
-- [ ] `Module/00 coming soon/03 RaidFrame/Anchor.lua`
-- [ ] `Module/03 Unitframe/02 PartyFrame/AurasHealthColor.lua`
-- [ ] `Module/03 Unitframe/02 PartyFrame/Leader.lua`
-- [ ] `Module/03 Unitframe/02 PartyFrame/Overshield.lua`
-- [ ] `Module/00 coming soon/SoloMode.lua`
-
-기타 커스텀 시스템
-- [ ] `Module/04 Combat/01 ResourceBar/Core.lua` (`"ResourceBar"` → `"전투"`)
-- [ ] `Module/05 Interface/01 DamageMeter/Core.lua` (`"전투.딜미터"`)
-- [ ] `Module/04 Combat/02 Debuff/Debuff.lua` (`"Debuff"` → `"전투"`)
-- [ ] `Module/04 Combat/04 Stance.lua` (`"Stance"` → `"편의기능"`)
-- [ ] `Module/09 QOL/99 ETC/FrameOption.lua` (TalkingHeadFrame → `"인터페이스"`)
-- [ ] `Module/00 coming soon/99 Collapse.lua` (→ `"편의기능"`)
-
----
-
-### 6단계 완료 후
-- [ ] `dodo.RegisterEditModeSystemSetting` 함수 제거
-- [ ] `Module/09 QOL/Editmode/SystemSettingsPanel.lua` — EditMode 윙 패널 코드 제거 또는 파일 전체 제거
-- [ ] `Module/09 QOL/Editmode/SystemSettings.lua` 잔여 코드 정리
+**6단계 완료 사항**
+- [x] `dodo.RegisterEditModeSystemSetting` 함수 제거
+- [x] EditMode 윙 패널 코드 제거 (`Module/09 QOL/Editmode/SystemSettingsPanel.lua` 없음)
 
 ---
 
 ### 7단계 — 최종 정리
 
-- [ ] `Module/09 QOL/Editmode/ModuleSettings.lua` 잔여 코드 정리
-- [ ] `dodo.EditMode` 시스템 자체 존치 여부 재검토 (위치 앵커 기능은 별도 — 설정창과 무관)
+- [ ] `Agents.md` — deprecated `RegisterEditModeModuleSetting`/`RegisterEditModeSystemSetting` 문서 제거
+- [ ] `Module/00 coming soon/` 파일들 TOC 활성화 시 RegisterOption으로 전환 필요
+  - `99 Consumeable.lua` — `RegisterEditModeModuleSetting` → `dodo.RegisterOption`
+  - `Short.lua` — `RegisterEditModeSystemSetting` → `dodo.RegisterOption`
+  - `03 RaidFrame/Anchor.lua` — `RegisterEditModeModuleSetting` → `dodo.RegisterOption`
 - [ ] 전체 `/reload` + 설정창 모든 섹션 순회 점검
+- [ ] `Module/02 Nameplate/` — 별도 옵션 모듈 추가 (나중에)
 
 ---
 
@@ -305,11 +179,8 @@ dodo.RegisterOption("유닛프레임.파티", function(category)
 end, 1000)
 ```
 
-이전 대상 (RegisterEditModeSystemSetting → RegisterOption):
-- [ ] `Module/03 Unitframe/02 PartyFrame/AurasHealthColor.lua`
-- [ ] `Module/03 Unitframe/02 PartyFrame/Overshield.lua`
-- [ ] `Module/03 Unitframe/02 PartyFrame/Leader.lua`
-- [ ] `Module/00 coming soon/SoloMode.lua`
+이전 대상:
+- [ ] `dodoUnitframe` — PartyFrame 관련 설정 등록
 
 관련 Blizzard 소스:
 - `Blizzard_SettingsDefinitions_Frame/Interface.xml` — `RaidFramePreviewTemplate` 정의
@@ -324,7 +195,7 @@ end, 1000)
 슬라이더(바 크기·폰트 크기) `set` 콜백에서 미리보기 프레임도 함께 갱신 필요.
 
 이전 대상:
-- [ ] `Module/04 Combat/01 ResourceBar/Core.lua` — RegisterEditModeModuleSetting(마스터토글) + RegisterEditModeSystemSetting(체크박스3·슬라이더3)
+- [ ] `dodoCombat/01 ResourceBar/Core.lua` — 마스터토글 + 체크박스/슬라이더 설정
 
 #### C. 액션바
 
@@ -345,9 +216,5 @@ end, 1000)
 - `dodo.RegisterOption`은 `ADDON_LOADED` 전에 호출 → `dodo._optionRegistry` 먼저 초기화 필수
 - subCategory는 `dodoCreateOptions()` 시점에 생성 (ADDON_LOADED 이후) — 안전
 - 6단계 ProxySetting 변수명 충돌: `"DODO_SYS_"` 접두사 + systemID + item.name 조합
-- `SetParentInitializer` 사용 모듈: `Module/09 QOL/99 ETC/NewLFG.lua` 1개뿐 — `buildFn(category)` 그대로 호출 구조라 별도 처리 불필요
-- `Module/04 Combat/03 BloodBrez.lua`의 `"combat"` → `"전투"` 확정
-- 5단계 `Module/09 QOL/99 ETC/PartyKeystone.lua`는 3단계(`"인터페이스.편의기능"`)와 5단계(`"편의기능"`) 양쪽에 걸침 — 하나로 통합 필요
-- 6단계 `Module/06 Encounter/04 Text.lua`는 `RegisterEditModeSystemSetting`을 조건부로 여러 번 호출 — 마이그레이션 시 주의
-- 6단계는 복잡도 최고 (ActionBar `"N_M"` 다수, Encounter 중복 등록, 복잡한 get/set) — 5단계 완전 완료 후 시작
+- `SetParentInitializer` 사용 모듈: `dodoQOL/99 ETC/NewLFG.lua` 1개뿐 — `buildFn(category)` 그대로 호출 구조라 별도 처리 불필요
 - `dodo.EditMode` 시스템(위치 앵커 프레임)은 설정창과 무관 — 별도 판단 대상. 패널만 제거하고 앵커는 존치 가능
