@@ -1,0 +1,647 @@
+﻿-- ==============================
+-- Inspired
+-- ==============================
+-- ActionBarAuras (https://github.com/xod-wow/ActionBarAuras)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
+---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
+local dodo = _G.dodo
+dodoDB = dodoDB or {}
+
+local CDM_DB_KEYS   = dodo.AB_DB_KEYS.cdm
+local CDM_DEFAULTS  = dodo.AB_DEFAULTS.cdm
+
+local CustomCDMConfigs = { -- 물약 지속시간 (스펠ID - 아이템ID)
+    [1236616] = { matchIDs = { 241308, 241309 }, duration = 30, type = 3 }, -- 빛의 잠재력
+    [1236994] = { matchIDs = { 241288, 241289 }, duration = 30, type = 3 }, -- 무모함의 물약
+}
+
+local CDMMapping_defaults = { -- [specID] = { buffSpellID = actionBarSpellID }
+    [71] = { -- 무전
+        [386633] = 12294, -- 집행자의 정밀함 - 필사의 일격
+    },
+    [72] = { -- 분전
+        [184361] = 1464,   -- 격노 - 광란
+        [12950]  = 190411, -- 소용돌이 연마 - 소용돌이
+    },
+    [250] = { -- 혈죽
+        [195181] = 195182, -- 뼈의 보호막 - 골수분쇄
+    },
+}
+
+-- ==============================
+-- 캐싱
+-- ==============================
+local C_CooldownViewer = C_CooldownViewer
+local C_Item = C_Item
+local C_Spell = C_Spell
+local C_Timer = C_Timer
+local CreateFrame = CreateFrame
+local Enum = Enum
+local GetActionInfo = GetActionInfo
+local GetSpecialization = GetSpecialization
+local GetSpecializationInfo = GetSpecializationInfo
+local GetTime = GetTime
+local hooksecurefunc = hooksecurefunc
+local InCombatLockdown = InCombatLockdown
+local ipairs = ipairs
+local Item = Item
+local Mixin = Mixin
+local pairs = pairs
+local wipe = wipe
+
+local custom_cdmauras    = dodo.customCDMAuras
+local custom_cdmspell_map = dodo.customCDMSpellMap
+
+-- ==============================
+-- 헬퍼
+-- ==============================
+local bar_cdm_cache = {}
+local function is_bar_cdm_enabled(barName)
+    if not barName then return false end
+    local cached = bar_cdm_cache[barName]
+    if cached ~= nil then return cached end
+    local dbKey = CDM_DB_KEYS[barName]
+    local result
+    if not dbKey then
+        result = CDM_DEFAULTS[barName] or false
+    elseif not dodoDB then
+        result = CDM_DEFAULTS[barName] or false
+    else
+        local val = dodoDB[dbKey]
+        result = (val == nil) and (CDM_DEFAULTS[barName] or false) or val
+    end
+    bar_cdm_cache[barName] = result
+    return result
+end
+dodo.ActionbarInvalidateCDMCache = function() bar_cdm_cache = {} end
+
+local function get_cdm_map()
+    if not dodoDB then return nil end
+    local specIndex = GetSpecialization()
+    if not specIndex then return nil end
+    local specID = GetSpecializationInfo(specIndex)
+    if not specID then return nil end
+    dodoDB.cdmMapping = dodoDB.cdmMapping or {}
+    if not dodoDB.cdmMapping[specID] then
+        dodoDB.cdmMapping[specID] = {}
+        local defaults = CDMMapping_defaults[specID]
+        if defaults then
+            for k, v in pairs(defaults) do
+                dodoDB.cdmMapping[specID][k] = v
+            end
+        end
+    end
+    return dodoDB.cdmMapping[specID]
+end
+
+local function get_action_spell_id(actionID)
+    local actionType, id, actionSubType = GetActionInfo(actionID)
+    if (actionType == "spell" or actionSubType == "spell") and id then
+        return id
+    elseif actionType == "item" then
+        local _, spellID = C_Item.GetItemSpell(id)
+        return spellID
+    end
+end
+
+-- ==============================
+-- AuraContainer 방식 — LinkedSpells
+-- ==============================
+
+-- [스펠명] = {[spellID]=true, ...}  CDM 전체 카테고리 기반 (버프용)
+local linked_spell_ids = {}
+-- [스펠명] = {[spellID]=true, ...}  유저가 BuffBar/BuffIcon에 올린 항목만 (디버프용)
+local user_linked_spell_ids = {}
+-- BuffBar/BuffIcon의 cooldownViewerCategory ID (PLAYER_LOGIN 1회만 읽음, GetItemFrames() taint 방지)
+local user_cdm_categories = nil
+
+local function scan_linked_spells()
+    wipe(linked_spell_ids)
+    for c = Enum.CooldownViewerCategoryMeta.MinValue, Enum.CooldownViewerCategoryMeta.MaxValue do
+        local set = C_CooldownViewer.GetCooldownViewerCategorySet(c, true)
+        if set then
+            for _, cooldownID in ipairs(set) do
+                local info = C_CooldownViewer.GetCooldownViewerCooldownInfo(cooldownID)
+                if info and info.spellID then
+                    local name = C_Spell.GetSpellName(info.spellID)
+                    if name then
+                        if not linked_spell_ids[name] then linked_spell_ids[name] = {} end
+                        linked_spell_ids[name][info.spellID] = true
+                        for _, sid in ipairs(info.linkedSpellIDs) do
+                            linked_spell_ids[name][sid] = true
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- PLAYER_LOGIN 때 1회만 호출 — 프레임 필드(숫자)만 읽고 GetItemFrames() 미호출
+local function init_user_cdm_categories()
+    user_cdm_categories = {}
+    if BuffBarCooldownViewer then
+        local cat = BuffBarCooldownViewer.cooldownViewerCategory
+        if cat then user_cdm_categories[cat] = true end
+    end
+    if BuffIconCooldownViewer then
+        local cat = BuffIconCooldownViewer.cooldownViewerCategory
+        if cat then user_cdm_categories[cat] = true end
+    end
+end
+
+-- GetItemFrames() 대신 C API만 사용 → taint 없음
+local function scan_user_linked_spells()
+    wipe(user_linked_spell_ids)
+    if not user_cdm_categories then return end
+    for catID in pairs(user_cdm_categories) do
+        local set = C_CooldownViewer.GetCooldownViewerCategorySet(catID, true)
+        if set then
+            for _, cooldownID in ipairs(set) do
+                local info = C_CooldownViewer.GetCooldownViewerCooldownInfo(cooldownID)
+                if info and info.spellID then
+                    local name = C_Spell.GetSpellName(info.spellID)
+                    if name then
+                        if not user_linked_spell_ids[name] then user_linked_spell_ids[name] = {} end
+                        user_linked_spell_ids[name][info.spellID] = true
+                        for _, sid in ipairs(info.linkedSpellIDs) do
+                            user_linked_spell_ids[name][sid] = true
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- 버프용: CDM 전체 + cdmMapping
+local function get_linked_spell_ids(spellID)
+    local result = {}
+    local name = C_Spell.GetSpellName(spellID)
+    if name and linked_spell_ids[name] then
+        Mixin(result, linked_spell_ids[name])
+    end
+    local cdmMap = get_cdm_map()
+    if cdmMap then
+        for buffID, skillID in pairs(cdmMap) do
+            if skillID == spellID then result[buffID] = true end
+        end
+    end
+    return result
+end
+
+-- 디버프용: 유저 활성 CDM 항목 + cdmMapping, 버튼 자신 ID 제외
+local function get_user_linked_debuff_ids(spellID)
+    local result = {}
+    local name = C_Spell.GetSpellName(spellID)
+    if name and user_linked_spell_ids[name] then
+        Mixin(result, user_linked_spell_ids[name])
+    end
+    local cdmMap = get_cdm_map()
+    if cdmMap then
+        for buffID, skillID in pairs(cdmMap) do
+            if skillID == spellID then result[buffID] = true end
+        end
+    end
+    local baseSpellID = C_Spell.GetBaseSpell(spellID)
+    result[spellID] = nil
+    result[baseSpellID] = nil
+    return result
+end
+
+-- ==============================
+-- AuraContainer 슬롯 초기화
+-- ==============================
+local _duration_formatter
+local function get_duration_formatter()
+    if _duration_formatter then return _duration_formatter end
+    if not (C_StringUtil and C_StringUtil.CreateNumericRuleFormatter and Enum.NumericRuleFormatRounding) then
+        return nil
+    end
+    local Up   = Enum.NumericRuleFormatRounding.Up
+    local Down = Enum.NumericRuleFormatRounding.Down
+    local formatter = C_StringUtil.CreateNumericRuleFormatter()
+    local ok = pcall(formatter.SetBreakpoints, formatter, {
+        { threshold = 0,    format = "%d",  step = 1, rounding = Up,   components = { { div = 1 } } },
+        { threshold = 60,   format = "%dm", step = 1, rounding = Up,   components = { { div = 60 } } },
+        { threshold = 61,   format = "%dm", step = 1, rounding = Down, components = { { div = 60 } } },
+        { threshold = 3600, format = "%dh", step = 1, rounding = Down, components = { { div = 3600 } } },
+    })
+    if ok then _duration_formatter = formatter end
+    return _duration_formatter
+end
+
+local function initialize_aura_slot(f)
+    f:SetDurationText(f.durationText, { textFormatter = get_duration_formatter() })
+    f:SetApplicationCount(f.stacksText)
+    f:EnableMouse(false)
+    f.durationText:SetTextColor(0, 1, 0, 1)
+    f.stacksText:SetTextColor(1, 1, 0, 1)
+end
+
+
+-- ==============================
+-- AuraContainer 생성 & 필터 업데이트
+-- ==============================
+local function create_button_containers(btn)
+    local name = btn:GetName()
+    if not name then return end
+
+    if not btn.cdmContainer then
+        local c = CreateFrame("AuraContainer", name .. "CDMContainer", btn, "CustomAuraContainerTemplate")
+        c:SetPoint("TOPLEFT")
+        c:SetUnit("player")
+        local as = c:AddAuraSlot("CDM", "HELPFUL|PLAYER", {
+            sortMethod      = AuraContainerSortMethod.ExpirationOnly,
+            sortDirection   = AuraContainerSortDirection.Reverse,
+            templateNames   = { "CDMOverlayAuraTemplate" },
+            initializeFrame = initialize_aura_slot,
+        })
+        as:SetSize(btn:GetSize())
+        as:SetPoint("CENTER", btn)
+        if btn.cooldown then as:SetFrameLevel(btn.cooldown:GetFrameLevel() + 1) end
+        btn.cdmContainer = c
+    end
+
+    if not btn.cdmContainerDebuff then
+        local cd = CreateFrame("AuraContainer", name .. "CDMDebuffContainer", btn, "CustomAuraContainerTemplate")
+        cd:SetPoint("TOPLEFT")
+        cd:SetUnit("target")
+        local as = cd:AddAuraSlot("CDM", "HARMFUL|PLAYER", {
+            sortMethod      = AuraContainerSortMethod.ExpirationOnly,
+            sortDirection   = AuraContainerSortDirection.Reverse,
+            templateNames   = { "CDMOverlayAuraTemplate" },
+            initializeFrame = initialize_aura_slot,
+        })
+        as:SetSize(btn:GetSize())
+        as:SetPoint("CENTER", btn)
+        if btn.cooldown then as:SetFrameLevel(btn.cooldown:GetFrameLevel() + 1) end
+        btn.cdmContainerDebuff = cd
+    end
+end
+
+local function create_aura_containers()
+    for btn in pairs(dodo.registeredButtons) do
+        create_button_containers(btn)
+    end
+end
+
+local function build_candidate_filters(btn, isHelpful)
+    local spellID = btn.action and get_action_spell_id(btn.action)
+    if not spellID then return nil end
+
+    local filters = { includeSpellIDs = {} }
+    if isHelpful then filters.isHelpful = true else filters.isHarmful = true end
+
+    local baseSpellID = C_Spell.GetBaseSpell(spellID)
+    if isHelpful then
+        filters.includeSpellIDs[spellID] = true
+        if baseSpellID ~= spellID then filters.includeSpellIDs[baseSpellID] = true end
+        Mixin(filters.includeSpellIDs, get_linked_spell_ids(spellID))
+        if baseSpellID ~= spellID then Mixin(filters.includeSpellIDs, get_linked_spell_ids(baseSpellID)) end
+    else
+        Mixin(filters.includeSpellIDs, get_user_linked_debuff_ids(spellID))
+        if baseSpellID ~= spellID then Mixin(filters.includeSpellIDs, get_user_linked_debuff_ids(baseSpellID)) end
+    end
+    return filters
+end
+
+local function update_buff_filter(btn)
+    local c = btn.cdmContainer
+    if not c then return end
+    local barName = dodo.get_bar_name_by_button(btn)
+    if not barName or not is_bar_cdm_enabled(barName) or not btn:IsVisible() then
+        c:SetEnabled(false)
+        return
+    end
+    local filters = build_candidate_filters(btn, true)
+    if not filters then c:SetEnabled(false); return end
+    c:SetAuraSlotFilterString("CDM", "HELPFUL|PLAYER")
+    c:SetAuraSlotCandidateFilters("CDM", filters)
+    c:SetEnabled(true)
+end
+
+local function update_debuff_filter(btn)
+    local cd = btn.cdmContainerDebuff
+    if not cd then return end
+    local barName = dodo.get_bar_name_by_button(btn)
+    if not barName or not is_bar_cdm_enabled(barName) or not btn:IsVisible() then
+        cd:SetEnabled(false)
+        return
+    end
+    if UnitCanAssist("player", "target", true, true) then
+        cd:SetEnabled(false)
+        return
+    end
+    local filters = build_candidate_filters(btn, false)
+    if not filters then cd:SetEnabled(false); return end
+    cd:SetAuraSlotFilterString("CDM", "HARMFUL|PLAYER")
+    cd:SetAuraSlotCandidateFilters("CDM", filters)
+    cd:SetEnabled(true)
+end
+
+local function update_button_filter(btn)
+    update_buff_filter(btn)
+    update_debuff_filter(btn)
+end
+
+local function update_overlay_filters()
+    if not dodoDB or dodoDB.enableActionbar == false then
+        for btn in pairs(dodo.registeredButtons) do
+            if btn.cdmContainer then btn.cdmContainer:SetEnabled(false) end
+            if btn.cdmContainerDebuff then btn.cdmContainerDebuff:SetEnabled(false) end
+        end
+        return
+    end
+    if not dodo.barButtons then return end
+    for _, barInfo in ipairs(dodo.AB_BAR_ORDER) do
+        local btns = dodo.barButtons[barInfo.name]
+        if btns then
+            for _, btn in ipairs(btns) do
+                update_button_filter(btn)
+            end
+        end
+    end
+end
+
+-- ==============================
+-- 물약 커스텀 CDM (AuraContainer 감지 불가 → 기존 방식 유지)
+-- ==============================
+local active_cdm_overlays = {}
+
+local function customize_cooldown_text(cooldown)
+    if not cooldown or cooldown.__textHooked then return end
+    local region = cooldown:GetCountdownFontString()
+    if region then
+        local parent = cooldown:GetParent()
+        region:SetParent(parent)
+        region:ClearAllPoints()
+        region:SetPoint("TOPLEFT", parent, "TOPLEFT", 5, -5)
+        region:SetTextColor(0, 1, 0, 1)
+
+        hooksecurefunc(region, "SetTextColor", function(self, r, g, b)
+            if r ~= 0 or g ~= 1 or b ~= 0 then
+                self:SetTextColor(0, 1, 0, 1)
+            end
+        end)
+        hooksecurefunc(region, "SetPoint", function(self, point, relativeTo, relativePoint, x, y)
+            if relativeTo ~= parent or point ~= "TOPLEFT" or x ~= 5 or y ~= -5 then
+                self:SetParent(parent)
+                self:ClearAllPoints()
+                self:SetPoint("TOPLEFT", parent, "TOPLEFT", 5, -5)
+            end
+        end)
+        cooldown.__textHooked = true
+    end
+end
+
+CDMOverlayMixin = {}
+
+function CDMOverlayMixin:OnLoad()
+    local parent = self:GetParent()
+    self:SetSize(parent:GetSize())
+    self.InnerGlow:SetVertexColor(0, 1, 0, 1)
+    self.Count:SetTextColor(1, 1, 0)
+    if parent.cooldown then
+        self:SetFrameLevel(parent.cooldown:GetFrameLevel() + 1)
+    end
+    self.Cooldown:SetPoint("TOPLEFT", parent.icon, "LEFT", 5, 0)
+    self.Cooldown:SetPoint("BOTTOMRIGHT", parent.icon, "BOTTOM", 0, 3)
+    self.Cooldown:SetDrawSwipe(false)
+    self.Cooldown:SetUseAuraDisplayTime(true)
+    self.Cooldown:SetCountdownFont("NumberFontNormal")
+    self.Cooldown:SetCountdownAbbrevThreshold(60)
+    self.Cooldown:SetScript("OnCooldownDone", function() self:StopCustomCDM() end)
+    self:Hide()
+end
+
+function CDMOverlayMixin:StartCustomCDM(spellID, duration, startTime)
+    self.customCDMSpellID = spellID
+    self.customCDMEndTime = startTime + duration
+    active_cdm_overlays[self] = true
+    self.InnerGlow:Show()
+    self.Cooldown:SetCooldown(startTime, duration)
+    self.Cooldown:Show()
+    self:Show()
+    customize_cooldown_text(self.Cooldown)
+end
+
+function CDMOverlayMixin:StopCustomCDM()
+    active_cdm_overlays[self] = nil
+    self.customCDMSpellID = nil
+    self.customCDMEndTime = nil
+    self.Cooldown:Clear()
+    self.Cooldown:Hide()
+    self.InnerGlow:Hide()
+    self.Count:Hide()
+    self.TimerCooldown:Hide()
+    self:Hide()
+end
+
+local _matched_buf = {}
+local function get_matching_buttons(targetSpellID, configKey)
+    wipe(_matched_buf)
+    local itemConfig = CustomCDMConfigs[configKey]
+    for btn in pairs(dodo.registeredButtons) do
+        if btn.action then
+            local actionType, id = GetActionInfo(btn.action)
+            if actionType == "spell" then
+                local baseSpellID = C_Spell.GetBaseSpell(id)
+                local isMatch = false
+                if itemConfig and itemConfig.matchIDs then
+                    for _, tID in ipairs(itemConfig.matchIDs) do
+                        if baseSpellID == tID or id == tID then isMatch = true; break end
+                    end
+                end
+                if isMatch or baseSpellID == targetSpellID or id == targetSpellID or id == configKey or baseSpellID == configKey then
+                    _matched_buf[#_matched_buf + 1] = btn
+                end
+            elseif actionType == "item" then
+                local isMatch = false
+                if itemConfig and itemConfig.matchIDs then
+                    for _, tID in ipairs(itemConfig.matchIDs) do
+                        if id == tID then isMatch = true; break end
+                    end
+                end
+                if isMatch or id == configKey then
+                    _matched_buf[#_matched_buf + 1] = btn
+                else
+                    local _, btnSpellID = C_Item.GetItemSpell(id)
+                    if btnSpellID and btnSpellID == targetSpellID then
+                        _matched_buf[#_matched_buf + 1] = btn
+                    end
+                end
+            end
+        end
+    end
+    return _matched_buf
+end
+
+local function init_custom_cdm_spells()
+    for key, itemConfig in pairs(CustomCDMConfigs) do
+        custom_cdmspell_map[key] = key
+        if itemConfig.matchIDs then
+            for _, tID in ipairs(itemConfig.matchIDs) do
+                if C_Item.GetItemInfoInstant(tID) then
+                    local item = Item:CreateFromItemID(tID)
+                    if item and not item:IsItemEmpty() then
+                        item:ContinueOnItemLoad(function()
+                            local _, spellID = C_Item.GetItemSpell(tID)
+                            if spellID then custom_cdmspell_map[spellID] = key end
+                        end)
+                    end
+                else
+                    custom_cdmspell_map[tID] = key
+                end
+            end
+        end
+    end
+end
+
+local function ensure_custom_cdm_overlay(btn)
+    if not btn.cdmOverlay then
+        btn.cdmOverlay = CreateFrame("Frame", nil, btn, "CDMOverlayTemplate")
+        btn.cdmOverlay:ClearAllPoints()
+        btn.cdmOverlay:SetAllPoints(btn)
+    end
+end
+
+dodo.ActionbarOnSpellcastSucceeded = function(unitTarget, castGUID, spellID)
+    local matchedItemID = custom_cdmspell_map[spellID]
+    if not matchedItemID then return end
+
+    local itemConfig  = CustomCDMConfigs[matchedItemID]
+    local duration    = itemConfig and itemConfig.duration or 30
+    local refreshType = itemConfig and itemConfig.type or 1
+    local now         = GetTime()
+    local activeAura  = custom_cdmauras[spellID]
+
+    if activeAura then
+        local remaining = activeAura.duration - (now - activeAura.startTime)
+        if remaining > 0 then
+            if refreshType == 2 then
+                activeAura.duration = remaining + duration
+                activeAura.startTime = now
+            elseif refreshType == 3 then
+                activeAura.duration = duration
+                activeAura.startTime = now
+            end
+        else
+            custom_cdmauras[spellID] = { startTime = now, duration = duration }
+        end
+    else
+        custom_cdmauras[spellID] = { startTime = now, duration = duration }
+    end
+
+    local updatedAura = custom_cdmauras[spellID]
+    local buttons = get_matching_buttons(spellID, matchedItemID)
+    for _, btn in ipairs(buttons) do
+        ensure_custom_cdm_overlay(btn)
+        if btn.cdmOverlay then
+            btn.cdmOverlay:StartCustomCDM(spellID, updatedAura.duration, updatedAura.startTime)
+        end
+    end
+end
+
+-- ==============================
+-- 초기화
+-- ==============================
+dodo.ActionbarInitCDM = function()
+    get_cdm_map() -- 현재 spec 기본값 lazy-init
+
+    init_custom_cdm_spells()
+    scan_linked_spells()
+    init_user_cdm_categories() -- BuffBar/BuffIcon 카테고리 ID 1회 읽기
+
+    C_Timer.After(0.5, function()
+        scan_user_linked_spells()
+        create_aura_containers()
+        update_overlay_filters()
+    end)
+end
+
+dodo.ActionbarApplyCDM = function()
+    update_overlay_filters()
+end
+
+-- ACTIONBAR_SLOT_CHANGED 등에서 호출 (Core.lua 인터페이스 유지)
+dodo.BuildSpecialButtonCache = function()
+    if InCombatLockdown() then return end
+    scan_linked_spells()
+    scan_user_linked_spells()
+    -- create_aura_containers는 Blizzard 보안 프레임(AddAuraSlot 반환값)에 SetSize를 호출하므로
+    -- tainted 컨텍스트(시네마틱 스킵 등)에서 직접 호출 시 forbidden 에러 발생 → 1프레임 지연
+    C_Timer.After(0, create_aura_containers)
+    update_overlay_filters()
+end
+
+-- ==============================
+dodo.setCDMMapping = function(buffSpellID, actionBarSpellID)
+    local cdmMap = get_cdm_map()
+    if not cdmMap then return end
+    cdmMap[buffSpellID] = actionBarSpellID
+end
+
+dodo.removeCDMMapping = function(buffSpellID)
+    local cdmMap = get_cdm_map()
+    if cdmMap then cdmMap[buffSpellID] = nil end
+end
+
+dodo.getCDMMappingForSkill = function(actionBarSpellID)
+    local result = {}
+    local cdmMap = get_cdm_map()
+    if not cdmMap then return result end
+    for buffID, skillID in pairs(cdmMap) do
+        if skillID == actionBarSpellID then
+            result[#result + 1] = buffID
+        end
+    end
+    return result
+end
+
+-- ==============================
+-- 특성/장비 변경 시 링크 재스캔
+-- ==============================
+local rescan_frame = CreateFrame("Frame")
+local rescan_events = {
+    "ACTIVE_COMBAT_CONFIG_CHANGED",
+    "ACTIVE_PLAYER_SPECIALIZATION_CHANGED",
+    "ACTIVE_TALENT_GROUP_CHANGED",
+    "COOLDOWN_VIEWER_TABLE_HOTFIXED",
+    "PLAYER_EQUIPMENT_CHANGED",
+    "PLAYER_PVP_TALENT_UPDATE",
+    "SPELLS_CHANGED",
+    "TRAIT_CONFIG_UPDATED",
+    "PLAYER_TARGET_CHANGED",
+    "UNIT_FACTION",
+}
+local function update_debuff_for_enabled_bars()
+    if not dodo.barButtons then return end
+    for _, barInfo in ipairs(dodo.AB_BAR_ORDER) do
+        if is_bar_cdm_enabled(barInfo.name) then
+            local btns = dodo.barButtons[barInfo.name]
+            if btns then
+                for _, btn in ipairs(btns) do update_debuff_filter(btn) end
+            end
+        end
+    end
+end
+
+for _, ev in ipairs(rescan_events) do rescan_frame:RegisterEvent(ev) end
+rescan_frame:SetScript("OnEvent", function(self, event, ...)
+    if event == "PLAYER_TARGET_CHANGED" then
+        update_debuff_for_enabled_bars()
+    elseif event == "UNIT_FACTION" then
+        if ... == "target" then update_debuff_for_enabled_bars() end
+    else
+        if InCombatLockdown() then return end
+        if event == "ACTIVE_PLAYER_SPECIALIZATION_CHANGED" then
+            get_cdm_map() -- 새 spec 기본값 lazy-init
+        end
+        scan_linked_spells()
+        update_overlay_filters()
+    end
+end)

@@ -1,0 +1,19 @@
+﻿## Interface: 120100
+## Version: 12.1.0
+## Title: dodoActionbar
+## Author: dodo
+## Dependencies: dodo
+## Group: dodo
+## IconTexture: Interface\AddOns\dodo\Media\Texture\Logo
+
+99 Options Preview.lua
+99 Options.lua
+00 ActionBar.xml
+01 Core.lua
+02 IconPadding.lua
+03 IconColor.lua
+04 OverlayCDM.lua
+04 OverlayCDMOptions.lua
+05 OverlayInterrupt.lua
+06 OverlayPotion.lua
+07 IconText.lua

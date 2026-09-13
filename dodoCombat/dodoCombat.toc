@@ -1,0 +1,26 @@
+## Interface: 120100
+## Version: 12.1.0
+## Title: dodoCombat
+## Author: dodo
+## Dependencies: dodo
+## Group: dodo
+## IconTexture: Interface\AddOns\dodo\Media\Texture\Logo
+
+99 Options Preview.lua
+99 Options.lua
+01 ResourceBar/ResourceBar.xml
+01 ResourceBar/Core.lua
+01 ResourceBar/BarMode/Rune.lua
+01 ResourceBar/BarMode/Stagger.lua
+01 ResourceBar/BarMode/Ironfur.lua
+01 ResourceBar/BarMode/SoulFragments.lua
+01 ResourceBar/BarMode/Duration.lua
+01 ResourceBar/BarMode/Power.lua
+01 ResourceBar/BarMode/Stack.lua
+01 ResourceBar/BarMode/Whirlwind.lua
+01 ResourceBar/Power.lua
+01 ResourceBar/Tracking.lua
+02 Debuff/Debuff.xml
+02 Debuff/Debuff.lua
+03 BloodBrez.lua
+04 Stance.lua

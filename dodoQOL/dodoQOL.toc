@@ -1,0 +1,49 @@
+## Interface: 120100
+## Version: 12.1.0
+## Title: dodoQOL
+## Author: dodo
+## Dependencies: dodo
+## Group: dodo
+## IconTexture: Interface\AddOns\dodo\Media\Texture\Logo
+
+99 Options.lua
+01 CharacterFrame/01 Core.lua
+01 CharacterFrame/02 Enchant.lua
+01 CharacterFrame/03 Gem.lua
+01 CharacterFrame/04 Ilvl.lua
+01 CharacterFrame/05 IlvlBag.lua
+01 CharacterFrame/06 Layout.lua
+02 Mplus/01 InsDifficulty.lua
+02 Mplus/02 PartyKeystone.lua
+02 Mplus/03 InsertKeystone.lua
+02 Mplus/04 KeystoneTimer.lua
+02 Mplus/05 TimerReadyCheck.lua
+02 Mplus/06 CinematicSkip.lua
+03 PVEFrame/01 PartyClass.lua
+03 PVEFrame/02 BrowseGroup.lua
+03 PVEFrame/03 QuickSelectDungeons.lua
+04 GossipFrame/Core.lua
+04 GossipFrame/ID.lua
+04 GossipFrame/SelectAuto.lua
+04 GossipFrame/KeystoneLindormi.lua
+05 EncounterJournal/Core.lua
+05 EncounterJournal/EJAchievementsTabData.lua
+05 EncounterJournal/EJAchievementsTabCategory.lua
+05 EncounterJournal/EJAchievementsTabRowBuilder.lua
+05 EncounterJournal/EJAchievementsTabUI.lua
+05 EncounterJournal/ID.lua
+99 ETC/Camera.lua
+99 ETC/ChatBubble.lua
+99 ETC/ColorPicker.lua
+99 ETC/DeleteNow.lua
+99 ETC/FrameOption.lua
+99 ETC/Friends.lua
+99 ETC/Merchant.lua
+99 ETC/NewLFG.lua
+99 ETC/QuickBobber.lua
+99 ETC/Teleport.lua
+99 ETC/TimerLFG.lua
+99 ETC/WMarker.lua
+99 ETC/WowheadLink.lua
+99 ETC/WorldMapCoords.lua
+99 ETC/WorldMapIcon.lua

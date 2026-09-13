@@ -1,0 +1,29 @@
+## Interface: 120100
+## Version: 12.1.0
+## Title: dodoInterface
+## Author: dodo
+## Dependencies: dodo
+## Group: dodo
+## IconTexture: Interface\AddOns\dodo\Media\Texture\Logo
+
+99 Options.lua
+01 DamageMeter/Core.lua
+01 DamageMeter/Reset.lua
+01 DamageMeter/Sync.lua
+01 DamageMeter/EnableAlways.lua
+02 ChatFrame/Core.lua
+02 ChatFrame/Font.lua
+02 ChatFrame/GuildButton.lua
+02 ChatFrame/URL.lua
+03 Minimap/Core.lua
+03 Minimap/FPS.lua
+03 Minimap/IconAddons.lua
+03 Minimap/MinimapCoords.lua
+03 Minimap/Square.lua
+03 Minimap/Zoom.lua
+04 Tooltip/Core.lua
+04 Tooltip/Color.lua
+04 Tooltip/Icon.lua
+04 Tooltip/ID.lua
+04 Tooltip/StatusBar.lua
+04 Tooltip/Vehicle.lua

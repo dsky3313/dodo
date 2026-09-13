@@ -1,0 +1,103 @@
+﻿-- ==============================
+-- Inspired
+-- ==============================
+-- Camera Tilt Controls (https://wago.io/3q80hZrTK)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
+---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
+local dodo = _G.dodo
+dodoDB = dodoDB or {}
+
+
+-- ==============================
+-- 캐싱
+-- ==============================
+local CreateFrame = CreateFrame
+local GetCVar = GetCVar
+local SetCVar = SetCVar
+local tostring = tostring
+local UIParent = UIParent
+
+local CAM_DYNAMIC_PITCH = "test_cameraDynamicPitch"
+local CAM_FOV_PAD = "test_cameraDynamicPitchBaseFovPad"
+local CAM_FOV_PAD_DOWN = "test_cameraDynamicPitchBaseFovPadDownScale"
+local CAM_FOV_PAD_FLYING = "test_cameraDynamicPitchBaseFovPadFlying"
+local CAM_KEEP_CENTERED = "CameraKeepCharacterCentered"
+local CAM_MAX_ZOOM = "cameraDistanceMaxZoomFactor"
+
+-- ==============================
+-- 동작
+-- ==============================
+local function safe_set_cvar(cvar, value)
+    local cur = GetCVar(cvar)
+    local newVal = tostring(value)
+    if cur ~= newVal then
+        SetCVar(cvar, newVal)
+    end
+end
+
+local function camera_tilt()
+    local is_enabled = (dodoDB and dodoDB.useCameraTilt ~= false)
+    if is_enabled then
+        local angle = dodoDB.cameraAngle or (dodo.QOL_DEFAULTS and dodo.QOL_DEFAULTS.cameraAngle) or 0.65
+
+        if GetCVar(CAM_DYNAMIC_PITCH) ~= "1" then
+            safe_set_cvar(CAM_DYNAMIC_PITCH, 1)
+            safe_set_cvar(CAM_KEEP_CENTERED, 0)
+        end
+
+        if GetCVar(CAM_DYNAMIC_PITCH) == "1" then
+            safe_set_cvar(CAM_FOV_PAD, angle)
+            safe_set_cvar(CAM_FOV_PAD_DOWN, angle)
+            safe_set_cvar(CAM_FOV_PAD_FLYING, angle)
+        end
+    else
+        -- 비활성화 시 기본값 복원 (자원 소모 0화 및 시스템 복구)
+        safe_set_cvar(CAM_DYNAMIC_PITCH, 0)
+        safe_set_cvar(CAM_KEEP_CENTERED, 1)
+        safe_set_cvar(CAM_FOV_PAD, 0)
+        safe_set_cvar(CAM_FOV_PAD_DOWN, 0)
+        safe_set_cvar(CAM_FOV_PAD_FLYING, 0)
+    end
+end
+
+local function camera_max_zoom()
+    local is_enabled = (dodoDB and dodoDB.useCameraMaxZoom ~= false)
+    local val = tostring((dodoDB and dodoDB.cameraMaxZoom) or (dodo.QOL_DEFAULTS and dodo.QOL_DEFAULTS.cameraMaxZoom) or 2.6)
+    safe_set_cvar(CAM_MAX_ZOOM, is_enabled and val or "1.9")
+end
+
+-- ==============================
+-- 이벤트 핸들러
+-- ==============================
+local function on_event(self, event, arg1)
+    if event == "ADDON_LOADED" and arg1 == "dodoQOL" then
+        dodoDB = dodoDB or {}
+        self:RegisterEvent("PLAYER_LOGIN")
+        self:UnregisterEvent("ADDON_LOADED")
+    elseif event == "PLAYER_LOGIN" then
+        UIParent:UnregisterEvent("EXPERIMENTAL_CVAR_CONFIRMATION_NEEDED")
+        camera_tilt()
+        camera_max_zoom()
+        self:RegisterEvent("FIRST_FRAME_RENDERED")
+        self:UnregisterEvent("PLAYER_LOGIN")
+    elseif event == "FIRST_FRAME_RENDERED" then
+        StaticPopup_Hide("EXPERIMENTAL_CVAR_WARNING")
+        self:UnregisterAllEvents()
+        self:SetScript("OnEvent", nil)
+    end
+end
+
+-- ==============================
+-- 초기화 및 등록
+-- ==============================
+local init_camera = CreateFrame("Frame")
+init_camera:RegisterEvent("ADDON_LOADED")
+init_camera:SetScript("OnEvent", on_event)
+
+-- 외부 노출 (호환성 유지)
+dodo.CameraTilt = camera_tilt
+dodo.CameraMaxZoom = camera_max_zoom
+

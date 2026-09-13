@@ -1,0 +1,527 @@
+﻿-- ==============================
+-- 설정 및 테이블
+-- ==============================
+---@diagnostic disable: lowercase-global, undefined-field, undefined-global
+local dodo = _G.dodo
+dodoDB = dodoDB or {}
+
+local math_floor = math.floor
+
+-- ==============================
+-- 설정 기본값
+-- ==============================
+dodo.AB_DEFAULTS = {
+    enableActionbar = true,
+    padding = {
+        ["MainActionBar"]       = true,
+        ["MultiBarBottomLeft"]  = true,
+        ["MultiBarBottomRight"] = true,
+        ["MultiBarRight"]       = true,
+        ["MultiBarLeft"]        = true,
+        ["MultiBar5"]           = true,
+        ["MultiBar6"]           = true,
+        ["MultiBar7"]           = true,
+        ["StanceBar"]           = true,
+        ["PetActionBar"]        = true,
+    },
+    paddingVal = {
+        ["MainActionBar"]       = 0,
+        ["MultiBarBottomLeft"]  = 0,
+        ["MultiBarBottomRight"] = 0,
+        ["MultiBarRight"]       = 0,
+        ["MultiBarLeft"]        = 0,
+        ["MultiBar5"]           = 0,
+        ["MultiBar6"]           = 0,
+        ["MultiBar7"]           = 0,
+        ["StanceBar"]           = 0,
+        ["PetActionBar"]        = 0,
+    },
+    color = {
+        ["MainActionBar"]       = true,
+        ["MultiBarBottomLeft"]  = true,
+        ["MultiBarBottomRight"] = true,
+        ["MultiBarRight"]       = false,
+        ["MultiBarLeft"]        = false,
+        ["MultiBar5"]           = false,
+        ["MultiBar6"]           = false,
+        ["MultiBar7"]           = true,
+        ["StanceBar"]           = false,
+        ["PetActionBar"]        = false,
+    },
+    cdm = {
+        ["MainActionBar"]       = true,
+        ["MultiBarBottomLeft"]  = true,
+        ["MultiBarBottomRight"] = false,
+        ["MultiBarRight"]       = false,
+        ["MultiBarLeft"]        = false,
+        ["MultiBar5"]           = false,
+        ["MultiBar6"]           = false,
+        ["MultiBar7"]           = false,
+        ["StanceBar"]           = false,
+        ["PetActionBar"]        = false,
+    },
+    interrupt = {
+        ["MainActionBar"]       = true,
+        ["MultiBarBottomLeft"]  = false,
+        ["MultiBarBottomRight"] = false,
+        ["MultiBarRight"]       = false,
+        ["MultiBarLeft"]        = false,
+        ["MultiBar5"]           = false,
+        ["MultiBar6"]           = false,
+        ["MultiBar7"]           = false,
+        ["StanceBar"]           = false,
+        ["PetActionBar"]        = false,
+    },
+    potion = {
+        ["MainActionBar"]       = false,
+        ["MultiBarBottomLeft"]  = false,
+        ["MultiBarBottomRight"] = false,
+        ["MultiBarRight"]       = false,
+        ["MultiBarLeft"]        = false,
+        ["MultiBar5"]           = false,
+        ["MultiBar6"]           = false,
+        ["MultiBar7"]           = true,
+        ["StanceBar"]           = false,
+        ["PetActionBar"]        = false,
+    },
+    hotkey = {
+        ["MainActionBar"]       = true,
+        ["MultiBarBottomLeft"]  = true,
+        ["MultiBarBottomRight"] = true,
+        ["MultiBarRight"]       = false,
+        ["MultiBarLeft"]        = false,
+        ["MultiBar5"]           = false,
+        ["MultiBar6"]           = false,
+        ["MultiBar7"]           = true,
+        ["StanceBar"]           = true,
+        ["PetActionBar"]        = true,
+    },
+    macro = {
+        ["MainActionBar"]       = true,
+        ["MultiBarBottomLeft"]  = true,
+        ["MultiBarBottomRight"] = true,
+        ["MultiBarRight"]       = false,
+        ["MultiBarLeft"]        = false,
+        ["MultiBar5"]           = false,
+        ["MultiBar6"]           = false,
+        ["MultiBar7"]           = true,
+    },
+}
+
+-- ==============================
+-- 설정 키
+-- ==============================
+dodo.AB_DB_KEYS = {
+    padding = {
+        ["MainActionBar"]       = "useActionbarPaddingBar1",
+        ["MultiBarBottomLeft"]  = "useActionbarPaddingBar2",
+        ["MultiBarBottomRight"] = "useActionbarPaddingBar3",
+        ["MultiBarRight"]       = "useActionbarPaddingBar4",
+        ["MultiBarLeft"]        = "useActionbarPaddingBar5",
+        ["MultiBar5"]           = "useActionbarPaddingBar6",
+        ["MultiBar6"]           = "useActionbarPaddingBar7",
+        ["MultiBar7"]           = "useActionbarPaddingBar8",
+        ["StanceBar"]           = "useActionbarPaddingBarStance",
+        ["PetActionBar"]        = "useActionbarPaddingBarPet",
+    },
+    paddingVal = {
+        ["MainActionBar"]       = "actionbarPaddingBar1",
+        ["MultiBarBottomLeft"]  = "actionbarPaddingBar2",
+        ["MultiBarBottomRight"] = "actionbarPaddingBar3",
+        ["MultiBarRight"]       = "actionbarPaddingBar4",
+        ["MultiBarLeft"]        = "actionbarPaddingBar5",
+        ["MultiBar5"]           = "actionbarPaddingBar6",
+        ["MultiBar6"]           = "actionbarPaddingBar7",
+        ["MultiBar7"]           = "actionbarPaddingBar8",
+        ["StanceBar"]           = "actionbarPaddingBarStance",
+        ["PetActionBar"]        = "actionbarPaddingBarPet",
+    },
+    color = {
+        ["MainActionBar"]       = "useActionbarColorBar1",
+        ["MultiBarBottomLeft"]  = "useActionbarColorBar2",
+        ["MultiBarBottomRight"] = "useActionbarColorBar3",
+        ["MultiBarRight"]       = "useActionbarColorBar4",
+        ["MultiBarLeft"]        = "useActionbarColorBar5",
+        ["MultiBar5"]           = "useActionbarColorBar6",
+        ["MultiBar6"]           = "useActionbarColorBar7",
+        ["MultiBar7"]           = "useActionbarColorBar8",
+    },
+    cdm = {
+        ["MainActionBar"]       = "useActionbarCDMBar1",
+        ["MultiBarBottomLeft"]  = "useActionbarCDMBar2",
+        ["MultiBarBottomRight"] = "useActionbarCDMBar3",
+        ["MultiBarRight"]       = "useActionbarCDMBar4",
+        ["MultiBarLeft"]        = "useActionbarCDMBar5",
+        ["MultiBar5"]           = "useActionbarCDMBar6",
+        ["MultiBar6"]           = "useActionbarCDMBar7",
+        ["MultiBar7"]           = "useActionbarCDMBar8",
+    },
+    interrupt = {
+        ["MainActionBar"]       = "useActionbarInterruptBar1",
+        ["MultiBarBottomLeft"]  = "useActionbarInterruptBar2",
+        ["MultiBarBottomRight"] = "useActionbarInterruptBar3",
+        ["MultiBarRight"]       = "useActionbarInterruptBar4",
+        ["MultiBarLeft"]        = "useActionbarInterruptBar5",
+        ["MultiBar5"]           = "useActionbarInterruptBar6",
+        ["MultiBar6"]           = "useActionbarInterruptBar7",
+        ["MultiBar7"]           = "useActionbarInterruptBar8",
+    },
+    potion = {
+        ["MainActionBar"]       = "useActionbarPotionProcBar1",
+        ["MultiBarBottomLeft"]  = "useActionbarPotionProcBar2",
+        ["MultiBarBottomRight"] = "useActionbarPotionProcBar3",
+        ["MultiBarRight"]       = "useActionbarPotionProcBar4",
+        ["MultiBarLeft"]        = "useActionbarPotionProcBar5",
+        ["MultiBar5"]           = "useActionbarPotionProcBar6",
+        ["MultiBar6"]           = "useActionbarPotionProcBar7",
+        ["MultiBar7"]           = "useActionbarPotionProcBar8",
+    },
+    hotkey = {
+        ["MainActionBar"]       = "useActionbarHideHotkeysBar1",
+        ["MultiBarBottomLeft"]  = "useActionbarHideHotkeysBar2",
+        ["MultiBarBottomRight"] = "useActionbarHideHotkeysBar3",
+        ["MultiBarRight"]       = "useActionbarHideHotkeysBar4",
+        ["MultiBarLeft"]        = "useActionbarHideHotkeysBar5",
+        ["MultiBar5"]           = "useActionbarHideHotkeysBar6",
+        ["MultiBar6"]           = "useActionbarHideHotkeysBar7",
+        ["MultiBar7"]           = "useActionbarHideHotkeysBar8",
+    },
+    macro = {
+        ["MainActionBar"]       = "useActionbarHideMacroNamesBar1",
+        ["MultiBarBottomLeft"]  = "useActionbarHideMacroNamesBar2",
+        ["MultiBarBottomRight"] = "useActionbarHideMacroNamesBar3",
+        ["MultiBarRight"]       = "useActionbarHideMacroNamesBar4",
+        ["MultiBarLeft"]        = "useActionbarHideMacroNamesBar5",
+        ["MultiBar5"]           = "useActionbarHideMacroNamesBar6",
+        ["MultiBar6"]           = "useActionbarHideMacroNamesBar7",
+        ["MultiBar7"]           = "useActionbarHideMacroNamesBar8",
+    },
+}
+
+-- ==============================
+-- 바 목록
+-- ==============================
+local BAR_ORDER = {
+    { name = "MainActionBar",       label = "행동 단축바 1 (메인)", count = 12 },
+    { name = "MultiBarBottomLeft",  label = "행동 단축바 2",        count = 12 },
+    { name = "MultiBarBottomRight", label = "행동 단축바 3",        count = 12 },
+    { name = "MultiBarRight",       label = "행동 단축바 4",        count = 12 },
+    { name = "MultiBarLeft",        label = "행동 단축바 5",        count = 12 },
+    { name = "MultiBar5",           label = "행동 단축바 6",        count = 12 },
+    { name = "MultiBar6",           label = "행동 단축바 7",        count = 12 },
+    { name = "MultiBar7",           label = "행동 단축바 8",        count = 12 },
+    { name = "StanceBar",           label = "태세 막대",           count = 10 },
+    { name = "PetActionBar",        label = "소환수 단축바",       count = 10 },
+}
+dodo.AB_BAR_ORDER = BAR_ORDER
+
+-- ==============================
+-- /dd 설정 등록
+-- ==============================
+dodo.RegisterOption("행동 단축바", function(category)
+    local D = dodo.AB_DEFAULTS
+    local K = dodo.AB_DB_KEYS
+    local COLOR_DB_KEYS    = K.color
+    local COLOR_DEFAULTS   = D.color
+    local HOTKEY_DB_KEYS   = K.hotkey
+    local HOTKEY_DEFAULTS  = D.hotkey
+    local MACRO_DB_KEYS    = K.macro
+    local MACRO_DEFAULTS   = D.macro
+    local PADDING_DB_KEYS  = K.padding
+    local PADDING_VAL_KEYS = K.paddingVal
+    local PADDING_DEFAULTS = D.padding
+    local PADDING_VAL_DEF  = D.paddingVal
+    local CDM_DB_KEYS      = K.cdm
+    local CDM_DEFAULTS     = D.cdm
+    local INTR_DB_KEYS     = K.interrupt
+    local INTR_DEFAULTS    = D.interrupt
+    local POT_DB_KEYS      = K.potion
+    local POT_DEFAULTS     = D.potion
+
+    -- 마스터 토글
+    local _, master_setting = dodo.UI:SettingsCheckbox(category, "enableActionbar", "행동 단축바 모듈 활성화",
+        "행동 단축바와 관련된 추가적인 기능을 활성화합니다.",
+        D.enableActionbar, function(val)
+            if dodoDB then dodoDB.enableActionbar = val end
+            if dodo.ActionbarUpdateVisual then dodo.ActionbarUpdateVisual() end
+            dodo.ActionbarRefreshPreview()
+        end)
+
+    local _sub = {}
+    local function T(v) if v then _sub[#_sub+1] = v end return v end
+
+    local per_bar_refresh = nil
+
+    -- 미리보기 프레임 (커스텀 initializer: InitFrame 시점에 올바른 폭/높이)
+    T(dodo.UI:SettingsTabbedPreview(category, {
+        "바1(메인)", "바2", "바3", "바4", "바5", "바6", "바7", "바8", "태세", "소환수",
+    }, dodoActionbarPreviewMixin))
+
+    -- 바 설정 섹션 (선택된 바 기준 프록시)
+    T(dodo.UI:SettingsSectionHeader(category, "바 설정"))
+
+    local function get_selected_bar()
+        return (dodoDB and dodoDB.actionbarOptionSelectedBar) or "MainActionBar"
+    end
+
+    if PADDING_DB_KEYS then
+        -- 선택된 바의 아이콘 간격 활성화 여부 (체크박스) — 탭 전환 시 해당 바 DB키로 읽기/쓰기
+        local pad_en_setting = Settings.RegisterProxySetting(
+            category, "dodo_ab_pad_en_sel", Settings.VarType.Boolean, "아이콘 간격",
+            false,
+            function()
+                local bar = get_selected_bar()
+                local key = PADDING_DB_KEYS[bar]
+                if not key or not dodoDB then return PADDING_DEFAULTS and PADDING_DEFAULTS[bar] or false end
+                local v = dodoDB[key]
+                return v == nil and (PADDING_DEFAULTS and PADDING_DEFAULTS[bar] or false) or v
+            end,
+            function(val)
+                local bar = get_selected_bar()
+                local key = PADDING_DB_KEYS[bar]
+                if key and dodoDB then dodoDB[key] = val end
+                if dodo.ActionbarInvalidatePaddingCache then dodo.ActionbarInvalidatePaddingCache() end
+                local frame = _G[bar]
+                if frame and dodo.ActionbarUpdatePadding then dodo.ActionbarUpdatePadding(frame) end
+                dodo.ActionbarRefreshPreview()
+            end
+        )
+
+        -- 선택된 바의 아이콘 간격 수치 (슬라이더) — 탭 전환 시 해당 바 DB키로 읽기/쓰기
+        local pad_val_setting = Settings.RegisterProxySetting(
+            category, "dodo_ab_pad_val_sel", Settings.VarType.Number, "아이콘 간격 값",
+            0,
+            function()
+                local bar = get_selected_bar()
+                local key = PADDING_VAL_KEYS and PADDING_VAL_KEYS[bar]
+                if not key or not dodoDB then return PADDING_VAL_DEF and PADDING_VAL_DEF[bar] or 0 end
+                local v = dodoDB[key]
+                return v == nil and (PADDING_VAL_DEF and PADDING_VAL_DEF[bar] or 0) or v
+            end,
+            function(val)
+                local bar = get_selected_bar()
+                local key = PADDING_VAL_KEYS and PADDING_VAL_KEYS[bar]
+                if key and dodoDB then dodoDB[key] = val end
+                local frame = _G[bar]
+                if frame and dodo.ActionbarUpdatePadding then dodo.ActionbarUpdatePadding(frame) end
+                dodo.ActionbarRefreshPreview()
+            end
+        )
+
+        -- 체크박스+슬라이더 결합 요소 — 위 두 ProxySetting을 하나의 행으로 묶어 표시
+        local sliderOptions = Settings.CreateSliderOptions(-5, 10, 1)
+        sliderOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right,
+            function(v) return tostring(math_floor((v or 0) + 0.5)) end)
+
+        local pad_data = {
+            name          = "아이콘 간격",
+            tooltip       = "아이콘 사이 간격을 조정합니다.",
+            cbLabel       = "아이콘 간격",
+            cbTooltip     = "아이콘 사이 간격을 조정합니다.",
+            sliderLabel   = "아이콘 간격",
+            sliderTooltip = "아이콘 사이 간격을 조정합니다.",
+            cbSetting     = pad_en_setting,
+            sliderSetting = pad_val_setting,
+            sliderOptions = sliderOptions,
+        }
+        local layout = SettingsPanel:GetLayout(category)
+        local pad_init = Settings.CreateSettingInitializer("dodoCheckboxSliderTemplate", pad_data)
+        if layout then layout:AddInitializer(pad_init) end
+        T(pad_init)
+
+        local function read_src_padding()
+            local src = get_selected_bar()
+            local en_key  = PADDING_DB_KEYS[src]
+            local val_key = PADDING_VAL_KEYS and PADDING_VAL_KEYS[src]
+            local en_val  = (dodoDB and en_key and dodoDB[en_key])
+            if en_val == nil then en_val = PADDING_DEFAULTS and PADDING_DEFAULTS[src] or false end
+            local pad_val = (dodoDB and val_key and dodoDB[val_key])
+            if pad_val == nil then pad_val = PADDING_VAL_DEF and PADDING_VAL_DEF[src] or 0 end
+            return en_val, pad_val
+        end
+
+        local function apply_padding_to(bar_name, en_val, pad_val)
+            local en_key  = PADDING_DB_KEYS[bar_name]
+            local val_key = PADDING_VAL_KEYS and PADDING_VAL_KEYS[bar_name]
+            if en_key  and dodoDB then dodoDB[en_key]  = en_val  end
+            if val_key and dodoDB then dodoDB[val_key] = pad_val end
+            if dodo.ActionbarUpdatePadding then dodo.ActionbarUpdatePadding(_G[bar_name]) end
+        end
+
+        -- 모두 적용 버튼
+        local all_apply_init
+        if layout and CreateSettingsButtonInitializer then
+            all_apply_init = CreateSettingsButtonInitializer(
+                "", "모두 적용",
+                function()
+                    local en_val, pad_val = read_src_padding()
+                    for _, info in ipairs(BAR_ORDER) do
+                        if PADDING_DB_KEYS[info.name] then
+                            apply_padding_to(info.name, en_val, pad_val)
+                        end
+                    end
+                    dodo.ActionbarRefreshPreview()
+                end,
+                "현재 바의 아이콘 간격을 모든 행동 단축바에 적용합니다.", false
+            )
+            layout:AddInitializer(all_apply_init)
+            T(all_apply_init)
+            if all_apply_init and pad_init and all_apply_init.SetParentInitializer then
+                all_apply_init:SetParentInitializer(pad_init, function()
+                    return pad_en_setting:GetValue() == true
+                end)
+            end
+        end
+
+        per_bar_refresh = function()
+            pad_en_setting:SetValue(pad_en_setting:GetValue())
+            pad_val_setting:SetValue(pad_val_setting:GetValue())
+        end
+        dodo.ActionbarSetPerBarRefreshFn(per_bar_refresh)
+    end
+
+    -- 아이콘 섹션
+    T(dodo.UI:SettingsSectionHeader(category, "아이콘"))
+
+    -- 아이콘 색상 멀티드롭다운 — 바별로 빈슬롯/사거리/마나 부족 색상 표시 켜기/끄기
+    if COLOR_DB_KEYS then
+        local color_items = {}
+        for _, info in ipairs(BAR_ORDER) do
+            if COLOR_DB_KEYS[info.name] then
+                color_items[#color_items + 1] = { text = info.label, key = COLOR_DB_KEYS[info.name], default = COLOR_DEFAULTS and COLOR_DEFAULTS[info.name] }
+            end
+        end
+        if #color_items > 0 then
+            local _c = dodo.Colors and dodo.Colors.ActionbarIconColor
+            local _red  = _c and ("|c" .. _c.Range.hex .. "■|r") or "■"
+            local _blue = _c and ("|c" .. _c.Mana.hex  .. "■|r") or "■"
+            T(dodo.UI:SettingsMultiDropDown(category, "아이콘 색상", color_items, function(key, selected)
+                if dodoDB then dodoDB[key] = selected end
+                if dodo.ActionbarInvalidateColorCache then dodo.ActionbarInvalidateColorCache() end
+                if dodo.ActionbarApplyColor then dodo.ActionbarApplyColor() end
+                dodo.ActionbarRefreshPreview()
+            end, "조건에 따라 아이콘 색상을 변경합니다. \n \n쿨다운, 사용불가 : ■ 회색 \n사거리 부족 : " .. _red .. " 빨간색 \n자원 부족 : " .. _blue .. " 파란색"))
+        end
+    end
+
+    -- 강화 효과(CDM) 멀티드롭다운 + 추적설정 버튼 — 바별 쿨다운 오버레이 표시, 버튼은 CooldownViewer 설정 창 열기
+    if CDM_DB_KEYS then
+        local cdm_items = {}
+        for _, info in ipairs(BAR_ORDER) do
+            if CDM_DB_KEYS[info.name] then
+                cdm_items[#cdm_items + 1] = { text = info.label, key = CDM_DB_KEYS[info.name], default = CDM_DEFAULTS and CDM_DEFAULTS[info.name] }
+            end
+        end
+        if #cdm_items > 0 then
+            local cdm_init = dodo.UI:SettingsMultiDropDown(category, "강화 효과 표시", cdm_items, function(key, selected)
+                if dodoDB then dodoDB[key] = selected end
+                if dodo.ActionbarInvalidateCDMCache then dodo.ActionbarInvalidateCDMCache() end
+                if dodo.BuildSpecialButtonCache then dodo.BuildSpecialButtonCache() end
+                if dodo.ActionbarApplyCDM then dodo.ActionbarApplyCDM() end
+            end, "아이콘에 강화효과의 남은 시간과 중첩 수를 표시합니다.")
+            T(cdm_init)
+
+            -- PanelInitializer는 GetSetting()이 nil → SetParentInitializer 에러
+            -- 더미 ProxySetting 주입으로 해결
+            local _cdm_sid = "dodo_ab_cdm_dd"
+            local _cdm_setting = Settings.GetSetting(_cdm_sid)
+                or Settings.RegisterProxySetting(category, _cdm_sid, Settings.VarType.Boolean, "",
+                    true, function() return true end, function() end)
+            cdm_init.GetSetting = function() return _cdm_setting end
+
+            local layout = SettingsPanel:GetLayout(category)
+            if layout and CreateSettingsButtonInitializer then
+                local cdm_btn = CreateSettingsButtonInitializer(
+                    "", "강화효과 추적설정",
+                    function()
+                        local s = _G.CooldownViewerSettings
+                        if not s then return end
+                        SettingsPanel:Close(true)
+                        ShowUIPanel(s)
+                        s:SetDisplayMode("dodoPageA")
+                    end,
+                    "강화효과 추적 설정창을 엽니다.", false
+                )
+                layout:AddInitializer(cdm_btn)
+                T(cdm_btn)
+                if cdm_btn.SetParentInitializer then
+                    cdm_btn:SetParentInitializer(cdm_init, function() return true end)
+                end
+            end
+        end
+    end
+
+    -- 차단 알림 멀티드롭다운 — 바별로 차단 스킬 아이콘에 알림 효과 표시 켜기/끄기
+    if INTR_DB_KEYS then
+        local intr_items = {}
+        for _, info in ipairs(BAR_ORDER) do
+            if INTR_DB_KEYS[info.name] then
+                intr_items[#intr_items + 1] = { text = info.label, key = INTR_DB_KEYS[info.name], default = INTR_DEFAULTS and INTR_DEFAULTS[info.name] }
+            end
+        end
+        if #intr_items > 0 then
+            T(dodo.UI:SettingsMultiDropDown(category, "차단 알림", intr_items, function(key, selected)
+                if dodoDB then dodoDB[key] = selected end
+                if dodo.ActionbarInvalidateInterruptCache then dodo.ActionbarInvalidateInterruptCache() end
+                if dodo.ActionbarApplyInterrupt then dodo.ActionbarApplyInterrupt() end
+            end, "적이 차단 가능한 주문을 시전할 때, \n차단 스킬 아이콘에 알림 효과를 표시합니다."))
+        end
+    end
+
+    -- 물약 사용가능 알림 멀티드롭다운 — 바별로 물약 아이콘에 사용 가능 알림 효과 표시 켜기/끄기
+    if POT_DB_KEYS then
+        local pot_items = {}
+        for _, info in ipairs(BAR_ORDER) do
+            if POT_DB_KEYS[info.name] then
+                pot_items[#pot_items + 1] = { text = info.label, key = POT_DB_KEYS[info.name], default = POT_DEFAULTS and POT_DEFAULTS[info.name] }
+            end
+        end
+        if #pot_items > 0 then
+            T(dodo.UI:SettingsMultiDropDown(category, "물약 사용가능 알림", pot_items, function(key, selected)
+                if dodoDB then dodoDB[key] = selected end
+                if dodo.ActionbarInvalidatePotionCache then dodo.ActionbarInvalidatePotionCache() end
+                if dodo.ActionbarApplyPotionProc then dodo.ActionbarApplyPotionProc() end
+            end, "물약을 사용할 수 있는 상태일 때, \n물약 아이콘에 알림 효과를 표시합니다."))
+        end
+    end
+
+    -- 문자 섹션
+    T(dodo.UI:SettingsSectionHeader(category, "문자"))
+
+    -- 단축키 텍스트 숨기기 멀티드롭다운 — 바별로 아이콘 위 단축키 텍스트 표시 켜기/끄기
+    if HOTKEY_DB_KEYS then
+        local hk_items = {}
+        for _, info in ipairs(BAR_ORDER) do
+            if HOTKEY_DB_KEYS[info.name] then
+                hk_items[#hk_items + 1] = { text = info.label, key = HOTKEY_DB_KEYS[info.name], default = HOTKEY_DEFAULTS and HOTKEY_DEFAULTS[info.name] }
+            end
+        end
+        if #hk_items > 0 then
+            T(dodo.UI:SettingsMultiDropDown(category, "단축키 숨기기", hk_items, function(key, selected)
+                if dodoDB then dodoDB[key] = selected end
+                if dodo.ActionbarInvalidateHotkeyCache then dodo.ActionbarInvalidateHotkeyCache() end
+                if dodo.ActionbarApplyText then dodo.ActionbarApplyText() end
+            end, "아이콘의 단축키 텍스트를 숨깁니다."))
+        end
+    end
+
+    -- 매크로명 텍스트 숨기기 멀티드롭다운 — 바별로 아이콘 위 매크로 이름 텍스트 표시 켜기/끄기
+    if MACRO_DB_KEYS then
+        local macro_items = {}
+        for _, info in ipairs(BAR_ORDER) do
+            if MACRO_DB_KEYS[info.name] then
+                macro_items[#macro_items + 1] = { text = info.label, key = MACRO_DB_KEYS[info.name], default = MACRO_DEFAULTS and MACRO_DEFAULTS[info.name] }
+            end
+        end
+        if #macro_items > 0 then
+            T(dodo.UI:SettingsMultiDropDown(category, "매크로명 숨기기", macro_items, function(key, selected)
+                if dodoDB then dodoDB[key] = selected end
+                if dodo.ActionbarInvalidateMacroCache then dodo.ActionbarInvalidateMacroCache() end
+                if dodo.ActionbarApplyText then dodo.ActionbarApplyText() end
+            end, "아이콘의 매크로 이름 텍스트를 숨깁니다."))
+        end
+    end
+
+    local function _shown() return master_setting:GetValue() end
+    for _, v in ipairs(_sub) do if v.AddShownPredicate then v:AddShownPredicate(_shown) end end
+end, 1000)

@@ -1,0 +1,12 @@
+## Interface: 120100
+## Version: 12.1.0
+## Title: dodoProfiles
+## Author: dodo
+## Dependencies: dodo
+## Group: dodo
+## IconTexture: Interface\AddOns\dodo\Media\Texture\Logo
+
+01 Profile Editmode.lua
+02 Profile Plater.lua
+03 Profile CVar.lua
+99 Options.lua

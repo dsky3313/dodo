@@ -1,0 +1,115 @@
+﻿-- ==============================
+-- Inspired
+-- ==============================
+-- ActionBarsEnhanced (https://www.curseforge.com/wow/addons/actionbarsenhanced)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
+---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
+local dodo = _G.dodo
+dodoDB = dodoDB or {}
+
+local PADDING_DB_KEYS      = dodo.AB_DB_KEYS.padding
+local PADDING_VAL_KEYS     = dodo.AB_DB_KEYS.paddingVal
+local PADDING_DEFAULTS     = dodo.AB_DEFAULTS.padding
+local PADDING_VAL_DEFAULTS = dodo.AB_DEFAULTS.paddingVal
+
+-- ==============================
+-- 캐싱
+-- ==============================
+local AnchorUtil = AnchorUtil
+local GridLayoutUtil = GridLayoutUtil
+local InCombatLockdown = InCombatLockdown
+local ipairs = ipairs
+local math_ceil = math.ceil
+local anchor_cache = {}
+local layout_cache = {}
+
+-- ==============================
+-- 기능 구현
+-- ==============================
+local bar_padding_cache = {}
+local function is_bar_padding_enabled(barName)
+    if not barName then return false end
+    local cached = bar_padding_cache[barName]
+    if cached ~= nil then return cached end
+    local dbKey = PADDING_DB_KEYS[barName]
+    local result
+    if not dbKey then
+        result = PADDING_DEFAULTS[barName] or false
+    elseif not dodoDB then
+        result = PADDING_DEFAULTS[barName] or false
+    else
+        local val = dodoDB[dbKey]
+        result = (val == nil) and (PADDING_DEFAULTS[barName] or false) or val
+    end
+    bar_padding_cache[barName] = result
+    return result
+end
+dodo.ActionbarInvalidatePaddingCache = function() bar_padding_cache = {} end
+
+local function get_cached_anchor(anchor_point, frame)
+    local key = anchor_point .. "_" .. frame:GetName()
+    if not anchor_cache[key] then
+        anchor_cache[key] = AnchorUtil.CreateAnchor(anchor_point, frame, anchor_point)
+    end
+    return anchor_cache[key]
+end
+
+local function get_cached_layout(is_horizontal, stride, pad, x_mult, y_mult)
+    local key = (is_horizontal and "H" or "V") .. "_" .. stride .. "_" .. pad .. "_" .. x_mult .. "_" .. y_mult
+    if not layout_cache[key] then
+        if is_horizontal then
+            layout_cache[key] = GridLayoutUtil.CreateStandardGridLayout(stride, pad, pad, x_mult, y_mult)
+        else
+            layout_cache[key] = GridLayoutUtil.CreateVerticalGridLayout(stride, pad, pad, x_mult, y_mult)
+        end
+    end
+    return layout_cache[key]
+end
+
+local function update_padding(frame)
+    if InCombatLockdown() or not frame or not frame.shownButtonContainers then return end
+
+    local frame_name = frame:GetName()
+    if not frame_name or not PADDING_DB_KEYS[frame_name] then return end
+
+    local valKey = PADDING_VAL_KEYS[frame_name]
+    local is_enabled = (dodoDB and dodoDB.enableActionbar ~= false and is_bar_padding_enabled(frame_name))
+    local pad
+    if is_enabled then
+        pad = (dodoDB and valKey and dodoDB[valKey]) or PADDING_VAL_DEFAULTS[frame_name] or 0
+    else
+        pad = frame.buttonPadding or 2
+    end
+
+    local num_rows = frame.numRows or 1
+    local stride   = math_ceil(#frame.shownButtonContainers / num_rows)
+    local x_mult   = frame.addButtonsToRight and 1 or -1
+    local y_mult   = frame.addButtonsToTop and 1 or -1
+    local anchor   = frame.addButtonsToTop
+        and (frame.addButtonsToRight and "BOTTOMLEFT" or "BOTTOMRIGHT")
+        or  (frame.addButtonsToRight and "TOPLEFT"    or "TOPRIGHT")
+
+    local layout = get_cached_layout(frame.isHorizontal, stride, pad, x_mult, y_mult)
+    local anchor_obj = get_cached_anchor(anchor, frame)
+
+    GridLayoutUtil.ApplyGridLayout(frame.shownButtonContainers, anchor_obj, layout)
+    if frame.Layout then frame:Layout() end
+end
+dodo.ActionbarUpdatePadding = update_padding
+
+local PADDING_BARS = {
+    MainActionBar, MultiBarBottomLeft, MultiBarBottomRight,
+    MultiBarRight, MultiBarLeft, MultiBar5, MultiBar6, MultiBar7,
+    StanceBar, PetActionBar
+}
+
+dodo.ActionbarApplyPadding = function()
+    for _, bar in ipairs(PADDING_BARS) do
+        if bar then update_padding(bar) end
+    end
+end
+
+dodo.AB_is_bar_padding_enabled = is_bar_padding_enabled

@@ -1,0 +1,41 @@
+﻿## Interface: 120100
+## Version: 12.1.0
+## Title: dodo
+## Author: dodo
+## DefaultState: enabled
+## Notes: dodo QoL
+## IconTexture: Interface\AddOns\dodo\Media\Texture\Logo
+## SavedVariables: dodoDB
+## Category: 11
+## X-Curse-Project-ID: 9999999
+
+# Since : 2020.11.23
+
+# Libs
+Libs/LibEditMode/LibStub/LibStub.lua
+Libs/LibEditMode/embed.xml
+Libs/oUF/oUF.xml
+Libs/LibKeystone/LibStub/LibStub.lua
+Libs/CallbackHandler-1.0/CallbackHandler-1.0.xml
+Libs/LibDataBroker-1.1/LibDataBroker-1.1.lua
+Libs/LibDBIcon-1.0/LibDBIcon-1.0.lua
+Libs/LibOpenRaid/lib.xml
+Libs/LibKeystone/LibKeystone/LibKeystone.lua
+
+# Data
+Data/Colors.lua
+Data/Icon.lua
+Data/UIUX.xml
+Data/UIUX.lua
+Data/Dungeons.lua
+Data/CDM.lua
+
+# Editmode
+
+
+# 98 Command
+Module/98 Command/Slash.lua
+
+
+# Configurations (Last Load)
+Option.lua

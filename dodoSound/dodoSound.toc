@@ -1,0 +1,9 @@
+## Interface: 120100
+## Version: 12.1.0
+## Title: dodoSound
+## Author: dodo
+## Dependencies: dodo
+## Group: dodo
+## IconTexture: Interface\AddOns\dodo\Media\Texture\Logo
+
+Audio.lua
