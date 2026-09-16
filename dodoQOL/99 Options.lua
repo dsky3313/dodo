@@ -12,6 +12,7 @@ dodo.QOL_DEFAULTS = {
     enableFrameOption     = true,  frameScale_th        = 0.8,
     useInsDifficultyFrame = true,
     enableColorPicker     = true,
+    enableMacro           = true,
     useDeleteNow          = true,
     useFriends            = true,
     enableMerchant        = true,
@@ -165,6 +166,11 @@ dodo.RegisterOption("편의기능", function(category)
         "친구 목록에 클래스 색상 및 추가 정보를 표시합니다.",
         D.useFriends, function()
             if dodo.RefreshFriends then dodo.RefreshFriends() end
+        end))
+    T(dodo.UI:SettingsCheckbox(category, "enableMacro", "매크로창 개선",
+        "매크로 창 크기를 확장하고 아이콘 검색창 및 원클릭 매크로 생성 패널을 추가합니다.",
+        D.enableMacro, function()
+            if dodo.ToggleMacroEnhancement then dodo.ToggleMacroEnhancement() end
         end))
     T(dodo.UI:SettingsCheckbox(category, "enableMerchant", "자동 판매 & 수리",
         "상인 창을 열 때, 잡템 판매 및 장비 자동 수리를 진행합니다.",

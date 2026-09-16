@@ -238,7 +238,7 @@ function dodo.UI:CreateButton(parent, label, text, on_click_func)
     return frame
 end
 
-function dodo.UI:CreatePortraitPanel(name, title_text, hide_close_button)
+function dodo.UI:CreatePortraitPanel(name, title_text, hide_close_button, bg)
     local frame = CreateFrame("Frame", name, UIParent, "PortraitFrameTemplate")
     if ButtonFrameTemplate_HidePortrait then
         ButtonFrameTemplate_HidePortrait(frame)
@@ -252,6 +252,13 @@ function dodo.UI:CreatePortraitPanel(name, title_text, hide_close_button)
     end
     if frame.Bg then
         frame.Bg:SetVertexColor(0.08, 0.08, 0.08, 0.8)
+    end
+    if bg then
+        local bgTex = frame:CreateTexture(nil, "BACKGROUND")
+        bgTex:SetAtlas("collections-background-tile")
+        bgTex:SetPoint("TOPLEFT", 6, -2)
+        bgTex:SetPoint("BOTTOMRIGHT", -2, 2)
+        frame.Background = bgTex
     end
     return frame
 end

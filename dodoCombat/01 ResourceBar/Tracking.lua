@@ -59,7 +59,7 @@ local bar2ClassConfig = {
         [3] = { { barMode = "stack",         spellID   = 51564,  maxStack   = 3, color = Colors.Spec.SHAMAN[3] } },
     },
     ["WARRIOR"]     = {
-        [1] = { { barMode = "duration",      spellID = 167105, color = Colors.Spec.WARRIOR[1] } },
+        [1] = { { barMode = "duration",      spellID = 167105, duration = 10, color = Colors.Spec.WARRIOR[1] } },
         [2] = {
             { barMode = "whirlwind",         spellID   = 12950,  maxStack   = 4,            requiredSpell = 12950, color = Colors.Spec.WARRIOR[2] },
             { barMode = "duration",          spellID   = 184361, excludedSpell = 12950, color = Colors.Spec.WARRIOR[2] },
@@ -172,6 +172,11 @@ function ResourceBar2UpdaterMixin:OnLoad()
     local hook = function(_, item) self:HookViewerItem(item) end
     hooksecurefunc(BuffBarCooldownViewer, 'OnAcquireItemFrame', hook)
     hooksecurefunc(BuffIconCooldownViewer, 'OnAcquireItemFrame', hook)
+    -- 로그인 시점에 이미 존재하는 CDM 아이템 처리 (OverlayCDM과 동일한 패턴)
+    C_Timer.After(0.5, function()
+        for _, item in ipairs(BuffBarCooldownViewer:GetItemFrames()) do self:HookViewerItem(item) end
+        for _, item in ipairs(BuffIconCooldownViewer:GetItemFrames()) do self:HookViewerItem(item) end
+    end)
 end
 
 function ResourceBar2UpdaterMixin:UpdateFromItem(item)
@@ -182,9 +187,11 @@ function ResourceBar2UpdaterMixin:UpdateFromItem(item)
     if not cdInfo or not cdInfo.spellID then return end
 
     local spellID = C_Spell.GetBaseSpell(cdInfo.spellID)
+    local spellName = C_Spell.GetSpellName(spellID)
 
     for i, config in ipairs(currentSpecBuffs) do
-        if spellID == config.spellID then
+        local configName = config.spellID and C_Spell.GetSpellName(config.spellID)
+        if spellID == config.spellID or (spellName and configName and spellName == configName) then
             local hasAuraData = item.isActive
 
             if self.bar2Frame.buffConfig and self.bar2Frame.currentPriority and i > self.bar2Frame.currentPriority then
@@ -327,7 +334,8 @@ local function update_tracking_spec(englishClass, spec)
             
             local activeConfig = nil
             for _, config in ipairs(currentSpecBuffs) do
-                if config.barMode == "soulfragments" or config.barMode == "ironfur" then
+                if config.barMode == "soulfragments" or config.barMode == "ironfur"
+                or config.barMode == "duration" or config.barMode == "whirlwind" then
                     activeConfig = config
                     break
                 end

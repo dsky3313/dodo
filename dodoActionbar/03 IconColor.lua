@@ -1,4 +1,4 @@
-﻿-- ==============================
+-- ==============================
 -- Inspired
 -- ==============================
 -- ActionBarsEnhanced (https://www.curseforge.com/wow/addons/actionbarsenhanced)
@@ -90,9 +90,7 @@ local function update_icon_color(btn)
 end
 dodo.ActionbarUpdateIconColor = update_icon_color
 
-local _dbg_us_count, _dbg_us_time = 0, 0
 local function update_state(btn)
-    local _t = GetTimePreciseSec()
     if not btn.action then return end
     local isEnabled = (dodoDB and dodoDB.enableActionbar ~= false)
     if not isEnabled then
@@ -101,14 +99,12 @@ local function update_state(btn)
             btn.icon:SetDesaturation(0)
         end
         if dodo.ActionbarUpdateButtonText then dodo.ActionbarUpdateButtonText(btn) end
-        _dbg_us_count = _dbg_us_count + 1; _dbg_us_time = _dbg_us_time + GetTimePreciseSec() - _t
         return
     end
     local barName = dodo.get_bar_name_by_button(btn)
     if not barName or not is_bar_color_enabled(barName) then
         update_icon_color(btn)
         if dodo.ActionbarUpdateButtonText then dodo.ActionbarUpdateButtonText(btn) end
-        _dbg_us_count = _dbg_us_count + 1; _dbg_us_time = _dbg_us_time + GetTimePreciseSec() - _t
         return
     end
     local isUsable, notEnoughMana = C_ActionBar.IsUsableAction(btn.action)
@@ -116,17 +112,8 @@ local function update_state(btn)
     btn.__isNotEnoughMana = notEnoughMana
     update_icon_color(btn)
     if dodo.ActionbarUpdateButtonText then dodo.ActionbarUpdateButtonText(btn) end
-    _dbg_us_count = _dbg_us_count + 1; _dbg_us_time = _dbg_us_time + GetTimePreciseSec() - _t
 end
 dodo.ActionbarUpdateState = update_state
-
-C_Timer.NewTicker(15, function()
-    if _dbg_us_count > 0 then
-        print(string.format("|cffff9900[dodoAB DBG]|r update_state: %d calls / 15s, total=%.2fms, avg=%.3fms/call",
-            _dbg_us_count, _dbg_us_time*1000, _dbg_us_time/_dbg_us_count*1000))
-        _dbg_us_count, _dbg_us_time = 0, 0
-    end
-end)
 
 local function update_range_state(btn)
     if not btn.action then return end
@@ -151,11 +138,8 @@ local function update_cooldown_state(btn)
     end
 
     local info = C_ActionBar.GetActionCooldown(btn.action)
-    if not info or info.isOnGCD then
-        btn.__cdVal = nil
-    else
-        btn.__cdVal = C_ActionBar.GetActionCooldownDuration(btn.action)
-    end
+    local dur = C_ActionBar.GetActionCooldownDuration(btn.action)
+    btn.__cdVal = (dur and info and not info.isOnGCD) and dur or nil
     update_icon_color(btn)
 end
 dodo.ActionbarUpdateCooldownState = update_cooldown_state

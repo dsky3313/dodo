@@ -1,4 +1,4 @@
-﻿-- ==============================
+-- ==============================
 -- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
@@ -137,21 +137,16 @@ f:SetScript("OnEvent", function(self, event, ...)
     if event == "ADDON_LOADED" and arg1 == "dodoActionbar" then
         dodoDB = dodoDB or {}
     elseif event == "PLAYER_LOGIN" then
-        local _t0 = GetTimePreciseSec()
         local groups = {
             "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton",
             "MultiBarRightButton", "MultiBarLeftButton", "MultiBar5Button", "MultiBar6Button", "MultiBar7Button",
             "StanceButton", "PetActionButton"
         }
-        local _btnCount = 0
-        local _t_hook, _t_state, _t_cd = 0, 0, 0
         for _, group in ipairs(groups) do
             for i = 1, 12 do
                 local btn = _G[group .. i]
                 if btn then
-                    _btnCount = _btnCount + 1
                     registeredButtons[btn] = true
-                    local _th = GetTimePreciseSec()
                     if btn.UpdateUsable and dodo.ActionbarUpdateState then
                         hooksecurefunc(btn, "UpdateUsable", dodo.ActionbarUpdateState)
                     end
@@ -161,19 +156,11 @@ f:SetScript("OnEvent", function(self, event, ...)
                     if btn.cooldown then
                         btn.cooldown:HookScript("OnCooldownDone", on_cooldown_done)
                     end
-                    _t_hook = _t_hook + (GetTimePreciseSec() - _th)
-                    local _ts = GetTimePreciseSec()
                     if dodo.ActionbarUpdateState then dodo.ActionbarUpdateState(btn) end
-                    _t_state = _t_state + (GetTimePreciseSec() - _ts)
-                    local _tc = GetTimePreciseSec()
                     if dodo.ActionbarUpdateCooldownState then dodo.ActionbarUpdateCooldownState(btn) end
-                    _t_cd = _t_cd + (GetTimePreciseSec() - _tc)
                 end
             end
         end
-        local _total = GetTimePreciseSec() - _t0
-        print(string.format("|cffff9900[dodoAB DBG]|r PLAYER_LOGIN total=%.2fms btn=%d | hook=%.2fms state=%.2fms cd=%.2fms",
-            _total*1000, _btnCount, _t_hook*1000, _t_state*1000, _t_cd*1000))
 
         dodo.barButtons = {}
         for _, info in ipairs(dodo.AB_BAR_ORDER) do
@@ -190,24 +177,20 @@ f:SetScript("OnEvent", function(self, event, ...)
         local pendingCooldownButtons = {}
         local function process_pending_cooldowns()
             for btn in pairs(pendingCooldownButtons) do
+                pendingCooldownButtons[btn] = nil
                 if btn:IsVisible() and dodo.ActionbarUpdateCooldownState then
                     dodo.ActionbarUpdateCooldownState(btn)
                 end
-                pendingCooldownButtons[btn] = nil
             end
         end
 
         hooksecurefunc("ActionButton_ApplyCooldown", function(cd)
             local btn = cd:GetParent()
-            if btn and registeredButtons[btn] then
-                local barName = dodo.get_bar_name_by_button(btn)
-                if barName and dodo.ActionbarIsBarColorEnabled and dodo.ActionbarIsBarColorEnabled(barName) then
-                    if not next(pendingCooldownButtons) then
-                        C_Timer.After(0, process_pending_cooldowns)
-                    end
-                    pendingCooldownButtons[btn] = true
-                end
+            if not (btn and registeredButtons[btn]) then return end
+            if not next(pendingCooldownButtons) then
+                C_Timer.After(0, process_pending_cooldowns)
             end
+            pendingCooldownButtons[btn] = true
         end)
 
         local bars = {

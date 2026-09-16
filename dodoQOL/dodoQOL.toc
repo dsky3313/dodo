@@ -22,16 +22,21 @@
 03 PVEFrame/01 PartyClass.lua
 03 PVEFrame/02 BrowseGroup.lua
 03 PVEFrame/03 QuickSelectDungeons.lua
-04 GossipFrame/Core.lua
-04 GossipFrame/ID.lua
-04 GossipFrame/SelectAuto.lua
-04 GossipFrame/KeystoneLindormi.lua
-05 EncounterJournal/Core.lua
-05 EncounterJournal/EJAchievementsTabData.lua
-05 EncounterJournal/EJAchievementsTabCategory.lua
-05 EncounterJournal/EJAchievementsTabRowBuilder.lua
-05 EncounterJournal/EJAchievementsTabUI.lua
-05 EncounterJournal/ID.lua
+04 GossipFrame/01 Core.lua
+04 GossipFrame/02 ID.lua
+04 GossipFrame/03 KeystoneLindormi.lua
+04 GossipFrame/04 SelectAuto.lua
+05 EncounterJournal/01 Core.lua
+05 EncounterJournal/02 EJAchievementsTabCategory.lua
+05 EncounterJournal/03 EJAchievementsTabData.lua
+05 EncounterJournal/04 EJAchievementsTabRowBuilder.lua
+05 EncounterJournal/05 EJAchievementsTabUI.lua
+05 EncounterJournal/06 ID.lua
+06 Macro/01 Core.lua
+06 Macro/02 Layout.lua
+06 Macro/03 Search.lua
+06 Macro/04 Factory.lua
+# 99 ETC/BagBreak.lua
 99 ETC/Camera.lua
 99 ETC/ChatBubble.lua
 99 ETC/ColorPicker.lua
@@ -47,3 +52,4 @@
 99 ETC/WowheadLink.lua
 99 ETC/WorldMapCoords.lua
 99 ETC/WorldMapIcon.lua
+# 99 ETC/Macro.lua

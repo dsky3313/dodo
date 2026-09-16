@@ -1,0 +1,10 @@
+<Bindings>
+    <Binding name="CLICK WMB_WM1CURSOR:LeftButton" header="WMB" category="dodo" />
+    <Binding name="CLICK WMB_WM2CURSOR:LeftButton" category="dodo" />
+    <Binding name="CLICK WMB_WM3CURSOR:LeftButton" category="dodo" />
+    <Binding name="CLICK WMB_WM4CURSOR:LeftButton" category="dodo" />
+    <Binding name="CLICK WMB_WM5CURSOR:LeftButton" category="dodo" />
+    <Binding name="CLICK WMB_WM6CURSOR:LeftButton" category="dodo" />
+    <Binding name="CLICK WMB_WM7CURSOR:LeftButton" category="dodo" />
+    <Binding name="CLICK WMB_WM8CURSOR:LeftButton" category="dodo" />
+</Bindings>

@@ -126,11 +126,18 @@ function InterruptOverlayMixin:OnUpdate(elapsed)
         local remaining = self.duration:GetRemainingDuration()
         local isSecret = issecretvalue(remaining)
         if isSecret or (remaining ~= self._lastRemaining) then
-            local color = self.duration:EvaluateRemainingDuration(timerColorCurve)
-            self.TimerReady:SetFormattedText("%.1f", remaining)
-            self.TimerCooldown:SetFormattedText("%.1f", remaining)
-            self.TimerReady:SetTextColor(color:GetRGB())
+            local text = string.format("%.1f", remaining)
+            self.TimerReady:SetText(text)
+            self.TimerCooldown:SetText(text)
             if not isSecret then
+                if remaining <= 3.0 then
+                    local color = self.duration:EvaluateRemainingDuration(timerColorCurve)
+                    self.TimerReady:SetTextColor(color:GetRGB())
+                    self._inColorZone = true
+                elseif self._inColorZone then
+                    self.TimerReady:SetTextColor(1, 1, 1)
+                    self._inColorZone = false
+                end
                 self._lastRemaining = remaining
             end
         end
@@ -146,6 +153,7 @@ end
 function InterruptOverlayMixin:StartTimer(duration)
     self.duration = duration
     self.timerElapsed = 0.1
+    self._inColorZone = nil
     self.TimerReady:Show()
     self.TimerCooldown:Show()
     self:SetScript('OnUpdate', self.OnUpdate)
@@ -316,3 +324,4 @@ for k, v in pairs(dodoAB3ControllerMixin) do
 end
 controller:OnLoad()
 controller:SetScript("OnEvent", controller.OnEvent)
+
