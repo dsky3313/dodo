@@ -1,8 +1,13 @@
 -- ==============================
+-- Inspired
+-- ==============================
+-- ActionBarsEnhanced (https://www.curseforge.com/wow/addons/actionbarsenhanced)
+
+-- ==============================
 -- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
-local dodo = _G.dodo
+local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
 dodo.customCDMAuras = {}
@@ -21,29 +26,18 @@ dodo.BAR_INDEX_MAP = {
     [8] = "MultiBar7",
 }
 
+local registeredButtons = dodo.registeredButtons
 
 -- ==============================
 -- 캐싱
 -- ==============================
-local C_ActionBar = C_ActionBar
 local C_Timer = C_Timer
 local CreateFrame = CreateFrame
 local hooksecurefunc = hooksecurefunc
-local ipairs = ipairs
 local next = next
 local pairs = pairs
-local wipe = wipe
-local registeredButtons = dodo.registeredButtons
 
--- ==============================
 -- 공통 헬퍼
--- ==============================
-local function on_cooldown_done(cooldown)
-    local btn = cooldown:GetParent()
-    btn.__cdVal = nil
-    if dodo.ActionbarUpdateIconColor then dodo.ActionbarUpdateIconColor(btn) end
-end
-
 function dodo.get_bar_name_by_button(btn)
     if not btn then return nil end
     if btn.__barName then return btn.__barName end
@@ -82,8 +76,6 @@ end
 local f = CreateFrame("Frame")
 dodo.ActionbarMainFrame = f
 
-local CDM_GROUPS = { "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton", "MultiBar7Button" }
-
 local function update_visual()
     local isEnabled = (dodoDB and dodoDB.enableActionbar ~= false)
     if isEnabled then
@@ -117,7 +109,8 @@ local function update_visual()
         if dodo.ActionbarApplyText then dodo.ActionbarApplyText() end
         if dodo.ActionbarApplyPadding then dodo.ActionbarApplyPadding() end
 
-        for _, group in ipairs(CDM_GROUPS) do
+        local cdmBars = { "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton", "MultiBar7Button" }
+        for _, group in ipairs(cdmBars) do
             for i = 1, 12 do
                 local btn = _G[group .. i]
                 if btn then
@@ -135,7 +128,7 @@ f:RegisterEvent("PLAYER_LOGIN")
 
 f:SetScript("OnEvent", function(self, event, ...)
     local arg1 = ...
-    if event == "ADDON_LOADED" and arg1 == "dodoActionbar" then
+    if event == "ADDON_LOADED" and arg1 == addonName then
         dodoDB = dodoDB or {}
     elseif event == "PLAYER_LOGIN" then
         local groups = {
@@ -155,7 +148,10 @@ f:SetScript("OnEvent", function(self, event, ...)
                         hooksecurefunc(btn, "UpdateState", dodo.ActionbarUpdateState)
                     end
                     if btn.cooldown then
-                        btn.cooldown:HookScript("OnCooldownDone", on_cooldown_done)
+                        btn.cooldown:HookScript("OnCooldownDone", function()
+                            btn.__cdVal = nil
+                            if dodo.ActionbarUpdateIconColor then dodo.ActionbarUpdateIconColor(btn) end
+                        end)
                     end
                     if dodo.ActionbarUpdateState then dodo.ActionbarUpdateState(btn) end
                     if dodo.ActionbarUpdateCooldownState then dodo.ActionbarUpdateCooldownState(btn) end
@@ -163,42 +159,24 @@ f:SetScript("OnEvent", function(self, event, ...)
             end
         end
 
-        dodo.barButtons = {}
-        for _, info in ipairs(dodo.AB_BAR_ORDER) do
-            dodo.barButtons[info.name] = {}
-        end
-        for btn in pairs(registeredButtons) do
-            local barName = dodo.get_bar_name_by_button(btn)
-            if barName and dodo.barButtons[barName] then
-                local t = dodo.barButtons[barName]
-                t[#t + 1] = btn
-            end
-        end
-
         local pendingCooldownButtons = {}
         local function process_pending_cooldowns()
             for btn in pairs(pendingCooldownButtons) do
-                pendingCooldownButtons[btn] = nil
                 if btn:IsVisible() and dodo.ActionbarUpdateCooldownState then
                     dodo.ActionbarUpdateCooldownState(btn)
                 end
+                pendingCooldownButtons[btn] = nil
             end
         end
 
         hooksecurefunc("ActionButton_ApplyCooldown", function(cd)
             local btn = cd:GetParent()
-            if not (btn and registeredButtons[btn]) then return end
-            local barName = dodo.get_bar_name_by_button(btn)
-            if not (barName and dodo.ActionbarIsBarColorEnabled and dodo.ActionbarIsBarColorEnabled(barName)) then return end
-            -- GCD 전용 쿨다운은 desaturation 변화 없으므로 스킵
-            if btn.action then
-                local info = C_ActionBar.GetActionCooldown(btn.action)
-                if info and info.isOnGCD then return end
+            if btn and registeredButtons[btn] then
+                if not next(pendingCooldownButtons) then
+                    C_Timer.After(0, process_pending_cooldowns)
+                end
+                pendingCooldownButtons[btn] = true
             end
-            if not next(pendingCooldownButtons) then
-                C_Timer.After(0, process_pending_cooldowns)
-            end
-            pendingCooldownButtons[btn] = true
         end)
 
         local bars = {
@@ -225,16 +203,14 @@ f:SetScript("OnEvent", function(self, event, ...)
         local slot = ...
         if not slot or slot <= 72 then
             if dodo.BuildSpecialButtonCache then dodo.BuildSpecialButtonCache() end
-            if dodo.ActionbarInvalidatePotionButtonCache then dodo.ActionbarInvalidatePotionButtonCache() end
-            if dodo.TriggerBagUpdate then dodo.TriggerBagUpdate() end
         end
 
     elseif event == "ACTION_RANGE_CHECK_UPDATE" then
         local slot = ...
         local slotButtons = ActionBarButtonRangeCheckFrame.actions and ActionBarButtonRangeCheckFrame.actions[slot]
-        if slotButtons and dodo.ActionbarUpdateRangeState then
+        if slotButtons and dodo.ActionbarUpdateState then
             for _, btn in pairs(slotButtons) do
-                if btn:IsVisible() then dodo.ActionbarUpdateRangeState(btn) end
+                if btn:IsVisible() then dodo.ActionbarUpdateState(btn) end
             end
         end
 
@@ -257,3 +233,17 @@ f:SetScript("OnEvent", function(self, event, ...)
         end
     end
 end)
+
+-- 설정 등록
+if dodo.RegisterEditModeModuleSetting then
+    dodo.RegisterEditModeModuleSetting("전투", {
+        {
+            name = "행동단축바",
+            get = function() return dodoDB and dodoDB.enableActionbar ~= false end,
+            set = function(checked)
+                if dodoDB then dodoDB.enableActionbar = checked end
+                update_visual()
+            end
+        }
+    })
+end

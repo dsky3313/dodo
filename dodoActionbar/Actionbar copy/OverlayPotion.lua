@@ -1,4 +1,4 @@
-﻿-- ==============================
+-- ==============================
 -- Inspired
 -- ==============================
 -- CDMButtonAuras (https://www.curseforge.com/wow/addons/cdmbuttonauras)
@@ -7,16 +7,38 @@
 -- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
-local dodo = _G.dodo
+local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local POTION_DB_KEYS   = dodo.AB_DB_KEYS.potion
-local POTION_DEFAULTS  = dodo.AB_DEFAULTS.potion
+local BAR_INDEX_MAP = dodo.BAR_INDEX_MAP
+
+local POTION_DB_KEYS = {
+    ["MainActionBar"]       = "useActionbarPotionProcBar1",
+    ["MultiBarBottomLeft"]  = "useActionbarPotionProcBar2",
+    ["MultiBarBottomRight"] = "useActionbarPotionProcBar3",
+    ["MultiBarRight"]       = "useActionbarPotionProcBar4",
+    ["MultiBarLeft"]        = "useActionbarPotionProcBar5",
+    ["MultiBar5"]           = "useActionbarPotionProcBar6",
+    ["MultiBar6"]           = "useActionbarPotionProcBar7",
+    ["MultiBar7"]           = "useActionbarPotionProcBar8",
+}
+
+local POTION_DEFAULTS = {
+    ["MainActionBar"]       = false,
+    ["MultiBarBottomLeft"]  = false,
+    ["MultiBarBottomRight"] = false,
+    ["MultiBarRight"]       = false,
+    ["MultiBarLeft"]        = false,
+    ["MultiBar5"]           = false,
+    ["MultiBar6"]           = false,
+    ["MultiBar7"]           = true,
+    ["StanceBar"]           = false,
+    ["PetActionBar"]        = false,
+}
 
 local PotionIds = { -- 물약 사용가능 알림
     [241308] = true, -- 빛의 잠재력 2성
     [241309] = true, -- 빛의 잠재력 1성
-    [241289] = true, -- 무모함의 물약 1성
     [241288] = true, -- 무모함의 물약 2성
 }
 
@@ -27,37 +49,22 @@ local C_Container = C_Container
 local C_Item = C_Item
 local C_Timer = C_Timer
 local CreateFrame = CreateFrame
+local Enum = Enum
 local GetActionInfo = GetActionInfo
-local ipairs = ipairs
+local InCombatLockdown = InCombatLockdown
 local pairs = pairs
 
 -- ==============================
 -- 기능 구현
 -- ==============================
-local bar_potion_cache = {}
 local function is_bar_potion_proc_enabled(barName)
     if not barName then return false end
-    local cached = bar_potion_cache[barName]
-    if cached ~= nil then return cached end
     local dbKey = POTION_DB_KEYS[barName]
-    local result
-    if not dbKey then
-        result = POTION_DEFAULTS[barName] or false
-    elseif not dodoDB then
-        result = POTION_DEFAULTS[barName] or false
-    else
-        local val = dodoDB[dbKey]
-        result = (val == nil) and (POTION_DEFAULTS[barName] or false) or val
-    end
-    bar_potion_cache[barName] = result
-    return result
-end
-dodo.ActionbarInvalidatePotionCache = function() bar_potion_cache = {} end
-dodo.ActionbarInvalidatePotionButtonCache = function()
-    for btn in pairs(dodo.registeredButtons) do
-        btn.__isPotion = nil
-        btn.__potionItemID = nil
-    end
+    if not dbKey then return POTION_DEFAULTS[barName] or false end
+    if not dodoDB then return POTION_DEFAULTS[barName] or false end
+    local val = dodoDB[dbKey]
+    if val == nil then return POTION_DEFAULTS[barName] or false end
+    return val
 end
 dodo.is_bar_potion_proc_enabled = is_bar_potion_proc_enabled
 
@@ -113,29 +120,22 @@ end
 dodo.ActionbarUpdatePotionProc = update_potion_proc
 
 local function update_all_potion_procs()
-    if not dodo.barButtons then return end
-    for _, barInfo in ipairs(dodo.AB_BAR_ORDER) do
-        if is_bar_potion_proc_enabled(barInfo.name) then
-            local btns = dodo.barButtons[barInfo.name]
-            if btns then
-                for _, btn in ipairs(btns) do
-                    if btn:IsVisible() then update_potion_proc(btn) end
-                end
-            end
+    for btn in pairs(dodo.registeredButtons) do
+        if btn:IsVisible() then
+            update_potion_proc(btn)
         end
     end
 end
 dodo.ActionbarUpdateAllPotionProcs = update_all_potion_procs
 
 local is_potion_pending = false
-local function on_bag_update_tick()
-    is_potion_pending = false
-    update_all_potion_procs()
-end
 dodo.TriggerBagUpdate = function()
     if not is_potion_pending then
         is_potion_pending = true
-        C_Timer.After(0.1, on_bag_update_tick)
+        C_Timer.After(0.1, function()
+            is_potion_pending = false
+            update_all_potion_procs()
+        end)
     end
 end
 
@@ -147,3 +147,27 @@ dodo.ActionbarApplyPotionProc = function()
     update_all_potion_procs()
 end
 
+-- ==============================
+-- 설정 등록
+-- ==============================
+if dodo.RegisterEditModeSystemSetting then
+    for idx, barName in pairs(BAR_INDEX_MAP) do
+        local sysID = string.format("%d_%d", Enum.EditModeSystem.ActionBar, idx)
+        local dbKey = POTION_DB_KEYS[barName]
+        dodo.RegisterEditModeSystemSetting(sysID, {
+            {
+                name = "물약 사용가능 알림",
+                get = function()
+                    if not dodoDB then return POTION_DEFAULTS[barName] or false end
+                    local val = dodoDB[dbKey]
+                    return val == nil and (POTION_DEFAULTS[barName] or false) or val
+                end,
+                set = function(checked)
+                    if dodoDB then dodoDB[dbKey] = checked end
+                    dodo.ActionbarApplyPotionProc()
+                end,
+                disabled = function() return dodoDB and dodoDB.enableActionbar == false end
+            }
+        })
+    end
+end

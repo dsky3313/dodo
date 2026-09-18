@@ -327,6 +327,7 @@ end
 -- 미리보기 (Edit Mode용)
 -- ==============================
 local function show_preview_data()
+    if not (EditModeManagerFrame and EditModeManagerFrame:IsShown()) then return end
     is_preview_active = true
     if debuff_container then
         debuff_container:SetEnabled(false)

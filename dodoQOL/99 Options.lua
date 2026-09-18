@@ -29,6 +29,7 @@ dodo.QOL_DEFAULTS = {
     useBrowseGroup        = true,  usePartyClass        = true,  enableQuickselect     = true,
     enableGossipID        = true,  enableGossipAutoSelect = true, enableKeystoneLindormi = true,
     enableEJAchievements  = true,  enableEJID           = true,
+    enablePlayerMemo      = true,
 }
 
 dodo.RegisterOption("편의기능", function(category)
@@ -202,6 +203,11 @@ dodo.RegisterOption("편의기능", function(category)
         "퀘스트,업적 창 하단에 와우헤드 링크 입력창을 표시합니다.",
         D.useWowheadLink, function()
             if dodo.WowheadLink then dodo.WowheadLink() end
+        end))
+    T(dodo.UI:SettingsCheckbox(category, "enablePlayerMemo", "플레이어 메모 & 무시",
+        "플레이어별 메모를 관리하고, 같은 파티 진입 시 팝업 알림을 표시합니다. 친구창을 열면 옆에 함께 표시됩니다.",
+        D.enablePlayerMemo, function(val)
+            if dodoDB then dodoDB.enablePlayerMemo = val end
         end))
 
     local function _shown() return master:GetValue() end

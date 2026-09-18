@@ -1,4 +1,4 @@
-﻿-- ==============================
+-- ==============================
 -- Inspired
 -- ==============================
 -- ActionBar Interrupt Highlight (https://www.curseforge.com/wow/addons/actionbarinterrupthighlight)
@@ -7,11 +7,34 @@
 -- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
-local dodo = _G.dodo
+local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local INTERRUPT_DB_KEYS  = dodo.AB_DB_KEYS.interrupt
-local INTERRUPT_DEFAULTS = dodo.AB_DEFAULTS.interrupt
+local BAR_INDEX_MAP = dodo.BAR_INDEX_MAP
+
+local INTERRUPT_DB_KEYS = {
+    ["MainActionBar"]       = "useActionbarInterruptBar1",
+    ["MultiBarBottomLeft"]  = "useActionbarInterruptBar2",
+    ["MultiBarBottomRight"] = "useActionbarInterruptBar3",
+    ["MultiBarRight"]       = "useActionbarInterruptBar4",
+    ["MultiBarLeft"]        = "useActionbarInterruptBar5",
+    ["MultiBar5"]           = "useActionbarInterruptBar6",
+    ["MultiBar6"]           = "useActionbarInterruptBar7",
+    ["MultiBar7"]           = "useActionbarInterruptBar8",
+}
+
+local INTERRUPT_DEFAULTS = {
+    ["MainActionBar"]       = true,
+    ["MultiBarBottomLeft"]  = false,
+    ["MultiBarBottomRight"] = false,
+    ["MultiBarRight"]       = false,
+    ["MultiBarLeft"]        = false,
+    ["MultiBar5"]           = false,
+    ["MultiBar6"]           = false,
+    ["MultiBar7"]           = false,
+    ["StanceBar"]           = false,
+    ["PetActionBar"]        = false,
+}
 
 local Interrupts = {
     [47528]  = true, -- Mind Freeze
@@ -55,6 +78,7 @@ local IntUnitEvents = {
 -- ==============================
 -- 캐싱
 -- ==============================
+local ActionBarButtonEventsFrame = ActionBarButtonEventsFrame
 local CreateColor = CreateColor
 local CreateFrame = CreateFrame
 local CreateFramePool = CreateFramePool
@@ -68,6 +92,7 @@ local UnitCastingInfo = UnitCastingInfo
 local UnitChannelDuration = UnitChannelDuration
 local UnitChannelInfo = UnitChannelInfo
 local UnitExists = UnitExists
+local UnitGUID = UnitGUID
 
 local ReadyCurve = C_CurveUtil.CreateCurve()
 ReadyCurve:SetType(Enum.LuaCurveType.Step)
@@ -91,25 +116,15 @@ local watched_unit = 'target'
 -- ==============================
 -- 기능 구현
 -- ==============================
-local bar_interrupt_cache = {}
 local function is_bar_interrupt_enabled(barName)
     if not barName then return false end
-    local cached = bar_interrupt_cache[barName]
-    if cached ~= nil then return cached end
     local dbKey = INTERRUPT_DB_KEYS[barName]
-    local result
-    if not dbKey then
-        result = INTERRUPT_DEFAULTS[barName] or false
-    elseif not dodoDB then
-        result = INTERRUPT_DEFAULTS[barName] or false
-    else
-        local val = dodoDB[dbKey]
-        result = (val == nil) and (INTERRUPT_DEFAULTS[barName] or false) or val
-    end
-    bar_interrupt_cache[barName] = result
-    return result
+    if not dbKey then return INTERRUPT_DEFAULTS[barName] or false end
+    if not dodoDB then return INTERRUPT_DEFAULTS[barName] or false end
+    local val = dodoDB[dbKey]
+    if val == nil then return INTERRUPT_DEFAULTS[barName] or false end
+    return val
 end
-dodo.ActionbarInvalidateInterruptCache = function() bar_interrupt_cache = {} end
 
 InterruptOverlayMixin = {}
 
@@ -120,24 +135,17 @@ end
 
 function InterruptOverlayMixin:OnUpdate(elapsed)
     self.timerElapsed = self.timerElapsed + elapsed
-    if self.timerElapsed < 0.2 then return end
+    if self.timerElapsed < 0.1 then return end
     self.timerElapsed = 0
     if self.duration then
         local remaining = self.duration:GetRemainingDuration()
         local isSecret = issecretvalue(remaining)
         if isSecret or (remaining ~= self._lastRemaining) then
-            local text = string.format("%.1f", remaining)
-            self.TimerReady:SetText(text)
-            self.TimerCooldown:SetText(text)
+            local color = self.duration:EvaluateRemainingDuration(timerColorCurve)
+            self.TimerReady:SetFormattedText("%.1f", remaining)
+            self.TimerCooldown:SetFormattedText("%.1f", remaining)
+            self.TimerReady:SetTextColor(color:GetRGB())
             if not isSecret then
-                if remaining <= 3.0 then
-                    local color = self.duration:EvaluateRemainingDuration(timerColorCurve)
-                    self.TimerReady:SetTextColor(color:GetRGB())
-                    self._inColorZone = true
-                elseif self._inColorZone then
-                    self.TimerReady:SetTextColor(1, 1, 1)
-                    self._inColorZone = false
-                end
                 self._lastRemaining = remaining
             end
         end
@@ -152,8 +160,7 @@ end
 
 function InterruptOverlayMixin:StartTimer(duration)
     self.duration = duration
-    self.timerElapsed = 0.2
-    self._inColorZone = nil
+    self.timerElapsed = 0.1
     self.TimerReady:Show()
     self.TimerCooldown:Show()
     self:SetScript('OnUpdate', self.OnUpdate)
@@ -230,20 +237,16 @@ function dodoAB3ControllerMixin:is_relevant_action_id(actionID)
 end
 
 function dodoAB3ControllerMixin:create_overlays()
-    if not self.overlayPool or not dodo.barButtons then return end
+    if not self.overlayPool then return end
     self.overlayPool:ReleaseAll()
-    for _, barInfo in ipairs(dodo.AB_BAR_ORDER) do
-        if is_bar_interrupt_enabled(barInfo.name) then
-            local btns = dodo.barButtons[barInfo.name]
-            if btns then
-                for _, actionButton in ipairs(btns) do
-                    local _, spellID = GetActionInfo(actionButton.action)
-                    if Interrupts[spellID] then
-                        local overlay = self.overlayPool:Acquire()
-                        overlay.spellID = spellID
-                        overlay:Attach(actionButton)
-                    end
-                end
+    for _, actionButton in pairs(ActionBarButtonEventsFrame.frames) do
+        local barName = dodo.get_bar_name_by_button(actionButton)
+        if barName and is_bar_interrupt_enabled(barName) then
+            local _, spellID = GetActionInfo(actionButton.action)
+            if Interrupts[spellID] then
+                local overlay = self.overlayPool:Acquire()
+                overlay.spellID = spellID
+                overlay:Attach(actionButton)
             end
         end
     end
@@ -316,6 +319,31 @@ dodo.ActionbarApplyInterrupt = function()
 end
 
 -- ==============================
+-- 설정 등록
+-- ==============================
+if dodo.RegisterEditModeSystemSetting then
+    for idx, barName in pairs(BAR_INDEX_MAP) do
+        local sysID = string.format("%d_%d", Enum.EditModeSystem.ActionBar, idx)
+        local dbKey = INTERRUPT_DB_KEYS[barName]
+        dodo.RegisterEditModeSystemSetting(sysID, {
+            {
+                name = "오버레이: 차단",
+                get = function()
+                    if not dodoDB then return INTERRUPT_DEFAULTS[barName] or false end
+                    local val = dodoDB[dbKey]
+                    return val == nil and (INTERRUPT_DEFAULTS[barName] or false) or val
+                end,
+                set = function(checked)
+                    if dodoDB then dodoDB[dbKey] = checked end
+                    dodo.ActionbarApplyInterrupt()
+                end,
+                disabled = function() return dodoDB and dodoDB.enableActionbar == false end
+            }
+        })
+    end
+end
+
+-- ==============================
 -- 컨트롤러 동적 생성 및 실행
 -- ==============================
 local controller = CreateFrame("Frame")
@@ -324,4 +352,3 @@ for k, v in pairs(dodoAB3ControllerMixin) do
 end
 controller:OnLoad()
 controller:SetScript("OnEvent", controller.OnEvent)
-

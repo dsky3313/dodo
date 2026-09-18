@@ -7,11 +7,34 @@
 -- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
-local dodo = _G.dodo
+local addonName, dodo = ...
 dodoDB = dodoDB or {}
 
-local COLOR_DB_KEYS  = dodo.AB_DB_KEYS.color
-local COLOR_DEFAULTS = dodo.AB_DEFAULTS.color
+local BAR_INDEX_MAP = dodo.BAR_INDEX_MAP
+
+local COLOR_DEFAULTS = {
+    ["MainActionBar"]       = true,
+    ["MultiBarBottomLeft"]  = true,
+    ["MultiBarBottomRight"] = true,
+    ["MultiBarRight"]       = false,
+    ["MultiBarLeft"]        = false,
+    ["MultiBar5"]           = false,
+    ["MultiBar6"]           = false,
+    ["MultiBar7"]           = true,
+    ["StanceBar"]           = false,
+    ["PetActionBar"]        = false,
+}
+
+local COLOR_DB_KEYS = {
+    ["MainActionBar"]       = "useActionbarColorBar1",
+    ["MultiBarBottomLeft"]  = "useActionbarColorBar2",
+    ["MultiBarBottomRight"] = "useActionbarColorBar3",
+    ["MultiBarRight"]       = "useActionbarColorBar4",
+    ["MultiBarLeft"]        = "useActionbarColorBar5",
+    ["MultiBar5"]           = "useActionbarColorBar6",
+    ["MultiBar6"]           = "useActionbarColorBar7",
+    ["MultiBar7"]           = "useActionbarColorBar8",
+}
 
 -- ==============================
 -- 캐싱
@@ -19,7 +42,6 @@ local COLOR_DEFAULTS = dodo.AB_DEFAULTS.color
 local C_ActionBar = C_ActionBar
 local C_CurveUtil = C_CurveUtil
 local Enum = Enum
-local ipairs = ipairs
 local pairs = pairs
 
 local dodoColors = dodo.Colors
@@ -33,26 +55,17 @@ DesatCurve:AddPoint(0.001, 1)
 -- ==============================
 -- 기능 구현
 -- ==============================
-local bar_color_cache = {}
 local function is_bar_color_enabled(barName)
     if not barName then return false end
-    local cached = bar_color_cache[barName]
-    if cached ~= nil then return cached end
     local dbKey = COLOR_DB_KEYS[barName]
-    local result
     if not dbKey then
-        result = COLOR_DEFAULTS[barName] or false
-    elseif not dodoDB then
-        result = COLOR_DEFAULTS[barName] or false
-    else
-        local val = dodoDB[dbKey]
-        result = (val == nil) and (COLOR_DEFAULTS[barName] or false) or val
+        return COLOR_DEFAULTS[barName] or false
     end
-    bar_color_cache[barName] = result
-    return result
+    if not dodoDB then return COLOR_DEFAULTS[barName] or false end
+    local val = dodoDB[dbKey]
+    if val == nil then return COLOR_DEFAULTS[barName] or false end
+    return val
 end
-dodo.ActionbarInvalidateColorCache = function() bar_color_cache = {} end
-dodo.ActionbarIsBarColorEnabled = is_bar_color_enabled
 
 local function update_icon_color(btn)
     if not btn.icon then return end
@@ -92,85 +105,76 @@ dodo.ActionbarUpdateIconColor = update_icon_color
 
 local function update_state(btn)
     if not btn.action then return end
-    local isEnabled = (dodoDB and dodoDB.enableActionbar ~= false)
-    if not isEnabled then
-        if btn.icon then
-            btn.icon:SetVertexColor(1, 1, 1)
-            btn.icon:SetDesaturation(0)
-        end
-        if dodo.ActionbarUpdateButtonText then dodo.ActionbarUpdateButtonText(btn) end
-        return
-    end
     local barName = dodo.get_bar_name_by_button(btn)
     if not barName or not is_bar_color_enabled(barName) then
         update_icon_color(btn)
         if dodo.ActionbarUpdateButtonText then dodo.ActionbarUpdateButtonText(btn) end
+        if dodo.ActionbarUpdatePotionProc then dodo.ActionbarUpdatePotionProc(btn) end
         return
     end
     local isUsable, notEnoughMana = C_ActionBar.IsUsableAction(btn.action)
+    local inRange = C_ActionBar.IsActionInRange(btn.action)
     btn.__isUsable = isUsable
     btn.__isNotEnoughMana = notEnoughMana
+    btn.__isOutOfRange = (inRange == false)
     update_icon_color(btn)
     if dodo.ActionbarUpdateButtonText then dodo.ActionbarUpdateButtonText(btn) end
+    if dodo.ActionbarUpdatePotionProc then dodo.ActionbarUpdatePotionProc(btn) end
 end
 dodo.ActionbarUpdateState = update_state
 
-local function update_range_state(btn)
-    if not btn.action then return end
-    local isEnabled = (dodoDB and dodoDB.enableActionbar ~= false)
-    if not isEnabled then return end
-    local barName = dodo.get_bar_name_by_button(btn)
-    if not barName or not is_bar_color_enabled(barName) then return end
-    local inRange = C_ActionBar.IsActionInRange(btn.action)
-    btn.__isOutOfRange = (inRange == false)
-    update_icon_color(btn)
-end
-dodo.ActionbarUpdateRangeState = update_range_state
-
 local function update_cooldown_state(btn)
     if not btn.action then return end
-
     local barName = dodo.get_bar_name_by_button(btn)
     if not barName or not is_bar_color_enabled(barName) then
         btn.__cdVal = nil
         update_icon_color(btn)
+        if dodo.ActionbarUpdatePotionProc then dodo.ActionbarUpdatePotionProc(btn) end
         return
     end
-
+    local dur  = C_ActionBar.GetActionCooldownDuration(btn.action)
     local info = C_ActionBar.GetActionCooldown(btn.action)
-    if not info or info.isOnGCD then
-        btn.__cdVal = nil
-    else
-        btn.__cdVal = C_ActionBar.GetActionCooldownDuration(btn.action)
-    end
+    btn.__cdVal = (dur and info and not info.isOnGCD) and dur or nil
     update_icon_color(btn)
+    if dodo.ActionbarUpdatePotionProc then dodo.ActionbarUpdatePotionProc(btn) end
 end
 dodo.ActionbarUpdateCooldownState = update_cooldown_state
 
 dodo.ActionbarApplyColor = function()
-    local isEnabled = (dodoDB and dodoDB.enableActionbar ~= false)
-    if not isEnabled then
-        for btn in pairs(registeredButtons) do
+    for btn in pairs(registeredButtons) do
+        local isEnabled = (dodoDB and dodoDB.enableActionbar ~= false)
+        if isEnabled then
+            if btn:IsVisible() then update_state(btn) end
+        else
             if btn.icon then
                 btn.icon:SetVertexColor(1, 1, 1)
                 btn.icon:SetDesaturation(0)
             end
         end
-        return
     end
-    if not dodo.barButtons then return end
-    for _, barInfo in ipairs(dodo.AB_BAR_ORDER) do
-        local btns = dodo.barButtons[barInfo.name]
-        if btns then
-            if is_bar_color_enabled(barInfo.name) then
-                for _, btn in ipairs(btns) do
-                    if btn:IsVisible() then update_state(btn) end
-                end
-            else
-                for _, btn in ipairs(btns) do
-                    update_icon_color(btn)
-                end
-            end
-        end
+end
+
+-- ==============================
+-- 설정 등록
+-- ==============================
+if dodo.RegisterEditModeSystemSetting then
+    for idx, barName in pairs(BAR_INDEX_MAP) do
+        local sysID = string.format("%d_%d", Enum.EditModeSystem.ActionBar, idx)
+        local dbKey = COLOR_DB_KEYS[barName]
+        dodo.RegisterEditModeSystemSetting(sysID, {
+            {
+                name = "아이콘: 색상",
+                get = function()
+                    if not dodoDB then return COLOR_DEFAULTS[barName] end
+                    local val = dodoDB[dbKey]
+                    return val == nil and COLOR_DEFAULTS[barName] or val
+                end,
+                set = function(checked)
+                    if dodoDB then dodoDB[dbKey] = checked end
+                    dodo.ActionbarApplyColor()
+                end,
+                disabled = function() return dodoDB and dodoDB.enableActionbar == false end
+            }
+        })
     end
 end

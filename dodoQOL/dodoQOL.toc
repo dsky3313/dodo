@@ -52,4 +52,5 @@
 99 ETC/WowheadLink.lua
 99 ETC/WorldMapCoords.lua
 99 ETC/WorldMapIcon.lua
+99 ETC/PlayerMemo.lua
 # 99 ETC/Macro.lua

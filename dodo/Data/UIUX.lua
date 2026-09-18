@@ -238,7 +238,7 @@ function dodo.UI:CreateButton(parent, label, text, on_click_func)
     return frame
 end
 
-function dodo.UI:CreatePortraitPanel(name, title_text, hide_close_button, bg)
+function dodo.UI:CreatePortraitPanel(name, title_text, hide_close_button, bg) -- 기본 창 프레임
     local frame = CreateFrame("Frame", name, UIParent, "PortraitFrameTemplate")
     if ButtonFrameTemplate_HidePortrait then
         ButtonFrameTemplate_HidePortrait(frame)
@@ -260,6 +260,33 @@ function dodo.UI:CreatePortraitPanel(name, title_text, hide_close_button, bg)
         bgTex:SetPoint("BOTTOMRIGHT", -2, 2)
         frame.Background = bgTex
     end
+    return frame
+end
+
+-- extend_top=false: Inset 상단 기본값 y=-60 (수리상인)
+-- extend_top=true : Inset 상단을 y=-87로 내림 (친구창)
+function dodo.UI:CreateButtonPanel(name, title_text, hide_close_button, extend_top)
+    local frame = CreateFrame("Frame", name, UIParent, "ButtonFrameTemplate")
+    ButtonFrameTemplate_HidePortrait(frame)
+    if hide_close_button and frame.CloseButton then
+        frame.CloseButton:Hide()
+    end
+    frame:SetFrameStrata("MEDIUM")
+    frame.TitleContainer.TitleText:SetText(title_text or "")
+    local inset = frame.Inset
+    inset:ClearAllPoints()
+    inset:SetPoint("TOPLEFT",     frame, "TOPLEFT",     9,  extend_top and -87 or -60)
+    inset:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -6,  26)
+    -- 스크롤 (FriendsFrame 패턴: ScrollFrame + MinimalScrollBar 분리)
+    local scroll = CreateFrame("ScrollFrame", name and (name .. "Scroll") or nil, inset)
+    scroll:SetPoint("TOPLEFT",     inset, "TOPLEFT",      0,   0)
+    scroll:SetPoint("BOTTOMRIGHT", inset, "BOTTOMRIGHT", -22,  2)
+    local scrollbar = CreateFrame("EventFrame", nil, inset, "MinimalScrollBar")
+    scrollbar:SetPoint("TOPLEFT",    scroll, "TOPRIGHT",    5, -4)
+    scrollbar:SetPoint("BOTTOMLEFT", scroll, "BOTTOMRIGHT", 5,  2)
+    ScrollUtil.InitScrollFrameWithScrollBar(scroll, scrollbar)
+    frame.Scroll    = scroll
+    frame.ScrollBar = scrollbar
     return frame
 end
 

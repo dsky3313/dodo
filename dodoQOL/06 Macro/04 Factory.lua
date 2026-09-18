@@ -24,7 +24,7 @@ local tonumber                = tonumber
 -- 상수
 -- ======================================================================
 local BTN_SIZE    = 36
-local BTN_GAP     = 4
+local BTN_GAP     = 10
 local PANEL_PAD_X = 16
 local PANEL_PAD_Y = 30
 local PANEL_ROW_H = BTN_SIZE + 20 + BTN_GAP
@@ -63,14 +63,13 @@ end
 
 -- ======================================================================
 -- 매크로 아이콘 결정
+-- macroIcon → CreateMacro 전용 (없거나 "" → INV_MISC_QUESTIONMARK)
+-- icon      → 버튼 표시 전용 (macroIcon 없으면 버튼도 icon 사용)
 -- ======================================================================
 local function resolve_macro_icon(def)
-    if def.macroIcon then return def.macroIcon end
-    if def.spells and def.fixedBody and not def.fixedTooltip then
-        local tex = def.spells[1] and C_Spell.GetSpellTexture(def.spells[1])
-        if tex then return tex end
-    end
-    return "INV_MISC_QUESTIONMARK"
+    local id = def.macroIcon
+    if not id or id == "" or id == "?" then return "INV_MISC_QUESTIONMARK" end
+    return id
 end
 
 -- ======================================================================
@@ -105,58 +104,83 @@ end
 -- ======================================================================
 -- 매크로 정의
 -- ======================================================================
+
+---@class MacroDef
+---@field name         string                    매크로 이름 (GetMacroIndexByName 조회 키)
+---@field label        string?                   매크로 팩토리버튼 표시 이름 (없으면 name 사용)
+---@field icon         (string|integer)?         버튼 표시 아이콘 (파일 ID 또는 경로)
+---@field macroIcon    (string|integer)?         CreateMacro 전용 아이콘 (nil/"?" → ?)
+---@field fixedBody    string?                   매크로 바디 템플릿 ({n} → spells[n] 이름 치환)
+---@field fixedTooltip string?                   #showtooltip 값 (숫자 문자열이면 슬롯 아이콘으로도 사용)
+---@field spells       integer[]?                {n} 토큰용 스펠 ID 배열
+---@field extraBody    (fun(db:table):string)?   DB 기반 동적 추가 바디 생성 함수
+
+---@type MacroDef[]
 local COMBAT_DEFS = {
     {
         name      = "주시",
-        icon      = "Interface\\Icons\\ability_hunter_focusedaim",
-        label     = "주시",
+        label     = "대상주시",
+        icon      =1033497,
         fixedBody = "/focus [@target,harm,nodead][]\n/tm [@target,harm,nodead][] ~1",
+    },
+    {
+        name      = "차단",
+        icon      =132219,
+        label     = "주시차단",
+        fixedBody = "/use [@focus,harm][harm]스킬명",
+    },
+    {
+        name      = "대상",
+        icon      ="Interface\\Icons\\Ability_Hunter_FocusedAim",
+        label     = "대상",
+        fixedBody = "/tar 맹독의 심장\n/tar 역병비늘 비명꾼\n/tar 약화된 파멸비늘\n/tar 용암 토템\n/tar 기근의 입상\n/tar 치유의 해일 토템",
     },
 }
 
+---@type MacroDef[]
 local GENERAL_DEFS = {
     {
-        name         = "MF_Potion",
-        icon         = "Interface\\Icons\\inv_potion_54",
-        label        = "물약",
-        fixedBody    = "/use item:245898\n/use item:245897\n/use item:241308\n/use item:241309\n/use item:245902\n/use item:245903\n/use item:241288\n/use item:241289",
-        fixedTooltip = "item:245898",
+        name         = "딜물",
+        icon         =236314,
+        label        = "딜물약",
+        fixedBody    = "/use 무모함의 물약\n/use 빛의 잠재력",
+        fixedTooltip = "",
     },
     {
-        name         = "MF_Health",
-        icon         = "Interface\\Icons\\inv_potion_131",
-        label        = "체력/회복",
-        spells       = {1231418},
-        fixedBody    = "/stopcasting\n/cast [nocombat] {1}\n/use [combat] item:271884\n/use [combat] item:271883\n/use [combat] item:241304\n/use [combat] item:241305",
+        name         = "치물",
+        icon         ="Interface\\Icons\\inv_potion_131",
+        label        = "치유물약",
+        fixedBody    = "/use 생명석\n/use 농축된 실버문 생명력 물약",
         fixedTooltip = "item:271884",
     },
     {
-        name         = "MF_Food",
-        icon         = "Interface\\Icons\\inv_misc_food_73cinnamonroll",
+        name         = "만회",
+        icon         =134029,
         label        = "음식",
-        fixedBody    = "/use item:113509\n/use item:260262\n/use item:260263\n/use item:260264\n/use item:242297\n/use item:260260\n/use item:1226196\n/use item:242299\n/use item:242301\n/use item:242298\n/use item:260259",
+        spells       = {1231418},
+        fixedBody    = "/use {1}\n/use 창조된 마나 찐빵",
         fixedTooltip = "item:113509",
     },
     {
-        name         = "MF_Trinket1",
-        icon         = "Interface\\Icons\\inv_jewelry_trinketpvp_01",
+        name         = "장식1",
+        icon         ="Interface\\Icons\\inv_jewelry_trinketpvp_01",
         label        = "장신구1",
         fixedBody    = "/use 13",
         fixedTooltip = "13",
     },
     {
-        name         = "MF_Trinket2",
-        icon         = "Interface\\Icons\\inv_jewelry_trinketpvp_02",
+        name         = "장식2",
+        icon         ="Interface\\Icons\\inv_jewelry_trinketpvp_02",
         label        = "장신구2",
         fixedBody    = "/use 14",
         fixedTooltip = "14",
     },
     {
-        name      = "MF_Focus",
-        icon      = "Interface\\Icons\\ability_hunter_focusedaim",
-        macroIcon = 236203,
-        label     = "포커스",
-        fixedBody = "/focus [@mouseover,exists,nodead] []",
+        name         = "초읽기",
+        icon         =237538,
+        label        = "초읽기",
+        fixedBody    = [[/run local _,t=GetInstanceInfo()local s=5 if SecureCmdOptionParse("[btn:2]")then s=0 elseif t=="raid"then s=10 end C_PartyInfo.DoCountdown(s)]],
+        fixedTooltip = "",
     },
 }
 
@@ -170,6 +194,7 @@ local all_buttons = {}
 
 local poll_elapsed = 0
 local poll_frame   = CreateFrame("Frame")
+poll_frame:Show() -- OnUpdate는 shown 상태인 프레임에서만 실행됨
 
 local function on_poll_update(_, dt)
     poll_elapsed = poll_elapsed + dt
@@ -191,7 +216,7 @@ local function create_macro_button(parent, def, ox, oy)
     tex:SetPoint("TOPLEFT",     btn, "TOPLEFT",      margin, -margin)
     tex:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -margin,  margin)
     tex:SetTexCoord(0.1, 0.9, 0.1, 0.9)
-    tex:SetTexture(def.macroIcon or def.icon)
+    tex:SetTexture(def.icon or resolve_macro_icon(def))
     btn._tex = tex
 
     local normalTex = btn:CreateTexture(nil, "OVERLAY")
@@ -206,7 +231,7 @@ local function create_macro_button(parent, def, ox, oy)
 
     local lbl = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     lbl:SetPoint("TOP", btn, "BOTTOM", 0, -2)
-    lbl:SetWidth(BTN_SIZE + BTN_GAP - 2)
+    lbl:SetWidth(50)
     lbl:SetWordWrap(false)
     lbl:SetJustifyH("CENTER")
     lbl:SetText((def.label or def.name):gsub("\n", " "))
@@ -225,7 +250,7 @@ local function create_macro_button(parent, def, ox, oy)
             local slot = tonumber(def.fixedTooltip)
             if slot then icon = GetInventoryItemTexture("player", slot) end
         end
-        tex:SetTexture(icon or def.macroIcon or def.icon)
+        tex:SetTexture(icon or def.icon or resolve_macro_icon(def))
     end
     btn._refreshIcon = refresh_icon
     refresh_icon()
@@ -327,9 +352,18 @@ end
 -- ======================================================================
 local factory_hooks_installed = false
 
+local function refresh_all_buttons()
+    for _, btn in ipairs(all_buttons) do
+        if btn._refreshState then btn._refreshState() end
+        if btn._refreshIcon  then btn._refreshIcon()  end
+    end
+end
+
 local function install_factory_hooks()
     if factory_hooks_installed or not MacroFrame then return end
     factory_hooks_installed = true
+    hooksecurefunc("DeleteMacro", refresh_all_buttons)
+    hooksecurefunc("CreateMacro", refresh_all_buttons)
     MacroFrame:HookScript("OnShow", function()
         if dodoDB and dodoDB.enableMacro == false then return end
         build_panel()
