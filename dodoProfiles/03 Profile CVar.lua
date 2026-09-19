@@ -119,7 +119,7 @@ local GRAPHICS_CVARS = {
     { "graphicsOutlineMode",       1 },
     { "graphicsTextureResolution", 2 },
     { "graphicsSpellDensity",      0 },
-    { "graphicsProjectedTextures", 0 },
+    { "graphicsProjectedTextures", 1 },
     { "graphicsViewDistance",      0 },
     { "graphicsEnvironmentDetail", 0 },
     { "graphicsGroundClutter",     0 },

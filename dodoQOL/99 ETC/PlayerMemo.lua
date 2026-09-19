@@ -22,6 +22,7 @@ local IsInRaid           = IsInRaid
 local issecretvalue      = issecretvalue or function() return false end
 local math_max           = math.max
 local pairs              = pairs
+local PlaySound          = PlaySound
 local StaticPopup_Show   = StaticPopup_Show
 local string_format      = string.format
 local table_concat       = table.concat
@@ -50,6 +51,7 @@ StaticPopupDialogs["DODO_PLAYER_MEMO_WARN"] = {
     preferredIndex = 3,
 }
 
+
 -- ==============================
 -- 코어 API
 -- ==============================
@@ -59,6 +61,9 @@ function PM.Add(name, note)
     dodoDB.playerMemoList[name] = { note = note or "", date = date("%Y-%m-%d") }
     C_FriendList.AddIgnore(name)
     if PM.RefreshUI then PM.RefreshUI() end
+    PlaySound(113, "Master")
+    local note_str = (note and note ~= "") and note or "(없음)"
+    print(string_format("|cff00ccff[메모]|r %s 추가됨 — 메모: %s", name, note_str))
 end
 
 function PM.Remove(key)
@@ -289,6 +294,32 @@ local function note_input_enter(self)
 end
 
 -- ==============================
+-- 우클릭 메뉴 훅
+-- ==============================
+local function unit_menu_handler(owner, root, contextData)
+    local name, server = UnitName(contextData.unit)
+    if not name or issecretvalue(name) then return end
+    local realm    = (server and server ~= "") and server or GetRealmName()
+    local key_full = name .. "-" .. realm
+    local list     = dodoDB.playerMemoList
+    local used_key = list and (list[key_full] and key_full or list[name] and name)
+    root:CreateDivider()
+    root:CreateButton(used_key and "메모 편집" or "메모 추가", function()
+        local cur_list = dodoDB.playerMemoList
+        local cur_key  = cur_list and (cur_list[key_full] and key_full or cur_list[name] and name)
+        local note     = cur_key and cur_list[cur_key].note or ""
+        PM.OpenAndFill(key_full, note)
+    end)
+end
+
+local function hook_unit_menus()
+    Menu.ModifyMenu("MENU_UNIT_PLAYER",       unit_menu_handler)
+    Menu.ModifyMenu("MENU_UNIT_PARTY",        unit_menu_handler)
+    Menu.ModifyMenu("MENU_UNIT_RAID_PLAYER",  unit_menu_handler)
+    Menu.ModifyMenu("MENU_UNIT_ENEMY_PLAYER", unit_menu_handler)
+end
+
+-- ==============================
 -- UI — refresh (memo_frame 저장 후 참조)
 -- ==============================
 local function refresh_ui()
@@ -335,6 +366,27 @@ local function refresh_ui()
 end
 
 PM.RefreshUI = refresh_ui
+
+function PM.OpenAndFill(name, note)
+    if not memo_frame then return end
+    if FriendsFrame and not FriendsFrame:IsShown() then
+        ToggleFriendsFrame()
+    elseif not memo_frame:IsShown() then
+        memo_frame:Show()
+        refresh_ui()
+    end
+    local ni = memo_frame._name_input
+    local nn = memo_frame._note_input
+    if ni then
+        ni:SetText(name or "")
+        if ni._ph then ni._ph:SetShown(not name or name == "") end
+    end
+    if nn then
+        nn:SetText(note or "")
+        if nn._ph then nn._ph:SetShown(not note or note == "") end
+        nn:SetFocus()
+    end
+end
 
 -- ==============================
 -- UI — 빌드 (FriendsFrame 로드 후 1회)
@@ -501,6 +553,12 @@ local function build_ui()
     bottom._ph_name   = ph_name
     bottom._ph_note   = ph_note
 
+    -- OpenAndFill용 외부 접근 refs
+    frame._name_input = name_input
+    frame._note_input = note_input
+    frame._ph_name    = ph_name
+    frame._ph_note    = ph_note
+
     -- FriendsFrame 연동
     FriendsFrame:HookScript("OnShow", function()
         if dodoDB.enablePlayerMemo ~= false then
@@ -539,6 +597,7 @@ local function on_event(self, event, arg1)
         -- Blizzard_SocialUI 미로드 시 ADDON_LOADED 유지
         sync_db_to_wow()
         check_party_for_memo()
+        hook_unit_menus()
         self:UnregisterEvent("PLAYER_LOGIN")
 
     elseif event == "IGNORELIST_UPDATE" then
