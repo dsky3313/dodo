@@ -227,7 +227,7 @@ on_update = function(self, dt)
         spark:SetVertexColor(1, 1, 1)
     else
         -- LowSpeed: 버프 없음 / 저속
-        self:SetStatusBarTexture("UI-CastingBar-Interrupted")
+        self:SetStatusBarTexture("UI-CastingBar-Filling-Standard")
         self:SetStatusBarColor(0.86, 0.32, 0.39)
         text:SetTextColor(0.86, 0.32, 0.39)
         spark:SetVertexColor(0.86, 0.32, 0.39)
