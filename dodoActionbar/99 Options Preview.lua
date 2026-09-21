@@ -173,9 +173,9 @@ function dodoActionbarPreviewMixin:Update()
             sim_color_enabled = val == true
         end
     end
-    local sim_range_c = (dodo.Colors and dodo.Colors.ActionbarIconColor and dodo.Colors.ActionbarIconColor.Range)
+    local sim_range_c = (dodo.Colors and dodo.Colors.Actionbar and dodo.Colors.Actionbar.Range)
                      or { r = 0.77, g = 0.12, b = 0.23 }
-    local sim_mana_c  = (dodo.Colors and dodo.Colors.ActionbarIconColor and dodo.Colors.ActionbarIconColor.Mana)
+    local sim_mana_c  = (dodo.Colors and dodo.Colors.Actionbar and dodo.Colors.Actionbar.Mana)
                      or { r = 0.10, g = 0.30, b = 1.00 }
 
     -- CDM 미리보기 여부

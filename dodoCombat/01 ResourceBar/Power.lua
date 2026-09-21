@@ -142,7 +142,7 @@ local function update_bar1()
             token = token:sub(1, 1):upper() .. token:sub(2):lower()
         end
         
-        local dodoRes = Colors and Colors.Power and token and Colors.Power[token]
+        local dodoRes = Colors and Colors.Unitframe and Colors.Unitframe.Power and token and Colors.Unitframe.Power[token]
         
         c = dodoRes or PowerBarColor[pToken] or PowerBarColor[pType] or { r = 1, g = 1, b = 1 }
         

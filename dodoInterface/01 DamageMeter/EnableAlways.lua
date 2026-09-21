@@ -27,7 +27,7 @@ f:SetScript("OnEvent", function(self)
         C_Timer.After(1, function()
             if C_CVar.GetCVarBool("damageMeterEnabled") == false then
                 SetCVar("damageMeterEnabled", "1")
-                print("|cff00ccff[dodo]|r 피해량 측정기를 활성화했습니다.")
+                print("|c" .. dodo.Colors.CharacterFrame.Enchant.hex .. "[dodo]|r 피해량 측정기를 활성화했습니다.")
             end
         end)
     end

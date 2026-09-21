@@ -238,7 +238,7 @@ local function create_icon(index)
 
     f.count = overlay:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
     f.count:SetPoint("BOTTOMRIGHT", overlay, "BOTTOMRIGHT", -2, 2)
-    f.count:SetTextColor(dodo.Colors.Gold.r, dodo.Colors.Gold.g, dodo.Colors.Gold.b)
+    f.count:SetTextColor(dodo.Colors.Primary.Gold.r, dodo.Colors.Primary.Gold.g, dodo.Colors.Primary.Gold.b)
 
     icons[index] = f
 end

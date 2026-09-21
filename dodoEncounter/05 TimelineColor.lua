@@ -20,6 +20,8 @@ local GetInstanceInfo = GetInstanceInfo
 local IsInInstance = IsInInstance
 local ipairs = ipairs
 
+local dodoColors = dodo.Colors
+
 -- ==============================
 -- 기능 1: 색상 적용/해제
 -- ==============================
@@ -72,7 +74,7 @@ local function update_visual()
         local eids = entry.eventID and { entry.eventID }
             or (entry.spellID and spell_map[entry.spellID])
         if eids then
-            local role = dodo.Colors.EncounterColor and dodo.Colors.EncounterColor[entry.role]
+            local role = dodoColors.Encounter and dodoColors.Encounter[entry.role]
             local color = role and CreateColor(role.r, role.g, role.b)
             local highlight_color = (dodoDB.useEncounterTimelineColorHighlight == false) and color or nil
             for _, encounter_eid in ipairs(eids) do

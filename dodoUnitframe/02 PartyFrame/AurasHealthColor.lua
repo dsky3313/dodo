@@ -14,10 +14,10 @@ dodoDB = dodoDB or {}
 ---@type table<number, table<number, { active: table }>>
 local HealthColorWatchlist = {
 	[264] = { -- 복원 주술사
-		[61295] = { active = dodo.Colors.HealthColorActive }, -- 성난해일
+		[61295] = { active = dodo.Colors.Unitframe.PartyFrame.HealthColorActive }, -- 성난해일
 	},
 	[1473] = { -- 증강 기원사
-		[410089] = { active = dodo.Colors.HealthColorActive },
+		[410089] = { active = dodo.Colors.Unitframe.PartyFrame.HealthColorActive },
 	},
 }
 

@@ -28,7 +28,7 @@ local ClassTable = {
     { id = 13, name = "기원사", iconID = 4574311, dispell = { poison = 365585 }, bl = 390386 },
 }
 
-local gold = "|c" .. dodo.Colors.Gold.hex
+local gold = "|c" .. dodo.Colors.Primary.Gold.hex
 local UtilTable = {
     { iconID = 132108, name = gold .. "독해제|r", key = "poison", type = "dispell" },
     { iconID = 136066, name = gold .. "마법해제|r", key = "magic", type = "dispell" },

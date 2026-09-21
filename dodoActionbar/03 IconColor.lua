@@ -69,10 +69,10 @@ local function update_icon_color(btn)
 
     local r, g, b, desat = 1, 1, 1, 0
     if btn.__isOutOfRange then
-        local c = dodoColors.ActionbarIconColor.Range
+        local c = dodoColors.Actionbar.Range
         r, g, b, desat = c.r, c.g, c.b, 1
     elseif btn.__isNotEnoughMana then
-        local c = dodoColors.ActionbarIconColor.Mana
+        local c = dodoColors.Actionbar.Mana
         r, g, b, desat = c.r, c.g, c.b, 1
     else
         r, g, b = 1, 1, 1

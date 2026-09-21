@@ -24,7 +24,11 @@ dodo.COMBAT_DEFAULTS = {
     useDebuff               = true,
     debuffSize              = 56,
     debuffMax               = 6,
-    debuffX                 = 350,
+    debuffAnchorPoint       = "RIGHT",
+    debuffAnchorRelPoint    = "CENTER",
+    debuffAnchorX           = 396,
+    debuffAnchorY           = 0,
+    debuffX                 = 250,
     debuffY                 = 0,
 
     -- BloodBrez

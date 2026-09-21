@@ -188,9 +188,9 @@ local function init_db()
     def("nameplateInterruptBorder",    true)
     def("nameplateDispelGlow",         true)
 
-    local C  = dodo.Colors.NamePlate
-    local Cp = dodo.Colors.Primary
-    local Ce = dodo.Colors.ETC
+    local C  = dodo.Colors.Nameplate
+    local Cp = dodo.ColorsPrimary
+    local Ce = dodo.Colors.PrimarySoft
 
     def_hex ("nameplateColorBoss",             C.Boss)
     def_hex ("nameplateColorMiniBoss",         C.MiniBoss)
@@ -280,9 +280,9 @@ table.insert(dodo.OptionRegistrations["이름표"], function(category)
     -- 마스터 토글
     dodo.UI:SettingsCheckbox(category, "enableNameplate", "이름표 색상 변경", "유닛 종류·위협에 따라 적 네임플레이트 체력바 색상을 변경합니다.", true, on_master_change)
 
-    local C  = dodo.Colors.NamePlate
-    local Cp = dodo.Colors.Primary
-    local Ce = dodo.Colors.ETC
+    local C  = dodo.Colors.Nameplate
+    local Cp = dodo.ColorsPrimary
+    local Ce = dodo.Colors.PrimarySoft
 
     -- 유닛 색상 섹션
     dodo.UI:SettingsSectionHeader(category, "유닛 색상")

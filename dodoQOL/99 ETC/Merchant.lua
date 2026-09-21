@@ -25,7 +25,7 @@ local hooksecurefunc = hooksecurefunc
 
 local C_CurrencyInfo = C_CurrencyInfo
 local C_MerchantFrame = C_MerchantFrame
-local PREFIX = "[|cff00ff00dodo|r]"
+local PREFIX = "[|c" .. ((dodo and dodo.Colors and dodo.Colors.CharacterFrame and dodo.Colors.CharacterFrame.Enchant and dodo.Colors.CharacterFrame.Enchant.hex) or "ff64ff64") .. "dodo|r]"
 
 -- ==============================
 -- 동작 (EQOL 훅 방식)

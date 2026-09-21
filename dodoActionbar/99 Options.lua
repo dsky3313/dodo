@@ -392,7 +392,7 @@ dodo.RegisterOption("행동 단축바", function(category)
             end
         end
         if #color_items > 0 then
-            local _c = dodo.Colors and dodo.Colors.ActionbarIconColor
+            local _c = dodo.Colors and dodo.Colors.Actionbar
             local _red  = _c and ("|c" .. _c.Range.hex .. "■|r") or "■"
             local _blue = _c and ("|c" .. _c.Mana.hex  .. "■|r") or "■"
             T(dodo.UI:SettingsMultiDropDown(category, "아이콘 색상", color_items, function(key, selected)

@@ -24,7 +24,7 @@ local _color_keys        = nil  -- lazy 초기화
 
 local function get_color_keys()
     if _color_keys then return _color_keys end
-    local ec = dodo.Colors and dodo.Colors.EncounterColor
+    local ec = dodo.Colors and dodo.Colors.Encounter
     if not ec then return nil end
     _color_keys = {}
     for k in pairs(ec) do
@@ -50,7 +50,7 @@ local function start_text_cycle(mixin)
         _text_cycle_timer = nil
 
         local keys = get_color_keys()
-        local ec   = dodo.Colors and dodo.Colors.EncounterColor
+        local ec   = dodo.Colors and dodo.Colors.Encounter
 
         _color_idx = _color_idx + 1
         if not keys or _color_idx > #keys then
@@ -285,7 +285,7 @@ function dodoEncounterPreviewMixin:Update()
 	self.timelineFrame:SetPoint("TOPLEFT", self, "TOPLEFT", ox, -54)
 	self.timelineFrame:SetSize(TW, totalH)
 
-	local ec = dodo.Colors and dodo.Colors.EncounterColor
+	local ec = dodo.Colors and dodo.Colors.Encounter
 
 	for i, entry in ipairs(self.timelineBars) do
 		entry.rowFrame:SetWidth(TW)

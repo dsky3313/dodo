@@ -525,7 +525,7 @@ local function init_row(button, element_data)
         boss:SetJustifyH("LEFT")
         boss:SetPoint("TOPLEFT", icon, "BOTTOMLEFT", 0, -5)
         boss:SetHeight(12)
-        boss:SetTextColor(dodo.Colors.Gold.r, dodo.Colors.Gold.g, dodo.Colors.Gold.b)
+        boss:SetTextColor(dodo.Colors.Primary.Gold.r, dodo.Colors.Primary.Gold.g, dodo.Colors.Primary.Gold.b)
         boss:SetShadowOffset(1, -1)
         boss:SetShadowColor(0, 0, 0, 1)
         if boss.SetWordWrap then boss:SetWordWrap(false) end

@@ -121,7 +121,7 @@ end
 
 local function on_spell_tooltip(self, data)
     if dodoDB.enableTooltip == false or dodoDB.useTooltipColor == false then return end
-    local gold = dodo.Colors.Primary.Gold
+    local gold = dodo.ColorsPrimary.Gold
     if gold then
         apply_border_color(self, gold.r, gold.g, gold.b)
     else

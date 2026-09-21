@@ -71,8 +71,9 @@ function LibIcon:Create(name, parent, config)
     frame.Name = overlayLayer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     frame.Count = overlayLayer:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
     frame.Count:SetPoint("BOTTOMRIGHT", overlayLayer, "BOTTOMRIGHT", -2, 2)
-    if dodo.Colors and dodo.Colors.Gold then
-        frame.Count:SetTextColor(dodo.Colors.Gold.r, dodo.Colors.Gold.g, dodo.Colors.Gold.b)
+    local _gold = dodo.Colors and dodo.Colors.Primary and dodo.Colors.Primary.Gold
+    if _gold then
+        frame.Count:SetTextColor(_gold.r, _gold.g, _gold.b)
     else
         frame.Count:SetTextColor(1.00, 0.82, 0.00)
     end

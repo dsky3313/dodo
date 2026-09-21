@@ -205,8 +205,8 @@ local function create_ui()
                 lvlText:SetFont(fontPath, 11, "OUTLINE")
             end
             local r, g, b = 1.0, 0.82, 0.0
-            if dodo.Colors and dodo.Colors.Gold then
-                r, g, b = dodo.Colors.Gold.r, dodo.Colors.Gold.g, dodo.Colors.Gold.b
+            if dodo.Colors and dodo.Colors.Primary and dodo.Colors.Primary.Gold then
+                r, g, b = dodo.Colors.Primary.Gold.r, dodo.Colors.Primary.Gold.g, dodo.Colors.Primary.Gold.b
             end
             lvlText:SetTextColor(r, g, b)
             btn.lvlText = lvlText
@@ -241,8 +241,8 @@ local function create_ui()
                 lvlText:SetFont(fontPath, 11, "OUTLINE")
             end
             local r, g, b = 1.0, 0.82, 0.0
-            if dodo.Colors and dodo.Colors.Gold then
-                r, g, b = dodo.Colors.Gold.r, dodo.Colors.Gold.g, dodo.Colors.Gold.b
+            if dodo.Colors and dodo.Colors.Primary and dodo.Colors.Primary.Gold then
+                r, g, b = dodo.Colors.Primary.Gold.r, dodo.Colors.Primary.Gold.g, dodo.Colors.Primary.Gold.b
             end
             lvlText:SetTextColor(r, g, b)
             btn.lvlText = lvlText

@@ -117,7 +117,7 @@ local function init_palettes()
     table_sort(sorted_cls, function(a, b) return a.value < b.value end)
     local cls_colors = {}
     for idx, cls in ipairs(sorted_cls) do
-        local c = dodo.Colors.Class[cls.key]
+        local c = dodo.Colors.Unitframe.Class[cls.key]
         if c then
             cls_colors[#cls_colors + 1] = { sort = idx, description = cls.value, color = { c.r, c.g, c.b, 1 } }
         end
@@ -128,7 +128,7 @@ local function init_palettes()
     local power_order = { "Mana", "Rage", "Focus", "Energy", "RunicPower", "Chi", "HolyPower", "SoulShards", "Essence", "RuneBlood", "RuneFrost", "RuneUnholy" }
     local pw_colors = {}
     for idx, k in ipairs(power_order) do
-        local v = dodo.Colors.Power[k]
+        local v = dodo.Colors.Unitframe.Power[k]
         if v then
             pw_colors[#pw_colors + 1] = { sort = idx, description = k, color = { v.r, v.g, v.b, 1 } }
         end
@@ -139,7 +139,7 @@ local function init_palettes()
     local rainbow_order = { "SoftRed", "SoftOrange", "SoftYellow", "SoftGreen", "SoftCyan", "SoftBlue", "SoftPurple", "SoftPink" }
     local rainbow = {}
     for idx, k in ipairs(rainbow_order) do
-        local v = dodo.Colors.ETC[k]
+        local v = dodo.Colors.PrimarySoft[k]
         if v then
             rainbow[#rainbow + 1] = { sort = idx, description = k, color = { v.r, v.g, v.b, 1 } }
         end

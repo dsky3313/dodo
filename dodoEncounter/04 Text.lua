@@ -170,7 +170,7 @@ end
 
 -- custom_text: Data.lua entry.text (non-secret) 있으면 사용, 없으면 info.spellName(secret→setter)
 local function show_alert(eventID, info, role, custom_text)
-    local ec = dodo.Colors and dodo.Colors.EncounterColor
+    local ec = dodo.Colors and dodo.Colors.Encounter
     local c  = ec and role and role ~= "Other" and ec[role]
     for _, entry in ipairs(active_alerts) do
         if entry.eventID == eventID then

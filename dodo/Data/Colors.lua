@@ -7,35 +7,40 @@
 local addonName, dodo = ...
 dodoDB = dodoDB or {}
 _G.dodoAPI = dodo -- dodo_Test 등 의존 addon에서 dodo.* 공유 API 접근용
-dodo.Colors = dodo.Colors or {}
 
 -- ==============================
 -- 기능 1: 색상 테이블
 -- ==============================
-dodo.Colors = {
-	Primary = {
-        Red          = { r = 1.00, g = 0.00, b = 0.00, hex = "ffff0000" },
-        Orange       = { r = 1.00, g = 0.66, b = 0.00, hex = "ffffaa00" },
-        Gold         = { r = 1.00, g = 0.82, b = 0.00, hex = "ffffd100" },
-        Green        = { r = 0.00, g = 1.00, b = 0.00, hex = "ff00ff00" },
-        Blue         = { r = 0.00, g = 0.00, b = 1.00, hex = "ff0000ff" },
-        Indigo       = { r = 0.29, g = 0.00, b = 0.51, hex = "ff4b0082" },
-        Purple       = { r = 0.50, g = 0.00, b = 0.50, hex = "ff800080" },
-        Gray         = { r = 0.63, g = 0.63, b = 0.63, hex = "ffa0a0a0" },
-        White        = { r = 1.00, g = 1.00, b = 1.00, hex = "ffffffff" },
-    },
+dodo.ColorsPrimary = {
+    Red          = { r = 1.00, g = 0.00, b = 0.00, hex = "ffff0000" },
+    Orange       = { r = 1.00, g = 0.66, b = 0.00, hex = "ffffaa00" },
+    Gold         = { r = 1.00, g = 0.82, b = 0.00, hex = "ffffd100" },
+    Green        = { r = 0.00, g = 1.00, b = 0.00, hex = "ff00ff00" },
+    Blue         = { r = 0.00, g = 0.00, b = 1.00, hex = "ff0000ff" },
+    Indigo       = { r = 0.29, g = 0.00, b = 0.51, hex = "ff4b0082" },
+    Purple       = { r = 0.50, g = 0.00, b = 0.50, hex = "ff800080" },
+    Gray         = { r = 0.63, g = 0.63, b = 0.63, hex = "ffa0a0a0" },
+    White        = { r = 1.00, g = 1.00, b = 1.00, hex = "ffffffff" },
+}
 
-    ActionbarIconColor = {
-        Range  = { r = 0.77, g = 0.12, b = 0.23, hex = "ffc41f3b" },
-        Mana   = { r = 0.10, g = 0.30, b = 1.00, hex = "ff1a4dff" },
-    },
+dodo.ColorsPrimarySoft = {
+    SoftRed    = { r = 1.00, g = 0.20, b = 0.20, hex = "ffff3232" },
+    SoftOrange = { r = 1.00, g = 0.59, b = 0.20, hex = "ffff9632" },
+    SoftYellow = { r = 1.00, g = 1.00, b = 0.39, hex = "ffffff64" },
+    SoftGreen  = { r = 0.39, g = 1.00, b = 0.39, hex = "ff64ff64" },
+    SoftCyan   = { r = 0.20, g = 0.90, b = 1.00, hex = "ff32e6ff" },
+    SoftBlue   = { r = 0.39, g = 0.39, b = 1.00, hex = "ff6464ff" },
+    SoftPurple = { r = 0.78, g = 0.39, b = 1.00, hex = "ffc864ff" },
+    SoftPink   = { r = 1.00, g = 0.20, b = 0.78, hex = "ffff32c8" },
+}
 
-    CharacterFrame = {
-        notEnchant = { r = 0.90, g = 0.10, b = 0.10, hex = "ffe51a1a" },
-        Enchant    = { r = 0.00, g = 1.00, b = 0.60, hex = "ff00ff96" },
-    },
+dodo.ColorsActionbar = {
+    Range = dodo.ColorsPrimary.Red,
+    Mana  = dodo.ColorsPrimary.Blue,
+}
 
-	Class = { -- From oUF
+dodo.ColorsUnitframe = {
+    Class = { -- From oUF
         DEATHKNIGHT  = { r = 0.77, g = 0.12, b = 0.23, hex = "ffc41f3b" },
         DEMONHUNTER  = { r = 0.64, g = 0.19, b = 0.79, hex = "ffa330c9" },
         DRUID        = { r = 1.00, g = 0.49, b = 0.04, hex = "ffff7d0a" },
@@ -50,7 +55,6 @@ dodo.Colors = {
         WARLOCK      = { r = 0.53, g = 0.53, b = 0.93, hex = "ff8787ed" },
         WARRIOR      = { r = 0.78, g = 0.61, b = 0.43, hex = "ffc79c6e" },
     },
-
     Power = { -- From oUF
         Mana         = { r = 0.00, g = 0.00, b = 1.00, hex = "ff0000ff" },
         Rage         = { r = 1.00, g = 0.00, b = 0.00, hex = "ffff0000" },
@@ -65,7 +69,6 @@ dodo.Colors = {
         RuneFrost    = { r = 0.58, g = 0.80, b = 0.97, hex = "ff94cbf7" },
         RuneUnholy   = { r = 0.68, g = 0.92, b = 0.26, hex = "ffadeb42" },
     },
-
     Spec = {
         DEATHKNIGHT = {
             [1] = { r = 0.97, g = 0.25, b = 0.22, hex = "fff74139" }, -- 혈죽
@@ -90,18 +93,33 @@ dodo.Colors = {
             [3] = { r = 1.00, g = 0.59, b = 0.20, hex = "ffff9633" }, -- 방어
         },
     },
-
     Reaction = { -- From oUF
-    Reaction1    = { r = 0.80, g = 0.30, b = 0.22, hex = "ffcc4c38" },
-    Reaction2    = { r = 0.80, g = 0.30, b = 0.22, hex = "ffcc4c38" },
-    Reaction3    = { r = 0.80, g = 0.30, b = 0.22, hex = "ffcc4c38" },
-    Reaction4    = { r = 0.85, g = 0.77, b = 0.36, hex = "ffd9c45c" },
-    Reaction5    = { r = 0.10, g = 0.60, b = 0.10, hex = "ff1a991a" },
-    Reaction6    = { r = 0.10, g = 0.60, b = 0.10, hex = "ff1a991a" },
-    Reaction7    = { r = 0.10, g = 0.60, b = 0.10, hex = "ff1a991a" },
-    Reaction8    = { r = 0.10, g = 0.60, b = 0.10, hex = "ff1a991a" },
+        Reaction1    = { r = 0.80, g = 0.30, b = 0.22, hex = "ffcc4c38" },
+        Reaction2    = { r = 0.80, g = 0.30, b = 0.22, hex = "ffcc4c38" },
+        Reaction3    = { r = 0.80, g = 0.30, b = 0.22, hex = "ffcc4c38" },
+        Reaction4    = { r = 0.85, g = 0.77, b = 0.36, hex = "ffd9c45c" },
+        Reaction5    = { r = 0.10, g = 0.60, b = 0.10, hex = "ff1a991a" },
+        Reaction6    = { r = 0.10, g = 0.60, b = 0.10, hex = "ff1a991a" },
+        Reaction7    = { r = 0.10, g = 0.60, b = 0.10, hex = "ff1a991a" },
+        Reaction8    = { r = 0.10, g = 0.60, b = 0.10, hex = "ff1a991a" },
     },
+    PartyFrame = {
+        HealthColorActive   = dodo.ColorsPrimarySoft.SoftGreen,
+        HealthColorExpiring = dodo.ColorsPrimarySoft.SoftRed,
+    },
+    Castbar = {
+        castColor        = { r = 1.00, g = 1.00, b = 0.00, hex = "ffffff00" }, -- 일반
+        channelColor     = { r = 0.39, g = 1.00, b = 0.39, hex = "ff64ff64" }, -- 채널링
+        empoweredColor   = { r = 0.00, g = 1.00, b = 0.00, hex = "ff00ff00" }, -- Empowered 기원사
+        importantColor   = { r = 1.00, g = 0.20, b = 0.78, hex = "ffff32c8" }, -- Important
+        interruptReady   = { r = 0.92, g = 0.35, b = 0.20, hex = "ffeb5933" }, -- 차단 가능
+        uninterruptible  = { r = 0.71, g = 0.71, b = 0.71, hex = "ffb4b4b4" }, -- 차단 불가
+        interruptedColor = { r = 1.00, g = 0.20, b = 0.20, hex = "ffff3232" }, -- 차단됨
+        successColor     = { r = 0.39, g = 1.00, b = 0.39, hex = "ff64ff64" }, -- 성공
+    },
+}
 
+dodo.ColorsCombat = {
     Debuff = {
         [0]  = { r = 0.80, g = 0.80, b = 0.80, hex = "ffcccccc" }, -- 일반 디버프
         [1]  = { r = 0.32, g = 0.66, b = 1.00, hex = "FF52A8FF" }, -- Magic
@@ -111,21 +129,26 @@ dodo.Colors = {
         [9]  = { r = 1.00, g = 0.29, b = 0.17, hex = "FFFF4B2C" }, -- Bleed / Enrage
         [11] = { r = 1.00, g = 0.16, b = 0.16, hex = "FFFF2828" }, -- Bleed
     },
+}
 
-    ETC = {
-    SoftRed      = { r = 1.00, g = 0.20, b = 0.20, hex = "ffff3232" },
-    SoftOrange   = { r = 1.00, g = 0.59, b = 0.20, hex = "ffff9632" },
-    SoftYellow   = { r = 1.00, g = 1.00, b = 0.39, hex = "ffffff64" },
-    SoftGreen    = { r = 0.39, g = 1.00, b = 0.39, hex = "ff64ff64" },
-    SoftCyan     = { r = 0.20, g = 0.90, b = 1.00, hex = "ff32e6ff" },
-    SoftBlue     = { r = 0.39, g = 0.39, b = 1.00, hex = "ff6464ff" },
-    SoftPurple   = { r = 0.78, g = 0.39, b = 1.00, hex = "ffc864ff" },
-    SoftPink     = { r = 1.00, g = 0.20, b = 0.78, hex = "ffff32c8" },
-    HealthColorActive   = { r = 0.20, g = 0.80, b = 0.20, hex = "ff33cc33" },
-    HealthColorExpiring = { r = 0.80, g = 0.20, b = 0.20, hex = "ffcc3333" },
+dodo.ColorsEncounter = { -- 보스 인카운터 타임라인 색상 (EXBoss 기본 색상)
+    Tank     = { r = 0.78, g = 0.61, b = 0.43, hex = "ffc79c6e" }, -- Class.WARRIOR
+    Heal     = { r = 0.00, g = 1.00, b = 0.60, hex = "ff00ff96" }, -- Class.MONK
+    Phase    = { r = 0.53, g = 0.53, b = 0.93, hex = "ff8787ed" }, -- Class.WARLOCK
+    Other    = { r = 0.65, g = 0.69, b = 0.64, hex = "ffa5afa2" },
+    Adds     = { r = 0.25, g = 0.78, b = 0.92, hex = "ff3fc7eb" }, -- Class.MAGE (임시)
+    ETC2     = { r = 0.25, g = 0.78, b = 0.92, hex = "ff3fc7eb" }, -- Class.MAGE (임시)
+    ETC3     = { r = 0.25, g = 0.78, b = 0.92, hex = "ff3fc7eb" }, -- Class.MAGE (임시)
+}
+
+dodo.ColorsQoL = {
+    CharacterFrame = {
+        notEnchant = { r = 0.90, g = 0.10, b = 0.10, hex = "ffe51a1a" },
+        Enchant    = { r = 0.00, g = 1.00, b = 0.60, hex = "ff00ff96" }, -- 채팅창 dodo 문구 색상.
     },
+}
 
-    NamePlate = {
+dodo.ColorsNameplate = {
     Boss                = { r = 0.80, g = 0.20, b = 1.00, hex = "ffcc33ff" },
     MiniBoss            = { r = 0.20, g = 0.40, b = 1.00, hex = "ff3366ff" },
     Caster              = { r = 0.00, g = 0.80, b = 1.00, hex = "ff00ccff" },
@@ -136,63 +159,71 @@ dodo.Colors = {
     CastImportant       = { r = 1.00, g = 0.00, b = 1.00, hex = "ffff00ff" },
     CastUninterruptible = { r = 0.28, g = 0.28, b = 0.28, hex = "ff474747" },
     DispelGlow          = { r = 0.00, g = 0.50, b = 1.00, hex = "ff0080ff" },
-    },
-
-    EncounterColor = { -- 보스 인카운터 타임라인 색상 (EXBoss 기본 색상)
-    Tank     = { r = 0.78, g = 0.61, b = 0.43, hex = "ffc79c6e" }, -- Class.WARRIOR
-    Heal     = { r = 0.00, g = 1.00, b = 0.60, hex = "ff00ff96" }, -- Class.MONK
-    Mechanic = { r = 0.53, g = 0.53, b = 0.93, hex = "ff8787ed" }, -- Class.WARLOCK
-    Other    = { r = 0.65, g = 0.69, b = 0.64, hex = "ffa5afa2" },
-    Adds     = { r = 0.25, g = 0.78, b = 0.92, hex = "ff3fc7eb" }, -- Class.MAGE (임시)
-    ETC2     = { r = 0.25, g = 0.78, b = 0.92, hex = "ff3fc7eb" }, -- Class.MAGE (임시)
-    ETC3     = { r = 0.25, g = 0.78, b = 0.92, hex = "ff3fc7eb" }, -- Class.MAGE (임시)
-    },
 }
 
--- 하위 호환성 유지: Primary 및 ETC 색상들을 상위 dodo.Colors에 매핑
-if dodo.Colors.Primary then
-    for k, v in pairs(dodo.Colors.Primary) do
-        dodo.Colors[k] = v
-    end
-end
-if dodo.Colors.ETC then
-    for k, v in pairs(dodo.Colors.ETC) do
-        dodo.Colors[k] = v
-    end
-end
 
-local mt = {
-    __index = function(t, key)
-        if oUF and oUF.colors then
-            -- 1) oUF 직업 색상 테이블 참조 직접 등록
-            if oUF.colors.class then
-                for class, color in pairs(oUF.colors.class) do
-                    dodo.Colors[class] = color
-                end
-                -- 죽음의 기사(DEATHKNIGHT) 'DK' 단축 에일리어스 매핑
-                if oUF.colors.class.DEATHKNIGHT then
-                    dodo.Colors.DK = oUF.colors.class.DEATHKNIGHT
-                end
-            end
-            -- 2) oUF 우호도 색상 테이블 참조 직접 등록 (Reaction1 ~ Reaction8 형태로 평평화)
-            if oUF.colors.reaction then
-                for reaction, color in pairs(oUF.colors.reaction) do
-                    dodo.Colors["Reaction" .. reaction] = color
-                end
-            end
-        else
-            -- 폴백: 블리자드 순정 색상 테이블 참조 직접 등록
-            for class, color in pairs(RAID_CLASS_COLORS) do
-                dodo.Colors[class] = color
-            end
-            if RAID_CLASS_COLORS.DEATHKNIGHT then
-                dodo.Colors.DK = RAID_CLASS_COLORS.DEATHKNIGHT
-            end
-            for reaction, color in pairs(FACTION_BAR_COLORS) do
-                dodo.Colors["Reaction" .. reaction] = color
-            end
-        end
-        return nil
-    end
+
+-- ========================================================================
+-- dodo.Colors 사용법
+-- ========================================================================
+-- local dodoColors = dodo.Colors
+--
+-- [직접 접근 - 최상위 키]
+-- dodoColors.Actionbar.Range          → 액션바 사거리 색
+-- dodoColors.Actionbar.Mana           → 액션바 마나부족 색
+-- dodoColors.CharacterFrame.Enchant   → 캐릭터프레임 마법부여 있음 색 / 채팅 dodo 문구 색
+-- dodoColors.CharacterFrame.notEnchant→ 캐릭터프레임 마법부여 없음 색
+-- dodoColors.Unitframe.Class.WARRIOR  → 유닛프레임 직업 색
+-- dodoColors.Combat.Debuff[1]         → 디버프 타입 색 (Magic=1, Curse=2, Disease=3, Poison=4)
+-- dodoColors.Encounter.Tank           → 인카운터 타임라인 색
+-- dodoColors.Nameplate.Boss           → 네임플레이트 색
+-- dodoColors.Primary.Red              → 기본 색상 팔레트
+-- dodoColors.PrimarySoft.SoftGreen    → 기본 소프트 색상 팔레트
+--
+-- [색상 테이블 구조]
+-- { r=number, g=number, b=number, hex="aarrggbb" }
+-- ========================================================================
+
+dodo.Colors = {
+    Primary        = dodo.ColorsPrimary,
+    PrimarySoft    = dodo.ColorsPrimarySoft,
+    Actionbar      = dodo.ColorsActionbar,
+    Unitframe      = dodo.ColorsUnitframe,
+    Combat         = dodo.ColorsCombat,
+    Encounter      = dodo.ColorsEncounter,
+    QoL            = dodo.ColorsQoL,
+    Nameplate      = dodo.ColorsNameplate,
+    CharacterFrame = dodo.ColorsQoL.CharacterFrame,
 }
-setmetatable(dodo.Colors, mt)
+
+-- local mt = {
+--     __index = function(t, key)
+--         if oUF and oUF.colors then
+--             if oUF.colors.class then
+--                 for class, color in pairs(oUF.colors.class) do
+--                     dodo.Colors[class] = color
+--                 end
+--                 if oUF.colors.class.DEATHKNIGHT then
+--                     dodo.Colors.DK = oUF.colors.class.DEATHKNIGHT
+--                 end
+--             end
+--             if oUF.colors.reaction then
+--                 for reaction, color in pairs(oUF.colors.reaction) do
+--                     dodo.Colors["Reaction" .. reaction] = color
+--                 end
+--             end
+--         else
+--             for class, color in pairs(RAID_CLASS_COLORS) do
+--                 dodo.Colors[class] = color
+--             end
+--             if RAID_CLASS_COLORS.DEATHKNIGHT then
+--                 dodo.Colors.DK = RAID_CLASS_COLORS.DEATHKNIGHT
+--             end
+--             for reaction, color in pairs(FACTION_BAR_COLORS) do
+--                 dodo.Colors["Reaction" .. reaction] = color
+--             end
+--         end
+--         return nil
+--     end
+-- }
+-- setmetatable(dodo.Colors, mt)

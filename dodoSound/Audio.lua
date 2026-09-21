@@ -48,8 +48,8 @@ local audio_frame = nil
 
 -- dodo.Colors에서 피드백용 정적 헥스 코드 직접 가져오기 (치환 연산 배제)
 local colors = dodo.Colors
-local soft_green_hex = (colors and colors.SoftGreen and colors.SoftGreen.hex) or "ffb2ffb2"
-local soft_red_hex = (colors and colors.SoftRed and colors.SoftRed.hex) or "ffffb2b2"
+local soft_green_hex = (colors and colors.SoftGreen and colors.SoftGreen.hex) or "ff64ff64"
+local soft_red_hex   = (colors and colors.SoftRed   and colors.SoftRed.hex)   or "ffff3232"
 
 -- ==============================
 -- 기능 2: 상태 업데이트 및 오디오 동작
@@ -71,7 +71,7 @@ local function sync_audio(isManual)
         Sound_GameSystem_RestartSoundSystem()
 
         if isManual == true then
-            print("|c" .. soft_green_hex .. "[dodo]|r 오디오 동기화 완료")
+            print("[|c" .. soft_green_hex .. "dodo|r] 오디오 동기화 완료")
         end
     end
 end
@@ -159,7 +159,7 @@ local function on_audio_sync_change(checked)
     if checked then
         sync_audio(true)
     else
-        print("|c" .. soft_red_hex .. "[dodo]|r 오디오 동기화 비활성화")
+        print("[|c" .. soft_red_hex .. "dodo|r] 오디오 동기화 비활성화")
     end
 end
 

@@ -13,6 +13,8 @@ dodoDB = dodoDB or {}
 
 local RB = dodo.ResourceBar
 local Colors = dodo.Colors
+Colors.Spec    = Colors.Unitframe.Spec
+Colors.Class   = Colors.Unitframe.Class
 
 ---@class BuffColor
 ---@field r number Red
@@ -59,9 +61,12 @@ local bar2ClassConfig = {
         [3] = { { barMode = "stack",         spellID   = 51564,  maxStack   = 3, color = Colors.Spec.SHAMAN[3] } },
     },
     ["WARRIOR"]     = {
-        [1] = { { barMode = "duration",      spellID = 167105, duration = 10, color = Colors.Spec.WARRIOR[1] } },
+        [1] = {
+            { barMode = "stack",            spellID = 260708, requiredSpell = 1261049, maxStack = 18, color = Colors.Spec.WARRIOR[1] },
+            { barMode = "duration",         spellID = 107574,                                         color = Colors.Spec.WARRIOR[1] }
+        },
         [2] = {
-            { barMode = "whirlwind",         spellID   = 12950,  maxStack   = 4,            requiredSpell = 12950, color = Colors.Spec.WARRIOR[2] },
+            { barMode = "whirlwind",         spellID   = 12950,  maxStack   = 4, requiredSpell = 12950, color = Colors.Spec.WARRIOR[2] },
             { barMode = "duration",          spellID   = 184361, excludedSpell = 12950, color = Colors.Spec.WARRIOR[2] },
         },
         [3] = { { barMode = "stack",         spellID   = 190456, maxStack   = 100, color = Colors.Spec.WARRIOR[3] } },
