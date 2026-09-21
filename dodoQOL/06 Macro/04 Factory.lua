@@ -1,37 +1,40 @@
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local dodo = _G.dodo
 
-local C_Spell                 = C_Spell
-local C_Timer                 = C_Timer
-local CreateFrame             = CreateFrame
-local CreateMacro             = CreateMacro
-local GameTooltip             = GameTooltip
-local GetInventoryItemTexture = GetInventoryItemTexture
-local GetMacroIndexByName     = GetMacroIndexByName
-local InCombatLockdown        = InCombatLockdown
-local ShowMacroFrame          = ShowMacroFrame
-local ipairs                  = ipairs
-local math_ceil               = math.ceil
-local math_floor              = math.floor
-local math_max                = math.max
-local print                   = print
-local select                  = select
-local string_gsub             = string.gsub
-local table_concat            = table.concat
-local tonumber                = tonumber
-
--- ======================================================================
--- 상수
--- ======================================================================
 local BTN_SIZE    = 36
 local BTN_GAP     = 10
 local PANEL_PAD_X = 16
 local PANEL_PAD_Y = 35
 local PANEL_ROW_H = BTN_SIZE + 20 + BTN_GAP
 
--- ======================================================================
+-- ==============================
+-- 캐싱
+-- ==============================
+-- 함수
+local CreateFrame             = CreateFrame
+local InCombatLockdown        = InCombatLockdown
+local GetInventoryItemTexture = GetInventoryItemTexture
+local GetMacroIndexByName     = GetMacroIndexByName
+local ipairs                  = ipairs
+local math_max                = math.max
+local ShowMacroFrame          = ShowMacroFrame
+
+-- 변수
+local C_Spell                 = C_Spell
+local C_Timer                 = C_Timer
+local CreateMacro             = CreateMacro
+local GameTooltip             = GameTooltip
+local math_floor              = math.floor
+local print                   = print
+local string_gsub             = string.gsub
+local tonumber                = tonumber
+
+-- ==============================
 -- DB 헬퍼
--- ======================================================================
+-- ==============================
 local function get_db(macro_name)
     dodoDB.macroFactory = dodoDB.macroFactory or {}
     if not dodoDB.macroFactory[macro_name] then
@@ -40,10 +43,10 @@ local function get_db(macro_name)
     return dodoDB.macroFactory[macro_name]
 end
 
--- ======================================================================
+-- ==============================
 -- 스펠 토큰 치환: macroText 내 {n} → 스펠 이름
 -- 스펠 데이터 미캐시 시 nil 반환 + 비동기 로드 요청
--- ======================================================================
+-- ==============================
 local function resolve_spell_tokens(text, spells)
     if not text then return nil end
     if not spells or not text:find("{%d+}") then return text end
@@ -61,20 +64,20 @@ local function resolve_spell_tokens(text, spells)
     return out
 end
 
--- ======================================================================
+-- ==============================
 -- 매크로 아이콘 결정
 -- macroIcon → CreateMacro 전용 (없거나 "" → INV_MISC_QUESTIONMARK)
 -- icon      → 버튼 표시 전용 (macroIcon 없으면 버튼도 icon 사용)
--- ======================================================================
+-- ==============================
 local function resolve_macro_icon(def)
     local id = def.macroIcon
     if not id or id == "" or id == "?" then return "INV_MISC_QUESTIONMARK" end
     return id
 end
 
--- ======================================================================
+-- ==============================
 -- 매크로 바디 생성
--- ======================================================================
+-- ==============================
 local function build_macro_body(def)
     local db = get_db(def.macroName)
 
@@ -99,16 +102,16 @@ local function build_macro_body(def)
     return ""
 end
 
--- ======================================================================
+-- ==============================
 -- 매크로 정의
--- ======================================================================
+-- ==============================
 
 ---@class MacroDef
 ---@field label        string?                   매크로 팩토리버튼 표시 이름 (없으면 macroName 사용)
 ---@field icon         (string|integer)?         버튼 표시 아이콘 (파일 ID 또는 경로)
 ---@field macroName    string                    매크로 이름 (GetMacroIndexByName 조회 키)
 ---@field macroIcon    (string|integer)?         CreateMacro 전용 아이콘 (nil/"?" → ?)
----@field macroshowtooltip string?                   #showtooltip 값 (숫자 문자열이면 슬롯 아이콘으로도 사용)
+---@field macroshowtooltip string?               #showtooltip 값 (숫자 문자열이면 슬롯 아이콘으로도 사용)
 ---@field macroSpells  integer[]?                {n} 토큰용 스펠 ID 배열
 ---@field macroText    string?                   매크로 바디 템플릿 ({n} → spells[n] 이름 치환)
 ---@field extraBody    (fun(db:table):string)?   DB 기반 동적 추가 바디 생성 함수
@@ -159,7 +162,7 @@ local GENERAL_DEFS = {
     },
     {
         label        = "음식",
-        icon         =134029,
+        icon         = 134029,
         macroName    = "만회",
         macroIcon    = "",
         macroshowtooltip = "item:113509",
@@ -168,7 +171,7 @@ local GENERAL_DEFS = {
     },
     {
         label        = "장신구1",
-        icon         ="Interface\\Icons\\inv_jewelry_trinketpvp_01",
+        icon         = "Interface\\Icons\\inv_jewelry_trinketpvp_01",
         macroName    = "장식1",
         macroIcon    = "",
         macroshowtooltip = "13",
@@ -176,7 +179,7 @@ local GENERAL_DEFS = {
     },
     {
         label        = "장신구2",
-        icon         ="Interface\\Icons\\inv_jewelry_trinketpvp_02",
+        icon         = "Interface\\Icons\\inv_jewelry_trinketpvp_02",
         macroName    = "장식2",
         macroIcon    = "",
         macroshowtooltip = "14",
@@ -184,24 +187,21 @@ local GENERAL_DEFS = {
     },
     {
         label        = "초읽기",
-        icon         =237538,
+        icon         = 237538,
         macroName    = "초읽기",
         macroIcon    = 237538,
         macroText    = [[/run local _,t=GetInstanceInfo()local s=5 if SecureCmdOptionParse("[btn:2]")then s=0 elseif t=="raid"then s=10 end C_PartyInfo.DoCountdown(s)]],
     },
 }
 
-
-
--- ======================================================================
+-- ==============================
 -- 패널 UI
--- ======================================================================
+-- ==============================
 local panel       = nil
 local all_buttons = {}
 
 local poll_elapsed = 0
 local poll_frame   = CreateFrame("Frame")
-poll_frame:Show() -- OnUpdate는 shown 상태인 프레임에서만 실행됨
 
 local function on_poll_update(_, dt)
     poll_elapsed = poll_elapsed + dt
@@ -270,7 +270,7 @@ local function create_macro_button(parent, def, ox, oy)
         GameTooltip:AddLine(status)
         GameTooltip:Show()
     end)
-    btn:SetScript("OnLeave", function(self)
+    btn:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
 
@@ -311,15 +311,11 @@ local function create_section_header(parent, text, x, y)
 end
 
 local function build_panel()
-    if panel then panel:Hide(); panel = nil end
-    all_buttons = {}
-
     local col_gap  = 20
     local header_h = 18
     local combat_col_width = #COMBAT_DEFS * (BTN_SIZE + BTN_GAP)
     local right_x  = PANEL_PAD_X + combat_col_width + (#COMBAT_DEFS > 0 and col_gap or 0)
-
-    local total_h = PANEL_PAD_Y + header_h + PANEL_ROW_H + PANEL_PAD_Y
+    local total_h  = PANEL_PAD_Y + header_h + PANEL_ROW_H + PANEL_PAD_Y
 
     panel = dodo.UI:CreatePortraitPanel("MacroFactoryPanel", "매크로 생성", true, true)
     panel:SetHeight(total_h)
@@ -354,9 +350,9 @@ local function build_panel()
     end)
 end
 
--- ======================================================================
+-- ==============================
 -- 훅 설치
--- ======================================================================
+-- ==============================
 local factory_hooks_installed = false
 
 local function refresh_all_buttons()
@@ -373,22 +369,25 @@ local function install_factory_hooks()
     hooksecurefunc("CreateMacro", refresh_all_buttons)
     MacroFrame:HookScript("OnShow", function()
         if dodoDB and dodoDB.enableMacro == false then return end
-        build_panel()
+        if not panel then build_panel() end
+        refresh_all_buttons()
         panel:Show()
     end)
     MacroFrame:HookScript("OnHide", function()
         if panel then panel:Hide() end
     end)
     if MacroFrame:IsShown() and not (dodoDB and dodoDB.enableMacro == false) then
-        build_panel()
+        if not panel then build_panel() end
+        refresh_all_buttons()
         panel:Show()
     end
 end
 
 dodo.Macro.InstallFactoryHooks = install_factory_hooks
 dodo.Macro.ShowPanel = function()
-    build_panel()
-    if panel then panel:Show() end
+    if not panel then build_panel() end
+    refresh_all_buttons()
+    panel:Show()
 end
 dodo.Macro.HidePanel = function()
     if panel then panel:Hide() end

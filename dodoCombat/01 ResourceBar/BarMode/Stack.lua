@@ -30,7 +30,7 @@ local function update_stack_ticks(bar2Frame, maxStack)
 
     for _, tick in ipairs(bar2Frame.ticks) do tick:Hide() end
 
-    if not maxStack or maxStack <= 1 or maxStack > 10 then
+    if not maxStack or maxStack <= 1 or maxStack > 20 then
         bar2Frame._lastMaxStack = nil
         return
     end

@@ -695,3 +695,28 @@ function dodo.UI:SettingsButton(category, label, text, on_click_func, tooltip)
     layout:AddInitializer(init)
     return init
 end
+
+-- FriendsFrame 하단 탭 추가
+-- PanelTabButtonTemplate의 L/R 텍스처 합이 72px이라 SetWidth/TabResize로 축소 불가,
+-- Left/Middle/Right를 직접 재설정해 텍스트 너비에 맞게 줄임
+---@param label string 탭 표시 텍스트
+---@param tab_id number 탭 ID (기존 탭 수 + 1)
+---@param lw number? Left 텍스처 너비 (기본 35)
+---@param rw number? Right 텍스처 너비 (기본 37)
+---@return Button
+function dodo.UI:AddFriendsFrameTab(label, tab_id, lw, rw)
+    local tab = CreateFrame("Button", "FriendsFrameTab"..tab_id, FriendsFrame, "FriendsFrameTabTemplate")
+    tab:SetID(tab_id)
+    tab:SetText(label)
+    PanelTemplates_SetNumTabs(FriendsFrame, tab_id)
+    local tw = tab.Text:GetStringWidth()
+    lw, rw = lw or 34, rw or 37
+    tab.Left:SetWidth(lw)
+    tab.Right:SetWidth(rw)
+    tab.Middle:SetWidth(tw + 4)
+    tab:SetWidth(lw + tw + 4 + rw)
+    -- LeftHighlight/RightHighlight는 Left/Right에 앵커+useAtlasSize라 따로 재설정
+    if tab.LeftHighlight then tab.LeftHighlight:SetWidth(lw) end
+    if tab.RightHighlight then tab.RightHighlight:SetWidth(rw) end
+    return tab
+end

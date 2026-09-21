@@ -1,15 +1,21 @@
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 ---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local dodo = _G.dodo
 dodoDB = dodoDB or {}
 
+dodo.Macro = {}
+
+-- ==============================
+-- 캐싱
+-- ==============================
 local C_Timer     = C_Timer
 local CreateFrame = CreateFrame
 
-dodo.Macro = {}
-
--- ======================================================================
+-- ==============================
 -- 즉시 적용 토글 (설정창 on/off → 바로 반영)
--- ======================================================================
+-- ==============================
 local function update_macro_visual()
     local enabled = not (dodoDB and dodoDB.enableMacro == false)
     if enabled then
@@ -32,12 +38,12 @@ local function update_macro_visual()
 end
 dodo.ToggleMacroEnhancement = update_macro_visual
 
--- ======================================================================
+-- ==============================
 -- 진입점
 -- ADDON_LOADED → dodoQOL: dodoDB 초기화
 --             → Blizzard_MacroUI: 훅 설치
 -- PLAYER_LOGIN / SPELLS_CHANGED → 스펠 아이콘 맵 빌드
--- ======================================================================
+-- ==============================
 local init = CreateFrame("Frame")
 init:RegisterEvent("ADDON_LOADED")
 init:RegisterEvent("PLAYER_LOGIN")

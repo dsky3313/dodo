@@ -1,3 +1,6 @@
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 ---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local dodo = _G.dodo
 
@@ -5,19 +8,25 @@ local BASE_WIDTH   = 338
 local BASE_HEIGHT  = 424
 local TARGET_WIDTH = 500
 
+-- ==============================
+-- 캐싱
+-- ==============================
 local SetUIPanelAttribute    = SetUIPanelAttribute
 local UpdateUIPanelPositions = UpdateUIPanelPositions
 local math_floor             = math.floor
 
+-- ==============================
+-- 유틸
+-- ==============================
 local function clamp(v, mn, mx)
     if v < mn then return mn end
     if v > mx then return mx end
     return v
 end
 
--- ======================================================================
+-- ==============================
 -- BASE 크기로 복원
--- ======================================================================
+-- ==============================
 local function reset_macro_frame_layout()
     if not MacroFrame then return end
 
@@ -73,9 +82,9 @@ local function reset_macro_frame_layout()
     if MacroFrame:IsShown() then UpdateUIPanelPositions(MacroFrame) end
 end
 
--- ======================================================================
+-- ==============================
 -- 가로 확장
--- ======================================================================
+-- ==============================
 local function apply_macro_frame_layout()
     if not MacroFrame then return end
 
@@ -157,9 +166,9 @@ local function apply_macro_frame_layout()
     if MacroFrame:IsShown() then UpdateUIPanelPositions(MacroFrame) end
 end
 
--- ======================================================================
+-- ==============================
 -- 훅 설치
--- ======================================================================
+-- ==============================
 local layout_hooks_installed = false
 
 local function install_layout_hooks()

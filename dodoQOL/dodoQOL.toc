@@ -37,6 +37,8 @@
 06 Macro/03 Search.lua
 06 Macro/04 Factory.lua
 # 99 ETC/BagBreak.lua
+99 ETC/Skyriding/99 Options.lua
+99 ETC/Skyriding/01 Core.lua
 99 ETC/Camera.lua
 99 ETC/ChatBubble.lua
 99 ETC/ColorPicker.lua
@@ -53,4 +55,5 @@
 99 ETC/WorldMapCoords.lua
 99 ETC/WorldMapIcon.lua
 99 ETC/PlayerMemo.lua
+99 ETC/ObjectiveTracker.lua
 # 99 ETC/Macro.lua

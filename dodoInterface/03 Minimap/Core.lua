@@ -36,8 +36,18 @@ end
 
 dodo.UpdateMinimapState = update_minimap_state
 
+local function reposition_below_minimap_widgets()
+    local frame = UIWidgetBelowMinimapContainerFrame
+    if not frame then return end
+    frame.ignoreFramePositionManager = true
+    frame:SetParent(UIParent)
+    frame:ClearAllPoints()
+    frame:SetPoint("TOPRIGHT", MinimapCluster, "BOTTOMRIGHT", -280, 0)
+end
+
 local function initialize()
     update_minimap_state()
+    reposition_below_minimap_widgets()
 end
 
 -- ==============================

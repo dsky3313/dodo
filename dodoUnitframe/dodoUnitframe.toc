@@ -14,6 +14,7 @@
 01 UnitFrame/01 Component/04 Absorb.lua
 01 UnitFrame/01 Component/05 Indicator.lua
 01 UnitFrame/01 Component/06 Totem.lua
+01 UnitFrame/01 Component/07 TFCastbar.lua
 01 UnitFrame/01 Core.lua
 01 UnitFrame/02 Styles.lua
 02 PartyFrame/AurasHealthColor.lua

@@ -1,23 +1,32 @@
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 ---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local dodo = _G.dodo
 
-local C_Spell     = C_Spell
-local C_SpellBook = C_SpellBook
-local CreateFrame = CreateFrame
-local Enum        = Enum
-local GetFileIDFromPath = GetFileIDFromPath
-local next        = next
-local pcall       = pcall
-local string_find  = string.find
-local string_gsub  = string.gsub
-local string_lower = string.lower
-local tonumber    = tonumber
-local tostring    = tostring
-local type        = type
+-- ==============================
+-- 캐싱
+-- ==============================
+-- 함수
+local CreateFrame       = CreateFrame
+local next              = next
+local pcall             = pcall
+local tonumber          = tonumber
+local tostring          = tostring
+local type              = type
 
--- ======================================================================
+-- 변수
+local C_Spell           = C_Spell
+local C_SpellBook       = C_SpellBook
+local Enum              = Enum
+local GetFileIDFromPath = GetFileIDFromPath
+local string_find       = string.find
+local string_gsub       = string.gsub
+local string_lower      = string.lower
+
+-- ==============================
 -- 스펠 아이콘 키워드 맵
--- ======================================================================
+-- ==============================
 local spell_icon_keyword_map = {}
 local icon_path_fileid_cache = {}
 local icon_fileid_probe_tex  = nil
@@ -54,9 +63,9 @@ local function rebuild_spell_icon_keyword_map()
     end
 end
 
--- ======================================================================
+-- ==============================
 -- 아이콘 FileID 변환 (경로 → 숫자, 2단계 폴백)
--- ======================================================================
+-- ==============================
 local function get_icon_fileid(icon)
     if not icon then return nil end
     if type(icon) == "number" then return icon end
@@ -97,9 +106,9 @@ local function get_icon_fileid(icon)
     return file_id
 end
 
--- ======================================================================
+-- ==============================
 -- 아이콘 검색 매칭
--- ======================================================================
+-- ==============================
 local function match_icon(icon, query_lower, query_number)
     if icon == nil then return false end
 
@@ -169,9 +178,9 @@ local function build_filtered_icons(popup, query)
     return result
 end
 
--- ======================================================================
+-- ==============================
 -- 아이콘 셀렉터 DataProvider 교체
--- ======================================================================
+-- ==============================
 local function apply_default_provider(popup)
     popup.IconSelector:SetSelectionsDataProvider(
         GenerateClosure(popup.GetIconByIndex, popup),
@@ -206,9 +215,9 @@ local function reevaluate_selection(popup, filtered_icons)
     if sel_idx then popup.IconSelector:ScrollToSelectedIndex() end
 end
 
--- ======================================================================
+-- ==============================
 -- 검색창 생성 및 갱신
--- ======================================================================
+-- ==============================
 local function trim_text(text)
     if not text then return "" end
     text = string_gsub(text, "^%s+", "")
@@ -284,9 +293,9 @@ local function setup_search_box_handlers(popup)
     sb._exHooked = true
 end
 
--- ======================================================================
+-- ==============================
 -- 훅 설치
--- ======================================================================
+-- ==============================
 local search_hooks_installed = false
 
 local function install_search_hooks()

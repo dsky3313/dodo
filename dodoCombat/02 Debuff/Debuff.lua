@@ -487,6 +487,7 @@ end
 -- 위치 저장 / 복원
 -- ==============================
 local function save_position()
+    if not dodoDB then return end
     local x, y   = main_frame:GetCenter()
     local scale  = main_frame:GetEffectiveScale()
     local ux, uy = UIParent:GetCenter()
@@ -643,24 +644,26 @@ end
 
 local function on_login_event(self)
     local LEM = LibStub("LibEditMode")
-    local _dp = { point="RIGHT", relativePoint="CENTER", xOfs=396, yOfs=0 }
+    local D = dodo.COMBAT_DEFAULTS
+    local ANCHOR_W = 120
+    local _dp = { point=D.debuffAnchorPoint, relativePoint=D.debuffAnchorRelPoint, xOfs=D.debuffAnchorX, yOfs=D.debuffAnchorY }
     local _sv = dodoDB.editMode and dodoDB.editMode["Debuff"]
     local _pt = (_sv and _sv.point) and _sv or _dp
     anchor_frame = CreateFrame("Frame", "dodoEditModeDebuff", UIParent)
-    anchor_frame:SetSize(120, 60)
+    anchor_frame:SetSize(ANCHOR_W, 60)
     anchor_frame:SetPoint(_pt.point, UIParent, _pt.relativePoint or _pt.point, _pt.xOfs or 0, _pt.yOfs or 0)
     LEM:AddFrame(anchor_frame, function(f, l, p, x, y)
         dodoDB.editMode = dodoDB.editMode or {}
         dodoDB.editMode["Debuff"] = { point=p, relativeTo="UIParent", relativePoint=p, xOfs=x, yOfs=y }
         if dodoDB then dodoDB.debuffX = x; dodoDB.debuffY = y end
         load_position()
-    end, { point=_pt.point, x=_pt.xOfs or 0, y=_pt.yOfs or 0 }, "디버프")
+    end, { point="CENTER", x=D.debuffAnchorX - ANCHOR_W/2, y=D.debuffAnchorY }, "디버프")
     LEM:AddFrameSettings(anchor_frame, {
-        { kind=LEM.SettingType.Slider, name="아이콘 크기", default=50, minValue=30, maxValue=80, valueStep=2,
+        { kind=LEM.SettingType.Slider, name="아이콘 크기", default=dodo.COMBAT_DEFAULTS.debuffSize, minValue=30, maxValue=80, valueStep=2,
           disabled=function() return dodoDB and dodoDB.useDebuff == false end,
           get=function(l) return dodoDB and dodoDB.debuffSize or dodo.COMBAT_DEFAULTS.debuffSize end,
           set=function(l,v) if dodoDB then dodoDB.debuffSize=v end; if dodo.DebuffApply then dodo.DebuffApply() end end },
-        { kind=LEM.SettingType.Slider, name="최대 표시 개수", default=3, minValue=1, maxValue=6, valueStep=1,
+        { kind=LEM.SettingType.Slider, name="최대 표시 개수", default=dodo.COMBAT_DEFAULTS.debuffMax, minValue=1, maxValue=6, valueStep=1,
           disabled=function() return dodoDB and dodoDB.useDebuff == false end,
           get=function(l) return dodoDB and dodoDB.debuffMax or dodo.COMBAT_DEFAULTS.debuffMax end,
           set=function(l,v) if dodoDB then dodoDB.debuffMax=v end; if dodo.DebuffApply then dodo.DebuffApply() end end },

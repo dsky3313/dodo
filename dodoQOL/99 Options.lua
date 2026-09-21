@@ -30,6 +30,9 @@ dodo.QOL_DEFAULTS = {
     enableGossipID        = true,  enableGossipAutoSelect = true, enableKeystoneLindormi = true,
     enableEJAchievements  = true,  enableEJID           = true,
     enablePlayerMemo      = true,
+    autoAccept            = false,  autoAcceptShiftSkip  = true,
+    autoTurnIn            = false,  autoTurnInShiftSkip  = true,
+    questItemHotkey       = "CTRL-G",
 }
 
 dodo.RegisterOption("편의기능", function(category)
@@ -109,6 +112,28 @@ dodo.RegisterOption("편의기능", function(category)
     T(dodo.UI:SettingsCheckbox(category, "enableQuickselect", "파티만들기 빠른선택",
         "파티 만들기 창에서 던전 빠른선택 버튼을 표시합니다.", D.enableQuickselect, dodo.QuickSelectUpdate))
 
+    -- 퀘스트
+    T(dodo.UI:SettingsSectionHeader(category, "퀘스트"))
+    T(dodo.UI:SettingsCheckbox(category, "autoAccept", "퀘스트 자동 수락",
+        "퀘스트를 자동으로 수락합니다. Shift 키를 누르면 건너뜁니다. (단일 퀘스트만, 여러 개일 경우 수동 선택)",
+        D.autoAccept, nil))
+    T(dodo.UI:SettingsCheckbox(category, "autoTurnIn", "퀘스트 자동 완료",
+        "보상 선택지가 없는 퀘스트를 자동으로 완료합니다. Shift 키를 누르면 건너뜁니다.",
+        D.autoTurnIn, nil))
+    T(dodo.UI:SettingsDropDown(category, "questItemHotkey", "퀘스트 아이템 단축키",
+        "현재 진행 중인 퀘스트 아이템을 사용하는 단축키입니다.",
+        {
+            { value = "",        text = "비활성" },
+            { value = "CTRL-G",  text = "Ctrl+G" },
+            { value = "SHIFT-G", text = "Shift+G" },
+            { value = "ALT-G",   text = "Alt+G" },
+            { value = "CTRL-E",  text = "Ctrl+E" },
+            { value = "F7",      text = "F7" },
+            { value = "F8",      text = "F8" },
+        },
+        D.questItemHotkey,
+        function() if dodo.ApplyQuestItemHotkey then dodo.ApplyQuestItemHotkey() end end))
+
     -- NPC 대화창
     T(dodo.UI:SettingsSectionHeader(category, "NPC 대화창"))
     T(dodo.UI:SettingsCheckbox(category, "enableGossipID", "NPC ID 표시",
@@ -176,6 +201,11 @@ dodo.RegisterOption("편의기능", function(category)
     T(dodo.UI:SettingsCheckbox(category, "enableMerchant", "자동 판매 & 수리",
         "상인 창을 열 때, 잡템 판매 및 장비 자동 수리를 진행합니다.",
         D.enableMerchant, nil))
+    T(dodo.UI:SettingsCheckbox(category, "enablePlayerMemo", "플레이어 메모",
+            "플레이어별 메모를 관리하고, 같은 파티 진입 시 팝업 알림을 표시합니다.\n친구창 하단 '메모'탭에서 사용가능.",
+            D.enablePlayerMemo, function(val)
+                if dodoDB then dodoDB.enablePlayerMemo = val end
+            end))
     T(dodo.UI:SettingsCheckbox(category, "useQuickBobber", "낚시찌 장난감",
         "낚시 아이콘 (전문기술) 옆에 낚시찌 아이템 버튼을 표시합니다.",
         D.useQuickBobber, function()
@@ -203,11 +233,6 @@ dodo.RegisterOption("편의기능", function(category)
         "퀘스트,업적 창 하단에 와우헤드 링크 입력창을 표시합니다.",
         D.useWowheadLink, function()
             if dodo.WowheadLink then dodo.WowheadLink() end
-        end))
-    T(dodo.UI:SettingsCheckbox(category, "enablePlayerMemo", "플레이어 메모 & 무시",
-        "플레이어별 메모를 관리하고, 같은 파티 진입 시 팝업 알림을 표시합니다. 친구창을 열면 옆에 함께 표시됩니다.",
-        D.enablePlayerMemo, function(val)
-            if dodoDB then dodoDB.enablePlayerMemo = val end
         end))
 
     local function _shown() return master:GetValue() end
