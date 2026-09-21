@@ -30,6 +30,7 @@ dodo.QOL_DEFAULTS = {
     enableGossipID        = true,  enableGossipAutoSelect = true, enableKeystoneLindormi = true,
     enableEJAchievements  = true,  enableEJID           = true,
     enablePlayerMemo      = true,
+    enableSkyriding       = true,
     autoAccept            = false,  autoAcceptShiftSkip  = true,
     autoTurnIn            = false,  autoTurnInShiftSkip  = true,
     questItemHotkey       = "CTRL-G",
@@ -233,6 +234,12 @@ dodo.RegisterOption("편의기능", function(category)
         "퀘스트,업적 창 하단에 와우헤드 링크 입력창을 표시합니다.",
         D.useWowheadLink, function()
             if dodo.WowheadLink then dodo.WowheadLink() end
+        end))
+    T(dodo.UI:SettingsCheckbox(category, "enableSkyriding", "하늘비행 HUD",
+        "하늘비행 중 속도 바와 정수 충전 현황을 표시합니다.",
+        D.enableSkyriding, function(val)
+            if dodoDB then dodoDB.enableSkyriding = val end
+            if dodo.SkyridingUpdateVisual then dodo.SkyridingUpdateVisual() end
         end))
 
     local function _shown() return master:GetValue() end
