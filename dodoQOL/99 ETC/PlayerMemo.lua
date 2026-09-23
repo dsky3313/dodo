@@ -164,6 +164,7 @@ PM.TriggerPartyCheck = check_party_for_memo
 -- UI — 정적 핸들러
 -- ==============================
 local memo_frame = nil
+local reset_btn  = nil
 
 local function row_name_click(self)
     local row = self:GetParent()
@@ -420,6 +421,9 @@ local function on_friends_frame_update()
         ButtonFrameTemplate_HideButtonBar(FriendsFrame)
         FriendsFrame_ShowSubFrame("dodo_PlayerMemoPanel")
         refresh_ui()
+        if reset_btn then reset_btn:Show() end
+    else
+        if reset_btn then reset_btn:Hide() end
     end
 end
 
@@ -603,14 +607,14 @@ local function build_ui()
     panel._ph_note    = ph_note
 
     -- ── 초기화 / 가져오기 버튼 (col_note 위, 탭 공백 영역) ─────────────
-    local reset_btn = CreateFrame("Button", nil, FriendsFrame, "UIPanelButtonNoTooltipTemplate")
-    reset_btn:SetSize(60, 22)
+    reset_btn = CreateFrame("Button", nil, FriendsFrame, "UIPanelButtonNoTooltipTemplate")
+    reset_btn:SetSize(80, 22)
     reset_btn:SetPoint("BOTTOMRIGHT", col_note, "TOPRIGHT", 0, 4)
-    reset_btn:SetText("초기화")
+    reset_btn:SetText("메모 초기화")
     reset_btn:SetScript("OnClick", function()
         StaticPopup_Show("DODO_PLAYER_MEMO_RESET")
     end)
-
+    reset_btn:Hide()
 
     -- ── FriendsFrame_Update 후킹 ────────────────────────────────────────
     hooksecurefunc("FriendsFrame_Update", on_friends_frame_update)
