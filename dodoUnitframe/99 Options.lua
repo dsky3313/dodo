@@ -189,7 +189,7 @@ dodo.RegisterOption("유닛프레임", function(category)
 	T(dodo.UI:SettingsSectionHeader(category, "구성 요소"))
 
 	-- 자원 바
-	local power_init = T(dodo.UI:SettingsMultiDropDown(category, "자원 바", {
+	local power_init = T(dodo.UI:SettingsMultiDropDown(category, "자원 막대", {
 		{ text = "플레이어", key = POWER_KEYS.player },
 		{ text = "대상",     key = POWER_KEYS.target },
 		{ text = "주시대상", key = POWER_KEYS.focus },
@@ -200,12 +200,12 @@ dodo.RegisterOption("유닛프레임", function(category)
 			if k == key then apply_power(unit) end
 		end
 		dodo.UnitframeRefreshPreview()
-	end, "유닛프레임 아래에 자원 바를 표시합니다."))
+	end, "유닛프레임 아래에 자원 막대를 표시합니다."))
 	-- PanelInitializer는 GetSetting 없음 → SetParentInitializer 내부 크래시 방지
 	if power_init then power_init.GetSetting = function() return nil end end
 
 	local mana_init = dodo.UI:SettingsCheckbox(category, "unitframePowerOnlyMana", "2차자원이 마나일 경우에만 활성화",
-		"2차자원이 마나일 때만 자원 바를 표시합니다.\n해당 클래스 : 드루이드, 주술사, 암흑사제",
+		"2차자원이 마나일 때만 자원 막대를 표시합니다.\n해당 클래스 : 드루이드, 주술사, 암흑사제",
 		true, function(val)
 			if dodoDB then dodoDB.unitframePowerOnlyMana = val end
 			apply_power("player")
@@ -224,7 +224,7 @@ dodo.RegisterOption("유닛프레임", function(category)
 	end)
 
 	-- 캐스팅바
-	T(dodo.UI:SettingsMultiDropDown(category, "캐스팅바", {
+	local castbar_init = T(dodo.UI:SettingsMultiDropDown(category, "시전 막대", {
 		{ text = "플레이어", key = CASTBAR_KEYS.player },
 		{ text = "대상",     key = CASTBAR_KEYS.target },
 		{ text = "주시대상", key = CASTBAR_KEYS.focus },
@@ -241,6 +241,24 @@ dodo.RegisterOption("유닛프레임", function(category)
 		if unit then apply_castbar(unit, selected) end
 		dodo.UnitframeRefreshPreview()
 	end, "주문을 시전할 때, 시전바를 표시합니다."))
+	if castbar_init then castbar_init.GetSetting = function() return nil end end
+
+	-- FT캐스팅바 (대상/주시대상 탭에서만 표시)
+	local tfcastbar_init = dodo.UI:SettingsCheckbox(category, "enableUnitCastBar", "주시/대상 시전 막대",
+		"주시 또는 대상이 시전 시, 별도의 시전 막대를 표시합니다.",
+		true, function(val)
+			if dodoDB then dodoDB.enableUnitCastBar = val end
+			dodo.UnitframeRefreshPreview()
+		end)
+	if tfcastbar_init and castbar_init and tfcastbar_init.SetParentInitializer then
+		tfcastbar_init:SetParentInitializer(castbar_init)
+	end
+	if tfcastbar_init and tfcastbar_init.AddShownPredicate then
+		tfcastbar_init:AddShownPredicate(function()
+			local unit = dodo.UnitframeGetPreviewUnit()
+			return master_setting:GetValue() and (unit == "target" or unit == "focus")
+		end)
+	end
 
 	-- 보호막
 	T(dodo.UI:SettingsMultiDropDown(category, "보호막 표시", {

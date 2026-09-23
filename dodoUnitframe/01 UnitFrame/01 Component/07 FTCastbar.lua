@@ -8,15 +8,16 @@ dodoDB = dodoDB or {}
 -- ==============================
 -- 캐싱
 -- ==============================
+local C_ClassColor    = C_ClassColor
 local C_CurveUtil     = C_CurveUtil
 local C_DurationUtil  = C_DurationUtil
 local C_Spell         = C_Spell
+local C_SpellBook     = C_SpellBook
 local C_StringUtil    = C_StringUtil
 local C_Timer         = C_Timer
 local CreateFrame     = CreateFrame
 local Enum            = Enum
 local ipairs          = ipairs
-local IsSpellKnown    = IsSpellKnown
 local issecretvalue   = issecretvalue or function() return false end
 local NineSliceUtil   = NineSliceUtil
 local select          = select
@@ -28,6 +29,7 @@ local UnitEmpoweredChannelDuration = UnitEmpoweredChannelDuration
 local UnitClass                    = UnitClass
 local UnitExists                   = UnitExists
 local UnitShouldDisplaySpellTargetName = UnitShouldDisplaySpellTargetName
+local UnitSpellTargetClass             = UnitSpellTargetClass
 local UnitSpellTargetName              = UnitSpellTargetName
 
 -- ==============================
@@ -36,7 +38,7 @@ local UnitSpellTargetName              = UnitSpellTargetName
 local BAR_W       = 400
 local BAR_H       = 30
 local KICK_BAR_W  = BAR_W - BAR_H - 6  -- sb 픽셀 너비 (GetWidth 런타임 호출 대체)
-local SYSTEM_NAME = "TFCastbar"
+local SYSTEM_NAME = "FTCastbar"
 local DEFAULT_PT  = { point = "TOP", xOfs = 0, yOfs = -80 }
 
 -- ==============================
@@ -75,7 +77,7 @@ local function refresh_kick_spell()
     local list = KICK_SPELLS[cls]
     if not list then active_kick_spell = nil; return end
     for _, id in ipairs(list) do
-        if not IsSpellKnown or IsSpellKnown(id) then
+        if C_SpellBook and C_SpellBook.IsSpellInSpellBook(id) then
             active_kick_spell = id; return
         end
     end
@@ -195,7 +197,7 @@ local function show_cast(unit)
             -- UnitSpellTargetClass: 캐스팅 대상의 직업 토큰 (secret value 아님)
             local targetClass = UnitSpellTargetClass and UnitSpellTargetClass(unit)
             if targetClass then
-                local cc = C_ClassColor.GetClassColor(targetClass)
+                local cc = C_ClassColor and C_ClassColor.GetClassColor(targetClass)
                 if cc then
                     bar.target_text:SetTextColor(cc:GetRGBA())
                 else
@@ -219,7 +221,7 @@ local function show_cast(unit)
 end
 
 -- ==============================
--- 기능 5: 우선순위 평가 (focus > target)
+-- 기능 4: 우선순위 평가 (focus > target)
 -- ==============================
 
 local function update()
@@ -250,10 +252,15 @@ end
 -- ==============================
 -- 기능 5: 프레임 빌드
 -- ==============================
+local function on_update()
+    if not cast_active then return end
+    update_kick_tick()
+end
+
 local function build()
     if bar then return end
 
-    bar = CreateFrame("Frame", "dodoTFCastbar", UIParent)
+    bar = CreateFrame("Frame", "dodoFTCastbar", UIParent)
     bar:SetSize(BAR_W, BAR_H)
     bar:Hide()
 
@@ -365,10 +372,7 @@ local function build()
     bar.target_text = target_text
 
     -- SetTimerDuration이 바 진행을 구동 → OnUpdate는 차단 눈금만 담당
-    bar:SetScript('OnUpdate', function()
-        if not cast_active then return end
-        update_kick_tick()
-    end)
+    bar:SetScript('OnUpdate', on_update)
 end
 
 -- ==============================
@@ -389,14 +393,14 @@ local function register_lem()
         point = _pt.point or "TOP",
         x     = _pt.xOfs  or 0,
         y     = _pt.yOfs  or 0,
-    }, "TF 캐스팅바")
+    }, "주시/대상 시전 막대")
 
     LEM:RegisterCallback("enter", function()
         is_edit_mode = true
         bar.time_binding:SetEnabled(false)
         bar.sb:SetMinMaxValues(0, 1)
         bar.sb:SetValue(0.5)
-        bar.spell_text:SetText("TF 캐스팅바")
+        bar.spell_text:SetText("주시/대상 시전 막대")
         bar.time_text:SetText("2.5")
         if bar.target_text then bar.target_text:Hide() end
         if bar.kick_tick   then bar.kick_tick:Hide() end
@@ -418,7 +422,7 @@ local function register_lem()
         bar.time_binding:SetEnabled(false)
         bar.sb:SetMinMaxValues(0, 1)
         bar.sb:SetValue(0.5)
-        bar.spell_text:SetText("TF 캐스팅바")
+        bar.spell_text:SetText("주시/대상 시전 막대")
         bar.time_text:SetText("2.5")
         if bar.target_text then bar.target_text:Hide() end
         if bar.kick_tick   then bar.kick_tick:Hide() end

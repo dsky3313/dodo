@@ -403,6 +403,17 @@ function dodoUnitframePreviewMixin:Update()
 	self.hFill:SetPoint('BOTTOMLEFT', self.hf, 'BOTTOMLEFT', 0, 0)
 	self.hFill:SetWidth(math_floor(hW * 0.7))
 
+	-- 체력 막대 색상: 플레이어=직업색, 나머지=적대적
+	local _cu = dodo.ColorsUnitframe
+	local _hfc
+	if unit == 'player' then
+		local _, _cls = UnitClass("player")
+		_hfc = _cls and _cu and _cu.Class and _cu.Class[_cls]
+	else
+		_hfc = _cu and _cu.Reaction and _cu.Reaction.Reaction1
+	end
+	if _hfc then self.hFill:SetVertexColor(_hfc.r, _hfc.g, _hfc.b) end
+
 	if aEnabled then
 		self.absorbFill:ClearAllPoints()
 		self.absorbFill:SetPoint('TOPLEFT',    self.hFill, 'TOPRIGHT',    0, 0)
@@ -413,7 +424,7 @@ function dodoUnitframePreviewMixin:Update()
 		self.absorbFill:Hide()
 	end
 
-	self.nText:SetText(PREVIEW_LABELS[unit] or unit)
+	self.nText:SetText(unit == 'player' and (UnitName("player") or PREVIEW_LABELS.player) or PREVIEW_LABELS[unit] or unit)
 	if unit ~= "focus" then
 		self.hText:SetText("70K | 70.0%")
 		self.hText:Show()
