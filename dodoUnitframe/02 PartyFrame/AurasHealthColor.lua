@@ -51,10 +51,11 @@ local RETRY_MAX              = 10
 -- ==============================
 local function is_unit_enabled(unit)
 	if not unit then return false end
+	if not (dodoDB and dodoDB.usePartyframeAurasHealthColor ~= false) then return false end
 	if unit == "player" or unit:match("^party%d+$") then
-		return dodoDB and dodoDB.usePartyframeAurasHealthColor ~= false
+		return dodoDB.usePartyframeAurasHealthColorParty ~= false
 	elseif unit:match("^raid%d+$") then
-		return dodoDB and dodoDB.useRaidframeAurasHealthColor ~= false
+		return dodoDB.usePartyframeAurasHealthColorRaid ~= false
 	end
 	return false
 end
