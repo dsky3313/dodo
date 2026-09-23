@@ -26,8 +26,8 @@ dodo.COMBAT_DEFAULTS = {
     debuffMax               = 6,
     debuffAnchorPoint       = "RIGHT",
     debuffAnchorRelPoint    = "CENTER",
-    debuffAnchorX           = 396,
-    debuffAnchorY           = 0,
+    debuffAnchorX           = 394,
+    debuffAnchorY           = -20,
     debuffX                 = 250,
     debuffY                 = 0,
 
