@@ -344,39 +344,61 @@ dodo.RegisterOption("유닛프레임", function(category)
 		dodo.UnitframeRefreshPreview()
 	end))
 
-	local overshield_init = P(dodo.UI:SettingsCheckbox(category, "enablePartyframeOvershield", "초과보호막 표시",
+	local overshield_init, overshield_setting = dodo.UI:SettingsCheckbox(category, "enablePartyframeOvershield", "초과보호막 표시",
 		"파티원의 초과보호막을 체력바 위에 표시합니다.",
 		true, function(val)
 			if dodoDB then dodoDB.enablePartyframeOvershield = val end
 			dodo.UnitframeRefreshPreview()
-		end))
+		end)
+	P(overshield_init)
 
 	local party_overshield_init = P(dodo.UI:SettingsCheckbox(category, "enablePartyframeOvershieldParty", "파티 프레임",
-		"파티 프레임의 초과보호막을 표시합니다.",
+		"파티 프레임에 해당 기능을 활성화합니다.",
 		true, function(val)
 			if dodoDB then dodoDB.enablePartyframeOvershieldParty = val end
 			dodo.UnitframeRefreshPreview()
 		end))
 	if party_overshield_init and overshield_init and party_overshield_init.SetParentInitializer then
-		party_overshield_init:SetParentInitializer(overshield_init)
+		party_overshield_init:SetParentInitializer(overshield_init, function() return overshield_setting:GetValue() end)
 	end
 
 	local raid_overshield_init = P(dodo.UI:SettingsCheckbox(category, "enablePartyframeOvershieldRaid", "공격대 프레임",
-		"공격대 프레임의 초과보호막을 표시합니다.",
+		"공격대 프레임에 해당 기능을 활성화합니다.",
 		false, function(val)
 			if dodoDB then dodoDB.enablePartyframeOvershieldRaid = val end
 			dodo.UnitframeRefreshPreview()
 		end))
 	if raid_overshield_init and overshield_init and raid_overshield_init.SetParentInitializer then
-		raid_overshield_init:SetParentInitializer(overshield_init)
+		raid_overshield_init:SetParentInitializer(overshield_init, function() return overshield_setting:GetValue() end)
 	end
 
-	P(dodo.UI:SettingsCheckbox(category, "usePartyframeAurasHealthColor", "체력바 색상 변경",
+	local healthcolor_init, healthcolor_setting = dodo.UI:SettingsCheckbox(category, "usePartyframeAurasHealthColor", "체력바 색상 변경",
 		"특정 버프를 파티원에게 시전했을 때, 해당 파티원의 체력바 색상을 변경합니다.",
 		true, function(val)
 			if dodoDB then dodoDB.usePartyframeAurasHealthColor = val end
 			dodo.UnitframeRefreshPreview()
+		end)
+	P(healthcolor_init)
+
+	local party_healthcolor_init = P(dodo.UI:SettingsCheckbox(category, "usePartyframeAurasHealthColorParty", "파티 프레임",
+		"파티 프레임에 해당 기능을 활성화합니다.",
+		true, function(val)
+			if dodoDB then dodoDB.usePartyframeAurasHealthColorParty = val end
+			dodo.UnitframeRefreshPreview()
 		end))
+	if party_healthcolor_init and healthcolor_init and party_healthcolor_init.SetParentInitializer then
+		party_healthcolor_init:SetParentInitializer(healthcolor_init, function() return healthcolor_setting:GetValue() end)
+	end
+
+	local raid_healthcolor_init = P(dodo.UI:SettingsCheckbox(category, "usePartyframeAurasHealthColorRaid", "공격대 프레임",
+		"공격대 프레임에 해당 기능을 활성화합니다.",
+		true, function(val)
+			if dodoDB then dodoDB.usePartyframeAurasHealthColorRaid = val end
+			dodo.UnitframeRefreshPreview()
+		end))
+	if raid_healthcolor_init and healthcolor_init and raid_healthcolor_init.SetParentInitializer then
+		raid_healthcolor_init:SetParentInitializer(healthcolor_init, function() return healthcolor_setting:GetValue() end)
+	end
 
 	-- predicate 정의: 현재 선택된 탭 + 마스터 토글로 항목 표시 여부 결정
 	local function _unit_shown()   -- 유닛 탭(비파티)일 때만 표시
