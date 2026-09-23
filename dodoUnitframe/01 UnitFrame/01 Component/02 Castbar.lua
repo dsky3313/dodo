@@ -219,7 +219,7 @@ function dodo.UnitframeCreateCastbar(self, uWidth, unit)
 			if element.kick_positioner then element.kick_positioner:Hide() end
 			if element.kick_marker     then element.kick_marker:Hide() end
 		end
-		if not u or element._not_interruptible then _hide(); return end
+		if not u then _hide(); return end
 
 		local kick_id = get_kick_spell()
 		if not kick_id then _hide(); return end
@@ -251,7 +251,13 @@ function dodo.UnitframeCreateCastbar(self, uWidth, unit)
 
 		element.kick_positioner:Show()
 		element.kick_marker:Show()
-		kt:SetAlpha(C_CurveUtil.EvaluateColorValueFromBoolean(kickDur:IsZero(), 0.4, 1.0))
+		local base_alpha = C_CurveUtil.EvaluateColorValueFromBoolean(kickDur:IsZero(), 0.4, 1.0)
+		local ni = element._not_interruptible
+		if ni ~= nil then
+			kt:SetAlpha(C_CurveUtil.EvaluateColorValueFromBoolean(ni, 0, base_alpha))
+		else
+			kt:SetAlpha(base_alpha)
+		end
 		kt:Show()
 	end
 
@@ -315,25 +321,25 @@ function dodo.UnitframeCreateCastbar(self, uWidth, unit)
 
 	local function cast_apply_color(element, spellID, notInterruptible, cast_type)
 		local CC = dodo.ColorsUnitframe and dodo.ColorsUnitframe.Castbar
-		if notInterruptible then
-			local c = CC and CC.uninterruptible or { r = 0.71, g = 0.71, b = 0.71 }
-			element:SetStatusBarColor(c.r, c.g, c.b)
-		else
-			local isImp = false
-			if C_Spell and C_Spell.IsSpellImportant and spellID then
-				local ok, v = pcall(C_Spell.IsSpellImportant, spellID)
-				if ok and v then isImp = true end
-			end
-			local c
-			if isImp then
-				c = (CC and CC.importantColor) or { r = 1.00, g = 0.20, b = 0.78 }
-			elseif cast_type == "channel" then
-				c = (CC and CC.channelColor) or { r = 0.39, g = 1.00, b = 0.39 }
-			else
-				c = (CC and CC.castColor) or { r = 1.00, g = 1.00, b = 0.00 }
-			end
-			element:SetStatusBarColor(c.r, c.g, c.b)
+		local isImp = false
+		if C_Spell and C_Spell.IsSpellImportant and spellID and not (issecretvalue and issecretvalue(spellID)) then
+			local ok, v = pcall(C_Spell.IsSpellImportant, spellID)
+			if ok and v then isImp = true end
 		end
+		local base
+		if isImp then
+			base = (CC and CC.importantColor) or { r = 1.00, g = 0.20, b = 0.78 }
+		elseif cast_type == "channel" then
+			base = (CC and CC.channelColor) or { r = 0.39, g = 1.00, b = 0.39 }
+		else
+			base = (CC and CC.castColor) or { r = 1.00, g = 1.00, b = 0.00 }
+		end
+		local ni_c = (CC and CC.uninterruptible) or { r = 0.71, g = 0.71, b = 0.71 }
+		element:SetStatusBarColor(
+			C_CurveUtil.EvaluateColorValueFromBoolean(notInterruptible, ni_c.r, base.r),
+			C_CurveUtil.EvaluateColorValueFromBoolean(notInterruptible, ni_c.g, base.g),
+			C_CurveUtil.EvaluateColorValueFromBoolean(notInterruptible, ni_c.b, base.b)
+		)
 	end
 
 	castbar.PostCastStart = function(element, u, spellID, notInterruptible)
@@ -341,9 +347,7 @@ function dodo.UnitframeCreateCastbar(self, uWidth, unit)
 		element._holdUntil = nil
 		element._active_unit = u
 		if element.Time then element.Time:Show() end
-		local ni = notInterruptible
-		if issecretvalue and issecretvalue(ni) then ni = true end
-		element._not_interruptible = ni
+		element._not_interruptible = notInterruptible
 		local cast_type = "cast"
 		local cn = UnitCastingInfo(u)
 		if type(cn) == "nil" then
@@ -351,7 +355,7 @@ function dodo.UnitframeCreateCastbar(self, uWidth, unit)
 			cast_type = isEmpowered and "empower" or "channel"
 		end
 		element._cast_type = cast_type
-		cast_apply_color(element, spellID, ni, cast_type)
+		cast_apply_color(element, spellID, notInterruptible, cast_type)
 
 		-- 주문대상
 		if element.target_text then
@@ -385,17 +389,15 @@ function dodo.UnitframeCreateCastbar(self, uWidth, unit)
 	end
 
 	castbar.PostCastInterruptible = function(element, u, spellID, notInterruptible)
-		local ni = notInterruptible
-		if issecretvalue and issecretvalue(ni) then ni = true end
-		element._not_interruptible = ni
+		element._not_interruptible = notInterruptible
 		local CC = dodo.ColorsUnitframe and dodo.ColorsUnitframe.Castbar
-		if ni then
-			local c = CC and CC.uninterruptible or { r = 0.45, g = 0.45, b = 0.45 }
-			element:SetStatusBarColor(c.r, c.g, c.b)
-		else
-			local c = CC and CC.interruptReady or { r = 0.92, g = 0.35, b = 0.20 }
-			element:SetStatusBarColor(c.r, c.g, c.b)
-		end
+		local ni_c = CC and CC.uninterruptible or { r = 0.45, g = 0.45, b = 0.45 }
+		local ir_c = CC and CC.interruptReady or { r = 0.92, g = 0.35, b = 0.20 }
+		element:SetStatusBarColor(
+			C_CurveUtil.EvaluateColorValueFromBoolean(notInterruptible, ni_c.r, ir_c.r),
+			C_CurveUtil.EvaluateColorValueFromBoolean(notInterruptible, ni_c.g, ir_c.g),
+			C_CurveUtil.EvaluateColorValueFromBoolean(notInterruptible, ni_c.b, ir_c.b)
+		)
 	end
 
 	castbar.PostCastFail = function(element, u)

@@ -8,28 +8,27 @@ dodoDB = dodoDB or {}
 -- ==============================
 -- 캐싱
 -- ==============================
-local C_ClassColor    = C_ClassColor
 local C_CurveUtil     = C_CurveUtil
+local C_DurationUtil  = C_DurationUtil
 local C_Spell         = C_Spell
+local C_StringUtil    = C_StringUtil
 local C_Timer         = C_Timer
 local CreateFrame     = CreateFrame
-local GetTime         = GetTime
+local Enum            = Enum
 local ipairs          = ipairs
 local IsSpellKnown    = IsSpellKnown
 local issecretvalue   = issecretvalue or function() return false end
-local math_max        = math.max
-local math_min        = math.min
 local NineSliceUtil   = NineSliceUtil
 local select          = select
-local UnitCastingDuration  = UnitCastingDuration
-local UnitCastingInfo      = UnitCastingInfo
-local UnitChannelDuration  = UnitChannelDuration
-local UnitChannelInfo      = UnitChannelInfo
-local UnitClass            = UnitClass
-local UnitExists           = UnitExists
+local UnitCastingDuration          = UnitCastingDuration
+local UnitCastingInfo              = UnitCastingInfo
+local UnitChannelDuration          = UnitChannelDuration
+local UnitChannelInfo              = UnitChannelInfo
+local UnitEmpoweredChannelDuration = UnitEmpoweredChannelDuration
+local UnitClass                    = UnitClass
+local UnitExists                   = UnitExists
 local UnitShouldDisplaySpellTargetName = UnitShouldDisplaySpellTargetName
-local UnitSpellTargetClass = UnitSpellTargetClass
-local UnitSpellTargetName  = UnitSpellTargetName
+local UnitSpellTargetName              = UnitSpellTargetName
 
 -- ==============================
 -- 상수
@@ -45,13 +44,9 @@ local DEFAULT_PT  = { point = "TOP", xOfs = 0, yOfs = -80 }
 -- ==============================
 local bar
 local active_unit
-local cast_active    = false  -- OnUpdate 애니메이션 활성 여부
+local cast_active    = false
 local is_edit_mode   = false
 
--- 현재 캐스팅 타이밍 (GetTime 기준)
-local bar_cast_start    = 0
-local bar_cast_end      = 0
-local bar_cast_duration = 0
 local bar_is_channel    = false
 local bar_cast_type     = "cast"  -- "cast", "channel", "empower"
 local bar_not_interruptible = false
@@ -102,7 +97,6 @@ local function update_kick_tick()
 
     if not cast_active or not active_unit then hide_kick_tick(); return end
     if not active_kick_spell            then hide_kick_tick(); return end
-    if bar_not_interruptible            then hide_kick_tick(); return end
 
     local castDur = (bar_is_channel or bar_cast_type == "empower")
         and UnitChannelDuration(active_unit)
@@ -112,24 +106,17 @@ local function update_kick_tick()
     local kickDur = C_Spell.GetSpellCooldownDuration(active_kick_spell)
     if not kickDur then hide_kick_tick(); return end
 
-    local total   = castDur:GetTotalDuration()
-    local elapsed = castDur:GetElapsedDuration()
-
-    if issecretvalue(elapsed) or issecretvalue(total) then hide_kick_tick(); return end
-    if total <= 0 then hide_kick_tick(); return end
-
-    local barW = KICK_BAR_W
-
-    -- kickRem은 secret → 산술 금지, StatusBar SetValue로 위젯에 직접 전달
-    bar.kick_positioner:SetMinMaxValues(0, total)
-    bar.kick_positioner:SetValue(elapsed)
-    bar.kick_marker:SetMinMaxValues(0, total)
-    bar.kick_marker:SetWidth(barW)
+    -- Plater 방식: secret 값 비교 없이 C-side에 직접 전달
+    bar.kick_positioner:SetMinMaxValues(0, castDur:GetTotalDuration())
+    bar.kick_positioner:SetValue(castDur:GetElapsedDuration())
+    bar.kick_marker:SetMinMaxValues(0, castDur:GetTotalDuration())
+    bar.kick_marker:SetWidth(KICK_BAR_W)
     bar.kick_marker:SetValue(kickDur:GetRemainingDuration())
 
     bar.kick_positioner:Show()
     bar.kick_marker:Show()
-    bar.kick_tick:SetAlpha(C_CurveUtil.EvaluateColorValueFromBoolean(kickDur:IsZero(), 0.4, 1.0))
+    local base_alpha = C_CurveUtil.EvaluateColorValueFromBoolean(kickDur:IsZero(), 0.4, 1.0)
+    bar.kick_tick:SetAlpha(C_CurveUtil.EvaluateColorValueFromBoolean(bar_not_interruptible, 0, base_alpha))
     bar.kick_tick:Show()
 end
 
@@ -137,78 +124,87 @@ end
 -- 기능 2: 색상
 -- ==============================
 local function apply_color(not_interruptible, spellID)
-    if issecretvalue(not_interruptible) then not_interruptible = true end
     bar_not_interruptible = not_interruptible
     local CC = dodo.ColorsUnitframe and dodo.ColorsUnitframe.Castbar
-    if not_interruptible then
-        local c = CC and CC.uninterruptible or { r = 0.71, g = 0.71, b = 0.71 }
-        bar.sb:SetStatusBarColor(c.r, c.g, c.b)
-    else
-        local isImp = false
-        if C_Spell and C_Spell.IsSpellImportant and spellID then
-            local ok, v = pcall(C_Spell.IsSpellImportant, spellID)
-            if ok and v then isImp = true end
-        end
-        local c
-        if isImp then
-            c = (CC and CC.importantColor) or { r = 1.00, g = 0.20, b = 0.78 }
-        elseif bar_cast_type == "empower" then
-            c = (CC and CC.empoweredColor) or { r = 0.00, g = 1.00, b = 0.00 }
-        elseif bar_cast_type == "channel" then
-            c = (CC and CC.channelColor) or { r = 0.39, g = 1.00, b = 0.39 }
-        else
-            c = (CC and CC.castColor) or { r = 1.00, g = 1.00, b = 0.00 }
-        end
-        bar.sb:SetStatusBarColor(c.r, c.g, c.b)
+
+    local isImp = false
+    if C_Spell and C_Spell.IsSpellImportant and spellID and not issecretvalue(spellID) then
+        local ok, v = pcall(C_Spell.IsSpellImportant, spellID)
+        if ok and v then isImp = true end
     end
+    local base
+    if isImp then
+        base = (CC and CC.importantColor) or { r = 1.00, g = 0.20, b = 0.78 }
+    elseif bar_cast_type == "empower" then
+        base = (CC and CC.empoweredColor) or { r = 0.00, g = 1.00, b = 0.00 }
+    elseif bar_cast_type == "channel" then
+        base = (CC and CC.channelColor) or { r = 0.39, g = 1.00, b = 0.39 }
+    else
+        base = (CC and CC.castColor) or { r = 1.00, g = 1.00, b = 0.00 }
+    end
+    local ni_c = (CC and CC.uninterruptible) or { r = 0.71, g = 0.71, b = 0.71 }
+    bar.sb:SetStatusBarColor(
+        C_CurveUtil.EvaluateColorValueFromBoolean(not_interruptible, ni_c.r, base.r),
+        C_CurveUtil.EvaluateColorValueFromBoolean(not_interruptible, ni_c.g, base.g),
+        C_CurveUtil.EvaluateColorValueFromBoolean(not_interruptible, ni_c.b, base.b)
+    )
 end
 
 -- ==============================
 -- 기능 3: 캐스팅 표시
 -- ==============================
 local function show_cast(unit)
-    local name, _, texture, startMS, endMS, _, _, not_interruptible, spellID = UnitCastingInfo(unit)
+    local name, _, texture, _, _, _, _, not_interruptible, spellID = UnitCastingInfo(unit)
     local is_ch = false
     if type(name) == "nil" then
-        name, _, texture, startMS, endMS, _, not_interruptible, spellID = UnitChannelInfo(unit)
+        name, _, texture, _, _, _, not_interruptible, spellID = UnitChannelInfo(unit)
         is_ch = true
     end
     if type(name) == "nil" then return false end
 
-    -- 타이밍 계산: startTimeMS / endTimeMS (ms 단위) → 초로 변환
     bar_is_channel = is_ch
     if is_ch then bar_cast_type = "channel" end
 
-    if type(startMS) == "number" and not issecretvalue(startMS)
-    and type(endMS) == "number" and not issecretvalue(endMS) then
-        bar_cast_start    = startMS / 1000
-        bar_cast_end      = endMS   / 1000
-        bar_cast_duration = bar_cast_end - bar_cast_start
+    -- oUF 방식: target/focus는 startMS/endMS 불신뢰 → DurationObject + SetTimerDuration
+    local dur, dir
+    if bar_cast_type == "empower" then
+        dur = UnitEmpoweredChannelDuration(unit)
+        dir = Enum.StatusBarTimerDirection.ElapsedTime
+    elseif is_ch then
+        dur = UnitChannelDuration(unit)
+        dir = Enum.StatusBarTimerDirection.RemainingTime
     else
-        local now         = GetTime()
-        bar_cast_start    = now
-        bar_cast_end      = now + 2
-        bar_cast_duration = 2
+        dur = UnitCastingDuration(unit)
+        dir = Enum.StatusBarTimerDirection.ElapsedTime
     end
+    if dur then
+        bar.sb:SetTimerDuration(dur, Enum.StatusBarInterpolation.Immediate, dir)
+        bar.time_binding:SetDuration(dur)
+        bar.time_binding:SetEnabled(true)
+    end
+    bar.time_text:Show()
 
     active_unit = unit
     if type(texture) ~= "nil" then bar.icon:SetTexture(texture) end
     bar.spell_text:SetText(name)
-    bar.time_text:SetText("")
-    bar.time_text:Show()
     apply_color(not_interruptible, spellID)
 
     -- 주문대상
     if bar.target_text then
         if UnitShouldDisplaySpellTargetName and UnitShouldDisplaySpellTargetName(unit) then
-            local tClass = UnitSpellTargetClass and UnitSpellTargetClass(unit)
-            if tClass and not issecretvalue(tClass) then
-                local cc = C_ClassColor and C_ClassColor.GetClassColor(tClass)
-                if cc then bar.target_text:SetTextColor(cc.r, cc.g, cc.b)
-                else bar.target_text:SetTextColor(1, 1, 1) end
+            -- UnitSpellTargetClass: 캐스팅 대상의 직업 토큰 (secret value 아님)
+            local targetClass = UnitSpellTargetClass and UnitSpellTargetClass(unit)
+            if targetClass then
+                local cc = C_ClassColor.GetClassColor(targetClass)
+                if cc then
+                    bar.target_text:SetTextColor(cc:GetRGBA())
+                else
+                    bar.target_text:SetTextColor(1, 1, 1)
+                end
             else
                 bar.target_text:SetTextColor(1, 1, 1)
             end
+            -- UnitSpellTargetName은 secret value → SetText에 직접 전달 (비교/분기 금지)
             bar.target_text:SetText(UnitSpellTargetName and UnitSpellTargetName(unit) or "")
             bar.target_text:Show()
         else
@@ -217,32 +213,30 @@ local function show_cast(unit)
         end
     end
 
-    -- 채널은 1→0, 일반은 0→1
-    bar.sb:SetValue(is_ch and 1 or 0)
-
     cast_active = true
     bar:Show()
     return true
 end
 
 -- ==============================
--- 기능 4: 우선순위 평가 (focus > target)
+-- 기능 5: 우선순위 평가 (focus > target)
 -- ==============================
+
 local function update()
     if not bar then return end
+    if is_edit_mode then return end
     if dodoDB.enableUnitCastBar == false then
         cast_active = false; bar:Hide(); active_unit = nil; return
     end
 
     if UnitExists("focus") then
+        -- focus 있으면 target은 완전 무시 (focus 시전 없으면 빈 상태)
         local fn = UnitCastingInfo("focus")
         if type(fn) == "nil" then fn = UnitChannelInfo("focus") end
         if type(fn) ~= "nil" then
             if show_cast("focus") then return end
         end
-    end
-
-    if UnitExists("target") then
+    elseif UnitExists("target") then
         local tn = UnitCastingInfo("target")
         if type(tn) == "nil" then tn = UnitChannelInfo("target") end
         if type(tn) ~= "nil" then
@@ -250,7 +244,6 @@ local function update()
         end
     end
 
-    if is_edit_mode then return end
     cast_active = false; bar:Hide(); active_unit = nil
 end
 
@@ -287,8 +280,6 @@ local function build()
     sb:SetPoint('BOTTOMRIGHT', bar,  'BOTTOMRIGHT', 0, 0)
     sb:SetStatusBarTexture([[Interface\Buttons\WHITE8X8]])
     sb:SetStatusBarColor(1, 0.7, 0)
-    sb:SetMinMaxValues(0, 1)
-    sb:SetValue(0)
     bar.sb = sb
 
     -- 배경
@@ -308,6 +299,7 @@ local function build()
     local kick_clip = CreateFrame("Frame", nil, bar)
     kick_clip:SetAllPoints(sb)
     kick_clip:SetClipsChildren(true)
+    kick_clip:SetFrameLevel(sb:GetFrameLevel() + 4)
     bar.kick_clip = kick_clip
 
     -- positioner: elapsed 위치 추적 (투명 StatusBar)
@@ -334,7 +326,7 @@ local function build()
 
     -- tick: marker 텍스처 우측에 표시되는 2px 세로선
     local kick_tick = kick_clip:CreateTexture(nil, "OVERLAY", nil, 7)
-    kick_tick:SetColorTexture(1, 1, 1, 1)
+    kick_tick:SetColorTexture(1, 0, 0, 1)
     kick_tick:SetWidth(2)
     kick_tick:SetPoint("TOP",    kick_clip,                         "TOP")
     kick_tick:SetPoint("BOTTOM", kick_clip,                         "BOTTOM")
@@ -349,11 +341,21 @@ local function build()
     spell_text:SetJustifyH('LEFT')
     bar.spell_text = spell_text
 
-    -- 시간 텍스트
+    -- 시간 텍스트 + DurationTextBinding (시크릿 remaining 값 처리)
     local time_text = sb:CreateFontString(nil, 'OVERLAY', 'SystemFont_Outline')
     time_text:SetPoint('RIGHT', sb, 'RIGHT', -5, 0)
     time_text:SetJustifyH('RIGHT')
     bar.time_text = time_text
+
+    local fmt = C_StringUtil.CreateSecondsFormatter()
+    fmt:SetDefaultAbbreviation(Enum.SecondsFormatterAbbreviation.None)
+    fmt:SetMinInterval(Enum.SecondsFormatterInterval.Seconds)
+    fmt:SetMillisecondsThreshold(60)
+    local binding = C_DurationUtil.CreateDurationTextBinding()
+    binding:SetFormatter(fmt)
+    binding:SetFontString(time_text)
+    binding:SetEnabled(false)
+    bar.time_binding = binding
 
     -- 주문대상 (바 우측 외부)
     local target_text = bar:CreateFontString(nil, 'OVERLAY', 'SystemFont_Outline')
@@ -362,19 +364,9 @@ local function build()
     target_text:Hide()
     bar.target_text = target_text
 
-    -- oUF 방식: OnUpdate로 매 프레임 채움 계산
+    -- SetTimerDuration이 바 진행을 구동 → OnUpdate는 차단 눈금만 담당
     bar:SetScript('OnUpdate', function()
         if not cast_active then return end
-        local now       = GetTime()
-        local elapsed   = now - bar_cast_start
-        local remaining = bar_cast_end - now
-        if bar_cast_duration > 0 then
-            local pct = bar_is_channel
-                and math_max(0, math_min(1, remaining / bar_cast_duration))
-                or  math_max(0, math_min(1, elapsed   / bar_cast_duration))
-            bar.sb:SetValue(pct)
-        end
-        bar.time_text:SetFormattedText('%.1f', math_max(0, remaining))
         update_kick_tick()
     end)
 end
@@ -401,16 +393,18 @@ local function register_lem()
 
     LEM:RegisterCallback("enter", function()
         is_edit_mode = true
+        bar.time_binding:SetEnabled(false)
+        bar.sb:SetMinMaxValues(0, 1)
         bar.sb:SetValue(0.5)
         bar.spell_text:SetText("TF 캐스팅바")
         bar.time_text:SetText("2.5")
-        bar.time_text:Show()
         if bar.target_text then bar.target_text:Hide() end
         if bar.kick_tick   then bar.kick_tick:Hide() end
         bar:Show()
     end)
     LEM:RegisterCallback("exit", function()
         is_edit_mode = false
+        bar.sb:SetMinMaxValues(0, 1)
         bar.sb:SetValue(0)
         if not active_unit then
             bar.spell_text:SetText("")
@@ -421,10 +415,11 @@ local function register_lem()
 
     if LEM:IsInEditMode() then
         is_edit_mode = true
+        bar.time_binding:SetEnabled(false)
+        bar.sb:SetMinMaxValues(0, 1)
         bar.sb:SetValue(0.5)
         bar.spell_text:SetText("TF 캐스팅바")
         bar.time_text:SetText("2.5")
-        bar.time_text:Show()
         if bar.target_text then bar.target_text:Hide() end
         if bar.kick_tick   then bar.kick_tick:Hide() end
         bar:Show()
@@ -457,15 +452,15 @@ evt:SetScript("OnEvent", function(_, event, unit)
     -- 이하 unit 이벤트 — target / focus 만 수신
     if event == "UNIT_SPELLCAST_START" then
         bar_cast_type = "cast"
-        if unit == "target" and active_unit == "focus" then return end
+        if unit == "target" and UnitExists("focus") then return end
         show_cast(unit)
     elseif event == "UNIT_SPELLCAST_CHANNEL_START" then
         bar_cast_type = "channel"
-        if unit == "target" and active_unit == "focus" then return end
+        if unit == "target" and UnitExists("focus") then return end
         show_cast(unit)
     elseif event == "UNIT_SPELLCAST_EMPOWER_START" then
         bar_cast_type = "empower"
-        if unit == "target" and active_unit == "focus" then return end
+        if unit == "target" and UnitExists("focus") then return end
         show_cast(unit)
 
     elseif event == "UNIT_SPELLCAST_DELAYED"
@@ -476,6 +471,9 @@ evt:SetScript("OnEvent", function(_, event, unit)
     elseif event == "UNIT_SPELLCAST_STOP" then
         if unit == active_unit then
             cast_active = false
+            bar.time_binding:SetEnabled(false)
+            bar.time_text:SetText("")
+            bar.sb:SetMinMaxValues(0, 1)
             bar.sb:SetValue(1)
             local CC = dodo.ColorsUnitframe and dodo.ColorsUnitframe.Castbar
             local c = CC and CC.successColor or { r = 0.39, g = 1.00, b = 0.39 }
@@ -489,9 +487,12 @@ evt:SetScript("OnEvent", function(_, event, unit)
     elseif event == "UNIT_SPELLCAST_FAILED" then
         if unit == active_unit then
             cast_active = false
+            bar.time_binding:SetEnabled(false)
+            bar.time_text:SetText("")
+            bar.time_text:Hide()
+            bar.sb:SetMinMaxValues(0, 1)
             bar.sb:SetValue(1)
             bar.spell_text:SetText("실패")
-            bar.time_text:SetText(""); bar.time_text:Hide()
             hide_kick_tick()
             if bar.target_text then bar.target_text:Hide() end
             active_unit = nil
@@ -502,6 +503,9 @@ evt:SetScript("OnEvent", function(_, event, unit)
     or     event == "UNIT_SPELLCAST_EMPOWER_STOP" then
         if unit == active_unit then
             cast_active = false
+            bar.time_binding:SetEnabled(false)
+            bar.time_text:SetText("")
+            bar.sb:SetMinMaxValues(0, 1)
             bar.sb:SetValue(1)
             local CC = dodo.ColorsUnitframe and dodo.ColorsUnitframe.Castbar
             local c = CC and CC.successColor or { r = 0.39, g = 1.00, b = 0.39 }
@@ -515,12 +519,15 @@ evt:SetScript("OnEvent", function(_, event, unit)
     elseif event == "UNIT_SPELLCAST_INTERRUPTED" then
         if unit == active_unit then
             cast_active = false
+            bar.time_binding:SetEnabled(false)
+            bar.time_text:SetText("")
+            bar.time_text:Hide()
+            bar.sb:SetMinMaxValues(0, 1)
             bar.sb:SetValue(1)
             local CC = dodo.ColorsUnitframe and dodo.ColorsUnitframe.Castbar
             local c = CC and CC.interruptedColor or { r = 0.8, g = 0, b = 0 }
             bar.sb:SetStatusBarColor(c.r, c.g, c.b)
             bar.spell_text:SetText("실패")
-            bar.time_text:SetText(""); bar.time_text:Hide()
             hide_kick_tick()
             if bar.target_text then bar.target_text:Hide() end
             active_unit = nil

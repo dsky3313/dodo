@@ -5,7 +5,7 @@
 ## DefaultState: enabled
 ## Notes: dodo QoL
 ## IconTexture: Interface\AddOns\dodo\Media\Texture\Logo
-## SavedVariables: dodoDB
+## SavedVariables: dodoDB dodoDBmemo
 ## Category: 11
 ## X-Curse-Project-ID: 9999999
 

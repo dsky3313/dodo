@@ -280,7 +280,7 @@ local function create_ui()
 	dodo.TargetTargetFrame = targettargetFrame
 
 	focusFrame = oUF:Spawn('focus', 'dodoFocusFrame')
-	focusFrame:SetPoint('TOPLEFT', FocusFrame, 'TOPLEFT', 20, -18)
+	focusFrame:SetPoint('TOPLEFT', FocusFrame, 'TOPLEFT', 20, -23)
 	table.insert(customFrames, focusFrame)
 	dodo.FocusFrame = focusFrame
 

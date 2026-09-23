@@ -9,6 +9,7 @@
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local dodo = _G.dodo
 dodoDB = dodoDB or {}
+dodoDBmemo = dodoDBmemo or {}
 
 -- ==============================
 -- 캐싱
@@ -55,13 +56,28 @@ StaticPopupDialogs["DODO_PLAYER_MEMO_WARN"] = {
 }
 
 
+StaticPopupDialogs["DODO_PLAYER_MEMO_RESET"] = {
+    text           = "플레이어 메모를 전체 초기화합니다.\n정말 진행하시겠습니까?",
+    button1        = "초기화",
+    button2        = "취소",
+    OnAccept       = function()
+        wipe(dodoDBmemo.playerMemoList)
+        if PM.RefreshUI then PM.RefreshUI() end
+    end,
+    timeout        = 0,
+    whileDead      = true,
+    hideOnEscape   = 1,
+    preferredIndex = 3,
+}
+
+
 -- ==============================
 -- 코어 API
 -- ==============================
 function PM.Add(name, note)
     if not name or name == "" then return end
-    dodoDB.playerMemoList = dodoDB.playerMemoList or {}
-    dodoDB.playerMemoList[name] = { note = note or "", date = date("%Y-%m-%d") }
+    dodoDBmemo.playerMemoList = dodoDBmemo.playerMemoList or {}
+    dodoDBmemo.playerMemoList[name] = { note = note or "", date = date("%Y-%m-%d") }
     if PM.RefreshUI then PM.RefreshUI() end
     if PM.TriggerPartyCheck then PM.TriggerPartyCheck() end
     PlaySound(113, "Master")
@@ -74,8 +90,8 @@ end
 
 function PM.Remove(key)
     if not key then return end
-    if dodoDB.playerMemoList then
-        dodoDB.playerMemoList[key] = nil
+    if dodoDBmemo.playerMemoList then
+        dodoDBmemo.playerMemoList[key] = nil
     end
     if PM.RefreshUI then PM.RefreshUI() end
 end
@@ -91,7 +107,7 @@ local check_party_pending = false
 local function check_party_impl()
     check_party_pending = false
     if dodoDB.enablePlayerMemo == false then return end
-    local list = dodoDB.playerMemoList
+    local list = dodoDBmemo.playerMemoList
     if not list then return end
 
     local num = GetNumGroupMembers()
@@ -165,9 +181,9 @@ local function row_name_confirm(self)
     self:Hide()
     row.name_btn:Show()
     if new_key ~= "" and new_key ~= old_key
-            and dodoDB.playerMemoList and dodoDB.playerMemoList[old_key] then
-        dodoDB.playerMemoList[new_key] = dodoDB.playerMemoList[old_key]
-        dodoDB.playerMemoList[old_key] = nil
+            and dodoDBmemo.playerMemoList and dodoDBmemo.playerMemoList[old_key] then
+        dodoDBmemo.playerMemoList[new_key] = dodoDBmemo.playerMemoList[old_key]
+        dodoDBmemo.playerMemoList[old_key] = nil
         if PM.RefreshUI then PM.RefreshUI() end
         if PM.TriggerPartyCheck then PM.TriggerPartyCheck() end
     end
@@ -191,8 +207,8 @@ local function row_note_confirm(self)
     local row = self:GetParent()
     local key = row.key
     local text = self:GetText()
-    if key and dodoDB.playerMemoList and dodoDB.playerMemoList[key] then
-        dodoDB.playerMemoList[key].note = text
+    if key and dodoDBmemo.playerMemoList and dodoDBmemo.playerMemoList[key] then
+        dodoDBmemo.playerMemoList[key].note = text
         row._note = text
     end
     self:ClearFocus()
@@ -253,7 +269,7 @@ end
 -- ==============================
 local function parse_lfg_leader(leader_name)
     if not leader_name or leader_name == "" then return nil, nil end
-    local list = dodoDB.playerMemoList
+    local list = dodoDBmemo.playerMemoList
     if not list then return nil, nil end
     local name, realm = leader_name:match("^(.+)-(.+)$")
     if not name then
@@ -301,12 +317,12 @@ local function unit_menu_handler(owner, root, contextData)
     if not name or issecretvalue(name) then return end
     local realm    = (server and server ~= "") and server or GetRealmName()
     local key_full = name .. "-" .. realm
-    local list     = dodoDB.playerMemoList
+    local list     = dodoDBmemo.playerMemoList
     local used_key = list and (list[key_full] and key_full or list[name] and name)
     root:CreateDivider()
     root:CreateTitle("dodo")
     root:CreateButton(used_key and "메모 편집" or "메모 추가", function()
-        local cur_list = dodoDB.playerMemoList
+        local cur_list = dodoDBmemo.playerMemoList
         local cur_key  = cur_list and (cur_list[key_full] and key_full or cur_list[name] and name)
         local note     = cur_key and cur_list[cur_key].note or ""
         PM.OpenAndFill(key_full, note)
@@ -332,9 +348,9 @@ local function refresh_ui()
     local ROW_H   = memo_frame._row_h
     local keys    = memo_frame._sorted_keys
 
-    dodoDB.playerMemoList = dodoDB.playerMemoList or {}
+    dodoDBmemo.playerMemoList = dodoDBmemo.playerMemoList or {}
     wipe(keys)
-    for k in pairs(dodoDB.playerMemoList) do
+    for k in pairs(dodoDBmemo.playerMemoList) do
         table_insert(keys, k)
     end
     table_sort(keys)
@@ -349,7 +365,7 @@ local function refresh_ui()
     for i, row in ipairs(rows) do
         local key = keys[i]
         if key then
-            local entry = dodoDB.playerMemoList[key]
+            local entry = dodoDBmemo.playerMemoList[key]
             row.key   = key
             row._note = entry.note or ""
             row.name_btn:SetText(key)
@@ -586,6 +602,16 @@ local function build_ui()
     panel._ph_name    = ph_name
     panel._ph_note    = ph_note
 
+    -- ── 초기화 / 가져오기 버튼 (col_note 위, 탭 공백 영역) ─────────────
+    local reset_btn = CreateFrame("Button", nil, FriendsFrame, "UIPanelButtonNoTooltipTemplate")
+    reset_btn:SetSize(60, 22)
+    reset_btn:SetPoint("BOTTOMRIGHT", col_note, "TOPRIGHT", 0, 4)
+    reset_btn:SetText("초기화")
+    reset_btn:SetScript("OnClick", function()
+        StaticPopup_Show("DODO_PLAYER_MEMO_RESET")
+    end)
+
+
     -- ── FriendsFrame_Update 후킹 ────────────────────────────────────────
     hooksecurefunc("FriendsFrame_Update", on_friends_frame_update)
 end
@@ -598,8 +624,18 @@ local init_frame = CreateFrame("Frame")
 local function on_event(self, event, arg1)
     if event == "ADDON_LOADED" then
         if arg1 == "dodoQOL" then
-            dodoDB = dodoDB or {}
-            dodoDB.playerMemoList = dodoDB.playerMemoList or {}
+            dodoDB    = dodoDB    or {}
+            dodoDBmemo = dodoDBmemo or {}
+            dodoDBmemo.playerMemoList = dodoDBmemo.playerMemoList or {}
+            -- 기존 dodoDB.playerMemoList 데이터 마이그레이션
+            if dodoDB.playerMemoList and next(dodoDB.playerMemoList) then
+                for k, v in pairs(dodoDB.playerMemoList) do
+                    if not dodoDBmemo.playerMemoList[k] then
+                        dodoDBmemo.playerMemoList[k] = v
+                    end
+                end
+                dodoDB.playerMemoList = nil
+            end
         elseif arg1 == "Blizzard_SocialUI" then
             if not memo_frame and FriendsFrame then
                 build_ui()
