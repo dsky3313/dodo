@@ -10,22 +10,6 @@
 local dodo = _G.dodo
 dodoDB = dodoDB or {}
 
----@class AudioSoundItem
----@field text string 모듈설정 이름
----@field value string SoundID
-
----@type AudioSoundItem[]
-local sound_encounter_start_table = {
-    { text = "돌격", value = "16971" },
-}
-
----@type AudioSoundItem[]
-local sound_encounter_victory_table = {
-    { text = "PVP 얼라이언스", value = "38352" },
-    { text = "퀘스트 추가", value = "618" },
-    { text = "PVP 승리", value = "34091" },
-}
-
 -- ==============================
 -- 캐싱
 -- ==============================
@@ -36,9 +20,7 @@ local MovieFrame = MovieFrame
 local PlaySound = PlaySound
 local print = print
 local Sound_GameSystem_RestartSoundSystem = Sound_GameSystem_RestartSoundSystem
-local string_format = string.format
 local tonumber = tonumber
-local UIErrorsFrame = UIErrorsFrame
 
 -- ==============================
 -- 기능 1: 로컬 상태 및 설정
@@ -46,10 +28,8 @@ local UIErrorsFrame = UIErrorsFrame
 local last_sync = 0
 local audio_frame = nil
 
--- dodo.Colors에서 피드백용 정적 헥스 코드 직접 가져오기 (치환 연산 배제)
-local colors = dodo.Colors
+local colors         = dodo.Colors
 local soft_green_hex = (colors and colors.SoftGreen and colors.SoftGreen.hex) or "ff64ff64"
-local soft_red_hex   = (colors and colors.SoftRed   and colors.SoftRed.hex)   or "ffff3232"
 
 -- ==============================
 -- 기능 2: 상태 업데이트 및 오디오 동작
@@ -151,30 +131,8 @@ audio_frame = CreateFrame("Frame")
 audio_frame:RegisterEvent("PLAYER_LOGIN")
 audio_frame:SetScript("OnEvent", on_event)
 
--- ==============================
--- 설정 등록
--- ==============================
-local function on_audio_sync_change(checked)
-    update_event_registration()
-    if checked then
-        sync_audio(true)
-    else
-        print("[|c" .. soft_red_hex .. "dodo|r] 오디오 동기화 비활성화")
-    end
-end
-
-local function on_encounter_start_change(checked)
-    update_event_registration()
-    if checked then play_encounter_start_sound() end
-end
-
-local function on_encounter_victory_change(checked)
-    update_event_registration()
-    if checked then play_encounter_victory_sound() end
-end
-
-dodo.RegisterOption("음성", function(category)
-    dodo.UI:SettingsCheckbox(category, "useAudioSync", "출력장치 동기화", "출력장치 변경 시 오디오를 자동 동기화합니다.", true, on_audio_sync_change)
-    dodo.UI:SettingsCheckboxDropDown(category, "useSoundEncounterStart", "useSoundEncounterStart_soundID", "보스전 시작", "보스전 시작 시 효과음을 재생합니다.", sound_encounter_start_table, true, "16971", on_encounter_start_change)
-    dodo.UI:SettingsCheckboxDropDown(category, "useSoundEncounterVictory", "useSoundEncounterVictory_soundID", "보스전 승리", "보스전 승리 시 효과음을 재생합니다.", sound_encounter_victory_table, true, "38352", on_encounter_victory_change)
-end, 8000)
+-- 공개 API (99 Options.lua 콜백에서 호출)
+dodo.AudioUpdateEventRegistration = update_event_registration
+dodo.AudioSyncNow                 = sync_audio
+dodo.AudioPlayEncounterStart      = play_encounter_start_sound
+dodo.AudioPlayEncounterVictory    = play_encounter_victory_sound

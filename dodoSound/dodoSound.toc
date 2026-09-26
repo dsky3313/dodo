@@ -6,4 +6,6 @@
 ## Group: dodo
 ## IconTexture: Interface\AddOns\dodo\Media\Texture\Logo
 
+99 Options.lua
 Audio.lua
+NewLFG.lua

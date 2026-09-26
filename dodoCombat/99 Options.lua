@@ -16,7 +16,7 @@ dodo.COMBAT_DEFAULTS = {
     useResourceBar1         = true,
     useResourceBar2         = true,
     useResourceBarSmooth    = true,
-    resourceBarWidth        = 272,
+    resourceBarWidth        = 266,
     resourceBarHeight       = 10,
     resourceBarFontSize     = 12,
 
@@ -117,7 +117,7 @@ dodo.RegisterOption("전투", function(category)
 
     RS(dodo.UI:SettingsSlider(category, "resourceBarWidth", "바 가로 크기",
         "자원바의 가로 길이를 설정합니다.",
-        200, 300, 2, 272, "Integer", function(val)
+        200, 300, 2, 266, "Integer", function(val)
             if dodoDB then dodoDB.resourceBarWidth = val end
             if dodo.ResourceBar and dodo.ResourceBar.UpdateOption then dodo.ResourceBar.UpdateOption() end
             dodo.CombatRefreshPreview()

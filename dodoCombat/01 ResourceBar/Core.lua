@@ -25,8 +25,8 @@ RB.cachedSpecColor = { r = 1.00, g = 0.59, b = 0.20 }
 RB.fallbackSpecColor = { r = 1.00, g = 0.59, b = 0.20 }
 
 RB.barConfigs = {
-    { name = "ResourceBar1", width = 272, height = 10, y = -227, template = "ResourceBar1Template" },
-    { name = "ResourceBar2", width = 272, height = 7, y = -4, template = "ResourceBar2Template" }
+    { name = "ResourceBar1", width = 266, height = 10, y = -227, template = "ResourceBar1Template" },
+    { name = "ResourceBar2", width = 266, height = 7, y = -4, template = "ResourceBar2Template" }
 }
 
 local anchor_frame = nil
@@ -89,7 +89,7 @@ local function update_option()
     if not RB.bar1Frame or not RB.bar2Frame then return end
 
     local db = dodoDB
-    local width = (db and db.resourceBarWidth) or RB.barConfigs[1].width or 272
+    local width = (db and db.resourceBarWidth) or RB.barConfigs[1].width or 266
     local height = (db and db.resourceBarHeight) or RB.barConfigs[1].height or 10
     local height2 = math_max(height - 3, 5)
 
@@ -232,7 +232,7 @@ local function on_event(self, event, arg1)
         local _sv = dodoDB.editMode and dodoDB.editMode["ResourceBar"]
         local _pt = (_sv and _sv.point) and _sv or _dp
         anchor_frame = CreateFrame("Frame", "dodoEditModeResourceBar", UIParent)
-        anchor_frame:SetSize(272, 21)
+        anchor_frame:SetSize(266, 21)
         anchor_frame:SetPoint(_pt.point, UIParent, _pt.relativePoint or _pt.point, _pt.xOfs or 0, _pt.yOfs or 0)
         LEM:AddFrame(anchor_frame, function(f, l, p, x, y)
             dodoDB.editMode = dodoDB.editMode or {}
@@ -249,7 +249,7 @@ local function on_event(self, event, arg1)
             { kind=LEM.SettingType.Checkbox, name="부드러운 증감", default=true,
               get=function(l) return dodoDB and dodoDB.useResourceBarSmooth ~= false end,
               set=function(l,v) if dodoDB then dodoDB.useResourceBarSmooth=v end; if dodo.ResourceBar and dodo.ResourceBar.UpdateSmooth then dodo.ResourceBar.UpdateSmooth() end end },
-            { kind=LEM.SettingType.Slider, name="바 가로 크기", default=272, minValue=200, maxValue=300, valueStep=2,
+            { kind=LEM.SettingType.Slider, name="바 가로 크기", default=266, minValue=200, maxValue=300, valueStep=2,
               get=function(l) return dodoDB and dodoDB.resourceBarWidth or dodo.COMBAT_DEFAULTS.resourceBarWidth end,
               set=function(l,v) if dodoDB then dodoDB.resourceBarWidth=v end; if dodo.ResourceBar and dodo.ResourceBar.UpdateOption then dodo.ResourceBar.UpdateOption() end end },
             { kind=LEM.SettingType.Slider, name="바 세로 크기", default=10, minValue=6, maxValue=20, valueStep=1,

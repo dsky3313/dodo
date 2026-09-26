@@ -108,12 +108,21 @@ local function update_kick_tick()
     local kickDur = C_Spell.GetSpellCooldownDuration(active_kick_spell)
     if not kickDur then hide_kick_tick(); return end
 
-    -- Plater 방식: secret 값 비교 없이 C-side에 직접 전달
-    bar.kick_positioner:SetMinMaxValues(0, castDur:GetTotalDuration())
-    bar.kick_positioner:SetValue(castDur:GetElapsedDuration())
-    bar.kick_marker:SetMinMaxValues(0, castDur:GetTotalDuration())
-    bar.kick_marker:SetWidth(KICK_BAR_W)
-    bar.kick_marker:SetValue(kickDur:GetRemainingDuration())
+    -- kick 쿨다운 없으면 tick을 맨 끝에 고정 (언제든 킥 가능)
+    -- 쿨다운 있으면: elapsed + kickRemaining = 일정 → tick 고정
+    if kickDur:IsZero() then
+        bar.kick_positioner:SetMinMaxValues(0, 1)
+        bar.kick_positioner:SetValue(0)
+        bar.kick_marker:SetMinMaxValues(0, 1)
+        bar.kick_marker:SetWidth(KICK_BAR_W)
+        bar.kick_marker:SetValue(1)
+    else
+        bar.kick_positioner:SetMinMaxValues(0, castDur:GetTotalDuration())
+        bar.kick_positioner:SetValue(castDur:GetElapsedDuration())
+        bar.kick_marker:SetMinMaxValues(0, castDur:GetTotalDuration())
+        bar.kick_marker:SetWidth(KICK_BAR_W)
+        bar.kick_marker:SetValue(kickDur:GetRemainingDuration())
+    end
 
     bar.kick_positioner:Show()
     bar.kick_marker:Show()

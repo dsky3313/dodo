@@ -99,7 +99,7 @@ end
 
 local function get_bar2_size()
     local db = dodoDB
-    local width = (db and db.resourceBarWidth) or RB.barConfigs[1].width or 272
+    local width = (db and db.resourceBarWidth) or RB.barConfigs[1].width or 266
     local height = (db and db.resourceBarHeight) or RB.barConfigs[1].height or 10
     local height2 = math_max(height - 3, 5)
     return width, height2

@@ -10,18 +10,6 @@
 local dodo = _G.dodo
 dodoDB = dodoDB or {}
 
--- 2dodo 규격을 위해 text 필드 추가 (label 병행 제공하여 OptionUI.lua 하위 호환 보장)
-local alert_sound_table = {
-    { text = "멀록", label = "MurlocAggro", value = "416" },
-    { text = "경매장1", label = "AuctionWindowOpen", value = "5274" },
-    { text = "경매장2", label = "AuctionWindowClose", value = "5275" },
-    { text = "PVP1", label = "PVPFlagTaken.Mono", value = "9378" },
-    { text = "PVP2", label = "PVPFlagTakenHordeMono", value = "9379" },
-    { text = "퀘스트", label = "UI_QuestObjectivesComplete", value = "26905" },
-    { text = "레이드1", label = "RaidWarning", value = "8959" },
-    { text = "레이드2", label = "UI_RaidBossWhisperWarning", value = "11773" },
-    { text = "인간여성", label = "HumanFemaleStandardNPCGreetings", value = "552141" },
-}
 
 -- ==============================
 -- 캐싱
@@ -165,56 +153,6 @@ init_frame:SetScript("OnEvent", on_event)
 
 armed_at = GetTime() + 2
 
--- ==============================
--- 설정 등록
--- ==============================
+-- 공개 API (99 Options.lua 콜백에서 호출)
 dodo.UpdateNewLFG = update_registration
-dodo.NewLFG = play_lfg_alert
-
-local setting_parent = nil
-local setting_child = nil
-
-local function on_parent_changed(_, value)
-    if value == false then
-        if setting_child then
-            setting_child:SetValue(false)
-        end
-    end
-end
-
-local function is_parent_active()
-    if setting_parent then
-        return setting_parent:GetValue()
-    end
-    return true
-end
-
-dodo.RegisterOption("음성", function(category)
-    local init_parent_lfg
-    setting_parent, _, init_parent_lfg = dodo.UI:SettingsCheckboxDropDown(
-        category,
-        "useNewLFG",
-        "soundID",
-        "파티신청 알림",
-        "새로운 파티신청 시 알림",
-        alert_sound_table,
-        true,
-        alert_sound_table[2].value,
-        play_lfg_alert
-    )
-
-    local init_child_lfg
-    init_child_lfg, setting_child = dodo.UI:SettingsCheckbox(
-        category,
-        "useNewLFGLeader",
-        "파티원 기능 활성화",
-        "파티원일 경우에도 활성화합니다. ",
-        true,
-        play_lfg_alert
-    )
-
-    if setting_parent and setting_child then
-        setting_parent:SetValueChangedCallback(on_parent_changed)
-        init_child_lfg:SetParentInitializer(init_parent_lfg, is_parent_active)
-    end
-end, 8001)
+dodo.NewLFG       = play_lfg_alert

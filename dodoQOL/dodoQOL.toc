@@ -49,7 +49,7 @@
 99 ETC/FrameOption.lua
 99 ETC/Friends.lua
 99 ETC/Merchant.lua
-99 ETC/NewLFG.lua
+# 99 ETC/NewLFG.lua
 99 ETC/QuickBobber.lua
 99 ETC/Teleport.lua
 99 ETC/TimerLFG.lua

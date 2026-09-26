@@ -68,6 +68,8 @@ local frame_height = math_abs(icon_config.START_Y) + (row_count * icon_config.RO
 local teleport_frame = CreateFrame("Frame", "TeleportFrame", UIParent, "BackdropTemplate")
 teleport_frame:SetSize(650, frame_height)
 teleport_frame:SetPoint("LEFT", GameMenuFrame, "RIGHT", 20, 0)
+teleport_frame:SetFrameStrata("DIALOG")
+teleport_frame:SetFrameLevel(1)
 teleport_frame:Hide()
 
 NineSliceUtil.ApplyLayoutByName(teleport_frame, "Dialog")
@@ -122,7 +124,7 @@ for i, data in ipairs(dodo.Dungeons) do
                 fontcolor = "yellow",
                 outline = true,
                 useTooltip = false,
-                framestrata = "HIGH",
+                framestrata = "DIALOG",
             }
 
             local icnoEXP = lib_icon:Create("tpEXP" .. data.category, teleport_frame, iconEXPConfig)
@@ -146,7 +148,7 @@ for i, data in ipairs(dodo.Dungeons) do
             outline = true,
             cooldownSize = 12,
             useTooltip = true,
-            framestrata = "HIGH",
+            framestrata = "DIALOG",
         }
 
         local iconTP = lib_icon:Create("tpBtn" .. i, teleport_frame, iconTPConfig)
@@ -172,7 +174,7 @@ for i, data in ipairs(dodo.Dungeons) do
                 outline = true,
                 cooldownSize = 12,
                 useTooltip = true,
-                framestrata = "HIGH",
+                framestrata = "DIALOG",
             }
 
             local iconSeason = lib_icon:Create("seasonBtn" .. i, teleport_frame, iconSeasonConfig)
