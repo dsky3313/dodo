@@ -29,7 +29,6 @@ jobs:
         run: |
           if git ls-remote --tags origin "v${{ steps.version.outputs.version }}" | grep -q .; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Tag v${{ steps.version.outputs.version }} already exists, skipping release."
           else
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
@@ -52,7 +51,7 @@ jobs:
           zip -r /tmp/dodo.zip dodo/
           ls -lh /tmp/dodo.zip
 
-      - name: Create Release and Upload
+      - name: Create Release
         if: steps.tag_check.outputs.exists == 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -61,23 +60,34 @@ jobs:
           REPO="${{ github.repository }}"
           TAG="v${{ steps.version.outputs.version }}"
 
-          # 릴리즈 생성 및 upload_url 추출
-          UPLOAD_URL=$(gh api repos/$REPO/releases \
-            -X POST \
-            -f tag_name="$TAG" \
-            -f name="dodo v${{ steps.version.outputs.version }}" \
-            -F generate_release_notes=true \
-            -f make_latest=true \
-            --jq '.upload_url' | sed 's/{?name,label}//')
-          echo "Upload URL: $UPLOAD_URL"
+          gh release create "$TAG" \
+            --title "dodo v${{ steps.version.outputs.version }}" \
+            --generate-notes \
+            --latest
+
+          # 릴리즈 ID 조회
+          RELEASE_ID=$(gh api "repos/$REPO/releases/tags/$TAG" --jq '.id')
+          echo "Release ID: $RELEASE_ID"
+
+          # 자동 생성된 assets 확인 및 삭제
+          sleep 3
+          echo "=== 현재 assets ==="
+          gh api "repos/$REPO/releases/$RELEASE_ID/assets" --jq '.[].name'
+
+          ASSET_IDS=$(gh api "repos/$REPO/releases/$RELEASE_ID/assets" --jq '.[].id')
+          for ID in $ASSET_IDS; do
+            echo "asset $ID 삭제"
+            gh api "repos/$REPO/releases/assets/$ID" -X DELETE
+          done
 
           # dodo.zip 업로드
-          HTTP_CODE=$(curl -s -o /tmp/upload_result.json -w "%{http_code}" \
+          echo "=== dodo.zip 업로드 ==="
+          HTTP=$(curl -s -o /tmp/res.json -w "%{http_code}" \
             -X POST \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Content-Type: application/zip" \
-            "${UPLOAD_URL}?name=dodo.zip" \
+            "https://uploads.github.com/repos/$REPO/releases/$RELEASE_ID/assets?name=dodo.zip" \
             --data-binary @/tmp/dodo.zip)
-          echo "HTTP: $HTTP_CODE"
-          cat /tmp/upload_result.json
-          [ "$HTTP_CODE" = "201" ] || exit 1
+          echo "HTTP: $HTTP"
+          cat /tmp/res.json | python3 -c "import sys,json; d=json.load(sys.stdin); print('name:', d.get('name'), 'size:', d.get('size'))" 2>/dev/null || cat /tmp/res.json
+          [ "$HTTP" = "201" ] || exit 1
