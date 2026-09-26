@@ -20,7 +20,7 @@ jobs:
       - name: Get version from TOC
         id: version
         run: |
-          VERSION=$(grep "## Version:" dodo/dodo.toc | sed 's/## Version: *//')
+          VERSION=$(grep "## Version:" dodo.toc | sed 's/## Version: *//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
@@ -37,13 +37,17 @@ jobs:
       - name: Create ZIP
         if: steps.tag_check.outputs.exists == 'false'
         run: |
-          zip -r dodo.zip dodo*/ \
-            --exclude "*/2temp/*" \
-            --exclude "*/*.code-workspace" \
-            --exclude "*/Agents.md" \
-            --exclude "*/CLAUDE.md" \
-            --exclude "*/skills-lock.json" \
-            --exclude "*/memo.txt"
+          cd "$(dirname $GITHUB_WORKSPACE)"
+          zip -r dodo.zip dodo/ \
+            --exclude "dodo/.git/*" \
+            --exclude "dodo/2temp/*" \
+            --exclude "dodo/*.code-workspace" \
+            --exclude "dodo/Agents.md" \
+            --exclude "dodo/CLAUDE.md" \
+            --exclude "dodo/skills-lock.json" \
+            --exclude "dodo/memo.txt" \
+            --exclude "dodo/.github/*"
+          mv dodo.zip $GITHUB_WORKSPACE/
 
       - name: Create Release
         if: steps.tag_check.outputs.exists == 'false'
