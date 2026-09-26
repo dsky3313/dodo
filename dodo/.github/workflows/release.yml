@@ -52,13 +52,25 @@ jobs:
           zip -r /tmp/dodo.zip dodo/
           ls -lh /tmp/dodo.zip
 
-      - name: Create Release
+      - name: Create Release and Upload
         if: steps.tag_check.outputs.exists == 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "v${{ steps.version.outputs.version }}" \
+          set -e
+          RELEASE_ID=$(gh release create "v${{ steps.version.outputs.version }}" \
             --title "dodo v${{ steps.version.outputs.version }}" \
             --generate-notes \
-            --latest
-          gh release upload "v${{ steps.version.outputs.version }}" /tmp/dodo.zip --clobber
+            --latest \
+            --json id \
+            --jq '.id')
+          echo "Release ID: $RELEASE_ID"
+
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Content-Type: application/zip" \
+            "https://uploads.github.com/repos/${{ github.repository }}/releases/${RELEASE_ID}/assets?name=dodo.zip" \
+            --data-binary @/tmp/dodo.zip)
+          echo "Upload HTTP status: $HTTP_CODE"
+          [ "$HTTP_CODE" = "201" ] || exit 1
