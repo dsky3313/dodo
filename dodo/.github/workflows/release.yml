@@ -37,8 +37,8 @@ jobs:
       - name: Create ZIP
         if: steps.tag_check.outputs.exists == 'false'
         run: |
-          cd "$(dirname $GITHUB_WORKSPACE)"
-          zip -r dodo.zip dodo/ \
+          cd ..
+          zip -r /tmp/dodo.zip dodo/ \
             --exclude "dodo/.git/*" \
             --exclude "dodo/2temp/*" \
             --exclude "dodo/*.code-workspace" \
@@ -47,7 +47,6 @@ jobs:
             --exclude "dodo/skills-lock.json" \
             --exclude "dodo/memo.txt" \
             --exclude "dodo/.github/*"
-          mv dodo.zip $GITHUB_WORKSPACE/
 
       - name: Create Release
         if: steps.tag_check.outputs.exists == 'false'
@@ -55,6 +54,6 @@ jobs:
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: dodo v${{ steps.version.outputs.version }}
-          files: dodo.zip
+          files: /tmp/dodo.zip
           generate_release_notes: true
           make_latest: true
