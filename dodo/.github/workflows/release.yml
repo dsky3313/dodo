@@ -58,19 +58,26 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          RELEASE_ID=$(gh release create "v${{ steps.version.outputs.version }}" \
-            --title "dodo v${{ steps.version.outputs.version }}" \
-            --generate-notes \
-            --latest \
-            --json id \
-            --jq '.id')
-          echo "Release ID: $RELEASE_ID"
+          REPO="${{ github.repository }}"
+          TAG="v${{ steps.version.outputs.version }}"
 
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+          # 릴리즈 생성 및 upload_url 추출
+          UPLOAD_URL=$(gh api repos/$REPO/releases \
+            -X POST \
+            -f tag_name="$TAG" \
+            -f name="dodo v${{ steps.version.outputs.version }}" \
+            -F generate_release_notes=true \
+            -f make_latest=true \
+            --jq '.upload_url' | sed 's/{?name,label}//')
+          echo "Upload URL: $UPLOAD_URL"
+
+          # dodo.zip 업로드
+          HTTP_CODE=$(curl -s -o /tmp/upload_result.json -w "%{http_code}" \
             -X POST \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Content-Type: application/zip" \
-            "https://uploads.github.com/repos/${{ github.repository }}/releases/${RELEASE_ID}/assets?name=dodo.zip" \
+            "${UPLOAD_URL}?name=dodo.zip" \
             --data-binary @/tmp/dodo.zip)
-          echo "Upload HTTP status: $HTTP_CODE"
+          echo "HTTP: $HTTP_CODE"
+          cat /tmp/upload_result.json
           [ "$HTTP_CODE" = "201" ] || exit 1
