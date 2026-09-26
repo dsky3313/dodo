@@ -5,20 +5,22 @@
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local dodo = _G.dodo
 dodoDB = dodoDB or {}
-if dodoDB.questItemHotkey == nil then dodoDB.questItemHotkey = "CTRL-G" end
 
-local C_GossipInfo            = C_GossipInfo
-local C_QuestLog              = C_QuestLog
-local C_Timer                 = C_Timer
-local AcceptQuest             = AcceptQuest
-local CreateFrame             = CreateFrame
-local GetNumQuestChoices      = GetNumQuestChoices
+local AcceptQuest                = AcceptQuest
+local C_GossipInfo               = C_GossipInfo
+local C_QuestLog                 = C_QuestLog
+local C_Timer                    = C_Timer
+local ClearOverrideBindings      = ClearOverrideBindings
+local CreateFrame                = CreateFrame
+local GetNumQuestChoices         = GetNumQuestChoices
 local GetQuestLogSpecialItemInfo = GetQuestLogSpecialItemInfo
-local GetQuestReward          = GetQuestReward
-local GetTime                 = GetTime
-local InCombatLockdown        = InCombatLockdown
-local IsShiftKeyDown          = IsShiftKeyDown
-local UIParent                = UIParent
+local GetQuestReward             = GetQuestReward
+local GetTime                    = GetTime
+local InCombatLockdown           = InCombatLockdown
+local IsShiftKeyDown             = IsShiftKeyDown
+local SetOverrideBindingClick    = SetOverrideBindingClick
+local UIParent                   = UIParent
+local UnitGUID                   = UnitGUID
 
 -- ==============================
 -- 자동 수락 / 자동 완료
@@ -171,14 +173,58 @@ local function flush_scan()
     update_quest_item_attr()
 end
 
+-- ==============================
+-- 헤더 설정 아이콘
+-- ==============================
+local function add_quest_header_settings_icon()
+    local header = ObjectiveTrackerFrame and ObjectiveTrackerFrame.Header
+    if not header or header.dodoSettingsBtn then return end
+
+    dodo.UI:AddHeaderSettingsButton(header, "dodo_QuestTrackerSettingsDropdown", "dodo 퀘스트 설정",
+        function(_, rootDescription)
+            rootDescription:SetTag("MENU_DODO_QUEST_SETTINGS")
+            rootDescription:CreateCheckbox(
+                "퀘스트 자동 수락",
+                function() return dodoDB.autoAccept end,
+                function() dodoDB.autoAccept = not dodoDB.autoAccept end
+            )
+            rootDescription:CreateCheckbox(
+                "퀘스트 자동 완료",
+                function() return dodoDB.autoTurnIn end,
+                function() dodoDB.autoTurnIn = not dodoDB.autoTurnIn end
+            )
+            rootDescription:CreateDivider()
+            rootDescription:CreateButton("dodo 설정 열기", function()
+                if Settings and Settings.OpenToCategory then
+                    local cat = Settings.GetCategory and Settings.GetCategory("dodo")
+                    if cat then Settings.OpenToCategory(cat) end
+                end
+            end)
+        end)
+end
+
+-- ==============================
+-- 이벤트 핸들러
+-- ==============================
+local function on_login_timer()
+    if not InCombatLockdown() then apply_quest_item_hotkey() end
+end
+
 local qi_frame = CreateFrame("Frame")
+qi_frame:RegisterEvent("PLAYER_LOGIN")
 qi_frame:RegisterEvent("QUEST_LOG_UPDATE")
 qi_frame:RegisterEvent("QUEST_ACCEPTED")
 qi_frame:RegisterEvent("QUEST_REMOVED")
 qi_frame:RegisterEvent("QUEST_TURNED_IN")
 qi_frame:RegisterEvent("UPDATE_BINDINGS")
 qi_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
-qi_frame:SetScript("OnEvent", function(_, event)
+qi_frame:SetScript("OnEvent", function(self, event)
+    if event == "PLAYER_LOGIN" then
+        self:UnregisterEvent("PLAYER_LOGIN")
+        add_quest_header_settings_icon()
+        C_Timer.After(1.5, on_login_timer)
+        return
+    end
     if InCombatLockdown() then return end
     if event == "PLAYER_REGEN_ENABLED" then
         apply_quest_item_hotkey()
@@ -197,64 +243,4 @@ qi_frame:SetScript("OnEvent", function(_, event)
         _scan_pending = true
         C_Timer.After(0.3, flush_scan)
     end
-end)
-
-C_Timer.After(1.5, function()
-    if not InCombatLockdown() then apply_quest_item_hotkey() end
-end)
-
--- ==============================
--- 퀘스트 헤더 설정 아이콘
--- ==============================
--- QuestObjectiveTracker.Header 구조:
---   Text (LEFT x=7, width=200) | ... | MinimizeButton (RIGHT x=1, 16x16)
--- MinimizeButton 왼쪽에 DropdownButton(UIPanelIconDropdownButtonTemplate) 추가.
--- 클릭하면 자동수락/자동완료 토글 + 설정창 열기 메뉴 표시.
-local function add_quest_header_settings_icon()
-    local header = QuestObjectiveTracker and QuestObjectiveTracker.Header
-    if not header or header.dodoSettingsBtn then return end
-
-    local btn = CreateFrame("DropdownButton", "dodo_QuestTrackerSettingsDropdown", header, "UIPanelIconDropdownButtonTemplate")
-    btn:SetSize(16, 16)
-    btn:SetPoint("RIGHT", header.MinimizeButton, "LEFT", -4, 0)
-
-    btn:SetupMenu(function(_, rootDescription)
-        rootDescription:SetTag("MENU_DODO_QUEST_SETTINGS")
-
-        rootDescription:CreateCheckbox(
-            "퀘스트 자동 수락",
-            function() return dodoDB.autoAccept end,
-            function() dodoDB.autoAccept = not dodoDB.autoAccept end
-        )
-        rootDescription:CreateCheckbox(
-            "퀘스트 자동 완료",
-            function() return dodoDB.autoTurnIn end,
-            function() dodoDB.autoTurnIn = not dodoDB.autoTurnIn end
-        )
-
-        rootDescription:CreateDivider()
-
-        rootDescription:CreateButton("dodo 설정 열기", function()
-            if Settings and Settings.OpenToCategory then
-                local cat = Settings.GetCategory and Settings.GetCategory("dodo")
-                if cat then Settings.OpenToCategory(cat) end
-            end
-        end)
-    end)
-
-    btn:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText("dodo 퀘스트 설정", 1, 1, 1)
-        GameTooltip:Show()
-    end)
-    btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
-
-    header.dodoSettingsBtn = btn
-end
-
-local init_f = CreateFrame("Frame")
-init_f:RegisterEvent("PLAYER_LOGIN")
-init_f:SetScript("OnEvent", function(self)
-    self:UnregisterAllEvents()
-    add_quest_header_settings_icon()
 end)

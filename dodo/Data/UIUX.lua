@@ -696,6 +696,33 @@ function dodo.UI:SettingsButton(category, label, text, on_click_func, tooltip)
     return init
 end
 
+-- 아이콘 드롭다운 버튼 생성 (UIPanelIconDropdownButtonTemplate)
+-- 작은 아이콘(16×16) 형태로 클릭 시 menuSetupFn으로 정의한 메뉴 팝업
+---@return Button
+function dodo.UI:CreateIconDropdownButton(parent, name, menuSetupFn)
+    local btn = CreateFrame("DropdownButton", name, parent, "UIPanelIconDropdownButtonTemplate")
+    btn:SetSize(16, 16)
+    btn:SetupMenu(menuSetupFn)
+    return btn
+end
+
+-- 트래커·프레임 헤더에 설정 드롭다운 버튼 추가
+-- anchor 생략 시 header.MinimizeButton 기준으로 배치
+---@return Button
+function dodo.UI:AddHeaderSettingsButton(header, name, tooltipText, menuSetupFn, anchor)
+    if header.dodoSettingsBtn then return header.dodoSettingsBtn end
+    local btn = dodo.UI:CreateIconDropdownButton(header, name, menuSetupFn)
+    btn:SetPoint("RIGHT", anchor or header.MinimizeButton, "LEFT", -10, 0)
+    btn:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(tooltipText, 1, 1, 1)
+        GameTooltip:Show()
+    end)
+    btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    header.dodoSettingsBtn = btn
+    return btn
+end
+
 -- FriendsFrame 하단 탭 추가
 -- PanelTabButtonTemplate의 L/R 텍스처 합이 72px이라 SetWidth/TabResize로 축소 불가,
 -- Left/Middle/Right를 직접 재설정해 텍스트 너비에 맞게 줄임

@@ -19,6 +19,7 @@
 02 Mplus/04 KeystoneTimer.lua
 02 Mplus/05 TimerReadyCheck.lua
 02 Mplus/06 CinematicSkip.lua
+02 Mplus/07 Consumeable.lua
 03 PVEFrame/01 PartyClass.lua
 03 PVEFrame/02 BrowseGroup.lua
 03 PVEFrame/03 QuickSelectDungeons.lua
@@ -36,6 +37,9 @@
 06 Macro/02 Layout.lua
 06 Macro/03 Search.lua
 06 Macro/04 Factory.lua
+06 Macro/05 Mark.lua
+# 07 ObjectiveTracker/99 Collapse.lua
+07 ObjectiveTracker/ObjectiveTracker.lua
 # 99 ETC/BagBreak.lua
 99 ETC/Skyriding.lua
 99 ETC/Camera.lua
@@ -54,5 +58,5 @@
 99 ETC/WorldMapCoords.lua
 99 ETC/WorldMapIcon.lua
 99 ETC/PlayerMemo.lua
-99 ETC/ObjectiveTracker.lua
+# 99 ETC/ObjectiveTracker.lua
 # 99 ETC/Macro.lua

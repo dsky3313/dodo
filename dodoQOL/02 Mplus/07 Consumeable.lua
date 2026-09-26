@@ -7,7 +7,8 @@
 -- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
-local addonName, dodo = ...
+local addonName = ...
+local dodo = _G.dodo
 dodoDB = dodoDB or {}
 
 -- ==============================
@@ -19,6 +20,7 @@ local C_UnitAuras = C_UnitAuras
 local CreateFrame = CreateFrame
 local GetItemCount = GetItemCount
 local GetTime = GetTime
+local GetInventoryItemDurability = GetInventoryItemDurability
 local GetWeaponEnchantInfo = GetWeaponEnchantInfo
 local InCombatLockdown = InCombatLockdown
 local ReadyCheckFrame = ReadyCheckFrame
@@ -32,38 +34,59 @@ local update_consumables
 local READY_ICON = "Interface\\RaidFrame\\ReadyCheck-Ready"
 local NOT_READY_ICON = "Interface\\RaidFrame\\ReadyCheck-NotReady"
 
-local FOOD_BUFFS = { -- 음식 버프
-    [1294727] = true, -- 왕실 구이
-    [136000] = true,
+local FOOD_ITEMS = { -- 음식 아이템 (가방 수량 체크용)
+    266996, 255846, -- 잔치상
+    242275,         -- 왕실 구이
 }
 
-local FOOD_ITEMS = { -- 음식 아이템
-    242275, -- 왕실 구이
+local FLASK_BUFFS = { -- 영약 버프 (Midnight)
+    [1235110] = true, -- 피의 기사단 영약
+    [1235108] = true, -- 마법학자의 영약
+    [1235111] = true, -- 무너진 태양의 영약
+    [1235057] = true, -- 탈라시안 저항 영약
+    [1239355] = true, -- 사악한 탈라시안 명예 영약 (PvP)
+    -- PvP 변형 (아레나/전장에서 교체됨)
+    [1235113] = true, [1235114] = true, [1235115] = true, [1235116] = true,
 }
 
-local FLASK_BUFFS = { -- 영약 버프
-    [1235108] = true, -- 마법학자의 영약 (특화)
-    [1235111] = true, -- 무너진 태양의 영약 (치명)
+local FLASK_ITEMS = { -- 영약 아이템 (가방 수량 체크용)
+    241324, 241325, 245931, 245930, -- 피의 기사단 영약
+    241322, 241323, 245933, 245932, -- 마법학자의 영약
+    241326, 241327, 245929, 245928, -- 무너진 태양의 영약
+    241320, 241321, 245926, 245927, -- 탈라시안 저항 영약
+    241334,                          -- 사악한 탈라시안 명예 영약
 }
 
-local FLASK_ITEMS = { -- 영약 아이템
-    241322, -- 마법학자의 영약 2성 (특화)
-    241326, -- 무너진 태양의 영약 2성 (치명)
+local RAID_BUFF_IDS = { -- 레이드버프 (Midnight, non-secret)
+    1126, 432661,   -- 자연의 표식 (드루이드)
+    6673,           -- 전투 함성 (전사)
+    21562,          -- 신성한 의지 (사제)
+    1459, 432778,   -- 비전 지성 (마법사)
+    381732, 381741, 381746, 381748, 381749, 381750, 381751, 381752, 381753, 381754, 381756, 381757, 381758, -- 청동의 축복 (용군주)
+    462854,         -- 하늘의 분노 (주술사)
 }
 
-local RUNE_BUFFS = {
-    [1234969] = true, -- 내부전쟁 평판룬
-    [393438]  = true,
+local RUNE_BUFFS = { -- 증폭 룬 버프
+    [1264426] = true, [453250]  = true, [1234969] = true,
+    [1242347] = true, [393438]  = true, [347901]  = true,
 }
 
-local POTION_ITEMS = {
-    241308, -- 빛의 잠재력 2성 (주능력치)
-    241309, 241310, 212239, 212240, 212241,
-    241288, -- 무모함의 물약 2성 (가장 높은 보조)
+local POTION_ITEMS = { -- 물약 아이템 (가방 수량 체크용, Midnight)
+    241308, 241309, 241310, -- 빛의 잠재력
+    241288,                  -- 무모함의 물약
 }
 
-local WEAPON_ITEMS = {
-    243734, -- 탈라시안 불사조 기름 (2성)
+local INKY_ITEM = 124640  -- 잉크빛 검은 물약
+local INKY_BUFF = 185394  -- Inky Blackness (아이콘 136122)
+
+local WEAPON_ITEMS = { -- 무기 임시 인첸트 아이템 (Midnight)
+    243733, 243734, -- 탈라시안 불사조 기름
+    243735, 243736, -- 새벽의 기름
+    243737, 243738, -- 밀수꾼의 마법 칼날
+    237367, 237369, -- 눈부신 숫돌 (둔기)
+    237370, 237371, -- 눈부신 숫돌날 (날카로운)
+    257749, 257750, -- 레이스된 줌샷 (원거리)
+    257751, 257752, -- 무게달린 붐샷 (원거리)
 }
 
 -- 샤먼 무기 인첸트 주문 (enchant ID -> 주문ID) — 활성 시 해당 주문 아이콘/툴팁으로 표시
@@ -80,7 +103,7 @@ local SHAMAN_IMBUE_ENCHANTS = {
 -- 프레임 생성
 -- ==============================
 local main_frame = CreateFrame("Frame", "dodoReadyCheckFrame", UIParent, "SecureHandlerStateTemplate")
-main_frame:SetSize(280, 40)
+main_frame:SetSize(360, 40)
 main_frame:SetPoint("BOTTOM", ReadyCheckFrame, "TOP", 0, 15)
 main_frame:SetFrameStrata("DIALOG")
 main_frame:SetFrameLevel(100)
@@ -127,7 +150,7 @@ local function create_icon(name, texture, index, tooltipType, tooltipId, macrote
     -- V X 상태 마크를 위한 프레임 레벨이 높은 자식 프레임 생성 (테두리 위 렌더링 보장)
     local statusFrame = CreateFrame("Frame", nil, f)
     statusFrame:SetSize(20, 20)
-    statusFrame:SetPoint("TOPLEFT", f, "TOPLEFT", -2, 6)
+    statusFrame:SetPoint("TOPRIGHT", f, "TOPRIGHT", 2, 6)
     statusFrame:SetFrameLevel(f:GetFrameLevel() + 2)
 
     f.status = statusFrame:CreateTexture(nil, "OVERLAY")
@@ -163,10 +186,10 @@ local function create_icon(name, texture, index, tooltipType, tooltipId, macrote
 end
 
 local FOOD_MACRO = "/run print('|cffffd200[dodo]|r 음식 클릭됨')\n/use 밤의 가면 대연회\n/use 푸짐한 밤의 가면 대연회\n/use Feast of the Midnight Masquerade\n/use Hearty Feast of the Midnight Masquerade\n/use 왕실 구이"
-local FLASK_MACRO = "/run print('|cffffd200[dodo]|r 영약 클릭됨')\n/use item:212265\n/use item:212266\n/use item:212284\n/use item:212285\n/use item:212283\n/use item:212282\n/use item:224424\n/use item:224403\n/use item:224401\n/use item:224400\n/use item:224399\n/use item:224402"
-local RUNE_MACRO = "/run print('|cffffd200[dodo]|r 룬 클릭됨')\n/use item:224020\n/use item:224522\n/use item:211228\n/use item:243191"
+local FLASK_MACRO = "/run print('|cffffd200[dodo]|r 영약 클릭됨')\n/use item:241324\n/use item:241325\n/use item:241322\n/use item:241323\n/use item:241326\n/use item:241327\n/use item:241320\n/use item:241321\n/use item:241334\n/use item:245931\n/use item:245930\n/use item:245933\n/use item:245932\n/use item:245929\n/use item:245928\n/use item:245926\n/use item:245927"
+local RUNE_MACRO = "/run print('|cffffd200[dodo]|r 룬 클릭됨')\n/use item:259085\n/use item:243191"
 local HS_MACRO = "/run print('|cffffd200[dodo]|r 생석 클릭됨')\n/use item:5512\n/use 생명석"
-local WEAPON_MACRO = "/run print('|cffffd200[dodo]|r 무기 도핑 클릭됨')\n/use item:224017\n/use 16\n/use item:224018\n/use 16"
+local WEAPON_MACRO = "/run print('|cffffd200[dodo]|r 무기 도핑 클릭됨')\n/use item:243733\n/use 16\n/use item:243734\n/use 16\n/use item:243735\n/use 16\n/use item:243736\n/use 16\n/use item:243737\n/use 16\n/use item:243738\n/use 16"
 
 ---@class ReadyCheckIconFrame: Button
 ---@field status Texture
@@ -182,6 +205,9 @@ local WEAPON_MACRO = "/run print('|cffffd200[dodo]|r 무기 도핑 클릭됨')\n
 ---@field rune ReadyCheckIconFrame 룬 아이콘 프레임
 ---@field hs ReadyCheckIconFrame 생석 아이콘 프레임
 ---@field weapon ReadyCheckIconFrame 무기 도핑 아이콘 프레임
+---@field durability ReadyCheckIconFrame 내구도 아이콘 프레임
+---@field inky ReadyCheckIconFrame 잉크빛 검은 물약 아이콘 프레임
+---@field raidbuff ReadyCheckIconFrame 레이드버프 아이콘 프레임
 
 ---@type ReadyCheckIcons
 local icons = {}
@@ -191,6 +217,211 @@ icons.weapon = create_icon("Weapon", 7548987, 3, "item", 243734, WEAPON_MACRO)
 icons.rune = create_icon("Rune", 3566863, 4, "spell", 393438, RUNE_MACRO)
 icons.potion = create_icon("Potion", 7548911, 5, "item", 241308, nil)
 icons.hs = create_icon("Healthstone", 135230, 6, "item", 5512, HS_MACRO)
+icons.durability = create_icon("Durability", 136241, 7, nil, nil, nil)
+icons.inky = create_icon("Inky", 134757, 8, "item", INKY_ITEM, "/use item:"..INKY_ITEM)
+icons.raidbuff = create_icon("RaidBuff", 135987, 9, "spell", 21562, nil)
+do
+    local cdFont
+    for _, r in ipairs({icons.durability.cooldown:GetRegions()}) do
+        if r:GetObjectType() == "FontString" then
+            cdFont = (select(1, r:GetFont()))
+            break
+        end
+    end
+    icons.durability.text:ClearAllPoints()
+    icons.durability.text:SetPoint("CENTER", icons.durability, "CENTER", 0, 0)
+    icons.durability.text:SetFont(cdFont or "Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
+    icons.durability.text:SetTextColor(1, 1, 1)
+end
+icons.durability:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:AddLine("내구도", 1, 1, 1)
+    if self.duraPct then
+        local r = self.duraPct < 20 and 1 or 0.1
+        local g = self.duraPct < 20 and 0.2 or 1
+        GameTooltip:AddLine(self.duraPct .. "%", r, g, 0.1)
+    end
+    GameTooltip:Show()
+end)
+
+-- ==============================
+-- 아이템 선택 드롭다운
+-- ==============================
+local LAST_USED_KEYS = {
+    flask  = "lastUsedFlask",
+    food   = "lastUsedFood",
+    potion = "lastUsedPotion",
+    weapon = "lastUsedWeapon",
+}
+
+-- lastUsed가 가방에 있으면 우선, 없으면 목록에서 첫 번째 보유 아이템
+local function get_display_item(dbKey, items)
+    local lastUsed = dbKey and dodoDB and dodoDB[dbKey]
+    if lastUsed then
+        for _, id in ipairs(items) do
+            if id == lastUsed and GetItemCount(id, false, true) > 0 then
+                return id
+            end
+        end
+    end
+    for _, id in ipairs(items) do
+        if GetItemCount(id, false, true) > 0 then return id end
+    end
+    return items[1]
+end
+
+-- 가방 아이템 링크에서 제작 품질 아틀라스 문자열 반환 (Blizzard ItemButtonTemplate 방식)
+local function get_quality_atlas_from_bag(itemID)
+    if not C_TradeSkillUI then return nil end
+    for bag = 0, 4 do
+        for slot = 1, C_Container.GetContainerNumSlots(bag) do
+            local slotInfo = C_Container.GetContainerItemInfo(bag, slot)
+            if slotInfo and slotInfo.itemID == itemID and slotInfo.hyperlink then
+                local qi = (C_TradeSkillUI.GetItemReagentQualityInfo and C_TradeSkillUI.GetItemReagentQualityInfo(slotInfo.hyperlink))
+                        or (C_TradeSkillUI.GetItemCraftedQualityInfo  and C_TradeSkillUI.GetItemCraftedQualityInfo(slotInfo.hyperlink))
+                if qi and qi.iconInventory then return qi.iconInventory end
+            end
+        end
+    end
+    return nil
+end
+
+local function update_icon_item(iconFrame, itemID)
+    if not iconFrame or not itemID then return end
+    local tex = GetItemIcon(itemID)
+    if tex then iconFrame.icon:SetTexture(tex) end
+    iconFrame.tooltipId   = itemID
+    iconFrame.tooltipType = "item"
+    -- 제작 품질 ★ 아틀라스
+    local qualityAtlas = get_quality_atlas_from_bag(itemID)
+    if not iconFrame._qualityOv then
+        local ov = iconFrame.overlayLayer:CreateTexture(nil, "OVERLAY", nil, 7)
+        ov:SetPoint("TOPLEFT", iconFrame.overlayLayer, "TOPLEFT", -3, 2)
+        iconFrame._qualityOv = ov
+    end
+    if qualityAtlas then
+        iconFrame._qualityOv:SetAtlas(qualityAtlas, true)
+        iconFrame._qualityOv:Show()
+    else
+        iconFrame._qualityOv:Hide()
+    end
+end
+
+local dd_frame, dd_catch
+local dd_buttons = {}
+
+local function hide_dropdown()
+    if dd_frame  then dd_frame:Hide()  end
+    if dd_catch  then dd_catch:Hide()  end
+end
+
+local DD_SZ, DD_GAP = 36, 3
+
+local function show_dropdown(anchor, category, items, slot)
+    local avail = {}
+    for _, id in ipairs(items) do
+        local c = GetItemCount(id, false, true)
+        if c > 0 then avail[#avail+1] = {id=id, count=c} end
+    end
+    if #avail == 0 then return end
+
+    -- 지연 생성: 클릭-캐처 (드롭다운 바깥 클릭 시 닫기)
+    if not dd_catch then
+        dd_catch = CreateFrame("Frame", nil, UIParent)
+        dd_catch:SetFrameStrata("MEDIUM")
+        dd_catch:SetFrameLevel(800)
+        dd_catch:SetAllPoints(UIParent)
+        dd_catch:EnableMouse(true)
+        dd_catch:SetScript("OnMouseDown", hide_dropdown)
+        dd_catch:Hide()
+    end
+    -- 지연 생성: 드롭다운 컨테이너 프레임
+    if not dd_frame then
+        dd_frame = CreateFrame("Frame", "dodoConsumeDropdown", UIParent)
+        dd_frame:SetFrameStrata("HIGH")
+        dd_frame:SetFrameLevel(100)
+    end
+
+    for _, btn in ipairs(dd_buttons) do btn:Hide() end
+
+    local n = #avail
+    dd_frame:SetSize(n * (DD_SZ + DD_GAP) + DD_GAP, DD_SZ + DD_GAP * 2)
+
+    for i, info in ipairs(avail) do
+        local btn = dd_buttons[i]
+        if not btn then
+            btn = LibIcon:Create("dodoDD_"..i, dd_frame, {
+                isAction = true,
+                iconsize = {DD_SZ, DD_SZ}
+            })
+            btn:HookScript("PostClick", function(self)
+                if dodoDB and self._dbKey then dodoDB[self._dbKey] = self._itemID end
+                hide_dropdown()
+            end)
+            dd_buttons[i] = btn
+        end
+        btn._dbKey  = LAST_USED_KEYS[category]
+        btn._itemID = info.id
+        btn:ApplyConfig({
+            type        = "item",
+            id          = info.id,
+            isAction    = true,
+            useTooltip  = true,
+            framestrata = "HIGH",
+            label       = "",
+        })
+        -- 무기 인첸트: 슬롯 지정 매크로로 덮어쓰기
+        if slot then
+            btn:SetAttribute("type", "macro")
+            btn:SetAttribute("macrotext", "/use item:"..info.id.."\n/use "..slot)
+        end
+        -- 제작 품질 아틀라스
+        local qualityAtlas = get_quality_atlas_from_bag(info.id)
+        if not btn._qualityOv then
+            local ov = btn.overlayLayer:CreateTexture(nil, "OVERLAY", nil, 7)
+            ov:SetPoint("TOPLEFT", btn.overlayLayer, "TOPLEFT", -3, 2)
+            btn._qualityOv = ov
+        end
+        if qualityAtlas then
+            btn._qualityOv:SetAtlas(qualityAtlas, true)
+            btn._qualityOv:Show()
+        else
+            btn._qualityOv:Hide()
+        end
+        btn:ClearAllPoints()
+        btn:SetPoint("TOPLEFT", dd_frame, "TOPLEFT", DD_GAP + (i-1)*(DD_SZ+DD_GAP), -DD_GAP)
+        btn:Show()
+    end
+
+    dd_frame:ClearAllPoints()
+    dd_frame:SetPoint("TOP", anchor, "BOTTOM", 0, -4)
+    dd_frame:Show()
+    dd_catch:Show()
+end
+
+local function add_dropdown_arrow(iconFrame, category, items, slot)
+    local arrow = CreateFrame("Button", nil, iconFrame)
+    arrow:SetPoint("BOTTOM", iconFrame, "BOTTOM", 0, -16)
+    arrow:SetFrameLevel(200)
+    local tex = arrow:CreateTexture(nil, "OVERLAY")
+    tex:SetAtlas("minimal-scrollbar-arrow-bottom-over", true)
+    tex:SetAllPoints()
+    arrow:SetSize(tex:GetWidth() * 1.2, tex:GetHeight() * 1.2)
+    local hl = arrow:CreateTexture(nil, "HIGHLIGHT")
+    hl:SetAtlas("minimal-scrollbar-arrow-bottom-over", true)
+    hl:SetAllPoints()
+    hl:SetBlendMode("ADD")
+    hl:SetAlpha(0.6)
+    arrow:SetScript("OnClick", function()
+        if dd_frame and dd_frame:IsShown() then hide_dropdown()
+        else show_dropdown(arrow, category, items, slot) end
+    end)
+end
+
+add_dropdown_arrow(icons.flask,  "flask",  FLASK_ITEMS)
+add_dropdown_arrow(icons.food,   "food",   FOOD_ITEMS)
+add_dropdown_arrow(icons.potion, "potion", POTION_ITEMS)
+add_dropdown_arrow(icons.weapon, "weapon", WEAPON_ITEMS, 16)
 
 -- ==============================
 -- 헬퍼 함수 (Throttle & Debounce)
@@ -239,6 +470,11 @@ local function hide_frame()
     end
 end
 
+local function set_status(iconFrame, active)
+    iconFrame.icon:SetDesaturated(not active)
+    iconFrame.status:SetTexture(active and READY_ICON or NOT_READY_ICON)
+end
+
 function update_consumables()
     if not main_frame.is_visible then return end
 
@@ -249,23 +485,40 @@ function update_consumables()
         local flaskDuration, flaskExpiration, flaskIcon = 0, 0, nil
         local runeDuration, runeExpiration = 0, 0
 
-        for i = 1, 50 do
-            local data = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
-            if not data then break end
-
-            if FOOD_BUFFS[data.spellId] or (not issecretvalue(data.icon) and data.icon == 136000) then
-                hasFood = true
-                foodDuration = data.duration
-                foodExpiration = data.expirationTime
-            elseif FLASK_BUFFS[data.spellId] then
+        -- 영약: GetPlayerAuraBySpellID 직접 조회 (화이트리스트 ID, secret-safe)
+        for id in pairs(FLASK_BUFFS) do
+            local data = C_UnitAuras.GetPlayerAuraBySpellID(id)
+            if data then
                 hasFlask = true
-                flaskIcon = data.icon
+                local ic = data.icon
+                flaskIcon = (ic and not issecretvalue(ic)) and ic or nil
                 flaskDuration = data.duration
                 flaskExpiration = data.expirationTime
-            elseif RUNE_BUFFS[data.spellId] then
+                break
+            end
+        end
+
+        -- 룬: GetPlayerAuraBySpellID 직접 조회
+        for id in pairs(RUNE_BUFFS) do
+            local data = C_UnitAuras.GetPlayerAuraBySpellID(id)
+            if data then
                 hasRune = true
                 runeDuration = data.duration
                 runeExpiration = data.expirationTime
+                break
+            end
+        end
+
+        -- 음식: 아이콘 136000(Well Fed) 스캔 (spell ID 없음)
+        for i = 1, 40 do
+            local data = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
+            if not data then break end
+            local ic = data.icon
+            if ic and not issecretvalue(ic) and ic == 136000 then
+                hasFood = true
+                foodDuration = data.duration
+                foodExpiration = data.expirationTime
+                break
             end
         end
 
@@ -287,9 +540,17 @@ function update_consumables()
         local hsCount = GetItemCount(5512, false, true)
         local hasHS = (hsCount > 0)
 
-        local function set_status(iconFrame, active)
-            iconFrame.icon:SetDesaturated(not active)
-            iconFrame.status:SetTexture(active and READY_ICON or NOT_READY_ICON)
+        -- 표시 아이콘 갱신: lastUsed 우선, 없으면 가방 첫 번째
+        -- (영약은 버프 활성 시 아래 섹션에서 flaskIcon으로 덮어씀)
+        do
+            local fid = get_display_item(LAST_USED_KEYS.flask,  FLASK_ITEMS)
+            if fid then update_icon_item(icons.flask,  fid) end
+            local fd  = get_display_item(LAST_USED_KEYS.food,   FOOD_ITEMS)
+            if fd  then update_icon_item(icons.food,   fd)  end
+            local pid = get_display_item(LAST_USED_KEYS.potion, POTION_ITEMS)
+            if pid then update_icon_item(icons.potion, pid) end
+            local wid = get_display_item(LAST_USED_KEYS.weapon, WEAPON_ITEMS)
+            if wid then update_icon_item(icons.weapon, wid) end
         end
 
         -- 1. 음식
@@ -373,6 +634,57 @@ function update_consumables()
             icons.weapon.Count:SetText(weaponCount > 0 and weaponCount or "")
             icons.weapon.text:SetText("")
         end
+        -- 7. 잉크빛 검은 물약
+        local hasInky = false
+        local inkyCount = GetItemCount(INKY_ITEM, false, true)
+        for i = 1, 40 do
+            local data = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
+            if not data then break end
+            local sid = data.spellId
+            local ic  = data.icon
+            if (sid and not issecretvalue(sid) and sid == INKY_BUFF)
+            or (ic  and not issecretvalue(ic)  and ic  == 136122) then
+                hasInky = true; break
+            end
+        end
+        set_status(icons.inky, hasInky)
+        icons.inky.cooldown:Clear()
+        icons.inky.Count:SetText(inkyCount > 0 and inkyCount or "")
+        icons.inky.text:SetText("")
+
+        -- 8. 내구도
+        local durabilitySlots = {1, 3, 5, 6, 7, 8, 9, 10, 16, 17}
+        local totalCur, totalMax = 0, 0
+        for _, slot in ipairs(durabilitySlots) do
+            local cur, max = GetInventoryItemDurability(slot)
+            if cur and max and max > 0 then
+                totalCur = totalCur + cur
+                totalMax = totalMax + max
+            end
+        end
+        local duraPct = totalMax > 0 and math.floor(totalCur / totalMax * 100) or 100
+        icons.durability.duraPct = duraPct
+        set_status(icons.durability, duraPct >= 20)
+        icons.durability.cooldown:Clear()
+        icons.durability.Count:SetText("")
+        icons.durability.text:SetText(duraPct .. "%")
+
+        -- 9. 레이드버프
+        local hasRaidBuff = false
+        for _, id in ipairs(RAID_BUFF_IDS) do
+            local data = C_UnitAuras.GetPlayerAuraBySpellID(id)
+            if data then
+                hasRaidBuff = true
+                local ic = data.icon
+                if ic and not issecretvalue(ic) then icons.raidbuff.icon:SetTexture(ic) end
+                icons.raidbuff.tooltipId = id
+                break
+            end
+        end
+        set_status(icons.raidbuff, hasRaidBuff)
+        icons.raidbuff.cooldown:Clear()
+        icons.raidbuff.Count:SetText("")
+        icons.raidbuff.text:SetText("")
     end, 0.2)
 end
 
@@ -477,6 +789,7 @@ main_frame:SetScript("OnEvent", function(self, event, ...)
     elseif event == "UNIT_AURA" or event == "UNIT_INVENTORY_CHANGED" then
         update_consumables()
     elseif event == "PLAYER_REGEN_DISABLED" then
+        hide_dropdown()
         if debounces["ReadyCheckHide"] then
             debounces["ReadyCheckHide"]:Cancel()
         end

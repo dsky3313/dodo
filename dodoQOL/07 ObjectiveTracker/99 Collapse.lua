@@ -7,10 +7,10 @@
 -- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
-local addonName, dodo = ...
+local dodo = _G.dodo
 dodoDB = dodoDB or {}
 
--- 접기 대상 트래커 (QLC 방식: 통짜 모듈이 아닌 개별 트래커 프레임에 SetCollapsed 호출)
+-- 접기 대상 트래커 (ScenarioObjectiveTracker 제외 — UIWidget 풀 taint 원인)
 local TRACKERS = {
     { globalName = "QuestObjectiveTracker",         name = "Quest" },
     { globalName = "CampaignQuestObjectiveTracker", name = "Campaign" },
@@ -22,25 +22,21 @@ local TRACKERS = {
 -- ==============================
 -- 캐싱
 -- ==============================
-local C_Timer = C_Timer
-local CreateFrame = CreateFrame
+local _G               = _G
+local C_Timer          = C_Timer
+local CreateFrame      = CreateFrame
 local InCombatLockdown = InCombatLockdown
-local IsInInstance = IsInInstance
-local ipairs = ipairs
-local pcall = pcall
-local select = select
-local type = type
+local IsInInstance     = IsInInstance
+local ipairs           = ipairs
+local select           = select
+local type             = type
 
 -- ==============================
 -- 기능 1: 로컬 상태
 -- ==============================
 local initFrame = CreateFrame("Frame")
 
--- QLC taint 블랙리스트: SetCollapsed 중 에러 감지된 트래커는 세션 동안 제외
--- (UIWidget 포함 트래커의 SetCollapsed는 위젯 풀 프레임을 taint시켜 /reload 전까지 지속됨)
-local taint_blacklist = {}
-
--- QLC 전투 큐: 전투 중 트래커 조작 금지, PLAYER_REGEN_ENABLED에서 지연 실행
+-- 전투 큐: 전투 중 트래커 조작 금지, PLAYER_REGEN_ENABLED에서 지연 실행
 local pending_apply = false
 
 -- 전투 중 토글 off 시 원복 대기 (전투 종료 후 apply_all(false) 실행)
@@ -59,30 +55,23 @@ local function is_in_collapse_zone()
 end
 
 -- ==============================
--- 기능 3: 트래커 접기/펼치기 (QLC SafeCollapse/SafeExpand)
+-- 기능 3: 트래커 숨김/표시 (SetCollapsed 대신 Hide/Show — UIWidget 풀 taint 방지)
 -- ==============================
-local function set_tracker_collapsed(tracker, name, collapsed)
-    if not tracker or taint_blacklist[name] then return end
-    if type(tracker.SetCollapsed) ~= "function" then return end
-
-    -- pcall로 taint 에러 격리, 실패 시 세션 블랙리스트 등재 (QLC 동적 블랙리스트)
-    -- 폴백으로 tracker.collapsed 직접 쓰기 금지 — 블리자드 프레임 테이블 taint됨
-    local ok = pcall(tracker.SetCollapsed, tracker, collapsed)
-    if not ok then
-        taint_blacklist[name] = true
-    end
-end
-
 local function apply_all(collapsed)
     for _, def in ipairs(TRACKERS) do
-        set_tracker_collapsed(_G[def.globalName], def.name, collapsed)
+        if def.frame then
+            if collapsed then
+                def.frame:Hide()
+            else
+                def.frame:Show()
+            end
+        end
     end
 end
 
 local function apply_state()
     if not (dodoDB and dodoDB.enableCollapse ~= false) then return end
 
-    -- QLC: 전투 중엔 절대 조작 안 함 — 전투 종료 시 재시도
     if InCombatLockdown() then
         pending_apply = true
         return
@@ -128,6 +117,10 @@ local function initialize()
         -- KeystoneTimer 자동 접기에서 분리 — 기존 설정값 이관
         dodoDB.enableCollapse = dodoDB.useKeystoneTimerAutoCollapse ~= false
         dodoDB.useKeystoneTimerAutoCollapse = nil
+    end
+    -- PLAYER_LOGIN 시점에 전역 탐색 1회로 고정, 이후 _G 접근 불필요
+    for _, def in ipairs(TRACKERS) do
+        def.frame = _G[def.globalName]
     end
 end
 

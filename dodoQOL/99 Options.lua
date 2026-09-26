@@ -97,13 +97,6 @@ dodo.RegisterOption("편의기능", function(category)
             if dodo.CinematicSkipUpdateVisual then dodo.CinematicSkipUpdateVisual() end
         end))
 
-    T(dodo.UI:SettingsCheckbox(category, "enableCollapse", "퀘스트 목록 접기",
-        "인스턴스 진입 시 퀘스트 목록을 자동으로 접습니다.",
-        true, function(val)
-            if dodoDB then dodoDB.enableCollapse = val end
-            if dodo.CollapseUpdateVisual then dodo.CollapseUpdateVisual() end
-        end))
-
     -- 파티모집창
     T(dodo.UI:SettingsSectionHeader(category, "파티모집창"))
     T(dodo.UI:SettingsCheckbox(category, "useBrowseGroup", "파티 탐색하기 버튼",
@@ -113,8 +106,14 @@ dodo.RegisterOption("편의기능", function(category)
     T(dodo.UI:SettingsCheckbox(category, "enableQuickselect", "파티만들기 빠른선택",
         "파티 만들기 창에서 던전 빠른선택 버튼을 표시합니다.", D.enableQuickselect, dodo.QuickSelectUpdate))
 
-    -- 퀘스트
-    T(dodo.UI:SettingsSectionHeader(category, "퀘스트"))
+    -- 목표 추적기
+    T(dodo.UI:SettingsSectionHeader(category, "목표 추적기"))
+    T(dodo.UI:SettingsCheckbox(category, "enableCollapse", "인스턴스 자동 접기",
+        "인스턴스 진입 시 퀘스트 목록을 자동으로 접습니다.",
+        true, function(val)
+            if dodoDB then dodoDB.enableCollapse = val end
+            if dodo.CollapseUpdateVisual then dodo.CollapseUpdateVisual() end
+        end))
     T(dodo.UI:SettingsCheckbox(category, "autoAccept", "퀘스트 자동 수락",
         "퀘스트를 자동으로 수락합니다. Shift 키를 누르면 건너뜁니다. (단일 퀘스트만, 여러 개일 경우 수동 선택)",
         D.autoAccept, nil))

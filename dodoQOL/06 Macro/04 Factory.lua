@@ -140,6 +140,13 @@ local COMBAT_DEFS = {
         macroIcon = 236179,
         macroText = "/tar 맹독의 심장\n/tar 역병비늘 비명꾼\n/tar 약화된 파멸비늘\n/tar 용암 토템\n/tar 기근의 입상\n/tar 치유의 해일 토템",
     },
+    {
+        label     = "징",
+        icon      = 236188,
+        macroName = "징",
+        macroIcon = 236188,
+        macroText = "인스턴스를 인식해서 자동으로 변경됩니다.",
+    },
 }
 
 ---@type MacroDef[]
