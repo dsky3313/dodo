@@ -12,12 +12,10 @@ local C_ClassColor    = C_ClassColor
 local C_CurveUtil     = C_CurveUtil
 local C_DurationUtil  = C_DurationUtil
 local C_Spell         = C_Spell
-local C_SpellBook     = C_SpellBook
 local C_StringUtil    = C_StringUtil
 local C_Timer         = C_Timer
 local CreateFrame     = CreateFrame
 local Enum            = Enum
-local ipairs          = ipairs
 local issecretvalue   = issecretvalue or function() return false end
 local NineSliceUtil   = NineSliceUtil
 local select          = select
@@ -37,9 +35,8 @@ local UnitSpellTargetName              = UnitSpellTargetName
 -- ==============================
 local BAR_W       = 400
 local BAR_H       = 30
-local KICK_BAR_W  = BAR_W - BAR_H - 6  -- sb 픽셀 너비 (GetWidth 런타임 호출 대체)
 local SYSTEM_NAME = "FTCastbar"
-local DEFAULT_PT  = { point = "TOP", xOfs = 0, yOfs = -80 }
+local DEFAULT_PT  = { point = "TOP", xOfs = 0, yOfs = -20 }
 
 -- ==============================
 -- 로컬 상태
@@ -51,91 +48,11 @@ local is_edit_mode   = false
 
 local bar_is_channel    = false
 local bar_cast_type     = "cast"  -- "cast", "channel", "empower"
-local bar_not_interruptible = false
 
 -- ==============================
--- 차단 스킬
--- ==============================
-local KICK_SPELLS = {
-    WARRIOR     = { 6552 },           -- Pummel
-    PALADIN     = { 96231 },          -- Rebuke
-    HUNTER      = { 147362, 187707 }, -- Counter Shot, Muzzle
-    ROGUE       = { 1766 },           -- Kick
-    DEATHKNIGHT = { 47528 },          -- Mind Freeze
-    SHAMAN      = { 57994 },          -- Wind Shear
-    MAGE        = { 2139 },           -- Counterspell
-    WARLOCK     = { 19647 },          -- Spell Lock
-    MONK        = { 116705 },         -- Spear Hand Strike
-    DRUID       = { 106839 },         -- Skull Bash
-    DEMONHUNTER = { 183752 },         -- Disrupt
-    EVOKER      = { 351338 },         -- Quell
-}
-local active_kick_spell = nil
-
-local function refresh_kick_spell()
-    local cls = select(2, UnitClass("player"))
-    local list = KICK_SPELLS[cls]
-    if not list then active_kick_spell = nil; return end
-    for _, id in ipairs(list) do
-        if C_SpellBook and C_SpellBook.IsSpellInSpellBook(id) then
-            active_kick_spell = id; return
-        end
-    end
-    active_kick_spell = nil
-end
-
--- ==============================
--- 기능 1: 차단 눈금
--- ==============================
-local function hide_kick_tick()
-    if not bar then return end
-    if bar.kick_tick       then bar.kick_tick:Hide() end
-    if bar.kick_positioner then bar.kick_positioner:Hide() end
-    if bar.kick_marker     then bar.kick_marker:Hide() end
-end
-
-local function update_kick_tick()
-    if not bar or not bar.kick_tick then return end
-
-    if not cast_active or not active_unit then hide_kick_tick(); return end
-    if not active_kick_spell            then hide_kick_tick(); return end
-
-    local castDur = (bar_is_channel or bar_cast_type == "empower")
-        and UnitChannelDuration(active_unit)
-        or  UnitCastingDuration(active_unit)
-    if not castDur then hide_kick_tick(); return end
-
-    local kickDur = C_Spell.GetSpellCooldownDuration(active_kick_spell)
-    if not kickDur then hide_kick_tick(); return end
-
-    -- kick 쿨다운 없으면 tick을 맨 끝에 고정 (언제든 킥 가능)
-    -- 쿨다운 있으면: elapsed + kickRemaining = 일정 → tick 고정
-    if kickDur:IsZero() then
-        bar.kick_positioner:SetMinMaxValues(0, 1)
-        bar.kick_positioner:SetValue(0)
-        bar.kick_marker:SetMinMaxValues(0, 1)
-        bar.kick_marker:SetWidth(KICK_BAR_W)
-        bar.kick_marker:SetValue(1)
-    else
-        bar.kick_positioner:SetMinMaxValues(0, castDur:GetTotalDuration())
-        bar.kick_positioner:SetValue(castDur:GetElapsedDuration())
-        bar.kick_marker:SetMinMaxValues(0, castDur:GetTotalDuration())
-        bar.kick_marker:SetWidth(KICK_BAR_W)
-        bar.kick_marker:SetValue(kickDur:GetRemainingDuration())
-    end
-
-    bar.kick_positioner:Show()
-    bar.kick_marker:Show()
-    local base_alpha = C_CurveUtil.EvaluateColorValueFromBoolean(kickDur:IsZero(), 0.4, 1.0)
-    bar.kick_tick:SetAlpha(C_CurveUtil.EvaluateColorValueFromBoolean(bar_not_interruptible, 0, base_alpha))
-    bar.kick_tick:Show()
-end
-
--- ==============================
--- 기능 2: 색상
+-- 기능 1: 색상
 -- ==============================
 local function apply_color(not_interruptible, spellID)
-    bar_not_interruptible = not_interruptible
     local CC = dodo.ColorsUnitframe and dodo.ColorsUnitframe.Castbar
 
     local isImp = false
@@ -162,7 +79,7 @@ local function apply_color(not_interruptible, spellID)
 end
 
 -- ==============================
--- 기능 3: 캐스팅 표시
+-- 기능 2: 캐스팅 표시
 -- ==============================
 local function show_cast(unit)
     local name, _, texture, _, _, _, _, not_interruptible, spellID = UnitCastingInfo(unit)
@@ -230,7 +147,7 @@ local function show_cast(unit)
 end
 
 -- ==============================
--- 기능 4: 우선순위 평가 (focus > target)
+-- 기능 3: 우선순위 평가 (focus > target)
 -- ==============================
 
 local function update()
@@ -259,13 +176,8 @@ local function update()
 end
 
 -- ==============================
--- 기능 5: 프레임 빌드
+-- 기능 4: 프레임 빌드
 -- ==============================
-local function on_update()
-    if not cast_active then return end
-    update_kick_tick()
-end
-
 local function build()
     if bar then return end
 
@@ -311,45 +223,6 @@ local function build()
     sb.NineSlice:SetScale(0.6)
     NineSliceUtil.ApplyUniqueCornersLayout(sb.NineSlice, 'UI-HUD-ActionBar-Frame')
 
-    -- 차단 눈금 클립 (bar 자식 → StatusBar fill clip 영향 없음)
-    local kick_clip = CreateFrame("Frame", nil, bar)
-    kick_clip:SetAllPoints(sb)
-    kick_clip:SetClipsChildren(true)
-    kick_clip:SetFrameLevel(sb:GetFrameLevel() + 4)
-    bar.kick_clip = kick_clip
-
-    -- positioner: elapsed 위치 추적 (투명 StatusBar)
-    local kick_positioner = CreateFrame("StatusBar", nil, kick_clip)
-    kick_positioner:SetAllPoints(kick_clip)
-    kick_positioner:SetStatusBarTexture([[Interface\Buttons\WHITE8X8]])
-    kick_positioner:GetStatusBarTexture():SetAlpha(0)
-    kick_positioner:SetMinMaxValues(0, 1)
-    kick_positioner:SetValue(0)
-    kick_positioner:Hide()
-    bar.kick_positioner = kick_positioner
-
-    -- marker: kickRem 크기만큼 채움 (투명), positioner 텍스처 우측에 부착
-    local kick_marker = CreateFrame("StatusBar", nil, kick_clip)
-    kick_marker:SetStatusBarTexture([[Interface\Buttons\WHITE8X8]])
-    kick_marker:GetStatusBarTexture():SetAlpha(0)
-    kick_marker:SetPoint("TOP",    kick_clip, "TOP")
-    kick_marker:SetPoint("BOTTOM", kick_clip, "BOTTOM")
-    kick_marker:SetPoint("LEFT",   kick_positioner:GetStatusBarTexture(), "RIGHT")
-    kick_marker:SetMinMaxValues(0, 1)
-    kick_marker:SetValue(0)
-    kick_marker:Hide()
-    bar.kick_marker = kick_marker
-
-    -- tick: marker 텍스처 우측에 표시되는 2px 세로선
-    local kick_tick = kick_clip:CreateTexture(nil, "OVERLAY", nil, 7)
-    kick_tick:SetColorTexture(1, 0, 0, 1)
-    kick_tick:SetWidth(2)
-    kick_tick:SetPoint("TOP",    kick_clip,                         "TOP")
-    kick_tick:SetPoint("BOTTOM", kick_clip,                         "BOTTOM")
-    kick_tick:SetPoint("LEFT",   kick_marker:GetStatusBarTexture(), "RIGHT")
-    kick_tick:Hide()
-    bar.kick_tick = kick_tick
-
     -- 스킬 이름 텍스트
     local spell_text = sb:CreateFontString(nil, 'OVERLAY', 'SystemFont_Outline')
     spell_text:SetPoint('LEFT',  sb, 'LEFT',   5,   0)
@@ -379,13 +252,10 @@ local function build()
     target_text:SetJustifyH('LEFT')
     target_text:Hide()
     bar.target_text = target_text
-
-    -- SetTimerDuration이 바 진행을 구동 → OnUpdate는 차단 눈금만 담당
-    bar:SetScript('OnUpdate', on_update)
 end
 
 -- ==============================
--- 기능 6: LEM 등록
+-- 기능 5: LEM 등록
 -- ==============================
 local function register_lem()
     local LEM = LibStub("LibEditMode")
@@ -412,7 +282,6 @@ local function register_lem()
         bar.spell_text:SetText("주시/대상 시전 막대")
         bar.time_text:SetText("2.5")
         if bar.target_text then bar.target_text:Hide() end
-        if bar.kick_tick   then bar.kick_tick:Hide() end
         bar:Show()
     end)
     LEM:RegisterCallback("exit", function()
@@ -434,7 +303,6 @@ local function register_lem()
         bar.spell_text:SetText("주시/대상 시전 막대")
         bar.time_text:SetText("2.5")
         if bar.target_text then bar.target_text:Hide() end
-        if bar.kick_tick   then bar.kick_tick:Hide() end
         bar:Show()
     end
 end
@@ -448,14 +316,9 @@ evt:SetScript("OnEvent", function(_, event, unit)
     if event == "PLAYER_LOGIN" then
         if dodoDB.enableUnitCastBar == nil then dodoDB.enableUnitCastBar = true end
         build()
-        refresh_kick_spell()
         register_lem()
         update()
         return
-    end
-
-    if event == "SPELLS_CHANGED" then
-        refresh_kick_spell(); return
     end
 
     if event == "PLAYER_TARGET_CHANGED" or event == "PLAYER_FOCUS_CHANGED" then
@@ -491,7 +354,6 @@ evt:SetScript("OnEvent", function(_, event, unit)
             local CC = dodo.ColorsUnitframe and dodo.ColorsUnitframe.Castbar
             local c = CC and CC.successColor or { r = 0.39, g = 1.00, b = 0.39 }
             bar.sb:SetStatusBarColor(c.r, c.g, c.b)
-            hide_kick_tick()
             if bar.target_text then bar.target_text:Hide() end
             active_unit = nil
             C_Timer.After(0.5, update)
@@ -506,7 +368,6 @@ evt:SetScript("OnEvent", function(_, event, unit)
             bar.sb:SetMinMaxValues(0, 1)
             bar.sb:SetValue(1)
             bar.spell_text:SetText("실패")
-            hide_kick_tick()
             if bar.target_text then bar.target_text:Hide() end
             active_unit = nil
             C_Timer.After(0.5, update)
@@ -523,7 +384,6 @@ evt:SetScript("OnEvent", function(_, event, unit)
             local CC = dodo.ColorsUnitframe and dodo.ColorsUnitframe.Castbar
             local c = CC and CC.successColor or { r = 0.39, g = 1.00, b = 0.39 }
             bar.sb:SetStatusBarColor(c.r, c.g, c.b)
-            hide_kick_tick()
             if bar.target_text then bar.target_text:Hide() end
             active_unit = nil
             C_Timer.After(0.5, update)
@@ -541,7 +401,6 @@ evt:SetScript("OnEvent", function(_, event, unit)
             local c = CC and CC.interruptedColor or { r = 0.8, g = 0, b = 0 }
             bar.sb:SetStatusBarColor(c.r, c.g, c.b)
             bar.spell_text:SetText("실패")
-            hide_kick_tick()
             if bar.target_text then bar.target_text:Hide() end
             active_unit = nil
             C_Timer.After(0.5, update)
@@ -559,7 +418,6 @@ end)
 evt:RegisterEvent("PLAYER_LOGIN")
 evt:RegisterEvent("PLAYER_TARGET_CHANGED")
 evt:RegisterEvent("PLAYER_FOCUS_CHANGED")
-evt:RegisterEvent("SPELLS_CHANGED")
 evt:RegisterUnitEvent("UNIT_SPELLCAST_START",             "target", "focus")
 evt:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START",     "target", "focus")
 evt:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_START",     "target", "focus")
