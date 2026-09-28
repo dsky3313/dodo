@@ -54,6 +54,7 @@ end
 function dodoUnitframePreviewMixin:OnLoad()
 	_preview_ref = self
 	self._unit   = "player"
+	if self.PreviewLabel then self.PreviewLabel:SetText("미리보기") end
 
 	local base = self:GetFrameLevel() + 1
 
@@ -451,7 +452,6 @@ function dodoUnitframePreviewMixin:Update()
 	if cEnabled then
 		local cW = hW - CAST_ICON - 6
 		local cif_y = -(cast_gap - CAST_H / 2)
-		if unit == 'player' then cif_y = cif_y - 30 end
 		self.cif:ClearAllPoints()
 		self.cif:SetPoint('TOPLEFT', self.hf, 'BOTTOMLEFT', 0, cif_y)
 		self.cif:Show()
@@ -496,7 +496,7 @@ function dodoUnitframePreviewMixin:Update()
 	-- ── 소환수 (플레이어 탭만) ──────────────────────────────
 	if unit == 'player' then
 		self.petHf:ClearAllPoints()
-		self.petHf:SetPoint('TOPLEFT', self.hf, 'BOTTOMLEFT', 0, -20)
+		self.petHf:SetPoint('TOPLEFT', self.hf, 'BOTTOMLEFT', 0, -50)
 		self.petHf:SetSize(100, 16)
 		self.petHf:Show()
 		self.petFill:ClearAllPoints()

@@ -285,7 +285,7 @@ local function create_ui()
 	dodo.FocusFrame = focusFrame
 
 	petFrame = oUF:Spawn('pet', 'dodoPetFrame')
-	petFrame:SetPoint('TOPLEFT', playerFrame, 'BOTTOMLEFT', 0, -5)
+	petFrame:SetPoint('TOPLEFT', playerFrame, 'BOTTOMLEFT', 0, -36)
 	table.insert(customFrames, petFrame)
 	dodo.PetFrame = petFrame
 

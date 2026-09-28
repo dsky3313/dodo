@@ -125,20 +125,7 @@ function dodo.UnitframeCreateCastbar(self, uWidth, unit)
 	castbar.Icon = icon
 
 	local health_ref = self.Health
-	local function reanchor_icon()
-		local iy = (unit == 'player' and UnitExists('pet')) and -52 or -22
-		icon:ClearAllPoints()
-		icon:SetPoint('LEFT', health_ref, 'BOTTOMLEFT', 0, iy)
-	end
-	reanchor_icon()
-
-	if unit == 'player' then
-		local petWatcher = CreateFrame('Frame')
-		petWatcher:RegisterEvent('UNIT_PET')
-		petWatcher:SetScript('OnEvent', function(_, _, unitToken)
-			if unitToken == 'player' then reanchor_icon() end
-		end)
-	end
+	icon:SetPoint('LEFT', health_ref, 'BOTTOMLEFT', 0, -22)
 
 	-- 아이콘 테두리
 	local iconFrame = CreateFrame('Frame', nil, castbar)

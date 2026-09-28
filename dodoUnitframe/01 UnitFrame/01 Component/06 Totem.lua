@@ -70,7 +70,7 @@ local function on_event(self, event, arg1)
 
         container = CreateFrame("Frame", "dodoTotemContainer", dodo.PlayerFrame)
         container:SetSize(37, 37)
-        container:SetPoint("TOPLEFT", dodo.PlayerFrame, "BOTTOMLEFT", 0, -5)
+        container:SetPoint("TOPLEFT", dodo.PlayerFrame, "BOTTOMLEFT", 0, -36)
         container:SetFrameStrata("MEDIUM")
         container:Hide()
 
