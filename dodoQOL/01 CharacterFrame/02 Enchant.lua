@@ -73,7 +73,6 @@ local function get_enchant_name(unit, slotID)
 
     local data = C_TooltipInfo.GetInventoryItem(unit, slotID)
     if not data or not data.lines then
-        enchant_cache[link] = false
         return nil
     end
 

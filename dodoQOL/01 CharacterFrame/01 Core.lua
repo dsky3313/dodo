@@ -107,9 +107,17 @@ local function on_event(self, event, ...)
             end
         end
 
-        -- 캐릭터창 켜질 때 1회 갱신 훅
+        -- 캐릭터창 켜질 때 미로드 아이템 데이터 요청 후 갱신
         if PaperDollFrame then
-            hooksecurefunc(PaperDollFrame, "Show", update_all_character_slots)
+            hooksecurefunc(PaperDollFrame, "Show", function()
+                for _, info in ipairs(dodo.CharacterFrameSLOT_LIST) do
+                    local itemID = GetInventoryItemID("player", info.slotID)
+                    if itemID and not C_Item.IsItemDataCachedByID(itemID) then
+                        C_Item.RequestLoadItemDataByID(itemID)
+                    end
+                end
+                request_update()
+            end)
         end
     elseif event == "UNIT_INVENTORY_CHANGED" then
         local unit = ...
