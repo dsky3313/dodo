@@ -49,13 +49,18 @@ StaticPopupDialogs["DODO_CDM_LINK_BUFF"] = {
 local ICON_SIZE      = 38
 local SPELLBOOK_COLS = 3  -- columnsPerRow (column-first 배치)
 
-local function collect_spellbook_spells()
-    local bank   = Enum.SpellBookSpellBank.Player
-    local result = {}
-    local numLines = C_SpellBook.GetNumSpellBookSkillLines()
+-- 첫 번째 non-General 라인 = 클래스, 이후 = 특성
+local function collect_class_talent_spells()
+    local bank          = Enum.SpellBookSpellBank.Player
+    local class_spells  = {}
+    local talent_spells = {}
+    local numLines      = C_SpellBook.GetNumSpellBookSkillLines()
+    local first_found   = false
     for skillIndex = 1, numLines do
         local lineInfo = C_SpellBook.GetSpellBookSkillLineInfo(skillIndex)
         if lineInfo and lineInfo.name ~= "일반" and lineInfo.name ~= "General" then
+            local target    = (not first_found) and class_spells or talent_spells
+            first_found     = true
             local line_spells = {}
             for slot = lineInfo.itemIndexOffset + 1, lineInfo.itemIndexOffset + lineInfo.numSpellBookItems do
                 local itemInfo = C_SpellBook.GetSpellBookItemInfo(slot, bank)
@@ -74,9 +79,25 @@ local function collect_spellbook_spells()
                 for col = 0, SPELLBOOK_COLS - 1 do
                     local idx = col * rows + row + 1
                     if idx <= n then
-                        result[#result + 1] = line_spells[idx]
+                        target[#target + 1] = line_spells[idx]
                     end
                 end
+            end
+        end
+    end
+    return class_spells, talent_spells
+end
+
+-- 장착된 장신구(슬롯 13, 14) 전부 — 사용 스킬 없는 패시브 장신구도 포함
+local function collect_trinket_spells()
+    local result = {}
+    for _, slot in ipairs({13, 14}) do
+        local itemID = GetInventoryItemID("player", slot)
+        if itemID then
+            local icon = GetInventoryItemTexture("player", slot)
+            if icon then
+                local _, spellID = C_Item.GetItemSpell(itemID)
+                result[#result + 1] = { spellID = spellID, icon = icon, itemID = itemID }
             end
         end
     end
@@ -87,7 +108,9 @@ end
 -- CDM spellID(탤런트/패시브)와 실제 버프 ID가 다를 수 있어서
 -- linkedSpellIDs를 먼저 추가하고 메인 spellID는 이름 중복 시 스킵.
 -- (예: 집행자의 정밀함 — CDM=386634, 실제 버프=386633)
-local function collect_cdm_spells()
+-- item_only=true  → equipSlot 있는 것만 (장신구 강화효과)
+-- item_only=false → equipSlot 없는 것만 (직업/특성 스킬)
+local function collect_cdm_spells(item_only)
     local result = {}
     local seen_names = {}
     local function add(id)
@@ -103,14 +126,18 @@ local function collect_cdm_spells()
         for _, item in ipairs(pool:GetItemFrames()) do
             if item.cooldownID and C_CooldownViewer then
                 local cdInfo = C_CooldownViewer.GetCooldownViewerCooldownInfo(item.cooldownID)
-                if cdInfo and cdInfo.spellID then
-                    -- linked 먼저: 실제 버프 ID가 여기 있는 경우 우선 등록
-                    for _, sid in ipairs(cdInfo.linkedSpellIDs) do add(sid) end
-                    add(cdInfo.spellID)
+                if cdInfo then
+                    local is_item = cdInfo.equipSlot ~= nil
+                    if is_item == item_only then
+                        for _, sid in ipairs(cdInfo.linkedSpellIDs or {}) do add(sid) end
+                        if cdInfo.spellID and cdInfo.spellID ~= 0 then add(cdInfo.spellID) end
+                    end
                 end
             end
         end
     end
+    scan(EssentialCooldownViewer)
+    scan(UtilityCooldownViewer)
     scan(BuffBarCooldownViewer)
     scan(BuffIconCooldownViewer)
     return result
@@ -151,6 +178,8 @@ local function create_skill_icon(parent)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         if self.spellID then
             GameTooltip:SetSpellByID(self.spellID)
+        elseif self.itemID then
+            GameTooltip:SetItemByID(self.itemID)
         end
         GameTooltip:Show()
     end)
@@ -180,7 +209,7 @@ local function create_skill_icon(parent)
             end
             rootDescription:CreateDivider()
 
-            local cdm_spells = collect_cdm_spells()
+            local cdm_spells = collect_cdm_spells(self.itemID ~= nil)
             if next(cdm_spells) then
                 rootDescription:CreateTitle("강화효과 연결:")
                 for buffID, buffName in pairs(cdm_spells) do
@@ -211,86 +240,116 @@ local function create_skill_icon(parent)
 end
 
 local function build_page_a(page)
-    local header = CreateFrame("Button", nil, page, "ListHeaderThreeSliceTemplate")
-    header:SetSize(0, 22)
-    header:SetPoint("TOPLEFT",  page, "TOPLEFT")
-    header:SetPoint("TOPRIGHT", page, "TOPRIGHT")
-    if header.Name then
-        header.Name:SetText("행동 단축바")
-    end
-    header:SetTitleColor(false, NORMAL_FONT_COLOR)
-    header:SetTitleColor(true, NORMAL_FONT_COLOR)
-
     local sf = CreateFrame("ScrollFrame", nil, page)
-    sf:SetPoint("TOPLEFT",     header, "BOTTOMLEFT",  13, -15)
-    sf:SetPoint("BOTTOMRIGHT", page,   "BOTTOMRIGHT", 0,  0)
-
-    local collapsed = false
-    header:UpdateCollapsedState(false)
-    header:SetClickHandler(function(self, button)
-        collapsed = not collapsed
-        self:UpdateCollapsedState(collapsed)
-        sf:SetShown(not collapsed)
-    end)
-
-    local STRIDE = 7
-    local PAD    = 8
+    sf:SetPoint("TOPLEFT",     page, "TOPLEFT")
+    sf:SetPoint("BOTTOMRIGHT", page, "BOTTOMRIGHT")
 
     local content = CreateFrame("Frame", nil, sf)
     content:SetHeight(1)
     sf:SetScrollChild(content)
 
-    local icon_pool = {}
+    local STRIDE         = 7
+    local ITEM_PAD       = 8   -- childXPadding / childYPadding (블리자드 원본)
+    local HEADER_H       = 22
+    local CONTAINER_LEFT = 13  -- Header BOTTOMLEFT x=13 (블리자드 원본)
+    local CONTAINER_TOP  = 15  -- Header BOTTOMLEFT y=-15 (블리자드 원본)
+    local SECTION_GAP    = 8   -- 섹션 간 여백
 
-    local function layout(count)
+    local sections = {
+        { label = "직업",   pool = {}, spells = {}, collapsed = false },
+        { label = "특성",   pool = {}, spells = {}, collapsed = false },
+        { label = "장신구", pool = {}, spells = {}, collapsed = false },
+    }
+
+    local layout_all  -- forward declaration (헤더 클릭 핸들러에서 참조)
+
+    for _, sec in ipairs(sections) do
+        sec.header = CreateFrame("Button", nil, content, "ListHeaderThreeSliceTemplate")
+        sec.header:SetSize(0, HEADER_H)
+        if sec.header.Name then sec.header.Name:SetText(sec.label) end
+        sec.header:SetTitleColor(false, NORMAL_FONT_COLOR)
+        sec.header:SetTitleColor(true, NORMAL_FONT_COLOR)
+        sec.header:UpdateCollapsedState(false)
+        sec.header:SetClickHandler(function(self)
+            sec.collapsed = not sec.collapsed
+            self:UpdateCollapsedState(sec.collapsed)
+            layout_all()
+        end)
+    end
+
+    layout_all = function()
         local w = sf:GetWidth()
-        if w < 1 then w = STRIDE * (ICON_SIZE + PAD) + PAD end
+        if w < 1 then w = CONTAINER_LEFT + STRIDE * (ICON_SIZE + ITEM_PAD) end
         content:SetWidth(w)
-        local rows = math.ceil(count / STRIDE)
-        content:SetHeight(math.max(1, PAD + rows * (ICON_SIZE + PAD)))
-        for i = 1, count do
-            local col = (i - 1) % STRIDE
-            local row = math.floor((i - 1) / STRIDE)
-            icon_pool[i]:ClearAllPoints()
-            icon_pool[i]:SetPoint("TOPLEFT", content, "TOPLEFT",
-                PAD + col * (ICON_SIZE + PAD),
-                -(PAD + row * (ICON_SIZE + PAD)))
+        local y = 0
+        for _, sec in ipairs(sections) do
+            sec.header:ClearAllPoints()
+            sec.header:SetPoint("TOPLEFT",  content, "TOPLEFT",  0, -y)
+            sec.header:SetPoint("TOPRIGHT", content, "TOPRIGHT", 0, -y)
+            y = y + HEADER_H + CONTAINER_TOP
+            local count = #sec.spells
+            if sec.collapsed or count == 0 then
+                for i = 1, count do
+                    if sec.pool[i] then sec.pool[i]:Hide() end
+                end
+            else
+                for i = 1, count do
+                    local col = (i - 1) % STRIDE
+                    local row = math.floor((i - 1) / STRIDE)
+                    sec.pool[i]:ClearAllPoints()
+                    sec.pool[i]:SetPoint("TOPLEFT", content, "TOPLEFT",
+                        CONTAINER_LEFT + col * (ICON_SIZE + ITEM_PAD),
+                        -(y + row * (ICON_SIZE + ITEM_PAD)))
+                    sec.pool[i]:Show()
+                end
+                local rows = math.ceil(count / STRIDE)
+                y = y + rows * (ICON_SIZE + ITEM_PAD) + SECTION_GAP
+            end
         end
+        content:SetHeight(math.max(1, y))
+    end
+
+    local function update_section(sec, spells, refresh_fn)
+        for i = #spells + 1, #sec.pool do
+            if sec.pool[i] then sec.pool[i]:Hide() end
+        end
+        for i, spell in ipairs(spells) do
+            local ib = sec.pool[i]
+            if not ib then
+                ib = create_skill_icon(content)
+                sec.pool[i] = ib
+            end
+            ib.Icon:SetTexture(spell.icon)
+            ib.spellID        = spell.spellID
+            ib.itemID         = spell.itemID
+            ib.__page_refresh = refresh_fn
+            local linked = (spell.spellID and dodo.getCDMMappingForSkill) and dodo.getCDMMappingForSkill(spell.spellID) or {}
+            ib.LinkedGlow:SetShown(#linked > 0)
+        end
+        sec.spells = spells
     end
 
     local function refresh()
         if not page:IsShown() then return end
 
-        local spells = collect_spellbook_spells()
+        local classLabel = UnitClass("player") or "직업"
+        if sections[1].header.Name then sections[1].header.Name:SetText(classLabel) end
 
-        for i = #spells + 1, #icon_pool do
-            icon_pool[i]:Hide()
-        end
+        local specIndex = GetSpecialization()
+        local specLabel = (specIndex and select(2, GetSpecializationInfo(specIndex))) or "특성"
+        if sections[2].header.Name then sections[2].header.Name:SetText(specLabel) end
 
-        for i, spell in ipairs(spells) do
-            local ib = icon_pool[i]
-            if not ib then
-                ib = create_skill_icon(content)
-                icon_pool[i] = ib
-            end
-
-            ib.Icon:SetTexture(spell.icon)
-            ib.spellID        = spell.spellID
-            ib.__page_refresh = refresh
-
-            local linked = dodo.getCDMMappingForSkill and dodo.getCDMMappingForSkill(spell.spellID) or {}
-            ib.LinkedGlow:SetShown(#linked > 0)
-            ib:Show()
-        end
-
-        layout(#spells)
+        local class_spells, talent_spells = collect_class_talent_spells()
+        local trinket_spells = collect_trinket_spells()
+        update_section(sections[1], class_spells,   refresh)
+        update_section(sections[2], talent_spells,  refresh)
+        update_section(sections[3], trinket_spells, refresh)
+        layout_all()
     end
 
     page.Refresh = refresh
     page:SetScript("OnShow", function() refresh() end)
-    sf:SetScript("OnSizeChanged", function()
-        layout(#icon_pool)
-    end)
+    sf:SetScript("OnSizeChanged", function() layout_all() end)
 end
 
 -- ==============================

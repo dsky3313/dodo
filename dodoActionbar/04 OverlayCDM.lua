@@ -152,6 +152,7 @@ function CDMOverlayMixin:OnLoad()
     self.Count:SetTextColor(1, 1, 0)
 
     if parent.cooldown then
+        self:SetFrameStrata(parent.cooldown:GetFrameStrata())
         self:SetFrameLevel(parent.cooldown:GetFrameLevel() + 1)
     end
 
@@ -160,6 +161,7 @@ function CDMOverlayMixin:OnLoad()
     self.Cooldown:SetDrawSwipe(false)
     self.Cooldown:SetUseAuraDisplayTime(true)
     self.Cooldown:SetCountdownFont("NumberFontNormal")
+    self.Cooldown:SetHideCountdownNumbers(true)
     self.Cooldown:SetCountdownAbbrevThreshold(60)
     self.Cooldown:SetScript('OnCooldownDone', function () self:Update() end)
     self:Hide()
@@ -175,10 +177,23 @@ function CDMOverlayMixin:StartCustomCDM(spellID, duration, startTime)
     self.Cooldown:Show()
     self:Show()
 
+    if enableCDMADebug then
+        local p = self:GetParent()
+        print(string.format("[CDM] StartCustomCDM btn=%s spellID=%d dur=%.1f",
+            p and p:GetName() or "?", spellID, duration))
+    end
+
     customize_cooldown_text(self.Cooldown)
 end
 
 function CDMOverlayMixin:StopCustomCDM()
+    if enableCDMADebug then
+        local p = self:GetParent()
+        print(string.format("[CDM] StopCustomCDM btn=%s viewerItem=%s customSpell=%s",
+            p and p:GetName() or "?",
+            tostring(self.viewerItem ~= nil),
+            tostring(self.customCDMSpellID)))
+    end
     active_cdm_overlays[self] = nil
     self.viewerItem = nil
     self.customCDMSpellID = nil
@@ -194,6 +209,13 @@ end
 function CDMOverlayMixin:Update()
     local parent = self:GetParent()
     if not parent then return end
+
+    -- OnLoad 시 cooldown이 미초기화 상태면 레벨이 틀릴 수 있어서 매번 재동기화
+    -- Strata도 맞춰야 같은 Strata 내 FrameLevel 비교가 유효
+    if parent.cooldown then
+        self:SetFrameStrata(parent.cooldown:GetFrameStrata())
+        self:SetFrameLevel(parent.cooldown:GetFrameLevel() + 1)
+    end
 
     local barName = dodo.get_bar_name_by_button(parent)
     if not barName or not is_bar_cdm_enabled(barName) then self:StopCustomCDM(); return end
@@ -245,39 +267,85 @@ function CDMOverlayMixin:Update()
         active_cdm_overlays[self] = true
         self.InnerGlow:Show()
         self:Show()
+        if enableCDMADebug then
+            local p = self:GetParent()
+            print(string.format("[CDM] Update→Show btn=%s level=%d strata=%s cdLevel=%d cdStrata=%s",
+                p and p:GetName() or "?",
+                self:GetFrameLevel(),
+                self:GetFrameStrata(),
+                p and p.cooldown and p.cooldown:GetFrameLevel() or -1,
+                p and p.cooldown and p.cooldown:GetFrameStrata() or "?"))
+        end
     else
+        if enableCDMADebug then
+            local p = self:GetParent()
+            print(string.format("[CDM] Update→Stop btn=%s viewerItem=%s isActive=%s",
+                p and p:GetName() or "?",
+                tostring(item ~= nil),
+                tostring(item and item.isActive)))
+        end
         self:StopCustomCDM()
     end
 end
 
-local function build_button_cache()
-    dodo.buttonCache = dodo.buttonCache or {}
-    for _, arr in pairs(dodo.buttonCache) do wipe(arr) end
-    local groups = {
-        "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton",
-        "MultiBarRightButton", "MultiBarLeftButton", "MultiBar5Button", "MultiBar6Button", "MultiBar7Button",
-        "StanceButton"
-    }
-    for _, group in ipairs(groups) do
-        for i = 1, 12 do
-            local btn = _G[group .. i]
-            if btn and btn.action then
-                local _, actionSpellID = GetActionInfo(btn.action)
-                if actionSpellID then
-                    local baseSpellID = C_Spell.GetBaseSpell(actionSpellID)
-                    local spellName = C_Spell.GetSpellName(baseSpellID)
-                    local rawSpellName = C_Spell.GetSpellName(actionSpellID)
+-- macroName → { equipSlot → true } 캐시 (GetActionInfo macro id 신뢰 불가 → 이름 기반 매칭)
+local trinket_macro_slots = {}
 
-                    if spellName then
-                        if not dodo.buttonCache[spellName] then dodo.buttonCache[spellName] = {} end
-                        dodo.buttonCache[spellName][#dodo.buttonCache[spellName] + 1] = btn
-                    end
-
-                    if rawSpellName and rawSpellName ~= spellName then
-                        if not dodo.buttonCache[rawSpellName] then dodo.buttonCache[rawSpellName] = {} end
-                        dodo.buttonCache[rawSpellName][#dodo.buttonCache[rawSpellName] + 1] = btn
+local function scan_trinket_macros()
+    wipe(trinket_macro_slots)
+    local numAcc, numChar = GetNumMacros()
+    local function scan(idx)
+        local name, _, body = GetMacroInfo(idx)
+        if not name or not body then return end
+        local slots = nil
+        for line in body:gmatch("[^\n]+") do
+            if line:find("[Uu][Ss][Ee]%s") then
+                for s in line:gmatch("%]%s*(%d+)") do
+                    local slot = tonumber(s)
+                    if slot == 13 or slot == 14 then
+                        slots = slots or {}; slots[slot] = true
                     end
                 end
+                local s = line:match("[Uu][Ss][Ee]%s+(%d+)")
+                if s then
+                    local slot = tonumber(s)
+                    if slot == 13 or slot == 14 then
+                        slots = slots or {}; slots[slot] = true
+                    end
+                end
+            end
+        end
+        if slots then trinket_macro_slots[name] = slots end
+    end
+    for i = 1, numAcc do scan(i) end
+    for i = 1, numChar do scan(120 + i) end
+end
+
+local function build_button_cache()
+    dodo.buttonCache = dodo.buttonCache or {}
+    dodo.buttonCacheByItemID = {}
+    for _, arr in pairs(dodo.buttonCache) do wipe(arr) end
+    local function cache_add(spellID, btn)
+        local baseID   = C_Spell.GetBaseSpell(spellID) or spellID
+        local baseName = C_Spell.GetSpellName(baseID)
+        local rawName  = C_Spell.GetSpellName(spellID)
+        if baseName then
+            if not dodo.buttonCache[baseName] then dodo.buttonCache[baseName] = {} end
+            dodo.buttonCache[baseName][#dodo.buttonCache[baseName] + 1] = btn
+        end
+        if rawName and rawName ~= baseName then
+            if not dodo.buttonCache[rawName] then dodo.buttonCache[rawName] = {} end
+            dodo.buttonCache[rawName][#dodo.buttonCache[rawName] + 1] = btn
+        end
+    end
+    for btn in pairs(dodo.registeredButtons) do
+        if btn.action then
+            local actionType, actionID = GetActionInfo(btn.action)
+            if actionType == "spell" and actionID then
+                cache_add(actionID, btn)
+            elseif actionType == "item" and actionID then
+                if not dodo.buttonCacheByItemID[actionID] then dodo.buttonCacheByItemID[actionID] = {} end
+                dodo.buttonCacheByItemID[actionID][#dodo.buttonCacheByItemID[actionID] + 1] = btn
             end
         end
     end
@@ -288,7 +356,42 @@ local function update_cdm_from_item(item)
     if not dodoDB or dodoDB.enableActionbar == false then return end
 
     local cdInfo = C_CooldownViewer.GetCooldownViewerCooldownInfo(item.cooldownID)
-    if not cdInfo or not cdInfo.spellID then return end
+    if not cdInfo then return end
+
+    -- 장신구: equipSlot → 실시간으로 registeredButtons 순회 (직접 아이템 + /use 매크로 둘 다 처리)
+    if cdInfo.equipSlot then
+        local slotItemID = GetInventoryItemID("player", cdInfo.equipSlot)
+        local targetSlot = cdInfo.equipSlot
+        if enableCDMADebug then
+            print(string.format("[CDM] 장신구 equipSlot=%d isActive=%s", targetSlot, tostring(item.isActive)))
+        end
+        for btn in pairs(dodo.registeredButtons) do
+            local action = btn.action or btn:GetAttribute("action")
+            if action then
+                local actionType, actionID = GetActionInfo(action)
+                local matches = false
+                if actionType == "item" and slotItemID and actionID == slotItemID then
+                    matches = true
+                elseif actionType == "macro" then
+                    local macroName = C_ActionBar.GetActionText(action)
+                    if macroName then
+                        local slots = trinket_macro_slots[macroName]
+                        if slots and slots[targetSlot] then matches = true end
+                    end
+                end
+                if matches and btn.cdmOverlay then
+                    if enableCDMADebug then
+                        print(string.format("[CDM]  매칭 btn=%s", btn:GetName() or "?"))
+                    end
+                    btn.cdmOverlay.viewerItem = item.isActive and item or nil
+                    btn.cdmOverlay:Update()
+                end
+            end
+        end
+        return
+    end
+
+    if not cdInfo.spellID then return end
     local baseSpellID = C_Spell.GetBaseSpell(cdInfo.spellID)
     if enableCDMADebug then
         local debugName = C_Spell.GetSpellName(baseSpellID)
@@ -329,20 +432,31 @@ end
 local function poll_cdm_timer_overlays()
     for overlay in pairs(active_cdm_overlays) do
         local item = overlay.viewerItem
-        local text
-        if item and item.isActive then
+        -- CDM 추적 종료 감지: isActive false면 오버레이 즉시 정지
+        if not item or not item.isActive then
+            if not overlay.customCDMSpellID then
+                overlay:StopCustomCDM()
+            end
+        else
+            local text
             if item.Cooldown and item.Cooldown.GetCountdownFontString then
+                -- pool reuse 시 Cooldown이 reset되면 CountdownFont도 사라지므로 매번 확인
+                if not item.Cooldown:GetCountdownFontString() then
+                    item.Cooldown:SetCountdownFont("NumberFontNormal")
+                    local cfs0 = item.Cooldown:GetCountdownFontString()
+                    if cfs0 then cfs0:SetAlpha(0) end
+                end
                 local cfs = item.Cooldown:GetCountdownFontString()
                 text = cfs and cfs:GetText()
             elseif item.Bar and item.Bar.Duration then
                 text = item.Bar.Duration:GetText()
             end
-        end
-        if text and (issecretvalue(text) or text ~= "") then
-            overlay.TimerCooldown:SetText(text)
-            overlay.TimerCooldown:Show()
-        else
-            overlay.TimerCooldown:Hide()
+            if text and (issecretvalue(text) or text ~= "") then
+                overlay.TimerCooldown:SetText(text)
+                overlay.TimerCooldown:Show()
+            else
+                overlay.TimerCooldown:Hide()
+            end
         end
     end
 end
@@ -406,6 +520,16 @@ local function hook_viewer_item(item)
 
         -- 쿨다운 타이머: CDM이 자기 Cooldown 업데이트할 때 오버레이 미러
         if item.Cooldown then
+            -- BuffIconItem은 SetCountdownFont 미호출 → GetCountdownFontString()=nil
+            -- poll_cdm_timer_overlays에서 텍스트 읽으려면 폰트 등록 필요
+            -- alpha=0으로 CDM 아이콘엔 안 보이게 함
+            if not item.Cooldown:GetCountdownFontString() then
+                item.Cooldown:SetCountdownFont("NumberFontNormal")
+                item.Cooldown:SetCountdownAbbrevThreshold(60)
+                local cfs = item.Cooldown:GetCountdownFontString()
+                if cfs then cfs:SetAlpha(0) end
+            end
+
             hooksecurefunc(item.Cooldown, "SetCooldownFromDurationObject", function(_, durObj, useAuraDisplayTime)
                 mirror_cooldown_to_overlays(item, durObj, useAuraDisplayTime)
             end)
@@ -429,7 +553,8 @@ local function do_build_special_button_cache()
             local btn = _G[entry.group .. i]
             if btn then
                 local barName = dodo.get_bar_name_by_button(btn)
-                if btn.action and barName and is_bar_cdm_enabled(barName) then
+                local btnAction = btn.action or btn:GetAttribute("action")
+                if btnAction and barName and is_bar_cdm_enabled(barName) then
                     if not btn.cdmOverlay then
                         btn.cdmOverlay = CreateFrame("Frame", nil, btn, "CDMOverlayTemplate")
                     end
@@ -441,6 +566,7 @@ local function do_build_special_button_cache()
             end
         end
     end
+    scan_trinket_macros()
     build_button_cache()
 end
 
@@ -565,15 +691,19 @@ end
 
 dodo.ActionbarInitCDM = function()
     local cdmHook = function(_, item) hook_viewer_item(item) end
-    hooksecurefunc(BuffBarCooldownViewer, "OnAcquireItemFrame", cdmHook)
-    hooksecurefunc(BuffIconCooldownViewer, "OnAcquireItemFrame", cdmHook)
+    hooksecurefunc(BuffBarCooldownViewer,   "OnAcquireItemFrame", cdmHook)
+    hooksecurefunc(BuffIconCooldownViewer,  "OnAcquireItemFrame", cdmHook)
+    hooksecurefunc(EssentialCooldownViewer, "OnAcquireItemFrame", cdmHook)
+    hooksecurefunc(UtilityCooldownViewer,   "OnAcquireItemFrame", cdmHook)
 
     init_custom_cdm_spells()
 
     local function on_login_delay()
         build_special_button_cache()
-        for _, item in ipairs(BuffBarCooldownViewer:GetItemFrames()) do hook_viewer_item(item) end
-        for _, item in ipairs(BuffIconCooldownViewer:GetItemFrames()) do hook_viewer_item(item) end
+        for _, item in ipairs(BuffBarCooldownViewer:GetItemFrames())   do hook_viewer_item(item) end
+        for _, item in ipairs(BuffIconCooldownViewer:GetItemFrames())  do hook_viewer_item(item) end
+        for _, item in ipairs(EssentialCooldownViewer:GetItemFrames()) do hook_viewer_item(item) end
+        for _, item in ipairs(UtilityCooldownViewer:GetItemFrames())   do hook_viewer_item(item) end
     end
     C_Timer.After(0.5, on_login_delay)
     C_Timer.NewTicker(0.1, poll_cdm_timer_overlays)
@@ -653,31 +783,69 @@ if enableCDMADebug then
     -- 디버그용 슬래시 명령어 등록 (enableCDMADebug = true 로 수정해야 작동)
     -- ==============================
     SLASH_DODOCDM1 = "/dodocdm"
-    SlashCmdList["DODOCDM"] = function()
-        print("[dodo CDM] 단축바 실시간 감지 디버그 시작")
-        local groups = {
-            "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton",
-            "MultiBarRightButton", "MultiBarLeftButton", "MultiBar5Button", "MultiBar6Button", "MultiBar7Button",
-            "StanceButton"
-        }
-        local count = 0
-        for _, group in ipairs(groups) do
-            for i = 1, 12 do
-                local btn = _G[group .. i]
-                if btn and btn.action then
-                    local actionType, actionSpellID = GetActionInfo(btn.action)
-                    if actionSpellID then
-                        local baseSpellID = C_Spell.GetBaseSpell(actionSpellID) or actionSpellID
-                        local spellName = C_Spell.GetSpellName(baseSpellID)
-                        if spellName then
-                            print(string.format("[%s%d] 타입: %s | 원래 ID: %s | Base ID: %s | 이름: %s",
-                                group, i, tostring(actionType), tostring(actionSpellID), tostring(baseSpellID), tostring(spellName)))
-                            count = count + 1
+    SlashCmdList["DODOCDM"] = function(arg)
+        if arg == "overlay" then
+            -- 오버레이 상태 덤프
+            print("=== CDM Overlay Dump ===")
+            local activeN = 0
+            for _ in pairs(active_cdm_overlays) do activeN = activeN + 1 end
+            print("active_cdm_overlays:", activeN)
+            for overlay in pairs(active_cdm_overlays) do
+                local p = overlay:GetParent()
+                local item = overlay.viewerItem
+                print(string.format("  shown=%s strata=%s level=%d | btn=%s",
+                    tostring(overlay:IsShown()), overlay:GetFrameStrata(), overlay:GetFrameLevel(),
+                    p and p:GetName() or "?"))
+                if p and p.cooldown then
+                    print(string.format("    parent.cooldown strata=%s level=%d",
+                        p.cooldown:GetFrameStrata(), p.cooldown:GetFrameLevel()))
+                end
+                if item then
+                    print(string.format("    viewerItem isActive=%s cooldownID=%s",
+                        tostring(item.isActive), tostring(item.cooldownID)))
+                else
+                    print("    viewerItem=nil  customSpell=" .. tostring(overlay.customCDMSpellID))
+                end
+            end
+            -- registeredButtons에서 IsShown인 cdmOverlay
+            local shownN = 0
+            for btn in pairs(dodo.registeredButtons) do
+                if btn.cdmOverlay and btn.cdmOverlay:IsShown() then
+                    shownN = shownN + 1
+                    local item = btn.cdmOverlay.viewerItem
+                    print(string.format("  [SHOWN not in active] btn=%s viewerItem=%s isActive=%s",
+                        btn:GetName() or "?",
+                        tostring(item ~= nil), tostring(item and item.isActive)))
+                end
+            end
+            print("shown overlays:", shownN)
+            print("=== End ===")
+        else
+            print("[dodo CDM] 단축바 실시간 감지 디버그 시작")
+            local groups = {
+                "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton",
+                "MultiBarRightButton", "MultiBarLeftButton", "MultiBar5Button", "MultiBar6Button", "MultiBar7Button",
+                "StanceButton"
+            }
+            local count = 0
+            for _, group in ipairs(groups) do
+                for i = 1, 12 do
+                    local btn = _G[group .. i]
+                    if btn and btn.action then
+                        local actionType, actionSpellID = GetActionInfo(btn.action)
+                        if actionSpellID then
+                            local baseSpellID = C_Spell.GetBaseSpell(actionSpellID) or actionSpellID
+                            local spellName = C_Spell.GetSpellName(baseSpellID)
+                            if spellName then
+                                print(string.format("[%s%d] 타입: %s | 원래 ID: %s | Base ID: %s | 이름: %s",
+                                    group, i, tostring(actionType), tostring(actionSpellID), tostring(baseSpellID), tostring(spellName)))
+                                count = count + 1
+                            end
                         end
                     end
                 end
             end
+            print("[dodo CDM] 단축바 실시간 감지 디버그 완료 (총 " .. count .. "개 감지)")
         end
-        print("[dodo CDM] 단축바 실시간 감지 디버그 완료 (총 " .. count .. "개 감지)")
     end
 end
