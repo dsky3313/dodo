@@ -341,7 +341,7 @@ local function build_button_cache()
     for btn in pairs(dodo.registeredButtons) do
         if btn.action then
             local actionType, actionID = GetActionInfo(btn.action)
-            if actionType == "spell" and actionID then
+            if (actionType == "spell" or actionType == "macro") and actionID then
                 cache_add(actionID, btn)
             elseif actionType == "item" and actionID then
                 if not dodo.buttonCacheByItemID[actionID] then dodo.buttonCacheByItemID[actionID] = {} end
