@@ -138,7 +138,7 @@ local COMBAT_DEFS = {
         icon      = 236179,
         macroName = "대상",
         macroIcon = 236179,
-        macroText = "/tar 맹독의 심장\n/tar 역병비늘 비명꾼\n/tar 약화된 파멸비늘\n/tar 용암 토템\n/tar 기근의 입상\n/tar 치유의 해일 토템",
+        macroText = "/tar 맹독의 심장\n/tar 역병비늘 비명꾼\n/tar 약화된 파멸비늘\n/tar 용암 토템\n/tar 기근의 입상\n/tar 치유의 해일 토템\n/tm ~8",
     },
     {
         label     = "징",

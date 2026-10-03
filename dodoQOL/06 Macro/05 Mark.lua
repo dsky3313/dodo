@@ -16,14 +16,31 @@ local MACRO_NAME = "징"
 -- 인스턴스 ID → 매크로 텍스트
 -- ID 확인: /run local n,_,_,_,_,_,_,id=GetInstanceInfo() print(n,id)
 local MARK_TABLE = {
-    -- 루생웅
-    [2521] = "/tar 섬광서리 한\n/tar 심해석 대지창조자\n/tm ~2\n/tar 섬광서리 한\n/tar 심해석 대지창조자\n/tar 원시술사 잿\n/tm ~3",
+    -- 왕안
+    [1762] = "/tar 반쯤 완성\n/tar 악령 사술\n/tm ~2",
 
+    -- 세스랄
+    [1877] = "/tar 폭풍 숙련\n/tar 부정한 정\n/tar 마력 깃든 폭\n/tm ~2",
+
+    -- 루생웅
+    [2521] = "/tar 섬광서리 한\n/tar 심해석 대지창조자\n/tm ~2",
+
+    -- 죽골
+    [2813] = "/tar 고혹\n/tar 격노수호병\n/tar 지옥 기\n/tm ~2",
+
+    -- 날로라크
+    [2825] = "/tar 대지교감\n/tar 혹한의 싸\n/tar 폭풍결속 비\n/tm ~2",
+
+    -- 눈골
+    [2859] = "/tar 찬란한 주문\n/tar 불빛깃털 꽃잎\n/tar 풀잎 숲포복자\n/tm ~2",
+    
     -- 공허흉터 투기장
-    [2923] = "/tar 원시의 독\n/tar 고위 진화\n/tm ~2",
+    [2923] = "/tar 지배당한 싸\n/tar 성난 크롤\n/tar 마법에 걸린 주\n/tar 킬리보어 비\n/tm ~2",
 
     -- 송곳니의 제단
     [2993] = "/tar 원시의 독\n/tar 고위 진화\n/tm ~2",
+
+
 }
 
 -- ==============================
@@ -38,10 +55,13 @@ local function apply()
     end
     pending = false
 
-    if not IsInInstance() then return end
-
     local idx = GetMacroIndexByName(MACRO_NAME)
     if idx == 0 then return end
+
+    if not IsInInstance() then
+        EditMacro(idx, MACRO_NAME, nil, "인스턴스를 인식해서 자동으로 변경됩니다.")
+        return
+    end
 
     local _, _, _, _, _, _, _, instanceID = GetInstanceInfo()
     local text = instanceID and MARK_TABLE[instanceID]
