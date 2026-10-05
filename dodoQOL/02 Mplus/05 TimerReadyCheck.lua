@@ -81,11 +81,11 @@ end
 local function create_ui()
     if main_frame then return end
 
-    main_frame = CreateFrame("StatusBar", "dodo_ReadyCheckTimerFrame", UIParent)
+    main_frame = CreateFrame("StatusBar", "dodo_ReadyCheckTimerFrame", ReadyCheckFrame)
     main_frame:SetHeight(10)
     main_frame:ClearAllPoints()
-    main_frame:SetPoint("BOTTOMLEFT", ReadyCheckFrame, "TOPLEFT", 0, -3)
-    main_frame:SetPoint("BOTTOMRIGHT", ReadyCheckFrame, "TOPRIGHT", 0, -3)
+    main_frame:SetPoint("TOPLEFT", ReadyCheckFrame, "BOTTOMLEFT", 1, -3)
+    main_frame:SetPoint("TOPRIGHT", ReadyCheckFrame, "BOTTOMRIGHT", -1, -3)
 
     main_frame:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
     main_frame:SetStatusBarColor(0.26, 0.42, 1, 1)

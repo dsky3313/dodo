@@ -435,6 +435,8 @@ dodo.UpdateKeystoneModuleState = update_module_state
 dodo.KeystoneApplyFeature = update_feature
 
 local function show_preview_data()
+    local LEM = LibStub and LibStub("LibEditMode", true)
+    if not LEM or not LEM:IsInEditMode() then return end
     local enabled = (dodoDB and dodoDB.enableKeystoneModule ~= false)
     if not enabled then return end
 
