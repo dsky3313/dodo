@@ -79,9 +79,11 @@ function LibIcon:Create(name, parent, config)
     end
 
     if isAction then
-        local highlight = overlayLayer:CreateTexture(nil, "HIGHLIGHT")
+        local highlight = overlayLayer:CreateTexture(nil, "OVERLAY")
         highlight:SetAtlas("UI-HUD-ActionBar-IconFrame-Mouseover")
         highlight:SetAlpha(0.5); highlight:SetBlendMode("ADD"); highlight:SetAllPoints(overlayLayer)
+        highlight:Hide()
+        frame.highlightTexture = highlight
         local pushed = overlayLayer:CreateTexture(nil, "OVERLAY")
         pushed:SetAtlas("UI-HUD-ActionBar-IconFrame-Down")
         pushed:SetAlpha(0.5); pushed:SetBlendMode("ADD"); pushed:SetAllPoints(overlayLayer)
@@ -91,6 +93,7 @@ function LibIcon:Create(name, parent, config)
 
     frame:EnableMouse(true)
     frame:SetScript("OnEnter", function(self)
+        if self.highlightTexture then self.highlightTexture:Show() end
         local data = self.iconData
         if not data or data.useTooltip == false then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -106,7 +109,10 @@ function LibIcon:Create(name, parent, config)
         end
         GameTooltip:Show()
     end)
-    frame:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    frame:SetScript("OnLeave", function(self)
+        if self.highlightTexture then self.highlightTexture:Hide() end
+        GameTooltip:Hide()
+    end)
 
     -- 상태 업데이트
     function frame:UpdateStatus()

@@ -99,7 +99,7 @@ icon_season_title:ApplyConfig({
     fontcolor = "yellow",
     outline = true,
     useTooltip = false,
-    framestrata = "HIGH",
+    framestrata = "DIALOG",
 })
 
 -- 아이콘 생성
