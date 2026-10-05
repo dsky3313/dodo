@@ -13,11 +13,10 @@ dodo.COMBAT_DEFAULTS = {
 
     -- ResourceBar
     enableResourceBarModule = true,
-    useResourceBar1         = true,
-    useResourceBar2         = true,
     useResourceBarSmooth    = true,
     resourceBarWidth        = 266,
     resourceBarHeight       = 10,
+    resourceBarHeight2      = 7,
     resourceBarFontSize     = 12,
 
     -- Debuff
@@ -92,22 +91,6 @@ dodo.RegisterOption("전투", function(category)
     local _rbs_sub = {}
     local function RS(v) if v then _rbs_sub[#_rbs_sub+1] = v end return v end
 
-    RS(dodo.UI:SettingsCheckbox(category, "useResourceBar1", "직업자원 막대",
-        "직업 자원(마나/분노/에너지 등)을 막대로 표시합니다.",
-        true, function(val)
-            if dodoDB then dodoDB.useResourceBar1 = val end
-            if dodo.UpdateResourceBarVisibility then dodo.UpdateResourceBarVisibility() end
-            dodo.CombatRefreshPreview()
-        end))
-
-    RS(dodo.UI:SettingsCheckbox(category, "useResourceBar2", "보조자원 막대",
-        "보조 자원(연계 점수/룬 등)을 막대로 표시합니다.",
-        true, function(val)
-            if dodoDB then dodoDB.useResourceBar2 = val end
-            if dodo.UpdateResourceBarVisibility then dodo.UpdateResourceBarVisibility() end
-            dodo.CombatRefreshPreview()
-        end))
-
     RS(dodo.UI:SettingsCheckbox(category, "useResourceBarSmooth", "부드러운 증감",
         "자원 증감 시 부드러운 보간 애니메이션을 사용합니다.",
         true, function(val)
@@ -115,7 +98,7 @@ dodo.RegisterOption("전투", function(category)
             if dodo.ResourceBar and dodo.ResourceBar.UpdateSmooth then dodo.ResourceBar.UpdateSmooth() end
         end))
 
-    RS(dodo.UI:SettingsSlider(category, "resourceBarWidth", "바 가로 크기",
+    RS(dodo.UI:SettingsSlider(category, "resourceBarWidth", "너비",
         "자원바의 가로 길이를 설정합니다.",
         200, 300, 2, 266, "Integer", function(val)
             if dodoDB then dodoDB.resourceBarWidth = val end
@@ -123,15 +106,23 @@ dodo.RegisterOption("전투", function(category)
             dodo.CombatRefreshPreview()
         end))
 
-    RS(dodo.UI:SettingsSlider(category, "resourceBarHeight", "바 세로 크기",
-        "자원바의 세로 높이를 설정합니다.",
+    RS(dodo.UI:SettingsSlider(category, "resourceBarHeight", "높이 (자원)",
+        "자원바(bar1)의 세로 높이를 설정합니다.",
         6, 20, 1, 10, "Integer", function(val)
             if dodoDB then dodoDB.resourceBarHeight = val end
             if dodo.ResourceBar and dodo.ResourceBar.UpdateOption then dodo.ResourceBar.UpdateOption() end
             dodo.CombatRefreshPreview()
         end))
 
-    RS(dodo.UI:SettingsSlider(category, "resourceBarFontSize", "수치 글자 크기",
+    RS(dodo.UI:SettingsSlider(category, "resourceBarHeight2", "높이 (특성)",
+        "특성바(bar2)의 세로 높이를 설정합니다.",
+        4, 20, 1, 7, "Integer", function(val)
+            if dodoDB then dodoDB.resourceBarHeight2 = val end
+            if dodo.ResourceBar and dodo.ResourceBar.UpdateOption then dodo.ResourceBar.UpdateOption() end
+            dodo.CombatRefreshPreview()
+        end))
+
+    RS(dodo.UI:SettingsSlider(category, "resourceBarFontSize", "글자 크기",
         "자원바 수치 텍스트의 글자 크기를 설정합니다.",
         8, 18, 1, 12, "Integer", function(val)
             if dodoDB then dodoDB.resourceBarFontSize = val end

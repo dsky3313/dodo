@@ -204,9 +204,8 @@ local function on_combat_change(inCombat)
     
     local db = dodoDB
     local isEnabled = (db and db.enableResourceBarModule ~= false)
-    local useBar1 = (db and db.useResourceBar1 ~= false)
-    
-    if isEnabled and useBar1 then
+
+    if isEnabled then
         updateTicker = C_Timer.NewTicker(inCombat and 0.1 or 0.5, update_bar1)
     end
 end

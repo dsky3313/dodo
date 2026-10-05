@@ -90,8 +90,8 @@ local function update_option()
 
     local db = dodoDB
     local width = (db and db.resourceBarWidth) or RB.barConfigs[1].width or 266
-    local height = (db and db.resourceBarHeight) or RB.barConfigs[1].height or 10
-    local height2 = math_max(height - 3, 5)
+    local height  = (db and db.resourceBarHeight)  or RB.barConfigs[1].height or 10
+    local height2 = (db and db.resourceBarHeight2) or dodo.COMBAT_DEFAULTS.resourceBarHeight2 or 7
 
     -- 프레임 크기 변경
     RB.bar1Frame:SetSize(width, height)
@@ -136,7 +136,7 @@ local function update_option()
     end
 
     RB.bar2Frame:ClearAllPoints()
-    RB.bar2Frame:SetPoint("TOP", RB.bar1Frame, "BOTTOM", 0, -4)
+    RB.bar2Frame:SetPoint("TOP", RB.bar1Frame, "BOTTOM", 0, -1)
 end
 
 RB.UpdateOption = update_option
@@ -153,32 +153,22 @@ local function update_visibility()
     if not isEnabled then
         RB.bar1Frame:Hide()
         RB.bar2Frame:Hide()
+        if RB.sharedBGFrame then RB.sharedBGFrame:Hide() end
         if RB.TogglePowerEvents then RB.TogglePowerEvents(false) end
         if RB.ToggleTrackingEvents then RB.ToggleTrackingEvents(false) end
         if RB.CancelTickers then RB.CancelTickers() end
         return
     end
 
-    -- 자원바1 활성화 제어
-    if db and db.useResourceBar1 ~= false then
-        RB.bar1Frame:Show()
-        if RB.TogglePowerEvents then RB.TogglePowerEvents(true) end
-        if RB.UpdateBar1 then RB.UpdateBar1() end
-    else
-        RB.bar1Frame:Hide()
-        if RB.TogglePowerEvents then RB.TogglePowerEvents(false) end
-    end
+    if RB.sharedBGFrame then RB.sharedBGFrame:Show() end
 
-    -- 버프바2 활성화 제어
-    if db and db.useResourceBar2 ~= false then
-        RB.bar2Frame:Show()
-        if RB.ToggleTrackingEvents then RB.ToggleTrackingEvents(true) end
-        update_spec_config()
-    else
-        RB.bar2Frame:Hide()
-        if RB.ToggleTrackingEvents then RB.ToggleTrackingEvents(false) end
-        if RB.CancelTickers then RB.CancelTickers() end
-    end
+    RB.bar1Frame:Show()
+    if RB.TogglePowerEvents then RB.TogglePowerEvents(true) end
+    if RB.UpdateBar1 then RB.UpdateBar1() end
+
+    RB.bar2Frame:Show()
+    if RB.ToggleTrackingEvents then RB.ToggleTrackingEvents(true) end
+    update_spec_config()
 end
 
 RB.UpdateVisibility = update_visibility
@@ -210,6 +200,17 @@ local function create_ui()
     RB.bar2Frame:SetFrameStrata("LOW")
     RB.bar2Frame:SetFrameLevel(2)
 
+    -- 공유 배경 (bar1 상단 ~ bar2 하단을 감싸는 단일 BarBG)
+    local bgFrame = CreateFrame("Frame", nil, anchorFrame)
+    bgFrame:SetFrameStrata("LOW")
+    bgFrame:SetFrameLevel(0)
+    bgFrame:SetPoint("TOPLEFT",     anchorFrame, "TOPLEFT",     -2,  2)
+    bgFrame:SetPoint("BOTTOMRIGHT", anchorFrame, "BOTTOMRIGHT",  6, -5)
+    local bgTex = bgFrame:CreateTexture(nil, "BACKGROUND")
+    bgTex:SetAllPoints(bgFrame)
+    bgTex:SetAtlas("UI-HUD-CoolDownManager-Bar-BG")
+    RB.sharedBGFrame = bgFrame
+
     update_option()
 end
 
@@ -240,22 +241,19 @@ local function on_event(self, event, arg1)
             update_option()
         end, { point=_pt.point, x=_pt.xOfs or 0, y=_pt.yOfs or 0 }, "자원바")
         LEM:AddFrameSettings(anchor_frame, {
-            { kind=LEM.SettingType.Checkbox, name="직업자원 막대", default=true,
-              get=function(l) return dodoDB and dodoDB.useResourceBar1 ~= false end,
-              set=function(l,v) if dodoDB then dodoDB.useResourceBar1=v end; if dodo.UpdateResourceBarVisibility then dodo.UpdateResourceBarVisibility() end end },
-            { kind=LEM.SettingType.Checkbox, name="보조자원 막대", default=true,
-              get=function(l) return dodoDB and dodoDB.useResourceBar2 ~= false end,
-              set=function(l,v) if dodoDB then dodoDB.useResourceBar2=v end; if dodo.UpdateResourceBarVisibility then dodo.UpdateResourceBarVisibility() end end },
             { kind=LEM.SettingType.Checkbox, name="부드러운 증감", default=true,
               get=function(l) return dodoDB and dodoDB.useResourceBarSmooth ~= false end,
               set=function(l,v) if dodoDB then dodoDB.useResourceBarSmooth=v end; if dodo.ResourceBar and dodo.ResourceBar.UpdateSmooth then dodo.ResourceBar.UpdateSmooth() end end },
-            { kind=LEM.SettingType.Slider, name="바 가로 크기", default=266, minValue=200, maxValue=300, valueStep=2,
+            { kind=LEM.SettingType.Slider, name="너비", default=266, minValue=200, maxValue=300, valueStep=2,
               get=function(l) return dodoDB and dodoDB.resourceBarWidth or dodo.COMBAT_DEFAULTS.resourceBarWidth end,
               set=function(l,v) if dodoDB then dodoDB.resourceBarWidth=v end; if dodo.ResourceBar and dodo.ResourceBar.UpdateOption then dodo.ResourceBar.UpdateOption() end end },
-            { kind=LEM.SettingType.Slider, name="바 세로 크기", default=10, minValue=6, maxValue=20, valueStep=1,
+            { kind=LEM.SettingType.Slider, name="높이 (자원)", default=10, minValue=6, maxValue=20, valueStep=1,
               get=function(l) return dodoDB and dodoDB.resourceBarHeight or dodo.COMBAT_DEFAULTS.resourceBarHeight end,
               set=function(l,v) if dodoDB then dodoDB.resourceBarHeight=v end; if dodo.ResourceBar and dodo.ResourceBar.UpdateOption then dodo.ResourceBar.UpdateOption() end end },
-            { kind=LEM.SettingType.Slider, name="수치 글자 크기", default=12, minValue=8, maxValue=18, valueStep=1,
+            { kind=LEM.SettingType.Slider, name="높이 (특성)", default=7, minValue=4, maxValue=20, valueStep=1,
+              get=function(l) return dodoDB and dodoDB.resourceBarHeight2 or dodo.COMBAT_DEFAULTS.resourceBarHeight2 end,
+              set=function(l,v) if dodoDB then dodoDB.resourceBarHeight2=v end; if dodo.ResourceBar and dodo.ResourceBar.UpdateOption then dodo.ResourceBar.UpdateOption() end end },
+            { kind=LEM.SettingType.Slider, name="글자 크기", default=12, minValue=8, maxValue=18, valueStep=1,
               get=function(l) return dodoDB and dodoDB.resourceBarFontSize or dodo.COMBAT_DEFAULTS.resourceBarFontSize end,
               set=function(l,v) if dodoDB then dodoDB.resourceBarFontSize=v end; if dodo.ResourceBar and dodo.ResourceBar.UpdateOption then dodo.ResourceBar.UpdateOption() end end },
         })

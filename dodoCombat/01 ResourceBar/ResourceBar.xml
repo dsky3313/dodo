@@ -5,11 +5,11 @@
         <Size x="266" y="12"/>
         <BarTexture atlas="UI-HUD-CoolDownManager-Bar" setAllPoints="true"/>
         <Layers>
-            <Layer level="BACKGROUND">
-                <Texture parentKey="BarBG" atlas="UI-HUD-CoolDownManager-Bar-BG">
+            <Layer level="BORDER">
+                <Texture parentKey="EdgeBottom" atlas="_UI-Frame-Metal-EdgeBottom" useAtlasSize="true">
                     <Anchors>
-                        <Anchor point="TOPLEFT" x="-2" y="2"/>
-                        <Anchor point="BOTTOMRIGHT" x="6" y="-7"/>
+                        <Anchor point="BOTTOMLEFT"  y="-6"/>
+                        <Anchor point="BOTTOMRIGHT" y="-6"/>
                     </Anchors>
                 </Texture>
             </Layer>
@@ -30,14 +30,6 @@
             <Cooldown parentKey="Cooldown" />
         </Frames>
         <Layers>
-            <Layer level="BACKGROUND">
-                <Texture parentKey="BarBG" atlas="UI-HUD-CoolDownManager-Bar-BG">
-                    <Anchors>
-                        <Anchor point="TOPLEFT" x="-2" y="2"/>
-                        <Anchor point="BOTTOMRIGHT" x="6" y="-7"/>
-                    </Anchors>
-                </Texture>
-            </Layer>
             <Layer level="OVERLAY">
                 <FontString parentKey="countStack" inherits="NumberFontNormal" justifyH="RIGHT">
                     <Anchors>

@@ -39,36 +39,37 @@ dodoCombatPreviewMixin = dodo.UI:CreatePreviewMixin({
     panels    = {
         { -- 탭1: 자원바
             OnLoad = function(p, ns)
+                -- 공유 배경 (bar1 상단 ~ bar2 하단, Update에서 앵커 설정)
+                p.sharedBG = CreateFrame("Frame", nil, p)
+                local bgTex = p.sharedBG:CreateTexture(nil, "BACKGROUND")
+                bgTex:SetAllPoints(p.sharedBG)
+                bgTex:SetAtlas("UI-HUD-CoolDownManager-Bar-BG")
+
                 p.bar1 = CreateFrame("StatusBar", nil, p)
                 p.bar1:SetStatusBarTexture([[Interface\BUTTONS\WHITE8X8]])
                 p.bar1:GetStatusBarTexture():SetAtlas("UI-HUD-CoolDownManager-Bar")
-                local bg1 = p.bar1:CreateTexture(nil, "BACKGROUND")
-                bg1:SetAtlas("UI-HUD-CoolDownManager-Bar-BG")
-                bg1:SetPoint("TOPLEFT",     p.bar1, "TOPLEFT",     -2,  2)
-                bg1:SetPoint("BOTTOMRIGHT", p.bar1, "BOTTOMRIGHT",  6, -7)
                 p.bar1.countPower = p.bar1:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
                 p.bar1.countPower:SetPoint("CENTER", p.bar1, "CENTER", 0, 3)
                 p.bar1.countPower:SetJustifyH("CENTER")
+
                 p.bar2 = CreateFrame("StatusBar", nil, p)
                 p.bar2:SetStatusBarTexture([[Interface\BUTTONS\WHITE8X8]])
                 p.bar2:GetStatusBarTexture():SetAtlas("UI-HUD-CoolDownManager-Bar")
-                local bg2 = p.bar2:CreateTexture(nil, "BACKGROUND")
-                bg2:SetAtlas("UI-HUD-CoolDownManager-Bar-BG")
-                bg2:SetPoint("TOPLEFT",     p.bar2, "TOPLEFT",     -2,  2)
-                bg2:SetPoint("BOTTOMRIGHT", p.bar2, "BOTTOMRIGHT",  6, -7)
                 p.bar2.countStack = p.bar2:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
                 p.bar2.countStack:SetPoint("RIGHT", p.bar2, "RIGHT", -5, 3)
                 p.bar2.countStack:SetJustifyH("RIGHT")
+
+                p.bar1.EdgeBottom = p.bar1:CreateTexture(nil, "BORDER")
+                p.bar1.EdgeBottom:SetAtlas("_UI-Frame-Metal-EdgeBottom", true)
+                p.bar1.EdgeBottom:SetPoint("BOTTOMLEFT",  p.bar1, "BOTTOMLEFT",  0, -6)
+                p.bar1.EdgeBottom:SetPoint("BOTTOMRIGHT", p.bar1, "BOTTOMRIGHT", 0, -6)
+
                 -- rune 모드용 서브바 (죽기)
                 p.bar2_runebars = {}
                 for i = 1, 6 do
                     local rb = CreateFrame("StatusBar", nil, p)
                     rb:SetStatusBarTexture([[Interface\BUTTONS\WHITE8X8]])
                     rb:GetStatusBarTexture():SetAtlas("UI-HUD-CoolDownManager-Bar")
-                    local rbg = rb:CreateTexture(nil, "BACKGROUND")
-                    rbg:SetAtlas("UI-HUD-CoolDownManager-Bar-BG")
-                    rbg:SetPoint("TOPLEFT",     rb, "TOPLEFT",     -2,  2)
-                    rbg:SetPoint("BOTTOMRIGHT", rb, "BOTTOMRIGHT",  6, -7)
                     rb:Hide()
                     p.bar2_runebars[i] = rb
                 end
@@ -78,15 +79,24 @@ dodoCombatPreviewMixin = dodo.UI:CreatePreviewMixin({
                 local db  = dodoDB or {}
                 local RB  = dodo.ResourceBar
                 local w   = db.resourceBarWidth  or D.resourceBarWidth
-                local h1  = db.resourceBarHeight or D.resourceBarHeight
-                local h2  = math_max(h1 - 3, 5)
+                local h1  = db.resourceBarHeight  or D.resourceBarHeight
+                local h2  = db.resourceBarHeight2 or D.resourceBarHeight2
                 -- bar1 색상: 실제 power 모듈 캐싱 색상
                 local c   = (RB and RB.cachedPowerColor) or (RB and RB.cachedSpecColor) or { r=1, g=0.59, b=0.20 }
                 -- bar2 barmode 및 색상
                 local bar2_config = RB and RB.bar2Frame and RB.bar2Frame.buffConfig
                 local bar2_mode   = bar2_config and bar2_config.barMode
                 local c2  = (bar2_config and bar2_config.color) or (RB and RB.cachedSpecColor) or { r=0.20, g=0.85, b=1.00 }
-                local show_bar2 = db.useResourceBar2 ~= false
+                -- bar2 위치 먼저 확정 (sharedBG 앵커 기준)
+                p.bar2:SetSize(w, h2)
+                p.bar2:ClearAllPoints()
+                p.bar2:SetPoint("TOP", p.bar1, "BOTTOM", 0, -1)
+
+                -- 공유 배경 앵커 (bar1 상단 ~ bar2 하단)
+                p.sharedBG:ClearAllPoints()
+                p.sharedBG:SetPoint("TOPLEFT",     p.bar1, "TOPLEFT",     -2,  2)
+                p.sharedBG:SetPoint("BOTTOMRIGHT", p.bar2, "BOTTOMRIGHT",  6, -8)
+                p.sharedBG:Show()
 
                 p.bar1:SetSize(w, h1)
                 p.bar1:ClearAllPoints()
@@ -94,13 +104,8 @@ dodoCombatPreviewMixin = dodo.UI:CreatePreviewMixin({
                 p.bar1:SetStatusBarColor(c.r, c.g, c.b, 1)
                 p.bar1:SetMinMaxValues(0, 100)
                 p.bar1:SetValue(75)
-                p.bar1:SetShown(db.useResourceBar1 ~= false)
+                p.bar1:Show()
                 if p.bar1.countPower then p.bar1.countPower:SetText("75") end
-
-                -- bar2 위치는 항상 설정 (runebar 앵커 기준)
-                p.bar2:SetSize(w, h2)
-                p.bar2:ClearAllPoints()
-                p.bar2:SetPoint("TOP", p.bar1, "BOTTOM", 0, -4)
 
                 if bar2_mode == "rune" then
                     p.bar2:Hide()
@@ -120,14 +125,14 @@ dodoCombatPreviewMixin = dodo.UI:CreatePreviewMixin({
                             rb:SetStatusBarColor(1, 1, 1, 1)
                             rb:SetValue(fakeVals[i])
                         end
-                        rb:SetShown(show_bar2)
+                        rb:Show()
                     end
                 else
                     for _, rb in ipairs(p.bar2_runebars) do rb:Hide() end
                     p.bar2:SetStatusBarColor(c2.r, c2.g, c2.b, 1)
                     p.bar2:SetMinMaxValues(0, 100)
                     p.bar2:SetValue(50)
-                    p.bar2:SetShown(show_bar2)
+                    p.bar2:Show()
                     if p.bar2.countStack then p.bar2.countStack:SetText("3") end
                 end
             end,
