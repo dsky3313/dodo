@@ -33,6 +33,7 @@
 05 EncounterJournal/04 EJAchievementsTabRowBuilder.lua
 05 EncounterJournal/05 EJAchievementsTabUI.lua
 05 EncounterJournal/06 ID.lua
+05 EncounterJournal/07 Event.lua
 06 Macro/01 Core.lua
 06 Macro/02 Layout.lua
 06 Macro/03 Search.lua

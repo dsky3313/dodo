@@ -298,12 +298,16 @@ local function scan_trinket_macros()
         local name, _, body = GetMacroInfo(idx)
         if not name or not body then return end
         local slots = nil
+        local has_non_slot_use = false
         for line in body:gmatch("[^\n]+") do
-            if line:find("[Uu][Ss][Ee]%s") then
+            local trimmed = line:match("^%s*(.-)%s*$") or line
+            if not trimmed:match("^//") and trimmed:find("[Uu][Ss][Ee]%s") then
+                local found_slot = false
                 for s in line:gmatch("%]%s*(%d+)") do
                     local slot = tonumber(s)
                     if slot == 13 or slot == 14 then
                         slots = slots or {}; slots[slot] = true
+                        found_slot = true
                     end
                 end
                 local s = line:match("[Uu][Ss][Ee]%s+(%d+)")
@@ -311,11 +315,13 @@ local function scan_trinket_macros()
                     local slot = tonumber(s)
                     if slot == 13 or slot == 14 then
                         slots = slots or {}; slots[slot] = true
+                        found_slot = true
                     end
                 end
+                if not found_slot then has_non_slot_use = true end
             end
         end
-        if slots then trinket_macro_slots[name] = slots end
+        if slots and not has_non_slot_use then trinket_macro_slots[name] = slots end
     end
     for i = 1, numAcc do scan(i) end
     for i = 1, numChar do scan(120 + i) end

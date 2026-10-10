@@ -104,7 +104,7 @@ local SHAMAN_IMBUE_ENCHANTS = {
 -- ==============================
 local main_frame = CreateFrame("Frame", "dodoReadyCheckFrame", UIParent, "SecureHandlerStateTemplate")
 main_frame:SetSize(360, 40)
-main_frame:SetPoint("BOTTOM", ReadyCheckFrame, "TOP", 0, 15)
+main_frame:SetPoint("BOTTOM", ReadyCheckFrame, "TOP", 0, 50)
 main_frame:SetFrameStrata("DIALOG")
 main_frame:SetFrameLevel(100)
 main_frame:Hide()
