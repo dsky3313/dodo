@@ -128,7 +128,7 @@ end
 local function on_event(self, event, arg1)
     local now = GetTime()
     
-    if event == "ADDON_LOADED" and arg1 == "dodoQOL" then
+    if event == "ADDON_LOADED" and arg1 == "dodoSound" then
         update_registration()
         self:RegisterEvent("PLAYER_ENTERING_WORLD")
     elseif event == "PLAYER_ENTERING_WORLD" then

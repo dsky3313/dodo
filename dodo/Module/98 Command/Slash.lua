@@ -12,6 +12,7 @@ local IsInInstance = IsInInstance
 local IsInRaid = IsInRaid
 local UnitIsGroupLeader = UnitIsGroupLeader
 local _G = _G
+local C_AddOns = C_AddOns
 local C_ChatInfo = C_ChatInfo
 local C_PartyInfo = C_PartyInfo
 local ChatEdit_SendText = ChatEdit_SendText
@@ -80,9 +81,16 @@ SlashCmdList["MDT"] = function(x)
 end
 
 
--- 플레이터
+-- 플레이터 / 플레이티
 local function pp(x)
-  ChatFrame1EditBox:SetText("/plater")
+  local cmd
+  if C_AddOns.IsAddOnLoaded("Plater") then
+    cmd = "/plater"
+  elseif C_AddOns.IsAddOnLoaded("Platynator") then
+    cmd = "/platy"
+  end
+  if not cmd then return end
+  ChatFrame1EditBox:SetText(cmd)
   ChatEdit_SendText(ChatFrame1EditBox)
 end
 SLASH_plater1 = "/pp"
