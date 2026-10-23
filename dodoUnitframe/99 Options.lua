@@ -52,6 +52,28 @@ local ABSORB_DEFAULTS = dodo.UF_DEFAULTS.absorb
 local SIM_COMBAT_KEYS = dodo.UF_DB_KEYS.combat
 local SIM_LEADER_KEYS = dodo.UF_DB_KEYS.leader
 
+-- PartyCDs 기본값 (true인 항목은 RegisterOption 콜백에서 초기화)
+local PARTYCD_FALSE_DEFAULTS = {
+	enablePartyCDs    = false,
+	partyCDsLock      = false,
+}
+local PARTYCD_TRUE_DEFAULTS = {
+	partyCDsGroupOnly = true,
+	partyCDsHighlight = true,
+	partyCDsShowTimer = true,
+}
+local PARTYCD_NUM_DEFAULTS = {
+	partyCDsX        = -320,
+	partyCDsY        = 0,
+	partyCDsSize     = 28,
+	partyCDsSpacing  = 2,
+	partyCDsRowGap   = 6,
+	partyCDsTextSize = 12,
+}
+local PARTYCD_STR_DEFAULTS = {
+	partyCDsGrowth = "DOWN",
+}
+
 -- MultiDropDown은 nil을 true(체크)로 해석 — false 기본값 항목 초기화 필요
 local FALSE_DEFAULTS = {
 	unitframePowerFocus    = false,
@@ -160,6 +182,19 @@ dodo.RegisterOption("유닛프레임", function(category)
 	-- false가 기본인 항목 초기화 (nil → MultiDropDown이 체크로 오인 방지)
 	if dodoDB then
 		for key, val in pairs(FALSE_DEFAULTS) do
+			if dodoDB[key] == nil then dodoDB[key] = val end
+		end
+		-- PartyCDs 기본값
+		for key, val in pairs(PARTYCD_FALSE_DEFAULTS) do
+			if dodoDB[key] == nil then dodoDB[key] = val end
+		end
+		for key, val in pairs(PARTYCD_TRUE_DEFAULTS) do
+			if dodoDB[key] == nil then dodoDB[key] = val end
+		end
+		for key, val in pairs(PARTYCD_NUM_DEFAULTS) do
+			if dodoDB[key] == nil then dodoDB[key] = val end
+		end
+		for key, val in pairs(PARTYCD_STR_DEFAULTS) do
 			if dodoDB[key] == nil then dodoDB[key] = val end
 		end
 	end
@@ -417,6 +452,24 @@ dodo.RegisterOption("유닛프레임", function(category)
 	if raid_healthcolor_init and healthcolor_init and raid_healthcolor_init.SetParentInitializer then
 		raid_healthcolor_init:SetParentInitializer(healthcolor_init, function() return healthcolor_setting:GetValue() end)
 	end
+
+	-- 파티 쿨타임
+	local on_partycd_change = function()
+		if dodo.PartyCDs_Apply then dodo.PartyCDs_Apply() end
+	end
+
+	P(dodo.UI:SettingsSectionHeader(category, "파티 쿨타임"))
+	P(dodo.UI:SettingsCheckbox(category, "enablePartyCDs",    "파티 쿨타임 표시",         "파티원의 방어/외부 쿨타임 아이콘을 표시합니다.", false, on_partycd_change))
+	P(dodo.UI:SettingsCheckbox(category, "partyCDsGroupOnly", "파티 있을 때만 표시",       nil, true,  on_partycd_change))
+	P(dodo.UI:SettingsCheckbox(category, "partyCDsHighlight", "버프 활성 시 강조 테두리",  nil, true,  on_partycd_change))
+	P(dodo.UI:SettingsCheckbox(category, "partyCDsShowTimer", "타이머 텍스트 표시",        nil, true,  on_partycd_change))
+	P(dodo.UI:SettingsCheckbox(category, "partyCDsLock",      "위치 잠금",                 nil, false, on_partycd_change))
+	P(dodo.UI:SettingsDropDown(category, "partyCDsGrowth", "행 성장 방향", nil,
+		{ {value="DOWN", text="아래"}, {value="UP", text="위"} }, "DOWN", on_partycd_change))
+	P(dodo.UI:SettingsSlider(category, "partyCDsSize",     "아이콘 크기",      nil, 16, 48, 1, 28, "Integer", on_partycd_change))
+	P(dodo.UI:SettingsSlider(category, "partyCDsSpacing",  "아이콘 간격",      nil,  0, 16, 1,  2, "Integer", on_partycd_change))
+	P(dodo.UI:SettingsSlider(category, "partyCDsRowGap",   "행 간격",          nil,  0, 24, 1,  6, "Integer", on_partycd_change))
+	P(dodo.UI:SettingsSlider(category, "partyCDsTextSize", "타이머 폰트 크기", nil,  8, 20, 1, 12, "Integer", on_partycd_change))
 
 	-- predicate 정의: 현재 선택된 탭 + 마스터 토글로 항목 표시 여부 결정
 	local function _unit_shown()   -- 유닛 탭(비파티)일 때만 표시
