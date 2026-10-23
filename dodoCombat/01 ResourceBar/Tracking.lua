@@ -197,6 +197,8 @@ function ResourceBar2UpdaterMixin:UpdateFromItem(item)
     for i, config in ipairs(currentSpecBuffs) do
         local configName = config.spellID and C_Spell.GetSpellName(config.spellID)
         if spellID == config.spellID or (spellName and configName and spellName == configName) then
+            -- ironfur: SPELLCAST로만 추적, CDM 버프 상태로 모드 ON/OFF 금지 (첫 시전 누락 방지)
+            if config.barMode == "ironfur" then return end
             local hasAuraData = item.isActive
 
             if self.bar2Frame.buffConfig and self.bar2Frame.currentPriority and i > self.bar2Frame.currentPriority then

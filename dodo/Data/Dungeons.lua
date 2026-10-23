@@ -160,10 +160,11 @@ dodo.Dungeons = {
     { name = "송곳니",   type = "spell", id = 1286812, category = "MN", mapID = 588, lfgID = 1933, isSeason = true },
     { name = "제나스",   type = "spell", id = 1254563, category = "MN", mapID = 559, lfgID = 1768 },
     { name = "첨탑",     type = "spell", id = 1254400, category = "MN", mapID = 557, lfgID = 1542 },
-    { name = "공투",   type = "spell", id = 1286804, category = "MN", mapID = 585, lfgID = 1951, isSeason = true },
+    { name = "공투",     type = "spell", id = 1286804, category = "MN", mapID = 585, lfgID = 1951, isSeason = true },
 
     -- ETC
     { name = "하우징",   type = "housing", id = 1263273, category = "ETC" },
     { name = "도르노갈", type = "item",    id = 243056,  category = "ETC" },
-    { name = "여관",     type = "item",    id = 253629,  category = "ETC" },
+    { name = "풍구렁",   type = "item",    id = 230850,  category = "ETC" },
+    { name = "아르칸",   type = "item",    id = 253629,  category = "ETC" },
 }

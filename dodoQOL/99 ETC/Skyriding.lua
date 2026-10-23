@@ -46,7 +46,7 @@ local SURGE_DURATION  = 1.0
 local NUM_ESSENCES    = 6
 local ESSENCE_SIZE    = 24
 local MAX_SPEED       = 84        -- yards/sec at 1200%
-local UPDATE_THROTTLE = 0.0167    -- ~60fps 캡 (Falcon 기준)
+local TICK_INTERVAL   = 1 / 60    -- 60Hz 루프 티커 (비전투 모듈)
 
 -- ==============================
 -- 상태
@@ -59,12 +59,11 @@ local prev_charges     = 0
 local charges_dirty    = true
 local ascent_start      = 0
 local surge_start       = 0
-local elapsed_acc       = 0
 local _spell_registered = false
 local _last_color_state = 0
 
--- OnUpdate forward declaration (sync_tick에서 참조)
-local on_update
+-- 루프 티커 forward declaration (sync_tick에서 참조, on_tick 정의 후 생성)
+local sky_ticker
 
 -- ==============================
 -- 정적 곡선 함수 (핫패스용, 클로저 없음)
@@ -85,9 +84,9 @@ end
 local function sync_tick()
     if not hud_frame then return end
     if hud_frame:IsShown() and tick_wanted() then
-        hud_frame:SetScript("OnUpdate", on_update)
+        if not sky_ticker:IsPlaying() then sky_ticker:Play() end
     else
-        hud_frame:SetScript("OnUpdate", nil)
+        sky_ticker:Stop()
     end
 end
 
@@ -118,7 +117,7 @@ local function update_visual()
     local enabled = (dodoDB and dodoDB.enableSkyriding ~= false)
     if not enabled then
         hud_frame:Hide()
-        hud_frame:SetScript("OnUpdate", nil)
+        sky_ticker:Stop()
         _gliding = false
         unregister_spell_events()
         return
@@ -182,13 +181,11 @@ local function update_essence_status()
 end
 
 -- ==============================
--- OnUpdate (핫패스 — 정적 함수, 익명 클로저 없음)
+-- 루프 티커 (핫패스 — 정적 함수, 익명 클로저 없음)
+-- OnLoop의 self는 AnimationGroup이므로 hud_frame 직접 참조
 -- ==============================
-on_update = function(self, dt)
-    elapsed_acc = elapsed_acc + dt
-    if elapsed_acc < UPDATE_THROTTLE then return end
-    elapsed_acc = 0
-
+local function on_tick()
+    local self = hud_frame
     local bar_w = (dodoDB and dodoDB.skyridingBarWidth) or SK_DEFAULTS.skyridingBarWidth
 
     -- 속도 폴링
@@ -238,6 +235,8 @@ on_update = function(self, dt)
         update_essence_status()
     end
 end
+
+sky_ticker = dodo.LoopTicker(on_tick, TICK_INTERVAL)
 
 -- ==============================
 -- 크기/폰트 적용

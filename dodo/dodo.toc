@@ -27,6 +27,7 @@ Data/Colors.lua
 Data/Icon.lua
 Data/UIUX.xml
 Data/UIUX.lua
+Data/Tick.lua
 Data/Dungeons.lua
 Data/CDM.lua
 

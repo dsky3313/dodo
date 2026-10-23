@@ -13,22 +13,20 @@ local RB = dodo.ResourceBar
 -- 캐싱
 -- ==============================
 local C_SpellBook = C_SpellBook
-local C_Timer = C_Timer
 local Enum = Enum
+local GetShapeshiftFormID = GetShapeshiftFormID
 local GetTime = GetTime
 local ipairs = ipairs
-local math_floor = math.floor
 local math_max   = math.max
 local math_min   = math.min
-local UnitAffectingCombat = UnitAffectingCombat
+local table_remove = table.remove
+local wipe = wipe
 
 -- ==============================
 -- 기능 1: 로컬 상태 및 설정
 -- ==============================
-local ironfurTicker = nil
 local ironfurExpiries = {}
 local ironfurDurations = {}
-local ironfur_head = 1
 local goeExpiry = 0
 local ironfurBaseDuration = 7
 local hasGoeTalent = false
@@ -36,10 +34,6 @@ local hasGoeTalent = false
 -- ==============================
 -- 기능 2: 상태 업데이트
 -- ==============================
-local function get_update_interval()
-    return UnitAffectingCombat("player") and 0.1 or 0.5
-end
-
 local function ironfur_tick()
     local bar2Frame = RB.bar2Frame
     if bar2Frame and bar2Frame.buffConfig and bar2Frame.buffConfig.barMode == "ironfur" then
@@ -48,22 +42,30 @@ local function ironfur_tick()
     end
 end
 
+-- 30Hz 루프 티커 (dodo/Data/Tick.lua)
+local ironfurTicker = dodo.LoopTicker(ironfur_tick, 1 / 30)
+
 local function refresh_ironfur_talents()
     ironfurBaseDuration = C_SpellBook.IsSpellKnown(393611) and 9 or 7
     hasGoeTalent = C_SpellBook.IsSpellKnown(155578)
+end
+
+local function reset_ironfur_state()
+    wipe(ironfurExpiries)
+    wipe(ironfurDurations)
+    goeExpiry = 0
 end
 
 local function update_ironfur_ticks(bar2Frame, stackCount, longestIdx, fillPct, barWidth, barHeight)
     if not bar2Frame.ironfurTicks then bar2Frame.ironfurTicks = {} end
     local now = GetTime()
 
-    for slot = 1, stackCount do
-        local i = ironfur_head - 1 + slot
-        local tick = bar2Frame.ironfurTicks[slot]
+    for i = 1, stackCount do
+        local tick = bar2Frame.ironfurTicks[i]
         if not tick then
             tick = bar2Frame:CreateTexture(nil, "OVERLAY")
             tick:SetAtlas("cast-empowered-pipflare")
-            bar2Frame.ironfurTicks[slot] = tick
+            bar2Frame.ironfurTicks[i] = tick
         end
 
         local pct
@@ -90,13 +92,14 @@ end
 local Mode = {}
 
 function Mode:OnEnable(bar2Frame)
-    ironfurExpiries = {}
-    ironfurDurations = {}
-    ironfur_head = 1
+    reset_ironfur_state()
     bar2Frame:UnregisterEvent("RUNE_POWER_UPDATE")
     bar2Frame:UnregisterEvent("UNIT_POWER_UPDATE")
     bar2Frame:UnregisterEvent("UNIT_AURA")
     bar2Frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+    bar2Frame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
+    bar2Frame:RegisterEvent("PLAYER_DEAD")
+    bar2Frame:RegisterEvent("PLAYER_ALIVE")
     refresh_ironfur_talents()
     -- 12.1: Ironfur aura 전체 secret → applications/expirationTime 비교 불가.
     -- 기존 스택 시드 불가, SPELLCAST 이벤트로만 추적.
@@ -104,14 +107,12 @@ function Mode:OnEnable(bar2Frame)
 end
 
 function Mode:OnDisable(bar2Frame)
-    ironfurExpiries = {}
-    ironfurDurations = {}
-    ironfur_head = 1
-    if ironfurTicker then
-        ironfurTicker:Cancel()
-        ironfurTicker = nil
-    end
+    reset_ironfur_state()
+    ironfurTicker:Stop()
     bar2Frame:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+    bar2Frame:UnregisterEvent("UPDATE_SHAPESHIFT_FORM")
+    bar2Frame:UnregisterEvent("PLAYER_DEAD")
+    bar2Frame:UnregisterEvent("PLAYER_ALIVE")
     if bar2Frame.ironfurTicks then
         for _, tick in ipairs(bar2Frame.ironfurTicks) do tick:Hide() end
     end
@@ -126,11 +127,15 @@ function Mode:Update(bar2Frame)
     if bar2Frame.countDuration then bar2Frame.countDuration:Show() end
 
     local now = GetTime()
-    while ironfur_head <= #ironfurExpiries and ironfurExpiries[ironfur_head] <= now do
-        ironfur_head = ironfur_head + 1
+    -- 만료 스택 제거 (뒤에서부터)
+    for i = #ironfurExpiries, 1, -1 do
+        if ironfurExpiries[i] <= now then
+            table_remove(ironfurExpiries, i)
+            table_remove(ironfurDurations, i)
+        end
     end
 
-    local stackCount = #ironfurExpiries - ironfur_head + 1
+    local stackCount = #ironfurExpiries
     if stackCount == 0 then
         bar2Frame:SetValue(0)
         if bar2Frame.countStack then bar2Frame.countStack:SetText("") end
@@ -141,10 +146,7 @@ function Mode:Update(bar2Frame)
         end
         local tex = bar2Frame:GetStatusBarTexture()
         if tex then tex:SetAlpha(0) end
-        if ironfurTicker then
-            ironfurTicker:Cancel()
-            ironfurTicker = nil
-        end
+        ironfurTicker:Stop()
         return
     end
 
@@ -154,9 +156,9 @@ function Mode:Update(bar2Frame)
     local tex = bar2Frame:GetStatusBarTexture()
     if tex then tex:SetAlpha(1) end
 
-    local longestIdx = ironfur_head
+    local longestIdx = 1
     local maxRem = 0
-    for i = ironfur_head, #ironfurExpiries do
+    for i = 1, stackCount do
         local rem = ironfurExpiries[i] - now
         if rem > maxRem then
             maxRem = rem
@@ -168,16 +170,13 @@ function Mode:Update(bar2Frame)
     bar2Frame:SetValue(fillPct, Enum.StatusBarInterpolation.Immediate)
     if bar2Frame.countStack then bar2Frame.countStack:SetText(stackCount) end
 
-    local intVal = math_floor(maxRem)
-    if bar2Frame.countDuration and intVal ~= bar2Frame._lastDurationIntVal then
-        bar2Frame.countDuration:SetFormattedText("%.0f", intVal)
-        bar2Frame._lastDurationIntVal = intVal
-    end
+    -- 스택만 표시 (countDuration과 같은 위치라 겹침)
+    if bar2Frame.countDuration then bar2Frame.countDuration:SetText("") end
 
     update_ironfur_ticks(bar2Frame, stackCount, longestIdx, fillPct, bar2Frame:GetWidth(), bar2Frame:GetHeight())
 
-    if not ironfurTicker then
-        ironfurTicker = C_Timer.NewTicker(get_update_interval(), ironfur_tick)
+    if not ironfurTicker:IsPlaying() then
+        ironfurTicker:Play()
     end
 end
 
@@ -185,6 +184,7 @@ function Mode:OnEvent(bar2Frame, event, ...)
     if event == "UNIT_SPELLCAST_SUCCEEDED" then
         local unit, _, spellID = ...
         if spellID == 192081 then -- 무쇠가죽
+            refresh_ironfur_talents()
             local now = GetTime()
             local bonus = (hasGoeTalent and now < goeExpiry) and 3 or 0
             if bonus > 0 then goeExpiry = 0 end 
@@ -194,10 +194,22 @@ function Mode:OnEvent(bar2Frame, event, ...)
             ironfurDurations[n] = duration
             self:Update(bar2Frame)
         elseif spellID == 33917 then -- 짓이기기
+            refresh_ironfur_talents()
             if hasGoeTalent then
                 goeExpiry = GetTime() + 15
             end
+        elseif spellID == 22842 then -- 광폭한 재생: GoE 버프 소모
+            goeExpiry = 0
         end
+    elseif event == "UPDATE_SHAPESHIFT_FORM" then
+        -- 곰 변신(5) 해제 시 무쇠가죽 소멸
+        if GetShapeshiftFormID() ~= 5 then
+            reset_ironfur_state()
+            self:Update(bar2Frame)
+        end
+    elseif event == "PLAYER_DEAD" or event == "PLAYER_ALIVE" then
+        reset_ironfur_state()
+        self:Update(bar2Frame)
     end
 end
 

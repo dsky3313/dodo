@@ -13,25 +13,14 @@ local RB = dodo.ResourceBar
 -- 캐싱
 -- ==============================
 local C_Spell = C_Spell
-local C_Timer = C_Timer
 local GetTime = GetTime
 local ipairs = ipairs
 local math_max = math.max
 local string_format = string.format
-local UnitAffectingCombat = UnitAffectingCombat
-
--- ==============================
--- 기능 1: 로컬 상태 및 설정
--- ==============================
-local durationTicker = nil
 
 -- ==============================
 -- 기능 2: 상태 업데이트
 -- ==============================
-local function get_update_interval()
-    return UnitAffectingCombat("player") and 0.1 or 0.5
-end
-
 local function duration_tick()
     local bar2Frame = RB.bar2Frame
     if bar2Frame and bar2Frame.buffConfig and bar2Frame.buffConfig.barMode == "duration" then
@@ -40,16 +29,16 @@ local function duration_tick()
     end
 end
 
+-- 10Hz 루프 티커 (dodo/Data/Tick.lua). 바는 RB.smoothInterp 엔진 보간이 채움
+local durationTicker = dodo.LoopTicker(duration_tick, 1 / 10)
+
 local function stop_ticker_and_hide(bar2Frame)
     if bar2Frame.countStack then bar2Frame.countStack:SetText("") end
     if bar2Frame.countDuration then bar2Frame.countDuration:SetText("0") end
     bar2Frame:SetValue(0, RB.smoothInterp)
     local tex = bar2Frame:GetStatusBarTexture()
     if tex then tex:SetAlpha(0) end
-    if durationTicker then
-        durationTicker:Cancel()
-        durationTicker = nil
-    end
+    durationTicker:Stop()
     bar2Frame._castTime = nil
     bar2Frame._knownDuration = nil
 end
@@ -69,10 +58,7 @@ end
 
 function Mode:OnDisable(bar2Frame)
     bar2Frame:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED")
-    if durationTicker then
-        durationTicker:Cancel()
-        durationTicker = nil
-    end
+    durationTicker:Stop()
     if bar2Frame.ticks then
         for _, tick in ipairs(bar2Frame.ticks) do tick:Hide() end
     end
@@ -141,8 +127,8 @@ function Mode:Update(bar2Frame)
     end
 
     if bar2Frame.countStack then bar2Frame.countStack:SetText("") end
-    if not durationTicker then
-        durationTicker = C_Timer.NewTicker(get_update_interval(), duration_tick)
+    if not durationTicker:IsPlaying() then
+        durationTicker:Play()
     end
     bar2Frame:Show()
 end
