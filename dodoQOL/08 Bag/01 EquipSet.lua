@@ -55,9 +55,7 @@ local function get_widgets(button)
 
     local fs = button:CreateFontString(nil, "OVERLAY")
     local font, size = GameFontNormalTiny:GetFont()
-    fs:SetFont(font, size - 1)
-    fs:SetShadowOffset(1, -1)
-    fs:SetShadowColor(0, 0, 0, 1)
+    fs:SetFont(font, size - 1, "OUTLINE")
     fs:SetPoint("LEFT", tex, "RIGHT", 0, 0)
     fs:SetTextColor(1, 1, 1, 0.9)
     button.__dodo_set_text = fs
@@ -66,7 +64,7 @@ local function get_widgets(button)
 end
 
 local function update_button(button)
-    if not dodoDB or dodoDB.enableBagSetIcon == false then
+    if not dodoDB or dodoDB.enableEquipSet == false then
         if button.__dodo_set_icon then button.__dodo_set_icon:Hide() end
         if button.__dodo_set_text then button.__dodo_set_text:Hide() end
         return
@@ -118,7 +116,7 @@ local f = CreateFrame("Frame")
 f:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == "dodoQOL" then
         dodoDB = dodoDB or {}
-        if dodoDB.enableBagSetIcon == nil then dodoDB.enableBagSetIcon = true end
+        if dodoDB.enableEquipSet == nil then dodoDB.enableEquipSet = true end
         self:UnregisterEvent("ADDON_LOADED")
 
     elseif event == "PLAYER_LOGIN" then
@@ -147,13 +145,4 @@ f:RegisterEvent("PLAYER_LOGIN")
 f:RegisterEvent("EQUIPMENT_SETS_CHANGED")
 f:RegisterEvent("BAG_UPDATE_DELAYED")
 
--- ==============================
--- 설정 등록
--- ==============================
-dodo.RegisterOption("가방", function(cat)
-    dodo.UI:SettingsCheckbox(cat, "enableBagSetIcon",
-        "장비세트 아이콘 표시",
-        "장비 프리셋에 등록된 아이템 위에 세트 아이콘을 표시합니다.",
-        true,
-        function() update_all_visible() end)
-end, 50)
+dodo.EquipSetUpdateVisual = update_all_visible

@@ -108,10 +108,9 @@ init_frame:SetScript("OnEvent", function(self, event)
         hooksecurefunc(ContainerFrameCombinedBags, "Hide", on_combined_hide)
     end
 
-    -- 개별 가방: 훅은 ContainerFrame1, 앵커는 ContainerFrameContainer(전체 가방 영역)
+    -- 개별 가방: 훅/앵커 모두 ContainerFrame1(소지품)
     if ContainerFrame1 then
-        local anchor = ContainerFrameContainer or ContainerFrame1
-        bag_label = make_label(ContainerFrame1, anchor)
+        bag_label = make_label(ContainerFrame1, ContainerFrame1)
         hooksecurefunc(ContainerFrame1, "Show", on_bag1_show)
         hooksecurefunc(ContainerFrame1, "Hide", on_bag1_hide)
     end

@@ -31,6 +31,8 @@ dodo.QOL_DEFAULTS = {
     enableEJAchievements  = true,  enableEJID           = true,
     enablePlayerMemo      = true,
     enableSkyriding       = true,
+    enableEquipSet        = true,
+    enableToken           = true,
     autoAccept            = false,  autoAcceptShiftSkip  = true,
     autoTurnIn            = false,  autoTurnInShiftSkip  = true,
     questItemHotkey       = "CTRL-G",
@@ -104,9 +106,18 @@ dodo.RegisterOption("편의기능", function(category)
     T(dodo.UI:SettingsCheckbox(category, "usePartyClass", "파티 직업 및 유틸",
         "파티찾기창에서 파티원 및 유틸 현황을 확인할 수 있습니다.", D.usePartyClass, dodo.PartyClass))
     T(dodo.UI:SettingsCheckbox(category, "enableQuickselect", "파티만들기 빠른선택",
-        "파티 만들기 창에서 던전 빠른선택 버튼을 표시합니다.", D.enableQuickselect, dodo.QuickSelectUpdate))
+    "파티 만들기 창에서 던전 빠른선택 버튼을 표시합니다.", D.enableQuickselect, dodo.QuickSelectUpdate))
 
-    -- 목표 추적기
+    -- NPC 대화창
+    T(dodo.UI:SettingsSectionHeader(category, "NPC 대화창"))
+    T(dodo.UI:SettingsCheckbox(category, "enableGossipID", "NPC ID 표시",
+        "NPC 대화창 선택지·퀘스트에 ID를 표시합니다.", D.enableGossipID, dodo.GossipFrame.UpdateID))
+    T(dodo.UI:SettingsCheckbox(category, "enableGossipAutoSelect", "NPC 자동 선택",
+        "M+ 던전 버프 NPC 대화를 자동으로 선택합니다.", D.enableGossipAutoSelect, nil))
+    T(dodo.UI:SettingsCheckbox(category, "enableKeystoneLindormi", "린도르미 현재돌",
+        "린도르미 NPC 대화창에 보유 쐐기돌 정보를 표시합니다.", D.enableKeystoneLindormi, dodo.GossipFrame.UpdateKeystoneLindormi))
+
+        -- 목표 추적기
     T(dodo.UI:SettingsSectionHeader(category, "목표 추적기"))
     T(dodo.UI:SettingsCheckbox(category, "enableCollapse", "인스턴스 자동 접기",
         "인스턴스 진입 시 퀘스트 목록을 자동으로 접습니다.",
@@ -134,15 +145,6 @@ dodo.RegisterOption("편의기능", function(category)
         D.questItemHotkey,
         function() if dodo.ApplyQuestItemHotkey then dodo.ApplyQuestItemHotkey() end end))
 
-    -- NPC 대화창
-    T(dodo.UI:SettingsSectionHeader(category, "NPC 대화창"))
-    T(dodo.UI:SettingsCheckbox(category, "enableGossipID", "NPC ID 표시",
-        "NPC 대화창 선택지·퀘스트에 ID를 표시합니다.", D.enableGossipID, dodo.GossipFrame.UpdateID))
-    T(dodo.UI:SettingsCheckbox(category, "enableGossipAutoSelect", "NPC 자동 선택",
-        "M+ 던전 버프 NPC 대화를 자동으로 선택합니다.", D.enableGossipAutoSelect, nil))
-    T(dodo.UI:SettingsCheckbox(category, "enableKeystoneLindormi", "린도르미 현재돌",
-        "린도르미 NPC 대화창에 보유 쐐기돌 정보를 표시합니다.", D.enableKeystoneLindormi, dodo.GossipFrame.UpdateKeystoneLindormi))
-
     -- 모험안내서
     T(dodo.UI:SettingsSectionHeader(category, "모험안내서"))
     T(dodo.UI:SettingsCheckbox(category, "enableEJAchievements", "업적 탭 활성화",
@@ -151,10 +153,21 @@ dodo.RegisterOption("편의기능", function(category)
         "모험 안내서에 우두머리와 능력의 ID를 표시합니다.", D.enableEJID,
         function() dodo.EJID.SetEnabled(dodoDB.enableEJID ~= false) end))
 
+    -- 가방
+    T(dodo.UI:SettingsSectionHeader(category, "가방"))
+    T(dodo.UI:SettingsCheckbox(category, "enableEquipSet", "장비 프리셋 아이콘 표시",
+        "장비 프리셋에 등록된 아이템 위에 아이콘을 표시합니다.",
+        D.enableEquipSet, function()
+            if dodo.EquipSetUpdateVisual then dodo.EquipSetUpdateVisual() end
+        end))
+    T(dodo.UI:SettingsCheckbox(category, "enableToken", "토큰 시세",
+        "가방을 열 때, 현재 와우 토큰 시세를 표시합니다.",
+        D.enableToken, nil))
+
     -- 편의기능
     T(dodo.UI:SettingsSectionHeader(category, "편의기능"))
     local _cb1, _sl1, _init1 = dodo.UI:SettingsCheckboxSlider(category, "useCameraTilt", "cameraAngle",
-        "시점 조절", "카메라의 상하 시점을 조절합니다.",
+        "상하 시점 조절", "카메라의 상하 시점을 조절합니다.",
         0.3, 1.0, 0.05, D.useCameraTilt, D.cameraAngle, "Decimalplaces",
         function() if dodo.CameraTilt then dodo.CameraTilt() end end)
     T(_init1)

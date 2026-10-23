@@ -41,8 +41,9 @@
 06 Macro/05 Mark.lua
 # 07 ObjectiveTracker/99 Collapse.lua
 07 ObjectiveTracker/ObjectiveTracker.lua
+08 Bag/01 EquipSet.lua
+08 Bag/02 Token.lua
 # 99 ETC/BagBreak.lua
-99 ETC/Bag.lua
 99 ETC/Skyriding.lua
 99 ETC/Camera.lua
 99 ETC/ChatBubble.lua
