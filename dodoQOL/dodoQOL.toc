@@ -42,6 +42,7 @@
 # 07 ObjectiveTracker/99 Collapse.lua
 07 ObjectiveTracker/ObjectiveTracker.lua
 # 99 ETC/BagBreak.lua
+99 ETC/Bag.lua
 99 ETC/Skyriding.lua
 99 ETC/Camera.lua
 99 ETC/ChatBubble.lua
