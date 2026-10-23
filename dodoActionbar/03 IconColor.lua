@@ -20,6 +20,7 @@ local C_ActionBar = C_ActionBar
 local C_CurveUtil = C_CurveUtil
 local Enum = Enum
 local ipairs = ipairs
+local issecretvalue = issecretvalue
 local pairs = pairs
 
 local dodoColors = dodo.Colors
@@ -29,6 +30,12 @@ local DesatCurve = C_CurveUtil.CreateCurve()
 DesatCurve:SetType(Enum.LuaCurveType.Step)
 DesatCurve:AddPoint(0, 0)
 DesatCurve:AddPoint(0.001, 1)
+
+-- 전체 쿨 길이 기준: GCD(1.5s) + 여유 0.15s 이하면 컬러, 초과면 흑백
+local GcdDesatCurve = C_CurveUtil.CreateCurve()
+GcdDesatCurve:SetType(Enum.LuaCurveType.Step)
+GcdDesatCurve:AddPoint(0, 0)
+GcdDesatCurve:AddPoint(1.65, 1)
 
 -- ==============================
 -- 기능 구현
@@ -79,7 +86,11 @@ local function update_icon_color(btn)
         if btn.__isUsable == false then
             desat = 1
         elseif btn.__cdVal then
-            desat = btn.__cdVal:EvaluateRemainingDuration(DesatCurve)
+            if btn.__cdUseTotal then
+                desat = btn.__cdVal:EvaluateTotalDuration(GcdDesatCurve)
+            else
+                desat = btn.__cdVal:EvaluateRemainingDuration(DesatCurve)
+            end
         else
             desat = 0
         end
@@ -139,7 +150,21 @@ local function update_cooldown_state(btn)
 
     local info = C_ActionBar.GetActionCooldown(btn.action)
     local dur = C_ActionBar.GetActionCooldownDuration(btn.action)
-    btn.__cdVal = (dur and info and not info.isOnGCD) and dur or nil
+    -- local _, dbgSpellID = GetActionInfo(btn.action) -- 임시 디버그
+    -- if dbgSpellID == 845 then
+    --     print(GetTime(), btn.action, info and info.isActive, info and info.isOnGCD, info and info.duration)
+    -- end
+    -- 충전 기술은 충전 남아있어도 재충전 주기가 전체 길이로 잡혀서 기존 isOnGCD 판정 유지
+    local charges = C_ActionBar.GetActionCharges(btn.action)
+    local maxCharges = charges and charges.maxCharges
+    local isCharge = maxCharges and not issecretvalue(maxCharges) and maxCharges > 1
+    if not isCharge and dur and dur.EvaluateTotalDuration then
+        btn.__cdVal = (info and info.isActive) and dur or nil
+        btn.__cdUseTotal = true
+    else
+        btn.__cdVal = (dur and info and not info.isOnGCD) and dur or nil
+        btn.__cdUseTotal = false
+    end
     update_icon_color(btn)
 end
 dodo.ActionbarUpdateCooldownState = update_cooldown_state
