@@ -92,7 +92,7 @@ local function get_enchant_name(unit, slotID)
         end
     end
 
-    enchant_cache[link] = false
+    -- 접속 직후엔 툴팁에 마부줄이 아직 안 붙어있을 수 있음 → 실패는 캐싱 안 함 (다음 갱신 때 재시도)
     return nil
 end
 
