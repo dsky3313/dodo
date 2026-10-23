@@ -75,7 +75,7 @@ local function mdt(x)
   ChatFrame1EditBox:SetText("/MDT")
   ChatEdit_SendText(ChatFrame1EditBox)
 end
-SLASH_MDT = "/ㅡㅇㅅ"
+SLASH_MDT1 = "/ㅡㅇㅅ"
 SlashCmdList["MDT"] = function(x)
   mdt(x)
 end

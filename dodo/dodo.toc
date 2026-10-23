@@ -34,9 +34,5 @@ Data/CDM.lua
 # Editmode
 
 
-# 98 Command
-Module/98 Command/Slash.lua
-
-
 # Configurations (Last Load)
 Option.lua
