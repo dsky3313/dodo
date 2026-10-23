@@ -39,11 +39,9 @@
 06 Macro/03 Search.lua
 06 Macro/04 Factory.lua
 06 Macro/05 Mark.lua
-# 07 ObjectiveTracker/99 Collapse.lua
 07 ObjectiveTracker/ObjectiveTracker.lua
 08 Bag/01 EquipSet.lua
 08 Bag/02 Token.lua
-# 99 ETC/BagBreak.lua
 99 ETC/Skyriding.lua
 99 ETC/Camera.lua
 99 ETC/ChatBubble.lua
@@ -52,7 +50,6 @@
 99 ETC/FrameOption.lua
 99 ETC/Friends.lua
 99 ETC/Merchant.lua
-# 99 ETC/NewLFG.lua
 99 ETC/QuickBobber.lua
 99 ETC/Teleport.lua
 99 ETC/TimerLFG.lua
@@ -61,5 +58,4 @@
 99 ETC/WorldMapCoords.lua
 99 ETC/WorldMapIcon.lua
 99 ETC/PlayerMemo.lua
-# 99 ETC/ObjectiveTracker.lua
-# 99 ETC/Macro.lua
+99 ETC/TalentLoadoutOrder.lua

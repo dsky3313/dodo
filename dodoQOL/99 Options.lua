@@ -21,6 +21,7 @@ dodo.QOL_DEFAULTS = {
     useCinematicSkip      = true,
     useQuickBobber        = true,
     useTeleport           = true,
+    useTalentLoadoutOrder = true,
     enableLFGTimer        = true,
     useWorldMapCoords     = true,
     enableWorldMapIcon    = true,
@@ -228,6 +229,11 @@ dodo.RegisterOption("편의기능", function(category)
         "ESC 메뉴에 순간이동 버튼을 표시합니다.",
         D.useTeleport, function()
             if dodo.ESCTeleportFrame then dodo.ESCTeleportFrame() end
+        end))
+    T(dodo.UI:SettingsCheckbox(category, "useTalentLoadoutOrder", "특성 불러오기 순서 변경",
+        "특성 불러오기 드롭다운에서 항목을 끌어서 순서를 바꿉니다. 전문화별로 저장됩니다.",
+        D.useTalentLoadoutOrder, function()
+            if dodo.TalentLoadoutOrderUpdateVisual then dodo.TalentLoadoutOrderUpdateVisual() end
         end))
     T(dodo.UI:SettingsCheckbox(category, "enableLFGTimer", "던전찾기 타이머",
         "던전찾기 수락창에 남은 시간을 표시합니다.",

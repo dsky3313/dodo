@@ -16,23 +16,21 @@ local Config = {
     defaultRelativePoint = "BOTTOMRIGHT",
     defaultX             = -4,
     defaultY             = -1,
-    defaultPadding       = -2,
+    defaultPadding       = -3, -- 바 아이콘 간격
     buttonSize           = 32,
-    flyoutCols           = 4,
-    flyoutGap            = 2,
+    flyoutCols           = 5,  -- 그리드 아이콘 행 개수
+    flyoutGap            = 2,  -- 그리드 아이콘 간격
 
     sortOrder = {
         ["ExpansionLandingPageMinimapButton"] = 1,
-        ["dodoGreatVaultButton"] = 2,
-        ["dodoAddonManagerButton"] = 3,
-        ["SimpleAddonManager"]   = 4,
-        ["NotEvenClose"]         = 5,
-        ["SimulationCraft"]      = 6,
-        ["BliZziInterrupts"]     = 95,
-        ["Plater"]               = 96,
-        ["MythicDungeonTools"]   = 97,
-        ["ThisWeeksAuras"]       = 98,
-        ["BugSack"]              = 99,
+        ["dodoGreatVaultButton"]              = 2,
+        ["dodoAddonManagerButton"]            = 3,
+        ["NotEvenClose"]                      = 4,
+        ["SimulationCraft"]                   = 5,
+        ["NSRT"]                              = 6,
+        ["Plater"]                            = 97,
+        ["MythicDungeonTools"]                = 98,
+        ["BugSack"]                           = 99,
     },
     hideSet = {
         ["RaiderIO"] = true,
@@ -808,7 +806,7 @@ local function create_addon_manager_button()
     flyout_frame:SetBackdrop({
         bgFile   = "Interface\\ChatFrame\\ChatFrameBackground",
         edgeFile = "Interface\\ChatFrame\\ChatFrameBackground",
-        edgeSize = 1,
+        edgeSize = 2,
     })
     flyout_frame:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
     flyout_frame:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
