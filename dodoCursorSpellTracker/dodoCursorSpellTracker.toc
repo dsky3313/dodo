@@ -6,5 +6,6 @@
 ## Group: dodo
 ## IconTexture: Interface\AddOns\dodo\Media\Texture\Logo
 
+99 Options Preview.lua
 99 Options.lua
 CursorSpellTracker.lua

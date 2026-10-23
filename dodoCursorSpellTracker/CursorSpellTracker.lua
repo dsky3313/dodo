@@ -36,26 +36,101 @@ local pcall = pcall
 local type = type
 
 -- ==============================
--- Config (기본값 - 위치/크기 수정은 여기서)
+-- Config (글로우 - 크기/위치/열 배치는 /dd 설정창, 99 Options.lua)
 -- ==============================
 local Config = {
-    iconSize = 28, -- 아이콘 크기
-    offsetX = 42,  -- 커서 기준 X 오프셋
-    offsetY = -34, -- 커서 기준 Y 오프셋
-    iconGap = 2,   -- 아이콘 간 간격
     -- 글로우(반짝임) 색상. 원본 아틀라스가 노란 계열이라 색은 곱연산으로 적용됨.
     -- 원본 그대로: r=1, g=1, b=1
     glowColor = { r = 0.2, g = 1.0, b = 0.2 },
     glowAlpha = 0.6, -- 글로우 투명도 (1 = 불투명, 0 = 안 보임)
 }
 
+local D = dodo.CST_DEFAULTS
+local ROW_BY_GROUP = dodo.CST_ROW_BY_GROUP
+
+local function cfg(key)
+    local v = dodoDB[key]
+    if v == nil then return D[key] end
+    return v
+end
+
 -- ==============================
 -- 트래킹 대상 (specID별, 확장 포인트)
 -- ==============================
 -- type: "cooldown" (쿨다운 준비알림, 차지 지원) | "aura" (버프 스택+지속시간 표시)
+-- group: "interrupt" | "cc" ... (ROW_BY_GROUP 참고, 배치 열 결정)
 local TRACKED_SPELLS_BY_SPEC = {
+    -- 전사
+    [71] = { -- 무기
+        { spellID = 6552, type = "cooldown", group = "interrupt" }, -- 차단
+        { spellID = 107570, type = "cooldown", group = "cc" }, -- 폭망
+        { spellID = 46968, type = "cooldown", group = "cc" }, -- 충파
+        -- { spellID = 5246, type = "cooldown", group = "cc" }, -- 공포
+    },
+    [72] = { -- 분노
+        { spellID = 6552, type = "cooldown", group = "interrupt" }, -- 차단
+        { spellID = 107570, type = "cooldown", group = "cc" }, -- 폭망
+        { spellID = 46968, type = "cooldown", group = "cc" }, -- 충파
+        -- { spellID = 5246, type = "cooldown", group = "cc" }, -- 공포
+    },
+    [73] = { -- 방어
+        { spellID = 6552, type = "cooldown", group = "interrupt" }, -- 차단
+        { spellID = 107570, type = "cooldown", group = "cc" }, -- 폭망
+        { spellID = 46968, type = "cooldown", group = "cc" }, -- 충파
+        -- { spellID = 5246, type = "cooldown", group = "cc" }, -- 공포
+    },
+    -- 성기사
+    [65] = {},   -- 신성
+    [66] = {},   -- 보호
+    [70] = {},   -- 징벌
+    -- 사냥꾼
+    [253] = {},  -- 야수
+    [254] = {},  -- 사격
+    [255] = {},  -- 생존
+    -- 도적
+    [259] = {},  -- 암살
+    [260] = {},  -- 무법
+    [261] = {},  -- 잠행
+    -- 사제
+    [256] = {},  -- 수양
+    [257] = {},  -- 신성
+    [258] = {},  -- 암흑
+    -- 죽음의 기사
+    [250] = {},  -- 혈기
+    [251] = {},  -- 냉기
+    [252] = {},  -- 부정
+    -- 주술사
+    [262] = {},  -- 정기
+    [263] = {},  -- 고양
+    -- 마법사
+    [62] = {},   -- 비전
+    [63] = {},   -- 화염
+    [64] = {},   -- 냉기
+    -- 흑마법사
+    [265] = {},  -- 고통
+    [266] = {},  -- 악마
+    [267] = {},  -- 파괴
+    -- 수도사
+    [268] = {},  -- 양조
+    [270] = {},  -- 운무
+    [269] = {},  -- 풍운
+    -- 드루이드
+    [102] = {},  -- 조화
+    [103] = {},  -- 야성
+    [104] = {},  -- 수호
+    [105] = {},  -- 회복
+    -- 악마사냥꾼
+    [577] = {},  -- 파멸
+    [581] = {},  -- 복수
+    [1480] = {}, -- 포식
+    -- 기원사
+    [1467] = {}, -- 황폐
+    [1468] = {}, -- 보존
+    [1473] = {}, -- 증강
+
     [264] = { -- 복원 주술사
-        { spellID = 77130, type = "cooldown" }, -- 영혼정화
+        { spellID = 57994, type = "cooldown", group = "interrupt" }, -- 영혼정화
+        { spellID = 77130, type = "cooldown", group = "interrupt" }, -- 영혼정화
         -- 성난해일 (굽이치는 물결 보유시 반짝임)
         -- glowCDMSpellID: 블리자드 CDM 추적 버프에는 버프 ID(53390)가 아닌 특성 ID(51564)로 등록됨
         { spellID = 61295, type = "cooldown", glowAuraSpellID = 53390, glowCDMSpellID = 51564 },
@@ -215,7 +290,8 @@ end
 local function create_icon(index)
     local f = CreateFrame("Frame", nil, iconHolder)
     f:Hide()
-    f:SetSize(Config.iconSize, Config.iconSize)
+    local size = cfg("cursorSpellTrackerIconSize")
+    f:SetSize(size, size)
 
     f.icon = f:CreateTexture(nil, "BACKGROUND")
     f.icon:SetTexCoord(0.1, 0.9, 0.1, 0.9)
@@ -237,7 +313,7 @@ local function create_icon(index)
     f.border:SetAllPoints(f)
 
     f.count = overlay:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
-    f.count:SetPoint("BOTTOMRIGHT", overlay, "BOTTOMRIGHT", -2, 2)
+    f.count:SetPoint("BOTTOMRIGHT", overlay, "BOTTOMRIGHT", 1, 1)
     f.count:SetTextColor(dodo.Colors.Primary.Gold.r, dodo.Colors.Primary.Gold.g, dodo.Colors.Primary.Gold.b)
 
     icons[index] = f
@@ -254,13 +330,19 @@ local function update_cursor_position()
 
     iconHolder:ClearAllPoints()
     iconHolder:SetPoint("CENTER", UIParent, "BOTTOMLEFT",
-        x + Config.offsetX,
-        y + Config.offsetY)
+        x + cfg("cursorSpellTrackerX"),
+        y + cfg("cursorSpellTrackerY"))
 end
 
 -- ==============================
 -- 상태 평가 + 렌더
 -- ==============================
+-- GCD만 걸린 상태 판정 (isOnGCD도 secret일 수 있어 먼저 검증)
+local function is_on_gcd(cd)
+    local onGCD = cd and cd.isOnGCD
+    return not issecretvalue(onGCD) and onGCD == true
+end
+
 local function update_cooldown_icon(icon, entry)
     local spellID = entry.spellID
     if not (C_SpellBook.IsSpellInSpellBook(spellID) or C_SpellBook.IsSpellKnown(spellID)) then
@@ -277,7 +359,7 @@ local function update_cooldown_icon(icon, entry)
     if isChargeSpell then
         local current = readable_num(charges.currentCharges)
         if current then
-            icon.count:SetText(current > 1 and current or "")
+            icon.count:SetText(current)
         elseif not pcall(icon.count.SetText, icon.count, charges.currentCharges) then
             -- secret 충전 수는 FontString이 직접 표시 가능 (CST SafeSetText 방식)
             icon.count:SetText("")
@@ -292,7 +374,10 @@ local function update_cooldown_icon(icon, entry)
         duration = readable_num(charges.cooldownDuration)
     else
         local cd = C_Spell.GetSpellCooldown(spellID)
-        if cd then
+        if is_on_gcd(cd) then
+            -- GCD는 쿨다운으로 표시 안 함 (CST duration<=1.5 필터 대응)
+            startTime, duration = 0, 0
+        elseif cd then
             startTime = readable_num(cd.startTime)
             duration = readable_num(cd.duration)
         else
@@ -302,6 +387,9 @@ local function update_cooldown_icon(icon, entry)
 
     if startTime and duration then
         icon.cooldown:SetCooldown(startTime, duration)
+    elseif is_on_gcd(C_Spell.GetSpellCooldown(spellID)) then
+        -- 전투 중 충전 스킬 폴백 경로도 GCD면 스와이프 생략
+        icon.cooldown:Clear()
     elseif C_Spell.GetSpellCooldownDuration and icon.cooldown.SetCooldownFromDurationObject then
         -- 전투 중 secret: DurationObject를 Cooldown 프레임에 직접 넘겨
         -- 애드온이 secret 수치를 만지지 않고 블리자드가 렌더링 (CST 방식)
@@ -316,7 +404,7 @@ local function update_cooldown_icon(icon, entry)
             icon.glowOverlay = CreateFrame("Frame", nil, icon, "PotionOverlayTemplate")
             icon.glowOverlay:SetAllPoints(icon)
             icon.glowOverlay:SetFrameLevel(icon:GetFrameLevel() + 3)
-            local glowSize = Config.iconSize * 1.4
+            local glowSize = cfg("cursorSpellTrackerIconSize") * 1.4
             icon.glowOverlay.Proc:SetSize(glowSize, glowSize)
             local gc = Config.glowColor
             if gc then
@@ -350,7 +438,7 @@ local function update_aura_icon(icon, entry)
 
     local applications = readable_num(aura.applications)
     if applications then
-        icon.count:SetText(applications > 1 and applications or "")
+        icon.count:SetText(applications)
     elseif aura.applications == nil or not pcall(icon.count.SetText, icon.count, aura.applications) then
         icon.count:SetText("")
     end
@@ -362,9 +450,14 @@ end
 -- ==============================
 -- 레이아웃/표시
 -- ==============================
+local row_counts = { 0, 0 } -- 열별 표시 개수 (재사용, 가비지 방지)
+
 local function update_visual()
-    local size = Config.iconSize
-    local visibleIndex = 0
+    local size = cfg("cursorSpellTrackerIconSize")
+    local step = size + cfg("cursorSpellTrackerIconGap")    -- 가로 (아이콘 간격)
+    local rowStep = size + cfg("cursorSpellTrackerRowGap")  -- 세로 (열 간격)
+    local twoRows = cfg("cursorSpellTrackerRowCount") == "2"
+    row_counts[1], row_counts[2] = 0, 0
 
     for i, entry in ipairs(active_spells) do
         local icon = icons[i]
@@ -376,13 +469,15 @@ local function update_visual()
         end
 
         if shown then
+            local row = twoRows and ROW_BY_GROUP[entry.group] or 1
             icon:ClearAllPoints()
-            icon:SetPoint("LEFT", iconHolder, "LEFT", visibleIndex * (size + Config.iconGap), 0)
-            visibleIndex = visibleIndex + 1
+            -- 1열이 기준(하단), 2열은 1열 위에 가로 배치
+            icon:SetPoint("LEFT", iconHolder, "LEFT", row_counts[row] * step, (row - 1) * rowStep)
+            row_counts[row] = row_counts[row] + 1
         end
     end
 
-    anyVisible = visibleIndex > 0
+    anyVisible = row_counts[1] + row_counts[2] > 0
 end
 
 local function hide_all_icons()
@@ -406,6 +501,8 @@ local function setup_icons()
     end
 end
 
+local update_tracker_running -- trackerFrame 생성 후 정의
+
 local SPEC_RETRY_DELAY = 1
 local SPEC_MAX_RETRIES = 10
 local spec_retry_count = 0
@@ -427,6 +524,7 @@ local function refresh_active_spells()
     if iconHolder then
         setup_icons()
         update_visual()
+        update_tracker_running()
     end
 end
 
@@ -449,6 +547,16 @@ local function on_update(self, elapsed)
 end
 trackerFrame:SetScript("OnUpdate", on_update)
 
+-- 토글 꺼짐 또는 현재 특성 추적 대상 없음 → OnUpdate 정지 (자원소모 0)
+update_tracker_running = function()
+    if dodoDB.enableCursorSpellTracker ~= false and #active_spells > 0 then
+        trackerFrame:Show()
+    else
+        trackerFrame:Hide()
+        hide_all_icons()
+    end
+end
+
 -- ==============================
 -- 초기화
 -- ==============================
@@ -463,10 +571,6 @@ local function initialize()
     C_Timer.After(1, rescan_cdm_items) -- CDM 뷰어 초기화가 늦는 경우 대비 (OverlayCDM의 0.5s 지연과 동일 목적)
 
     refresh_active_spells()
-
-    if dodoDB.enableCursorSpellTracker ~= false then
-        trackerFrame:Show()
-    end
 end
 
 -- ==============================
@@ -496,10 +600,23 @@ initFrame:SetScript("OnEvent", on_event)
 -- 공개 API
 -- ==============================
 function dodo.CursorSpellTrackerSetEnabled(val)
-    if val then
-        trackerFrame:Show()
-    else
-        trackerFrame:Hide()
-        hide_all_icons()
+    update_tracker_running()
+end
+
+-- 설정창 크기/간격/위치/열 배치 변경 즉시 반영
+function dodo.CursorSpellTrackerApplyLayout()
+    local size = cfg("cursorSpellTrackerIconSize")
+    for i = 1, #icons do
+        local f = icons[i]
+        f:SetSize(size, size)
+        rescale_icon(f)
+        if f.glowOverlay then f.glowOverlay.Proc:SetSize(size * 1.4, size * 1.4) end
     end
+    lastCursorX, lastCursorY = -1, -1 -- 다음 프레임에 오프셋 재적용
+    if trackerFrame:IsShown() then update_visual() end
+end
+
+-- 미리보기용 현재 특성 추적 목록
+function dodo.CursorSpellTrackerGetActiveSpells()
+    return active_spells
 end
