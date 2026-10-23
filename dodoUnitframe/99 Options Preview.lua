@@ -526,11 +526,11 @@ function dodoUnitframePreviewMixin:Update()
 	local sim_rest   = (unit == 'player') and preview_get(UF_DB.rest, UF_DF.rest, unit) or false
 	local sim_leader = preview_get(UF_DB.leader, UF_DF.leader, unit)
 
-	local ix = 2
+	local ix = 0
 
 	if sim_leader then
 		self.leaderSim:ClearAllPoints()
-		self.leaderSim:SetPoint('LEFT', self.nText, 'RIGHT', ix, 0)
+		self.leaderSim:SetPoint('BOTTOMLEFT', self.nText, 'TOPLEFT', ix, 2)
 		self.leaderSim:Show()
 		ix = ix + 18  -- 16 + gap 2
 	else
@@ -539,7 +539,7 @@ function dodoUnitframePreviewMixin:Update()
 
 	if sim_rest then
 		self.restSim:ClearAllPoints()
-		self.restSim:SetPoint('BOTTOMLEFT', self.nText, 'BOTTOMRIGHT', ix, 0)
+		self.restSim:SetPoint('BOTTOMLEFT', self.nText, 'TOPLEFT', ix, 2)
 		self.restSim:Show()
 		self.restSim.anim:Play()
 		ix = ix + 32  -- 30 + gap 2
@@ -550,7 +550,7 @@ function dodoUnitframePreviewMixin:Update()
 
 	if sim_combat then
 		self.combatSim:ClearAllPoints()
-		self.combatSim:SetPoint('BOTTOMLEFT', self.nText, 'BOTTOMRIGHT', ix, -2)
+		self.combatSim:SetPoint('BOTTOMLEFT', self.nText, 'TOPLEFT', ix, 2)
 		self.combatSim:Show()
 	else
 		self.combatSim:Hide()

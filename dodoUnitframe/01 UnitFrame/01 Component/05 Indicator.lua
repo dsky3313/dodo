@@ -22,24 +22,24 @@ local LEADER_DEF  = dodo.UF_DEFAULTS.leader
 -- 동적 정렬: 파티장 → 휴식 → 전투 (좌→우)
 -- ==============================
 local function reposition(frame)
-	local x  = 2
+	local x  = 0
 	local li = frame.LeaderIndicator
 	local ri = frame.RestingIndicator
 	local ci = frame.CombatIndicator
 
 	if li and li:IsShown() then
 		li:ClearAllPoints()
-		li:SetPoint('LEFT', frame.nameText, 'RIGHT', x, 0)
+		li:SetPoint('BOTTOMLEFT', frame.nameText, 'TOPLEFT', x, 2)
 		x = x + 18  -- 16 + gap 2
 	end
 	if ri and ri:IsShown() then
 		ri:ClearAllPoints()
-		ri:SetPoint('BOTTOMLEFT', frame.nameText, 'BOTTOMRIGHT', x, 0)
+		ri:SetPoint('BOTTOMLEFT', frame.nameText, 'TOPLEFT', x, 2)
 		x = x + 32  -- 30 + gap 2
 	end
 	if ci and ci:IsShown() then
 		ci:ClearAllPoints()
-		ci:SetPoint('BOTTOMLEFT', frame.nameText, 'BOTTOMRIGHT', x, -2)
+		ci:SetPoint('BOTTOMLEFT', frame.nameText, 'TOPLEFT', x, 2)
 	end
 end
 
@@ -51,7 +51,7 @@ function dodo.UnitframeCreateIndicators(self, unitKey)
 	if COMBAT_KEYS[unitKey] and not self.CombatIndicator then
 		local ci = self:CreateTexture(nil, 'OVERLAY')
 		ci:SetSize(22, 22)
-		ci:SetPoint('LEFT', self.nameText, 'RIGHT', 2, 0)
+		ci:SetPoint('BOTTOMLEFT', self.nameText, 'TOPLEFT', 0, 2)
 		ci.PostUpdate = function(element)
 			reposition(element.__owner)
 		end
@@ -62,7 +62,7 @@ function dodo.UnitframeCreateIndicators(self, unitKey)
 	if unitKey == 'player' and not self.RestingIndicator then
 		local ri = CreateFrame('Frame', nil, self)
 		ri:SetSize(30, 30)
-		ri:SetPoint('LEFT', self.nameText, 'RIGHT', 2, 0)
+		ri:SetPoint('BOTTOMLEFT', self.nameText, 'TOPLEFT', 0, 2)
 
 		local tex = ri:CreateTexture(nil, 'ARTWORK')
 		tex:SetAtlas('UI-HUD-UnitFrame-Player-Rest-Flipbook')
@@ -89,7 +89,7 @@ function dodo.UnitframeCreateIndicators(self, unitKey)
 	if LEADER_KEYS[unitKey] and not self.LeaderIndicator then
 		local li = self:CreateTexture(nil, 'OVERLAY')
 		li:SetSize(16, 16)
-		li:SetPoint('LEFT', self.nameText, 'RIGHT', 2, 0)
+		li:SetPoint('BOTTOMLEFT', self.nameText, 'TOPLEFT', 0, 2)
 		li:SetAtlas('UI-HUD-UnitFrame-Player-Group-LeaderIcon')
 		li.PostUpdate = function(element)
 			reposition(element.__owner)

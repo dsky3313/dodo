@@ -17,6 +17,8 @@
 01 UnitFrame/01 Component/07 FTCastbar.lua
 01 UnitFrame/01 Core.lua
 01 UnitFrame/02 Styles.lua
-02 PartyFrame/AurasHealthColor.lua
-02 PartyFrame/Leader.lua
-02 PartyFrame/Overshield.lua
+02 PartyFrame/01 Leader.lua
+02 PartyFrame/02 Overshield.lua
+02 PartyFrame/03 AurasHealthColor.lua
+# 02 PartyFrame/04 PartyCD_Data.lua
+# 02 PartyFrame/04 PartyCD.lua
