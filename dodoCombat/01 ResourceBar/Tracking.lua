@@ -69,7 +69,7 @@ local bar2ClassConfig = {
             { barMode = "whirlwind",         spellID   = 12950,  maxStack   = 4, requiredSpell = 12950, color = Colors.Spec.WARRIOR[2] },
             { barMode = "duration",          spellID   = 184361, excludedSpell = 12950, color = Colors.Spec.WARRIOR[2] },
         },
-        [3] = { { barMode = "stack",         spellID   = 190456, maxStack   = 100, color = Colors.Spec.WARRIOR[3] } },
+        [3] = { { barMode = "stack",         spellID   = 190456, maxStack   = 100, tickDuration = 12, color = Colors.Spec.WARRIOR[3] } },
     },
 }
 
