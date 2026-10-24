@@ -21,6 +21,7 @@ dodo.ColorsPrimary = {
     Purple       = { r = 0.50, g = 0.00, b = 0.50, hex = "ff800080" },
     Gray         = { r = 0.63, g = 0.63, b = 0.63, hex = "ffa0a0a0" },
     White        = { r = 1.00, g = 1.00, b = 1.00, hex = "ffffffff" },
+    Black        = { r = 0.00, g = 0.00, b = 0.00, hex = "ff000000" },
 }
 
 dodo.ColorsPrimarySoft = {
@@ -32,6 +33,7 @@ dodo.ColorsPrimarySoft = {
     SoftBlue   = { r = 0.39, g = 0.39, b = 1.00, hex = "ff6464ff" },
     SoftPurple = { r = 0.78, g = 0.39, b = 1.00, hex = "ffc864ff" },
     SoftPink   = { r = 1.00, g = 0.20, b = 0.78, hex = "ffff32c8" },
+    SoftBlack  = { r = 0.20, g = 0.20, b = 0.20, hex = "ff333333" },
 }
 
 dodo.ColorsActionbar = {

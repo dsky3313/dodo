@@ -1,0 +1,6 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+    <!-- 커서 주문추적 주문 목록 (/dd 전투 > 커서 주문추적), mixin은 99 Options Preview.lua -->
+    <Frame name="dodoCSTSpellListTemplate" virtual="true">
+        <Size y="250"/>
+    </Frame>
+</Ui>

@@ -30,6 +30,15 @@ dodo.COMBAT_DEFAULTS = {
     debuffX                 = 250,
     debuffY                 = 0,
 
+    -- CursorSpellTracker
+    enableCursorSpellTracker    = true,
+    cursorSpellTrackerIconSize  = 26,  -- 아이콘 크기
+    cursorSpellTrackerIconGap   = 0,   -- 아이콘 간 간격 (가로)
+    cursorSpellTrackerRowGap    = 0,   -- 열 간 간격 (세로, 2열 배치일 때만)
+    cursorSpellTrackerX         = 44,  -- 커서 기준 X 오프셋
+    cursorSpellTrackerY         = -34, -- 커서 기준 Y 오프셋
+    cursorSpellTrackerRowCount  = "2", -- "1" = 전부 한 줄, "2" = group별 줄 분리 (1열 기준, 2열은 그 위)
+
     -- BloodBrez
     useBloodBrez            = true,
     blbrIconSize            = 46,
@@ -39,6 +48,18 @@ dodo.COMBAT_DEFAULTS = {
     enableStance            = true,
     stanceIconSize          = 80,
 }
+
+-- 커서 주문추적: group별 배치 열 (2열 배치일 때만 적용, 미지정 group은 1열)
+dodo.CST_ROW_BY_GROUP = {
+    cd = 1,        -- 쿨기
+    cc = 1,        -- 군중제어
+    interrupt = 2, -- 차단기
+    dispel = 2,    -- 해제
+}
+
+-- 같은 열 안 배치 순서 (앞 = 왼쪽). 여기 없는 group(미지정 포함)은 맨 뒤에 데이터 순서대로
+-- 위 줄: 차단기 → 해제 / 아래 줄: 쿨기 → 군중제어
+dodo.CST_GROUP_ORDER = { "interrupt", "dispel", "cd", "cc" }
 
 -- ==============================
 -- /dd 전투 설정 등록
@@ -52,9 +73,10 @@ dodo.RegisterOption("전투", function(category)
         end)
 
     -- 탭별 sub-list
-    local _rb_sub, _df_sub, _bb_sub, _st_sub = {}, {}, {}, {}
+    local _rb_sub, _df_sub, _cst_sub, _bb_sub, _st_sub = {}, {}, {}, {}, {}
     local function R(v) if v then _rb_sub[#_rb_sub+1] = v end return v end
     local function D(v) if v then _df_sub[#_df_sub+1] = v end return v end
+    local function C(v) if v then _cst_sub[#_cst_sub+1] = v end return v end
     local function B(v) if v then _bb_sub[#_bb_sub+1] = v end return v end
     local function S(v) if v then _st_sub[#_st_sub+1] = v end return v end
 
@@ -71,7 +93,7 @@ dodo.RegisterOption("전투", function(category)
     end
 
     -- 통합 미리보기 (마스터 ON이면 탭 무관 항상 표시)
-    local _preview_init = dodo.UI:SettingsTabbedPreview(category, { "자원바", "디버프", "블러드 & 전투부활", "태세" }, dodoCombatPreviewMixin)
+    local _preview_init = dodo.UI:SettingsTabbedPreview(category, { "자원바", "디버프", "커서 주문추적", "블러드 & 전투부활", "태세" }, dodoCombatPreviewMixin)
     if _preview_init and _preview_init.AddShownPredicate then
         _preview_init:AddShownPredicate(function() return master_setting:GetValue() end)
     end
@@ -160,6 +182,89 @@ dodo.RegisterOption("전투", function(category)
             dodo.CombatRefreshPreview()
         end))
 
+    -- ── 커서 주문추적 탭 ──
+    C(dodo.UI:SettingsSectionHeader(category, "커서 주문추적"))
+
+    local cst_init, cst_setting = dodo.UI:SettingsCheckbox(category, "enableCursorSpellTracker", "커서 주문추적",
+        "현재 직업/특성의 주요 스킬을 커서 근처에 표시합니다.",
+        true, function(val)
+            if dodoDB then dodoDB.enableCursorSpellTracker = val end
+            if dodo.CursorSpellTrackerSetEnabled then dodo.CursorSpellTrackerSetEnabled(val) end
+            dodo.CombatRefreshPreview()
+        end)
+    C(cst_init)
+
+    local _csts_sub = {}
+    local function CS(v) if v then _csts_sub[#_csts_sub+1] = v end return v end
+
+    local function cst_apply()
+        if dodo.CursorSpellTrackerApplyLayout then dodo.CursorSpellTrackerApplyLayout() end
+        dodo.CombatRefreshPreview()
+    end
+
+    CS(dodo.UI:SettingsSlider(category, "cursorSpellTrackerX", "가로 위치",
+        "커서 기준 가로 위치를 설정합니다.",
+        -150, 150, 1, 44, "Integer", function(val)
+            if dodoDB then dodoDB.cursorSpellTrackerX = val end
+            cst_apply()
+        end))
+
+    CS(dodo.UI:SettingsSlider(category, "cursorSpellTrackerY", "세로 위치",
+        "커서 기준 세로 위치를 설정합니다.",
+        -150, 150, 1, -34, "Integer", function(val)
+            if dodoDB then dodoDB.cursorSpellTrackerY = val end
+            cst_apply()
+        end))
+
+    local cst_row_setting, cst_row_init = dodo.UI:SettingsDropDown(category, "cursorSpellTrackerRowCount", "열 배치",
+        "2열: 차단기는 위쪽 줄, 군중제어는 아래쪽 줄에 배치합니다.",
+        { { value = "1", text = "1열" }, { value = "2", text = "2열" } },
+        "2", function(val)
+            if dodoDB then dodoDB.cursorSpellTrackerRowCount = val end
+            cst_apply()
+        end)
+    CS(cst_row_init)
+
+    -- 열 간격: 열 배치 하위 (2열일 때만 표시, predicate는 하단에서 부착)
+    local cst_row_gap_init = dodo.UI:SettingsSlider(category, "cursorSpellTrackerRowGap", "열 간격",
+        "1열과 2열 사이 세로 간격을 설정합니다.",
+        0, 20, 1, 0, "Integer", function(val)
+            if dodoDB then dodoDB.cursorSpellTrackerRowGap = val end
+            cst_apply()
+        end)
+
+    CS(dodo.UI:SettingsSlider(category, "cursorSpellTrackerIconSize", "아이콘 크기",
+        "커서 아이콘 크기를 설정합니다.",
+        16, 48, 1, 26, "Integer", function(val)
+            if dodoDB then dodoDB.cursorSpellTrackerIconSize = val end
+            cst_apply()
+        end))
+
+    CS(dodo.UI:SettingsSlider(category, "cursorSpellTrackerIconGap", "아이콘 간격",
+        "같은 줄 아이콘 사이 가로 간격을 설정합니다.",
+        0, 10, 1, 0, "Integer", function(val)
+            if dodoDB then dodoDB.cursorSpellTrackerIconGap = val end
+            cst_apply()
+        end))
+
+    -- 주문 목록 (모든 직업/특성 켜기/끄기, 위젯은 99 Options Preview.lua dodoCSTSpellListMixin)
+    CS(dodo.UI:SettingsSectionHeader(category, "주문 목록"))
+    if layout then
+        local list_init = Settings.CreatePanelInitializer("dodoCSTSpellListTemplate", {})
+        list_init.GetExtent = function() return dodoCSTSpellListMixin.GetExtent() end
+        list_init.InitFrame = function(_, frame)
+            frame:SetHeight(dodoCSTSpellListMixin.GetExtent())
+            if not frame._dodo_init then
+                frame._dodo_init = true
+                Mixin(frame, dodoCSTSpellListMixin)
+                frame:OnLoad()
+            end
+            frame:Update()
+        end
+        layout:AddInitializer(list_init)
+        CS(list_init)
+    end
+
     -- ── 블러드 & 전투부활 탭 ──
     B(dodo.UI:SettingsSectionHeader(category, "블러드 & 전투부활"))
 
@@ -222,8 +327,9 @@ dodo.RegisterOption("전투", function(category)
     local function _tab() return dodo.CombatGetPreviewTab() end
     local function _rb_shown() return master_setting:GetValue() and _tab() == 1 end
     local function _df_shown() return master_setting:GetValue() and _tab() == 2 end
-    local function _bb_shown() return master_setting:GetValue() and _tab() == 3 end
-    local function _st_shown() return master_setting:GetValue() and _tab() == 4 end
+    local function _cst_shown() return master_setting:GetValue() and _tab() == 3 end
+    local function _bb_shown() return master_setting:GetValue() and _tab() == 4 end
+    local function _st_shown() return master_setting:GetValue() and _tab() == 5 end
 
     for _, v in ipairs(_rb_sub) do if v.AddShownPredicate then v:AddShownPredicate(_rb_shown) end end
     local function _rbs_shown() return _rb_shown() and (rb_setting and rb_setting:GetValue()) end
@@ -231,6 +337,16 @@ dodo.RegisterOption("전투", function(category)
     for _, v in ipairs(_df_sub) do if v.AddShownPredicate then v:AddShownPredicate(_df_shown) end end
     local function _dfs_shown() return _df_shown() and (df_setting and df_setting:GetValue()) end
     for _, v in ipairs(_dfs_sub) do if v.AddShownPredicate then v:AddShownPredicate(_dfs_shown) end end
+    for _, v in ipairs(_cst_sub) do if v.AddShownPredicate then v:AddShownPredicate(_cst_shown) end end
+    local function _csts_shown() return _cst_shown() and (cst_setting and cst_setting:GetValue()) end
+    for _, v in ipairs(_csts_sub) do if v.AddShownPredicate then v:AddShownPredicate(_csts_shown) end end
+    local function _cst_two_rows() return _csts_shown() and cst_row_setting and cst_row_setting:GetValue() == "2" end
+    if cst_row_gap_init and cst_row_init and cst_row_gap_init.SetParentInitializer then
+        cst_row_gap_init:SetParentInitializer(cst_row_init, _cst_two_rows)
+    end
+    if cst_row_gap_init and cst_row_gap_init.AddShownPredicate then
+        cst_row_gap_init:AddShownPredicate(_cst_two_rows)
+    end
     for _, v in ipairs(_bb_sub) do if v.AddShownPredicate then v:AddShownPredicate(_bb_shown) end end
     local function _bbs_shown() return _bb_shown() and (bb_setting and bb_setting:GetValue()) end
     for _, v in ipairs(_bbs_sub) do if v.AddShownPredicate then v:AddShownPredicate(_bbs_shown) end end

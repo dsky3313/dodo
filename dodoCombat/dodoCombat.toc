@@ -22,5 +22,8 @@
 01 ResourceBar/Tracking.lua
 02 Debuff/Debuff.xml
 02 Debuff/Debuff.lua
-03 BloodBrez.lua
-04 Stance.lua
+03 CursorSpellTracker/SpellList.xml
+03 CursorSpellTracker/00 Data.lua
+03 CursorSpellTracker/01 Core.lua
+04 BloodBrez.lua
+05 Stance.lua
