@@ -23,7 +23,7 @@ dodo.CST_SPELLS_BY_SPEC = {
     },
     [73] = { -- 방어
         { spellID = 6552, type = "cooldown", group = "interrupt" }, -- 차단
-        { spellID = 386071, type = "cooldown", group = "interrupt" }, -- 훼방
+        { spellID = 386071, type = "cooldown", group = "interrupt", enabled = false }, -- 훼방
         { spellID = 107570, type = "cooldown", group = "cc" }, -- 폭망
         { spellID = 46968, type = "cooldown", group = "cc" }, -- 충파
         { spellID = 5246, type = "cooldown", group = "cc", enabled = false }, -- 공포

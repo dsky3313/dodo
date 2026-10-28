@@ -94,7 +94,7 @@ end
 local function on_progress_bar_on_get(self, isNew, criteriaIndex)
     -- defer: LayoutContents 실행 중 inline taint 전파 방지
     C_Timer.After(0, function()
-        if dodoDB and dodoDB.enableKeystoneTimer ~= false and dodoDB.useKeystoneTimerBarStyle ~= false then
+        if dodoDB and dodo.QOLIsEnabled("enableKeystoneTimer") and dodoDB.useKeystoneTimerBarStyle ~= false then
             apply_bar_style(self)
         else
             remove_bar_style(self)
@@ -116,7 +116,7 @@ local function process_pct_bars()
     -- defer: ScenarioObjectiveTracker:LayoutContents 실행 중 SetValue hook이 taint를 전파해
     -- ShouldShowMawBuffs → GetAuraDataByIndex 실패하는 문제 방지 (C_Timer.After로 chain 끊기)
     is_pct_scheduled = false
-    if not (dodoDB and dodoDB.enableKeystoneTimer ~= false and dodoDB.useKeystoneTimerPercent ~= false) then
+    if not (dodoDB and dodo.QOLIsEnabled("enableKeystoneTimer") and dodoDB.useKeystoneTimerPercent ~= false) then
         wipe(pending_pct_bars); return
     end
     if not (C_ChallengeMode.IsChallengeModeActive and C_ChallengeMode.IsChallengeModeActive()) then
@@ -198,7 +198,7 @@ end
 
 local function on_challenge_mode_activate(self, timerID, elapsedTime, timeLimit)
     hide_result()
-    if not (dodoDB and dodoDB.enableKeystoneTimer ~= false and dodoDB.useKeystoneTimerTick ~= false) then
+    if not (dodoDB and dodo.QOLIsEnabled("enableKeystoneTimer") and dodoDB.useKeystoneTimerTick ~= false) then
         if tick2 then tick2:Hide() end
         if tick3 then tick3:Hide() end
         return
@@ -228,7 +228,7 @@ local function on_challenge_mode_activate(self, timerID, elapsedTime, timeLimit)
 end
 
 local function on_challenge_mode_update_time(self, elapsedTime)
-    if not (dodoDB and dodoDB.enableKeystoneTimer ~= false and dodoDB.useKeystoneTimerTick ~= false) then return end
+    if not (dodoDB and dodo.QOLIsEnabled("enableKeystoneTimer") and dodoDB.useKeystoneTimerTick ~= false) then return end
     if not self._dd_plusThreeElapsed then return end
 
     if tick3 and elapsedTime > self._dd_plusThreeElapsed then
@@ -274,7 +274,7 @@ local function get_or_create_result_frame()
 end
 
 local function show_completion_result(elapsedTime, timeLimit, affixes)
-    if not (dodoDB and dodoDB.enableKeystoneTimer ~= false) then return end
+    if not (dodoDB and dodo.QOLIsEnabled("enableKeystoneTimer")) then return end
     if not elapsedTime or not timeLimit or timeLimit <= 0 then return end
 
     local block = ScenarioObjectiveTracker and ScenarioObjectiveTracker.ChallengeModeBlock
@@ -328,7 +328,7 @@ end
 -- 상태 업데이트
 -- ==============================
 local function update_visual()
-    local master = dodoDB and dodoDB.enableKeystoneTimer ~= false
+    local master = dodoDB and dodo.QOLIsEnabled("enableKeystoneTimer")
     local barStyleOn = master and dodoDB.useKeystoneTimerBarStyle ~= false
 
     local usedBars = ScenarioObjectiveTracker and ScenarioObjectiveTracker.usedProgressBars

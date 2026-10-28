@@ -53,7 +53,7 @@ local pump = CreateFrame("Frame")
 local events = CreateFrame("Frame")
 
 local function is_enabled()
-    return dodoDB.useTalentLoadoutOrder ~= false
+    return dodo.QOLIsEnabled("useTalentLoadoutOrder")
 end
 
 local function get_load_system()

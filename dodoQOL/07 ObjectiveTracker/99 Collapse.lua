@@ -70,7 +70,7 @@ local function apply_all(collapsed)
 end
 
 local function apply_state()
-    if not (dodoDB and dodoDB.enableCollapse ~= false) then return end
+    if not (dodoDB and dodo.QOLIsEnabled("enableCollapse")) then return end
 
     if InCombatLockdown() then
         pending_apply = true
@@ -90,7 +90,7 @@ end
 -- 상태 업데이트
 -- ==============================
 local function update_visual()
-    local isEnabled = (dodoDB and dodoDB.enableCollapse ~= false)
+    local isEnabled = (dodoDB and dodo.QOLIsEnabled("enableCollapse"))
     if isEnabled then
         pending_restore = false
         initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")

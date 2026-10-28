@@ -30,7 +30,6 @@ dodo.UpdateChatModuleState = update_chat_module_state
 
 -- 2. 초기화 및 PLAYER_LOGIN 이벤트
 local function initialize()
-    if dodoDB.enableChatModule == nil then dodoDB.enableChatModule = true end
     if dodoDB.useFontOutline == nil then dodoDB.useFontOutline = true end
     if dodoDB.useFontShadow == nil then dodoDB.useFontShadow = false end
     if dodoDB.useFontSize == nil then dodoDB.useFontSize = true end

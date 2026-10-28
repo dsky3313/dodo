@@ -28,7 +28,7 @@ local GF = dodo.GossipFrame
 -- 기능: ID 추가 헬퍼
 -- ==============================
 local function is_enabled()
-    return dodoDB and dodoDB.enableGossipID ~= false
+    return dodoDB and dodo.QOLIsEnabled("enableGossipID")
 end
 
 local function has_id_tag(text)

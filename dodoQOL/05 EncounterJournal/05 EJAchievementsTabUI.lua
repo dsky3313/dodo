@@ -946,7 +946,7 @@ local function ensure_ui()
         end
     end
 
-    M.SetEnabled(dodoDB.enableEJAchievements ~= false)
+    M.SetEnabled(dodo.QOLIsEnabled("enableEJAchievements"))
 
     return tab_button ~= nil and custom_panel ~= nil
 end

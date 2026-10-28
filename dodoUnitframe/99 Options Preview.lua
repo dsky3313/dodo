@@ -27,6 +27,16 @@ local DEBUFF_ICONS = { 237517, 136105, 132344, 132090, 237553 }
 
 local HEALTH_FILL_COLOR = { 0.25, 0.70, 0.25 }
 
+-- 파티원 주요 기술 샘플 (방벽, 보호의 축복, 응징의 격노, 천상의 보호막)
+local PT_SAMPLE_CD = { 871, 1022, 31884, 642 }
+
+-- 파티원 주요 기술 설정값 (dodoCombat 04 PartyTracker 의 dodo.PT_DEFAULTS 기준)
+local function pt_get(key)
+	local v = dodoDB and dodoDB[key]
+	if v == nil then v = dodo.PT_DEFAULTS[key] end
+	return v
+end
+
 local function preview_get(db_keys, defaults, unit)
 	local key = db_keys[unit]
 	if not key then return false end
@@ -282,6 +292,25 @@ function dodoUnitframePreviewMixin:OnLoad()
 	cmLeader:SetPoint("TOPLEFT", cmf, "TOPLEFT", 3, 8)
 	cmock.leaderIcon = cmLeader
 
+	-- 파티원 주요 기술 아이콘 (배경 + 아이콘 + 테두리, Update에서 크기/위치)
+	cmock.cdIcons = {}
+	for i, spellID in ipairs(PT_SAMPLE_CD) do
+		local f = CreateFrame("Frame", nil, cmf)
+		local bg = f:CreateTexture(nil, "BACKGROUND")
+		bg:SetAllPoints()
+		bg:SetColorTexture(0.15, 0.15, 0.15, 0.9)
+		f.icon = f:CreateTexture(nil, "ARTWORK")
+		f.icon:SetPoint("TOPLEFT",     f, "TOPLEFT",      2, -2)
+		f.icon:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -2,  2)
+		f.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+		f.icon:SetTexture(C_Spell.GetSpellTexture(spellID))
+		local border = f:CreateTexture(nil, "OVERLAY")
+		border:SetAllPoints()
+		border:SetAtlas("UI-HUD-ActionBar-IconFrame", false)
+		f:Hide()
+		cmock.cdIcons[i] = f
+	end
+
 	cmf:Hide()
 	cmock.hf = cmf
 	self.partyMock = cmock
@@ -368,6 +397,29 @@ function dodoUnitframePreviewMixin:Update()
 		-- 파티장 아이콘
 		local use_leader = not dodoDB or dodoDB.enablePartyframeLeader ~= false
 		if use_leader then mock.leaderIcon:Show() else mock.leaderIcon:Hide() end
+
+		-- 파티원 주요 기술: 04 PartyTracker/10 PartyCDs 배치 동일 (상단 정렬, 프레임과 1px 간격)
+		local PT_D = dodo.PT_DEFAULTS
+		local cd_icons = mock.cdIcons
+		if PT_D then
+			local cd_on   = pt_get("enablePartyCD")
+			local cd_size = pt_get("partyCDSize")
+			local cd_gap  = pt_get("partyCDSpacing")
+			local left    = pt_get("partyCDSide") == "LEFT"
+			for i, f in ipairs(cd_icons) do
+				f:SetSize(cd_size, cd_size)
+				f:ClearAllPoints()
+				local step = (i - 1) * (cd_size + cd_gap)
+				if left then
+					f:SetPoint("TOPRIGHT", mock.hf, "TOPLEFT", -1 - step, 0)
+				else
+					f:SetPoint("TOPLEFT", mock.hf, "TOPRIGHT", 1 + step, 0)
+				end
+				f:SetShown(cd_on)
+			end
+		else
+			for _, f in ipairs(cd_icons) do f:Hide() end
+		end
 
 		mock.hf:Show()
 		return

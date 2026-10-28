@@ -5,11 +5,13 @@
 ## Dependencies: dodo
 ## Group: dodo
 ## IconTexture: Interface\AddOns\dodo\Media\Texture\Logo
+## SavedVariables: dodoEncounterDumpDB
 
 99 Options Preview.lua
 99 Options.lua
 01 Core.lua
 02 Data.lua
+02 DataDump.lua
 03 Sound.lua
 04 Text.lua
 05 TimelineColor.lua

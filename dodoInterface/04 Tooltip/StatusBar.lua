@@ -21,7 +21,7 @@ local UnitExists = UnitExists
 -- 로컬 상태 및 업데이트
 -- ==============================
 local function update_statusbar()
-    local is_enabled = (dodoDB.enableTooltip ~= false and dodoDB.useTooltipHealthHide ~= false)
+    local is_enabled = (dodoDB.enableInterface ~= false and dodoDB.useTooltipHealthHide ~= false)
     if is_enabled then
         GameTooltipStatusBar:Hide()
     else
@@ -34,7 +34,7 @@ end
 dodo.UpdateTooltipStatusBar = update_statusbar
 
 local function on_tooltip_statusbar_show(self) 
-    if dodoDB.enableTooltip ~= false and dodoDB.useTooltipHealthHide ~= false then 
+    if dodoDB.enableInterface ~= false and dodoDB.useTooltipHealthHide ~= false then 
         self:Hide() 
     end 
 end

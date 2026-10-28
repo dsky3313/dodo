@@ -202,8 +202,7 @@ RB.UpdateBar1 = update_bar1
 local function on_combat_change(inCombat)
     if updateTicker then updateTicker:Cancel(); updateTicker = nil end
     
-    local db = dodoDB
-    local isEnabled = (db and db.enableResourceBarModule ~= false)
+    local isEnabled = dodo.CombatIsEnabled("enableResourceBarModule")
 
     if isEnabled then
         updateTicker = C_Timer.NewTicker(inCombat and 0.1 or 0.5, update_bar1)

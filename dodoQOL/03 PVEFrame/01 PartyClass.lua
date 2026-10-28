@@ -178,7 +178,7 @@ end
 
 -- 최종 호출 함수 (가시성 판단 및 업데이트)
 local function party_class_visibility()
-    local isEnabled = (dodoDB and dodoDB.usePartyClass ~= false)
+    local isEnabled = (dodoDB and dodo.QOLIsEnabled("usePartyClass"))
     local pveShown = PVEFrame and PVEFrame:IsShown()
 
     if isEnabled and pveShown then
@@ -198,7 +198,7 @@ local initPartyClass = CreateFrame("Frame")
 local function update_event_registration()
     if not initPartyClass then return end
 
-    local isEnabled = (dodoDB and dodoDB.usePartyClass ~= false)
+    local isEnabled = (dodoDB and dodo.QOLIsEnabled("usePartyClass"))
 
     if isEnabled then
         partyClassFrame:RegisterEvent("GROUP_ROSTER_UPDATE")

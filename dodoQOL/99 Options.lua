@@ -39,6 +39,47 @@ dodo.QOL_DEFAULTS = {
     questItemHotkey       = "CTRL-G",
 }
 
+-- 마스터(enableQOL) + 기능 토글 모두 켜져 있는지 (기본 true 토글 공용 판정)
+function dodo.QOLIsEnabled(key)
+    return dodoDB ~= nil and dodoDB.enableQOL ~= false and dodoDB[key] ~= false
+end
+
+-- 마스터 토글 변경 시 모든 기능 재적용 (꺼지면 각 기능이 이벤트/훅/표시 해제)
+local function qol_update_module_state()
+    local on = dodo.QOLIsEnabled
+    if dodo.ToggleCharacterFrame then dodo.ToggleCharacterFrame(on("enableCharacterFrame")) end
+    if dodo.InsDifficultyUI then dodo.InsDifficultyUI() end
+    if dodo.KeystoneTimerUpdateVisual then dodo.KeystoneTimerUpdateVisual() end
+    if dodo.InsertKeystoneUpdateVisual then dodo.InsertKeystoneUpdateVisual() end
+    if dodo.UpdateKeystoneModuleState then dodo.UpdateKeystoneModuleState() end
+    if dodo.ReadyCheckTimerUpdateVisual then dodo.ReadyCheckTimerUpdateVisual() end
+    if dodo.CinematicSkipUpdateVisual then dodo.CinematicSkipUpdateVisual() end
+    if dodo.BrowseGroup then dodo.BrowseGroup() end
+    if dodo.PartyClass then dodo.PartyClass() end
+    if dodo.QuickSelectUpdate then dodo.QuickSelectUpdate() end
+    if dodo.GossipFrame and dodo.GossipFrame.UpdateID then dodo.GossipFrame.UpdateID() end
+    if dodo.GossipFrame and dodo.GossipFrame.UpdateKeystoneLindormi then dodo.GossipFrame.UpdateKeystoneLindormi() end
+    if dodo.CollapseUpdateVisual then dodo.CollapseUpdateVisual() end
+    if dodo.EJAchievements and dodo.EJAchievements.SetEnabled then dodo.EJAchievements.SetEnabled(on("enableEJAchievements")) end
+    if dodo.EJID and dodo.EJID.SetEnabled then dodo.EJID.SetEnabled(on("enableEJID")) end
+    if dodo.EquipSetUpdateVisual then dodo.EquipSetUpdateVisual() end
+    if dodo.CameraTilt then dodo.CameraTilt() end
+    if dodo.CameraMaxZoom then dodo.CameraMaxZoom() end
+    if dodo.ChatBubble then dodo.ChatBubble() end
+    if dodo.UpdateColorPicker then dodo.UpdateColorPicker(on("enableColorPicker")) end
+    if dodo.DeleteNowHooks then dodo.DeleteNowHooks(on("useDeleteNow")) end
+    if dodo.FrameScale then dodo.FrameScale() end
+    if dodo.RefreshFriends then dodo.RefreshFriends() end
+    if dodo.ToggleMacroEnhancement then dodo.ToggleMacroEnhancement() end
+    if dodo.QuickBobber then dodo.QuickBobber() end
+    if dodo.ESCTeleportFrame then dodo.ESCTeleportFrame() end
+    if dodo.TalentLoadoutOrderUpdateVisual then dodo.TalentLoadoutOrderUpdateVisual() end
+    if dodo.UpdateLFGTimer then dodo.UpdateLFGTimer() end
+    if dodo.WorldMapIconUpdateVisual then dodo.WorldMapIconUpdateVisual() end
+    if dodo.WowheadLink then dodo.WowheadLink() end
+    if dodo.SkyridingUpdateVisual then dodo.SkyridingUpdateVisual() end
+end
+
 dodo.RegisterOption("편의기능", function(category)
     local D = dodo.QOL_DEFAULTS
     local sub = {}
@@ -48,6 +89,7 @@ dodo.RegisterOption("편의기능", function(category)
         "편의기능 모듈을 활성화합니다.",
         D.enableQOL, function(val)
             if dodoDB then dodoDB.enableQOL = val end
+            qol_update_module_state()
         end)
 
     -- 캐릭터 정보
@@ -152,7 +194,7 @@ dodo.RegisterOption("편의기능", function(category)
         "모험 안내서에 업적 탭을 추가합니다.", D.enableEJAchievements, function() end))
     T(dodo.UI:SettingsCheckbox(category, "enableEJID", "ID 표시",
         "모험 안내서에 우두머리와 능력의 ID를 표시합니다.", D.enableEJID,
-        function() dodo.EJID.SetEnabled(dodoDB.enableEJID ~= false) end))
+        function() dodo.EJID.SetEnabled(dodo.QOLIsEnabled("enableEJID")) end))
 
     -- 가방
     T(dodo.UI:SettingsSectionHeader(category, "가방"))

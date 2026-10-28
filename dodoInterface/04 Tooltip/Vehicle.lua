@@ -62,7 +62,7 @@ end
 -- 콜백 핸들러
 -- ==============================
 local function on_unit_tooltip(self, data)
-    if dodoDB.enableTooltip == false or dodoDB.useTooltipMount == false then return end
+    if dodoDB.enableInterface == false or dodoDB.useTooltipMount == false then return end
     if not data or is_secret(data) then return end
     
     local guid = data.guid

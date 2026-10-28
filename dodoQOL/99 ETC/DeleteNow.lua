@@ -54,7 +54,7 @@ local STATICPOPUP_NUMDIALOGS = _G.STATICPOPUP_NUMDIALOGS or 4
 ---@param self Frame
 ---@return nil
 local function on_popup_show(self)
-    if dodoDB and dodoDB.useDeleteNow == false then return end
+    if dodoDB and not dodo.QOLIsEnabled("useDeleteNow") then return end
 
     if self.which == "DELETE_GOOD_ITEM" or self.which == "DELETE_GOOD_QUEST_ITEM" or self.which == "DELETE_ITEM" then
         local _, _, itemLink = GetCursorInfo()
@@ -129,7 +129,7 @@ end
 ---@param which string
 ---@return nil
 local function on_static_popup_show(which)
-    if dodoDB and dodoDB.useDeleteNow == false then return end
+    if dodoDB and not dodo.QOLIsEnabled("useDeleteNow") then return end
 
     if which == "DELETE_GOOD_ITEM" or which == "DELETE_GOOD_QUEST_ITEM" or which == "DELETE_ITEM" then
         for i = 1, STATICPOPUP_NUMDIALOGS do
@@ -164,7 +164,7 @@ end
 local function on_login_event(self)
     dodoDB = dodoDB or {}
     if dodoDB.useDeleteNow == nil then dodoDB.useDeleteNow = true end
-    set_hooks(dodoDB.useDeleteNow)
+    set_hooks(dodo.QOLIsEnabled("useDeleteNow"))
     self:UnregisterEvent("PLAYER_LOGIN")
 end
 

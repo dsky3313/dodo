@@ -75,7 +75,7 @@ local function update_fps_display()
     create_ui()
     if not fps_frame then return end
 
-    local is_enabled = (dodoDB and dodoDB.useFPSFrame ~= false)
+    local is_enabled = (dodoDB and dodoDB.enableInterface ~= false and dodoDB.useFPSFrame ~= false)
     if is_enabled then
         fps_frame:Show()
 

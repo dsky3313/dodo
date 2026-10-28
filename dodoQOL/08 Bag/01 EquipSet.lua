@@ -64,7 +64,7 @@ local function get_widgets(button)
 end
 
 local function update_button(button)
-    if not dodoDB or dodoDB.enableEquipSet == false then
+    if not dodoDB or not dodo.QOLIsEnabled("enableEquipSet") then
         if button.__dodo_set_icon then button.__dodo_set_icon:Hide() end
         if button.__dodo_set_text then button.__dodo_set_text:Hide() end
         return

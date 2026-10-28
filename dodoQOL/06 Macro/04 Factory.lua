@@ -375,7 +375,7 @@ local function install_factory_hooks()
     hooksecurefunc("DeleteMacro", refresh_all_buttons)
     hooksecurefunc("CreateMacro", refresh_all_buttons)
     MacroFrame:HookScript("OnShow", function()
-        if dodoDB and dodoDB.enableMacro == false then return end
+        if dodoDB and not dodo.QOLIsEnabled("enableMacro") then return end
         if not panel then build_panel() end
         refresh_all_buttons()
         panel:Show()
@@ -383,7 +383,7 @@ local function install_factory_hooks()
     MacroFrame:HookScript("OnHide", function()
         if panel then panel:Hide() end
     end)
-    if MacroFrame:IsShown() and not (dodoDB and dodoDB.enableMacro == false) then
+    if MacroFrame:IsShown() and not (dodoDB and not dodo.QOLIsEnabled("enableMacro")) then
         if not panel then build_panel() end
         refresh_all_buttons()
         panel:Show()

@@ -166,7 +166,7 @@ local function update_map_link()
     end
 
     local questID = QuestMapFrame_GetDetailQuestID()
-    local is_enabled = (dodoDB.useWowheadLink ~= false)
+    local is_enabled = (dodo.QOLIsEnabled("useWowheadLink"))
 
     if questID == last_map_quest_id and map_editbox and map_editbox:IsShown() then return end
     last_map_quest_id = questID
@@ -233,7 +233,7 @@ local function on_achievement_loaded()
             return
         end
 
-        local is_enabled = (dodoDB.useWowheadLink ~= false)
+        local is_enabled = (dodo.QOLIsEnabled("useWowheadLink"))
         local shouldShowLink = is_enabled and achievementID and achievementID ~= 0
 
         if shouldShowLink and achievementID == AchievementFrame.lastAchiID and achievement_editbox:IsShown() then return end
@@ -259,7 +259,7 @@ EventUtil.ContinueOnAddOnLoaded("Blizzard_AchievementUI", on_achievement_loaded)
 local main_frame = CreateFrame("Frame")
 
 local function update_module_state()
-    local is_enabled = (dodoDB.useWowheadLink ~= false)
+    local is_enabled = (dodo.QOLIsEnabled("useWowheadLink"))
     if is_enabled then
         main_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
         update_instance_status()

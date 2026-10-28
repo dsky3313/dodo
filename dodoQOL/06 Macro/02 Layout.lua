@@ -88,7 +88,7 @@ end
 local function apply_macro_frame_layout()
     if not MacroFrame then return end
 
-    if dodoDB and dodoDB.enableMacro == false then
+    if dodoDB and not dodo.QOLIsEnabled("enableMacro") then
         reset_macro_frame_layout()
         return
     end

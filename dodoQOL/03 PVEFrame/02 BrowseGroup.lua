@@ -39,7 +39,7 @@ local browse_groups_btn = nil
 local return_groups_btn = nil
 
 local function update_btn()
-    local is_enabled = (dodoDB.useBrowseGroup ~= false)
+    local is_enabled = (dodo.QOLIsEnabled("useBrowseGroup"))
     if not is_enabled or not lfg_list_frame then
         if browse_groups_btn and browse_groups_btn:IsShown() then browse_groups_btn:Hide() end
         if return_groups_btn and return_groups_btn:IsShown() then return_groups_btn:Hide() end
@@ -154,7 +154,7 @@ end
 -- 이벤트 핸들러
 -- ==============================
 local function toggle_events()
-    local is_enabled = (dodoDB and dodoDB.useBrowseGroup ~= false)
+    local is_enabled = (dodoDB and dodo.QOLIsEnabled("useBrowseGroup"))
     if is_enabled then
         if init_browse_group_btn then
             init_browse_group_btn:RegisterEvent("PARTY_LEADER_CHANGED")
@@ -179,7 +179,7 @@ local function on_event(self, event, arg1)
         if arg1 == "dodoQOL" then
             toggle_events()
         elseif arg1 == "Blizzard_GroupFinder" then
-            if dodoDB and dodoDB.useBrowseGroup ~= false then
+            if dodoDB and dodo.QOLIsEnabled("useBrowseGroup") then
                 init_btn()
             end
             self:UnregisterEvent("ADDON_LOADED")

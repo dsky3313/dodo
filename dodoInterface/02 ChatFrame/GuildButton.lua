@@ -227,7 +227,7 @@ end
 local function update_state()
     if dodoDB.useGuildButton == nil then dodoDB.useGuildButton = true end
     
-    local is_enabled = (dodoDB and dodoDB.enableChatModule ~= false and dodoDB.useGuildButton ~= false)
+    local is_enabled = (dodoDB and dodoDB.enableInterface ~= false and dodoDB.useGuildButton ~= false)
     if is_enabled then
         get_or_create_guild_button()
         if guild_button then

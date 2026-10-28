@@ -59,6 +59,31 @@ local function create_cst_preview_icon(parent)
     return f
 end
 
+-- 파티 추적 샘플 (군중제어 / 차단기)
+local PT_SAMPLE_CC = { 46968, 5246, 107570, 2094, 118, 179057 }
+local PT_SAMPLE_KICK = {
+    { spellID = 6552, class = "WARRIOR", value = 1,   timer = "" },
+    { spellID = 1766, class = "ROGUE",   value = 0.4, timer = "9" },
+    { spellID = 2139, class = "MAGE",    value = 1,   timer = "" },
+}
+
+-- 05 BloodBrez/06 Stance 미리보기와 같은 아이콘 구조 (배경 + 아이콘 + 테두리)
+local function create_pt_preview_icon(parent, spellID)
+    local f = CreateFrame("Frame", nil, parent)
+    local bg = f:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(0.15, 0.15, 0.15, 0.9)
+    f.icon = f:CreateTexture(nil, "ARTWORK")
+    f.icon:SetPoint("TOPLEFT",     f, "TOPLEFT",      2, -2)
+    f.icon:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -2,  2)
+    f.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    f.icon:SetTexture(C_Spell.GetSpellTexture(spellID))
+    local border = f:CreateTexture(nil, "OVERLAY")
+    border:SetAllPoints()
+    border:SetAtlas("UI-HUD-ActionBar-IconFrame", false)
+    return f
+end
+
 local _preview_ref   = nil
 local _tab_change_fn = nil
 
@@ -426,6 +451,81 @@ dodoCombatPreviewMixin = dodo.UI:CreatePreviewMixin({
                 p.icon_frame:SetPoint("CENTER", ns, "CENTER", 0, 0)
             end,
         },
+        { -- 탭6: 파티 추적 (왼쪽: 군중제어 아이콘 / 오른쪽: 차단기 바)
+            OnLoad = function(p, ns)
+                p:SetClipsChildren(true)
+                p.cc_icons, p.kick_rows = {}, {}
+                for i, spellID in ipairs(PT_SAMPLE_CC) do
+                    p.cc_icons[i] = create_pt_preview_icon(p, spellID)
+                end
+                for i, data in ipairs(PT_SAMPLE_KICK) do
+                    local row = CreateFrame("Frame", nil, p)
+                    row.icon = row:CreateTexture(nil, "ARTWORK")
+                    row.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                    row.icon:SetTexture(C_Spell.GetSpellTexture(data.spellID))
+                    row.bar = CreateFrame("StatusBar", nil, row)
+                    row.bar:SetStatusBarTexture([[Interface\Buttons\WHITE8X8]])
+                    local cc = RAID_CLASS_COLORS[data.class]
+                    row.bar:SetStatusBarColor(cc.r, cc.g, cc.b, 1)
+                    row.bar:SetMinMaxValues(0, 1)
+                    row.bar:SetValue(data.value)
+                    row.bg = row.bar:CreateTexture(nil, "BACKGROUND")
+                    row.bg:SetAllPoints()
+                    row.bg:SetColorTexture(0, 0, 0, 0.5)
+                    row.name = row.bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                    row.name:SetPoint("LEFT", row.bar, "LEFT", 4, 0)
+                    row.name:SetText("플레이어")
+                    row.timer = row.bar:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+                    row.timer:SetPoint("RIGHT", row.bar, "RIGHT", -4, 0)
+                    row.timer:SetText(data.timer)
+                    -- 12 Interrupts 행 하단 금속 테두리와 동일
+                    row.edgeBottom = row.bar:CreateTexture(nil, "BORDER")
+                    row.edgeBottom:SetAtlas("_UI-Frame-Metal-EdgeBottom", true)
+                    row.edgeBottom:SetPoint("BOTTOMLEFT",  row, "BOTTOMLEFT",  0, -5)
+                    row.edgeBottom:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, -5)
+                    p.kick_rows[i] = row
+                end
+            end,
+            Update = function(p, ns)
+                local D  = dodo.PT_DEFAULTS
+                local db = dodoDB or {}
+                local function get(key)
+                    local v = db[key]
+                    if v == nil then v = D[key] end
+                    return v
+                end
+
+                -- 군중제어: 행 당 개수 넘치면 다음 줄
+                local ccOn = get("enablePartyCC")
+                local ccSize, ccGap = get("partyCCSize"), get("partyCCSpacing")
+                local per = math_max(1, get("partyCCPerRow"))
+                local ccTop = -20
+                for i, f in ipairs(p.cc_icons) do
+                    local col, line = (i - 1) % per, math.floor((i - 1) / per)
+                    f:SetSize(ccSize, ccSize)
+                    f:ClearAllPoints()
+                    f:SetPoint("TOPLEFT", ns, "TOPLEFT", 20 + col * (ccSize + ccGap), ccTop - line * (ccSize + ccGap))
+                    f:SetShown(ccOn)
+                end
+
+                -- 차단기: 아이콘 + 바, 오른쪽 위부터 아래로
+                local kickOn = get("enablePartyInterrupts")
+                local w, h = get("partyInterruptsWidth"), get("partyInterruptsHeight")
+                local iconGap, gap = get("partyInterruptsIconGap"), get("partyInterruptsSpacing")
+                for i, row in ipairs(p.kick_rows) do
+                    row:SetSize(w, h)
+                    row:ClearAllPoints()
+                    row:SetPoint("TOPRIGHT", ns, "TOPRIGHT", -20, -20 - (i - 1) * (h + gap))
+                    row.icon:SetSize(h, h)
+                    row.icon:ClearAllPoints()
+                    row.icon:SetPoint("LEFT", row, "LEFT", 0, 0)
+                    row.bar:ClearAllPoints()
+                    row.bar:SetPoint("TOPLEFT", row, "TOPLEFT", h + iconGap, 0)
+                    row.bar:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
+                    row:SetShown(kickOn)
+                end
+            end,
+        },
     },
 })
 
@@ -443,7 +543,6 @@ local CST_GROUP_LABEL = { interrupt = "차단기", dispel = "해제", cd = "쿨�
 local CST_GROUP_ORDER = dodo.CST_GROUP_ORDER -- 카테고리 드롭다운 순서 (99 Options.lua)
 local CST_LIST_H = 360 -- 드롭다운 + 헤더 + 목록 박스 (주문추가 줄 포함 10줄 + 오류 문구)
 local CST_ROW_H  = 26
-local CST_HEADER_H = 28 -- 컬럼 헤더 높이 (WhoFrameColumnHeaderTemplate)
 
 local _cst_class_id, _cst_spec_id = nil, nil -- 편집 중 직업/특성 (세션 한정, 저장 안 함)
 local _cst_list_ref = nil                    -- 주문 목록 프레임 (추가/삭제 후 Update)
@@ -793,36 +892,11 @@ function dodoCSTSpellListMixin:OnLoad()
     -- SetupMenu 시점에 기본 선택 텍스트(특성명만)가 먼저 찍히므로, 커스텀 텍스트로 즉시 재생성
     self.specDD:GenerateMenu()
 
-    -- 주문 목록 (스크롤 없음, 고정 높이)
-    -- 툴팁 나인슬라이스 테두리 (테두리는 템플릿 원본 색, 배경만 SoftBlack 반투명)
-    self.listBG = CreateFrame("Frame", nil, self, "TooltipBackdropTemplate")
-    local bg = dodo.Colors.PrimarySoft.SoftBlack
-    self.listBG:SetBackdropColor(bg.r, bg.g, bg.b, 0.5)
-    self.listBG:SetPoint("TOPLEFT", self, "TOPLEFT", 37, -36 - CST_HEADER_H)
-    self.listBG:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -30, 4)
-
-    -- 컬럼 헤더 (목록 박스 TOP 바로 위, dodoQOL 99 ETC/PlayerMemo.lua 방식)
-    -- 폭은 cst_init_row 열 위치 기준 (박스 안쪽 여백 6 포함: spellID 218 / 카테고리 294)
-    -- WhoFrameColumn_SetWidth가 GetName().."Middle" 전역 조회 → 전역 이름 필요
-    local col_name = CreateFrame("Button", "dodoCSTColName", self, "WhoFrameColumnHeaderTemplate")
-    col_name:SetPoint("BOTTOMLEFT", self.listBG, "TOPLEFT", 2, -2)
-    col_name:SetText("주문명")
-    WhoFrameColumn_SetWidth(col_name, 220)
-
-    local col_id = CreateFrame("Button", "dodoCSTColSpellID", self, "WhoFrameColumnHeaderTemplate")
-    col_id:SetPoint("LEFT", col_name, "RIGHT", -2, 0)
-    col_id:SetText("spellID")
-    WhoFrameColumn_SetWidth(col_id, 78)
-
-    local col_group = CreateFrame("Button", "dodoCSTColGroup", self, "WhoFrameColumnHeaderTemplate")
-    col_group:SetPoint("LEFT", col_id, "RIGHT", -2, 0)
-    col_group:SetText("카테고리")
-    WhoFrameColumn_SetWidth(col_group, 120)
-
-    self.content = CreateFrame("Frame", nil, self)
-    self.content:SetPoint("TOPLEFT", self.listBG, "TOPLEFT", 6, -6)
-    self.content:SetPoint("BOTTOMRIGHT", self.listBG, "BOTTOMRIGHT", -6, 6)
-    self.content:SetFrameLevel(self.listBG:GetFrameLevel() + 1)
+    -- 주문 목록 (스크롤 없음, 고정 높이) — 박스/헤더는 dodo.UI:CreateListBox
+    -- 헤더 폭은 cst_init_row 열 위치 기준 (박스 안쪽 여백 6 포함: spellID 218 / 카테고리 294)
+    self.listBG, self.content = dodo.UI:CreateListBox(self, 36, {
+        { "주문명", 220 }, { "spellID", 78 }, { "카테고리", 120 },
+    })
 
     self.rows = {}
     self.addRow = cst_create_add_row(self.content)

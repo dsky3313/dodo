@@ -39,7 +39,7 @@ local function safe_set_cvar(cvar, value)
 end
 
 local function camera_tilt()
-    local is_enabled = (dodoDB and dodoDB.useCameraTilt ~= false)
+    local is_enabled = (dodoDB and dodo.QOLIsEnabled("useCameraTilt"))
     if is_enabled then
         local angle = dodoDB.cameraAngle or (dodo.QOL_DEFAULTS and dodo.QOL_DEFAULTS.cameraAngle) or 0.65
 
@@ -64,7 +64,7 @@ local function camera_tilt()
 end
 
 local function camera_max_zoom()
-    local is_enabled = (dodoDB and dodoDB.useCameraMaxZoom ~= false)
+    local is_enabled = (dodoDB and dodo.QOLIsEnabled("useCameraMaxZoom"))
     local val = tostring((dodoDB and dodoDB.cameraMaxZoom) or (dodo.QOL_DEFAULTS and dodo.QOL_DEFAULTS.cameraMaxZoom) or 2.6)
     safe_set_cvar(CAM_MAX_ZOOM, is_enabled and val or "1.9")
 end

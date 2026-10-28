@@ -41,7 +41,7 @@ end
 
 -- URL 링크 클릭 시 팝업창을 띄워주는 클릭 훅 함수
 local function on_hyperlink_click(self, link, text, button)
-    if dodoDB.enableChatModule and type(link) == "string" and link:sub(1, 4) == "url:" then
+    if dodoDB.enableInterface ~= false and type(link) == "string" and link:sub(1, 4) == "url:" then
         local url = link:sub(5):gsub("||", "|")
         if dodo.ShowURLCopyPopup then
             dodo.ShowURLCopyPopup(url)
@@ -55,7 +55,7 @@ local function style_chat_frames()
     for i = 1, NUM_CHAT_WINDOWS do
         local frame = _G["ChatFrame"..i]
         if frame then
-            if not dodoDB.enableChatModule then
+            if dodoDB.enableInterface == false then
                 -- 모듈 비활성화 시 기본값 복구
                 local font, size = frame:GetFont()
                 frame:SetFont(font, size or 14, "")

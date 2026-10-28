@@ -23,7 +23,7 @@ local SetCVar = SetCVar
 local f = CreateFrame("Frame")
 f:RegisterEvent("PLAYER_LOGIN")
 f:SetScript("OnEvent", function(self)
-    if dodoDB.enableDamageMeterAlways ~= false then
+    if dodoDB.enableInterface ~= false and dodoDB.enableDamageMeterAlways ~= false then
         C_Timer.After(1, function()
             if C_CVar.GetCVarBool("damageMeterEnabled") == false then
                 SetCVar("damageMeterEnabled", "1")

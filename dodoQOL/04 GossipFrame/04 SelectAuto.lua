@@ -53,7 +53,7 @@ local GF = dodo.GossipFrame
 -- DB 헬퍼
 -- ==============================
 local function is_auto_enabled()
-    return dodoDB and dodoDB.enableGossipAutoSelect ~= false
+    return dodoDB and dodo.QOLIsEnabled("enableGossipAutoSelect")
 end
 
 local function get_entry_state(option_id)

@@ -32,7 +32,7 @@ local PREFIX = "[|c" .. ((dodo and dodo.Colors and dodo.Colors.CharacterFrame an
 -- ==============================
 local function on_merchant_show()
     if not dodoDB then return end
-    if dodoDB.enableMerchant == false then return end
+    if not dodo.QOLIsEnabled("enableMerchant") then return end
 
     -- 1. 자동 수리
     if CanMerchantRepair() then

@@ -16,7 +16,6 @@ end
 -- 초기화
 -- ==============================
 local function initialize()
-    if dodoDB.enableTooltip == nil then dodoDB.enableTooltip = true end
     if dodoDB.useTooltipHealthHide == nil then dodoDB.useTooltipHealthHide = true end
     if dodoDB.useTooltipID == nil then dodoDB.useTooltipID = true end
     if dodoDB.useTooltipColor == nil then dodoDB.useTooltipColor = true end

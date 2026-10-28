@@ -72,7 +72,7 @@ local function update_coord_display()
     create_ui()
     if not coord_frame then return end
 
-    local is_enabled  = (dodoDB and dodoDB.useCoord ~= false)
+    local is_enabled  = (dodoDB and dodoDB.enableInterface ~= false and dodoDB.useCoord ~= false)
     local in_instance = IsInInstance()
 
     if is_enabled then

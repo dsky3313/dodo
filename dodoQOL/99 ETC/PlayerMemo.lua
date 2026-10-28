@@ -106,7 +106,7 @@ local check_party_pending = false
 
 local function check_party_impl()
     check_party_pending = false
-    if dodoDB.enablePlayerMemo == false then return end
+    if not dodo.QOLIsEnabled("enablePlayerMemo") then return end
     local list = dodoDBmemo.playerMemoList
     if not list then return end
 

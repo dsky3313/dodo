@@ -38,7 +38,7 @@ local retry_remaining = 0
 -- 헬퍼 함수
 -- ==============================
 local function is_enabled()
-    return dodoDB and dodoDB.enableChallengesAutoInsert ~= false
+    return dodoDB and dodo.QOLIsEnabled("enableChallengesAutoInsert")
 end
 
 local function find_keystone_in_bags()

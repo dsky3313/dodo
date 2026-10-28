@@ -19,7 +19,7 @@
 02 Mplus/04 KeystoneTimer.lua
 02 Mplus/05 TimerReadyCheck.lua
 02 Mplus/06 CinematicSkip.lua
-# 02 Mplus/07 Consumeable.lua
+02 Mplus/07 Consumeable.lua
 03 PVEFrame/01 PartyClass.lua
 03 PVEFrame/02 BrowseGroup.lua
 03 PVEFrame/03 QuickSelectDungeons.lua

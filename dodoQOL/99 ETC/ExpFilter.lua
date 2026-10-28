@@ -43,7 +43,7 @@ end
 
 -- 경매장 필터 적용
 local function apply_auction_filter()
-    if dodoDB.enableExpFilter == false then return end
+    if not dodo.QOLIsEnabled("enableExpFilter") then return end
     if not (Enum and Enum.AuctionHouseFilter and Enum.AuctionHouseFilter.CurrentExpansionOnly) then return end
 
     RunNextFrame(on_auction_filter_next_frame)
@@ -71,7 +71,7 @@ end
 
 -- 주문 제작 필터 적용 (초기화 지연 대비 재시도 로직 포함)
 local function apply_craft_filter(remaining_retries)
-    if dodoDB.enableExpFilter == false then return end
+    if not dodo.QOLIsEnabled("enableExpFilter") then return end
     if not (Enum and Enum.AuctionHouseFilter and Enum.AuctionHouseFilter.CurrentExpansionOnly) then return end
 
     craft_retries = remaining_retries or 0
@@ -80,7 +80,7 @@ end
 
 -- 동적 이벤트 제어 및 비활성화 시 자원 소모 0화
 local function update_events()
-    local is_enabled = dodoDB.enableExpFilter ~= false
+    local is_enabled = dodo.QOLIsEnabled("enableExpFilter")
 
     if is_enabled then
         main_frame:RegisterEvent("PLAYER_ENTERING_WORLD")

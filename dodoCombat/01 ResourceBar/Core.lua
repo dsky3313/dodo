@@ -147,8 +147,7 @@ RB.UpdateOption = update_option
 local function update_visibility()
     update_option()
 
-    local db = dodoDB
-    local isEnabled = (db and db.enableResourceBarModule ~= false)
+    local isEnabled = dodo.CombatIsEnabled("enableResourceBarModule")
 
     if not isEnabled then
         RB.bar1Frame:Hide()

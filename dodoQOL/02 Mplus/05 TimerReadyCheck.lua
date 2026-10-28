@@ -60,7 +60,7 @@ local function on_loop()
 end
 
 local function update_visual()
-    local isEnabled = (dodoDB and dodoDB.enableReadyCheckTimer ~= false)
+    local isEnabled = (dodoDB and dodo.QOLIsEnabled("enableReadyCheckTimer"))
     if isEnabled then
         if initFrame then
             initFrame:RegisterEvent("READY_CHECK")

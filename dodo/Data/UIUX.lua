@@ -368,6 +368,75 @@ function dodo.UI:SettingsAddPreview(category, mixin_ref)
     layout:AddInitializer(initializer)
 end
 
+-- 자유형 목록 패널 (주문 목록 등) — 여러 모듈이 dodoSettingsPanelListTemplate 프레임을 돌려씀
+-- 템플릿 프레임 안에 mixin_ref별 전용 하위 프레임을 만들고, 현재 mixin 것만 표시
+---@param mixin_ref table GetExtent() / OnLoad() / Update() 구현 (self = 모듈 전용 하위 프레임)
+function dodo.UI:SettingsPanelList(category, mixin_ref)
+    local layout = SettingsPanel:GetLayout(category)
+    if not layout then return nil end
+    local initializer = Settings.CreatePanelInitializer("dodoSettingsPanelListTemplate", {})
+    initializer.GetExtent = function()
+        return mixin_ref.GetExtent()
+    end
+    initializer.InitFrame = function(self, frame)
+        frame:SetHeight(self:GetExtent())
+        frame._dodo_panels = frame._dodo_panels or {}
+        for ref, panel in pairs(frame._dodo_panels) do
+            panel:SetShown(ref == mixin_ref)
+        end
+        local panel = frame._dodo_panels[mixin_ref]
+        if not panel then
+            panel = CreateFrame("Frame", nil, frame)
+            panel:SetAllPoints(frame)
+            Mixin(panel, mixin_ref)
+            frame._dodo_panels[mixin_ref] = panel
+            if panel.OnLoad then panel:OnLoad() end
+        end
+        if panel.Update then panel:Update() end
+    end
+    layout:AddInitializer(initializer)
+    return initializer
+end
+
+-- 목록 박스 — 툴팁 나인슬라이스 (배경 SoftBlack 반투명, 테두리 회색) + 컬럼 헤더 + 행 담을 content
+-- 박스는 parent 상단에서 top + 헤더 높이만큼 아래, 좌 37 / 우 30 / 하 4 여백 (설정창 목록 기준)
+---@param parent Frame
+---@param top number 박스 위 영역 높이 (드롭다운 등, 헤더 제외)
+---@param columns table { { "주문명", 220 }, { "spellID", 78 }, ... } 헤더 텍스트 / 폭
+---@return Frame listBG, Frame content
+local LIST_HEADER_H = 28 -- 컬럼 헤더 높이 (WhoFrameColumnHeaderTemplate)
+local _list_col_count = 0
+function dodo.UI:CreateListBox(parent, top, columns)
+    local listBG = CreateFrame("Frame", nil, parent, "TooltipBackdropTemplate")
+    local bg = dodo.Colors.PrimarySoft.SoftBlack
+    listBG:SetBackdropColor(bg.r, bg.g, bg.b, 0.5)
+    listBG:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    listBG:SetPoint("TOPLEFT", parent, "TOPLEFT", 37, -top - LIST_HEADER_H)
+    listBG:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -30, 4)
+
+    -- 컬럼 헤더 (목록 박스 TOP 바로 위, dodoQOL 99 ETC/PlayerMemo.lua 방식)
+    -- WhoFrameColumn_SetWidth가 GetName().."Middle" 전역 조회 → 전역 이름 자동 부여
+    local prev
+    for _, col in ipairs(columns or {}) do
+        _list_col_count = _list_col_count + 1
+        local header = CreateFrame("Button", "dodoListColumn" .. _list_col_count, parent, "WhoFrameColumnHeaderTemplate")
+        if prev then
+            header:SetPoint("LEFT", prev, "RIGHT", -2, 0)
+        else
+            header:SetPoint("BOTTOMLEFT", listBG, "TOPLEFT", 2, -2)
+        end
+        header:SetText(col[1])
+        WhoFrameColumn_SetWidth(header, col[2])
+        prev = header
+    end
+
+    local content = CreateFrame("Frame", nil, parent)
+    content:SetPoint("TOPLEFT", listBG, "TOPLEFT", 6, -6)
+    content:SetPoint("BOTTOMRIGHT", listBG, "BOTTOMRIGHT", -6, 6)
+    content:SetFrameLevel(listBG:GetFrameLevel() + 1)
+    return listBG, content
+end
+
 -- 탭 전환 가능한 커스텀 미리보기 프레임 — 탭 클릭 시 OnTabSelected(tabIndex) 호출
 ---@param tabs string[] 탭 레이블 배열 (예: {"기본", "공격대 및 전장"})
 ---@param mixin_ref table OnLoad / Update / GetExtent / OnTabSelected(tabIndex) 구현

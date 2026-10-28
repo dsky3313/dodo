@@ -209,7 +209,7 @@ local function decorate_bnet_friend(button)
 end
 
 local function update_friend_button(button)
-    if not button or not button.buttonType or dodoDB.useFriends == false then return end
+    if not button or not button.buttonType or not dodo.QOLIsEnabled("useFriends") then return end
     if button.buttonType == FRIENDS_BUTTON_TYPE_WOW then
         decorate_wow_friend(button)
     elseif button.buttonType == FRIENDS_BUTTON_TYPE_BNET then
@@ -228,7 +228,7 @@ local function ensure_hook()
 end
 
 local function refresh_friends()
-    if dodoDB.useFriends ~= false then
+    if dodo.QOLIsEnabled("useFriends") then
         ensure_hook()
     end
     if not C_FriendList or not C_FriendList.GetNumFriends then return end
@@ -249,7 +249,7 @@ local function on_event(self, event, arg1)
         self:RegisterEvent("PLAYER_LOGIN")
         self:UnregisterEvent("ADDON_LOADED")
     elseif event == "PLAYER_LOGIN" then
-        if dodoDB.useFriends ~= false then
+        if dodo.QOLIsEnabled("useFriends") then
             ensure_hook()
             refresh_friends()
         end

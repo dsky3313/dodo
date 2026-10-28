@@ -106,7 +106,7 @@ end
 -- 기능 3: 상태 업데이트 및 자원 제어 (자원소모 0% 실현)
 -- ==============================
 local function update_visual()
-    local is_enabled = (dodoDB and dodoDB.enableKeystoneLindormi ~= false)
+    local is_enabled = (dodoDB and dodo.QOLIsEnabled("enableKeystoneLindormi"))
     if is_enabled then
         if event_frame then
             event_frame:RegisterEvent("GOSSIP_SHOW")

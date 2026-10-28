@@ -34,7 +34,7 @@ auto_frame:SetScript("OnEvent", function(_, event)
     if event == "GOSSIP_SHOW" then
         if not C_GossipInfo then return end
 
-        if dodoDB.autoTurnIn and C_GossipInfo.GetActiveQuests then
+        if dodoDB.enableQOL ~= false and dodoDB.autoTurnIn and C_GossipInfo.GetActiveQuests then
             for _, quest in ipairs(C_GossipInfo.GetActiveQuests() or {}) do
                 if quest.questID and quest.isComplete then
                     C_GossipInfo.SelectActiveQuest(quest.questID)
@@ -43,7 +43,7 @@ auto_frame:SetScript("OnEvent", function(_, event)
             end
         end
 
-        if dodoDB.autoAccept and C_GossipInfo.GetAvailableQuests then
+        if dodoDB.enableQOL ~= false and dodoDB.autoAccept and C_GossipInfo.GetAvailableQuests then
             if dodoDB.autoAcceptShiftSkip ~= false and IsShiftKeyDown() then return end
             local available = C_GossipInfo.GetAvailableQuests()
             if available and #available > 0 then
@@ -59,12 +59,12 @@ auto_frame:SetScript("OnEvent", function(_, event)
     end
 
     if event == "QUEST_DETAIL" then
-        if not dodoDB.autoAccept then return end
+        if dodoDB.enableQOL == false or not dodoDB.autoAccept then return end
         if dodoDB.autoAcceptShiftSkip ~= false and IsShiftKeyDown() then return end
         AcceptQuest()
 
     elseif event == "QUEST_COMPLETE" then
-        if not dodoDB.autoTurnIn then return end
+        if dodoDB.enableQOL == false or not dodoDB.autoTurnIn then return end
         if dodoDB.autoTurnInShiftSkip ~= false and IsShiftKeyDown() then return end
         local n = GetNumQuestChoices()
         -- 보상 선택이 없을 때만 자동 완료 (선택지 있으면 수동)

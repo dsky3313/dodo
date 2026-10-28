@@ -171,7 +171,7 @@ end
 -- 파티원 UI 렌더링 (비밀값 예외 가드 적용)
 -- ==============================
 local function render_party_ui()
-    if not (dodoDB and dodoDB.enableKeystoneModule ~= false) then return end
+    if not (dodoDB and dodo.QOLIsEnabled("enableKeystoneModule")) then return end
     if is_preview_active then return end
     if InCombatLockdown() then
         return
@@ -366,7 +366,7 @@ local function render_party_ui_throttled()
 end
 
 local function on_openraid_keystone_update()
-    if not (dodoDB and dodoDB.enableKeystoneModule ~= false) then return end
+    if not (dodoDB and dodo.QOLIsEnabled("enableKeystoneModule")) then return end
     if not InCombatLockdown() then
         read_from_details()
         render_party_ui_throttled()
@@ -389,7 +389,7 @@ local function update_module_state()
 
     need_module_state_update = false
 
-    local enabled = (dodoDB and dodoDB.enableKeystoneModule ~= false)
+    local enabled = (dodoDB and dodo.QOLIsEnabled("enableKeystoneModule"))
 
     if not enabled then
         UnregisterStateDriver(main_frame, "visibility")
@@ -437,7 +437,7 @@ dodo.KeystoneApplyFeature = update_feature
 local function show_preview_data()
     local LEM = LibStub and LibStub("LibEditMode", true)
     if not LEM or not LEM:IsInEditMode() then return end
-    local enabled = (dodoDB and dodoDB.enableKeystoneModule ~= false)
+    local enabled = (dodoDB and dodo.QOLIsEnabled("enableKeystoneModule"))
     if not enabled then return end
 
     is_preview_active = true
@@ -469,7 +469,7 @@ end
 
 local function hide_preview_data()
     is_preview_active = false
-    local enabled = (dodoDB and dodoDB.enableKeystoneModule ~= false)
+    local enabled = (dodoDB and dodo.QOLIsEnabled("enableKeystoneModule"))
     if enabled then
         render_party_ui()
     else
@@ -532,7 +532,7 @@ local function create_ui()
 end
 
 local function on_keystone_received(keyLevel, keyMapID, playerRating, playerName, channel)
-    if not (dodoDB and dodoDB.enableKeystoneModule ~= false) then return end
+    if not (dodoDB and dodo.QOLIsEnabled("enableKeystoneModule")) then return end
     if InCombatLockdown() then return end
     if not playerName then return end
 
@@ -710,7 +710,7 @@ local function on_event(self, event, ...)
         update_module_state()
         C_Timer.After(2, update_my_keystone)
 
-        if event == "CHALLENGE_MODE_COMPLETED" and dodoDB and dodoDB.useKeyRoll ~= false then
+        if event == "CHALLENGE_MODE_COMPLETED" and dodoDB and dodo.QOLIsEnabled("useKeyRoll") then
             C_Timer.After(5, delayed_key_roll_msg)
         end
 

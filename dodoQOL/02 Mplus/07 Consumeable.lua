@@ -288,7 +288,7 @@ end
 
 local function update_icon_item(iconFrame, itemID)
     if not iconFrame or not itemID then return end
-    local tex = GetItemIcon(itemID)
+    local tex = C_Item.GetItemIconByID(itemID)
     if tex then iconFrame.icon:SetTexture(tex) end
     iconFrame.tooltipId   = itemID
     iconFrame.tooltipType = "item"

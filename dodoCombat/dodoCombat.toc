@@ -22,8 +22,22 @@
 01 ResourceBar/Tracking.lua
 02 Debuff/Debuff.xml
 02 Debuff/Debuff.lua
-03 CursorSpellTracker/SpellList.xml
 03 CursorSpellTracker/00 Data.lua
 03 CursorSpellTracker/01 Core.lua
-04 BloodBrez.lua
-05 Stance.lua
+04 PartyTracker/99 Options.lua
+04 PartyTracker/01 Core.lua
+04 PartyTracker/02 Talents.lua
+04 PartyTracker/03 Pixels.lua
+04 PartyTracker/04 Sensors.lua
+04 PartyTracker/06 SpellData.lua
+04 PartyTracker/07 PartyFrames.lua
+04 PartyTracker/08 Charges.lua
+04 PartyTracker/09 ExactCooldowns.lua
+04 PartyTracker/10 PartyCDs.lua
+04 PartyTracker/11 Defensives.lua
+04 PartyTracker/12 Interrupts.lua
+04 PartyTracker/13 CC.lua
+04 PartyTracker/14 EditMode.lua
+04 PartyTracker/15 SpellList.lua
+05 BloodBrez.lua
+06 Stance.lua

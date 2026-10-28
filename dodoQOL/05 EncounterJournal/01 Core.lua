@@ -18,7 +18,7 @@ local M = dodo.EJAchievements
 -- ==============================
 local function initialize()
     if dodoDB.enableEJAchievements == nil then dodoDB.enableEJAchievements = true end
-    if M.SetEnabled then M.SetEnabled(dodoDB.enableEJAchievements) end
+    if M.SetEnabled then M.SetEnabled(dodo.QOLIsEnabled("enableEJAchievements")) end
 end
 
 local init_frame = CreateFrame("Frame")

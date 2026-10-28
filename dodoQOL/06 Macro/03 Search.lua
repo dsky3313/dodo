@@ -303,7 +303,7 @@ local function install_search_hooks()
     search_hooks_installed = true
 
     MacroPopupFrame:HookScript("OnShow", function(popup)
-        if dodoDB and dodoDB.enableMacro == false then return end
+        if dodoDB and not dodo.QOLIsEnabled("enableMacro") then return end
         setup_search_box_handlers(popup)
         update_hint_text_state(popup)
         if popup.ExMacroEnhSearchBox then
@@ -322,15 +322,15 @@ local function install_search_hooks()
     end)
 
     hooksecurefunc(MacroPopupFrame, "Update", function(popup)
-        if dodoDB and dodoDB.enableMacro == false then return end
+        if dodoDB and not dodo.QOLIsEnabled("enableMacro") then return end
         refresh_icon_search(popup)
     end)
     hooksecurefunc(MacroPopupFrame, "SetIconFilterInternal", function(popup)
-        if dodoDB and dodoDB.enableMacro == false then return end
+        if dodoDB and not dodo.QOLIsEnabled("enableMacro") then return end
         refresh_icon_search(popup)
     end)
     hooksecurefunc(MacroPopupFrame, "UpdateStateFromCursorType", function(popup)
-        if dodoDB and dodoDB.enableMacro == false then return end
+        if dodoDB and not dodo.QOLIsEnabled("enableMacro") then return end
         update_hint_text_state(popup)
     end)
 end

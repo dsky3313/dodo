@@ -8,6 +8,7 @@
 -- 설정 및 테이블
 -- ==============================
 local dodo = _G.dodo
+local _lt = debugprofilestop() -- TMP-PROF
 dodoDB = dodoDB or {}
 
 local OUTLINE_FONT = dodo.OUTLINE_FONT
@@ -27,6 +28,7 @@ local _G = _G
 -- 기능 1: 로컬 상태 및 설정
 -- ==============================
 local enchant_cache = {}
+local enchant_pattern = ENCHANTED_TOOLTIP_LINE:gsub("%%s", "(.*)") -- 고정 패턴: 로드 때 1회 계산
 
 -- ==============================
 -- 기능 2: 상태 업데이트
@@ -77,7 +79,6 @@ local function get_enchant_name(unit, slotID)
     end
 
     -- 와우 내장 마법부여 포맷 문자열 파싱 ("마법부여: %s")
-    local enchant_pattern = ENCHANTED_TOOLTIP_LINE:gsub("%%s", "(.*)")
     for _, line in ipairs(data.lines) do
         local text = line.leftText
         if text then
@@ -98,7 +99,7 @@ end
 
 -- 3. 마법부여 업데이트 함수
 function dodo.UpdateCharacterFrameEnchant(unit, slot_list)
-    local is_enabled = (dodoDB.enableCharacterFrame ~= false)
+    local is_enabled = (dodo.QOLIsEnabled("enableCharacterFrame"))
 
     for _, info in ipairs(slot_list) do
         local prefix = (unit == "player") and "Character" or "Inspect"
@@ -148,3 +149,4 @@ function dodo.UpdateCharacterFrameEnchant(unit, slot_list)
         end
     end
 end
+dodoCFProf[#dodoCFProf + 1] = "file_load 02 Enchant.lua " .. (debugprofilestop() - _lt) -- TMP-PROF

@@ -177,7 +177,7 @@ end
 local function update_layout()
     if not bar_frame then return end
     if InCombatLockdown() then return end
-    if dodoDB.useIconAddons == false then return end
+    if dodoDB.enableInterface == false or dodoDB.useIconAddons == false then return end
 
     local size    = Config.buttonSize
     local padding = Config.defaultPadding
@@ -674,7 +674,7 @@ local function on_addon_list_show()
         profile_btn:SetPoint("RIGHT", AddonList.SearchBox, "LEFT", -10, 0)
         profile_btn:SetScript("OnClick", on_profile_btn_click)
     end
-    profile_btn:SetShown(dodoDB.useIconAddons ~= false)
+    profile_btn:SetShown(dodoDB.enableInterface ~= false and dodoDB.useIconAddons ~= false)
 end
 
 -- ==============================
@@ -857,7 +857,7 @@ end
 -- 기능: 활성/비활성 처리
 -- ==============================
 local function update_visual()
-    local is_enabled = dodoDB.useIconAddons ~= false
+    local is_enabled = dodoDB.enableInterface ~= false and dodoDB.useIconAddons ~= false
     if is_enabled then
         if bar_frame then bar_frame:Show() end
         refresh_all_buttons()

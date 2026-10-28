@@ -46,7 +46,7 @@ local function quick_bobber()
         return
     end
 
-    local is_enabled = (dodoDB and dodoDB.useQuickBobber ~= false)
+    local is_enabled = (dodoDB and dodo.QOLIsEnabled("useQuickBobber"))
     local is_known = C_SpellBook.IsSpellKnown(131474) -- 낚시 숙련 여부
     local is_ui_open = (ProfessionsBookFrame and ProfessionsBookFrame:IsShown())
 
@@ -81,7 +81,7 @@ local init_quick_bobber = CreateFrame("Frame")
 
 -- OFF시 PLAYER_ENTERING_WORLD 해제로 자원소모 0
 local function update_events()
-    local is_enabled = dodoDB and dodoDB.useQuickBobber ~= false
+    local is_enabled = dodoDB and dodo.QOLIsEnabled("useQuickBobber")
     if is_enabled then
         init_quick_bobber:RegisterEvent("PLAYER_ENTERING_WORLD")
     else

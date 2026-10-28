@@ -8,6 +8,7 @@
 -- 설정 및 테이블
 -- ==============================
 local dodo = _G.dodo
+local _lt = debugprofilestop() -- TMP-PROF
 dodoDB = dodoDB or {}
 
 local OUTLINE_FONT = dodo.OUTLINE_FONT
@@ -43,7 +44,7 @@ end
 
 -- 2. 아이템 레벨 업데이트 함수
 function dodo.UpdateCharacterFrameIlvl(unit, slot_list)
-    local is_enabled = (dodoDB.enableCharacterFrame ~= false and dodoDB.useItemLevel ~= false)
+    local is_enabled = (dodo.QOLIsEnabled("enableCharacterFrame") and dodoDB.useItemLevel ~= false)
 
     for _, info in ipairs(slot_list) do
         -- unit 접두사에 따라 캐릭터창("Character") 또는 살펴보기창("Inspect") 슬롯 프레임 획득
@@ -85,3 +86,4 @@ function dodo.UpdateCharacterFrameIlvl(unit, slot_list)
         end
     end
 end
+dodoCFProf[#dodoCFProf + 1] = "file_load 04 Ilvl.lua " .. (debugprofilestop() - _lt) -- TMP-PROF

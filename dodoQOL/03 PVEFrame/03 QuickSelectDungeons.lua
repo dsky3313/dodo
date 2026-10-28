@@ -94,8 +94,10 @@ local function on_button_down(self)
     C_LFGList.CreateListing(listingData)
 end
 
+local gossip_hooked = false -- initialize가 2번 불려도 후킹은 1번
+
 local function on_gossip_select(gossipOptionID)
-    if not (dodoDB and dodoDB.enableQuickselect ~= false) then return end
+    if not (dodoDB and dodo.QOLIsEnabled("enableQuickselect")) then return end
     if gossipOptionID == 107597 then
         C_Timer.After(0.5, refresh_keystones)
     end
@@ -123,7 +125,7 @@ local function restore_space_fix()
 end
 
 local function apply_space_fix()
-    if not (dodoDB and dodoDB.enableQuickselect ~= false) then return end
+    if not (dodoDB and dodo.QOLIsEnabled("enableQuickselect")) then return end
     local ec = LFGListFrame.EntryCreation
     if not ec then return end
 
@@ -146,21 +148,21 @@ local function apply_space_fix()
     end
 end
 
-local function create_ui()
-    if main_frame then return end
+-- 호출 1회당 1ms 초과 방지: UI 생성을 프레임마다 나눠 실행 (프레임 → 버튼 4개씩 → 마무리)
+local BUTTONS_PER_STEP = 4
+local ui_started = false
+local parent_strata, has_lib_icon, step
+local update_visual -- 전방 선언
 
-    if not LFGListFrame or not LFGListFrame.EntryCreation then
-        return
-    end
-
+local function create_frame()
     main_frame = CreateFrame("Frame", "dodo_QuickselectFrame", LFGListFrame.EntryCreation, "BackdropTemplate")
-    
+
     -- Config의 iconSize와 spacing 설정을 바탕으로 가로 사이즈 및 세로 사이즈 자동 갱신
     local total_width = Config.iconSize * #DungeonList + Config.spacing * (#DungeonList - 1)
     main_frame:SetSize(total_width, Config.iconSize)
 
     -- 프레임 계층 가방 뒤로 묻힘 원천 해결
-    local parent_strata = LFGListFrame.EntryCreation:GetFrameStrata()
+    parent_strata = LFGListFrame.EntryCreation:GetFrameStrata()
     local parent_level = LFGListFrame.EntryCreation:GetFrameLevel()
 
     main_frame:SetFrameStrata(parent_strata)
@@ -170,97 +172,126 @@ local function create_ui()
     main_frame:SetPoint(Config.defaultPoint, LFGListFrame.EntryCreation.Name, "BOTTOMLEFT", Config.defaultX, Config.defaultY)
 
     -- dodo.LibIcon이 준비되었는지 확인하고 로드
-    local has_lib_icon = dodo.LibIcon and dodo.LibIcon.Create
+    has_lib_icon = dodo.LibIcon and dodo.LibIcon.Create
 
     -- 간격 계산을 위한 이동 스텝 계산 (아이콘 크기 + 마진간격)
-    local step = Config.iconSize + Config.spacing
+    step = Config.iconSize + Config.spacing
+end
 
-    for i, data in ipairs(DungeonList) do
-        local btn
-        if has_lib_icon then
-            -- Config 지정 아이콘 크기 기반 동적 생성
-            btn = dodo.LibIcon:Create("dodo_QuickselectBtn" .. i, main_frame, { iconsize = {Config.iconSize, Config.iconSize} })
-            
-            local icon_config = {
-                type = "macro",
-                icon = data.texture or C_Spell.GetSpellTexture(data.id),
-                label = data.name,
-                fontsize = 10,
-                outline = true,
-                useTooltip = false, -- 인게임 가독성을 위해 간결화
-                framestrata = parent_strata, -- 묻힘 방지용 스트라타 주입!
-                fontposition = { "TOP", nil, "BOTTOM", 0, 4 }, -- 폰트 위치 하단 앵커링 주입!
-            }
-            btn:ApplyConfig(icon_config)
-            btn:SetFrameLevel(main_frame:GetFrameLevel() + 5) -- 묻힘 방지용 레벨 강제 지정!
-            
-            -- 기존 텍스트 핸들러를 LibIcon.Name으로 연동
-            btn.text = btn.Name
+local function create_button(i, data)
+    local btn
+    if has_lib_icon then
+        -- Config 지정 아이콘 크기 기반 동적 생성
+        btn = dodo.LibIcon:Create("dodo_QuickselectBtn" .. i, main_frame, { iconsize = {Config.iconSize, Config.iconSize} })
+        
+        local icon_config = {
+            type = "macro",
+            icon = data.texture or C_Spell.GetSpellTexture(data.id),
+            label = data.name,
+            fontsize = 10,
+            outline = true,
+            useTooltip = false, -- 인게임 가독성을 위해 간결화
+            framestrata = parent_strata, -- 묻힘 방지용 스트라타 주입!
+            fontposition = { "TOP", nil, "BOTTOM", 0, 4 }, -- 폰트 위치 하단 앵커링 주입!
+        }
+        btn:ApplyConfig(icon_config)
+        btn:SetFrameLevel(main_frame:GetFrameLevel() + 5) -- 묻힘 방지용 레벨 강제 지정!
+        
+        -- 기존 텍스트 핸들러를 LibIcon.Name으로 연동
+        btn.text = btn.Name
 
-            -- 단수용 FontString 생성 (TOPLEFT)
-            local lvlText = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightOutline")
-            lvlText:SetPoint("TOPLEFT", btn, "TOPLEFT", 2, -2)
-            local fontPath = lvlText:GetFont()
-            if fontPath then
-                lvlText:SetFont(fontPath, 11, "OUTLINE")
-            end
-            local r, g, b = 1.0, 0.82, 0.0
-            if dodo.Colors and dodo.Colors.Primary and dodo.Colors.Primary.Gold then
-                r, g, b = dodo.Colors.Primary.Gold.r, dodo.Colors.Primary.Gold.g, dodo.Colors.Primary.Gold.b
-            end
-            lvlText:SetTextColor(r, g, b)
-            btn.lvlText = lvlText
-        else
-            -- 폴백: 일반 프레임 방식
-            btn = CreateFrame("Frame", nil, main_frame)
-            btn:SetSize(Config.iconSize, Config.iconSize)
-            btn:SetFrameStrata(parent_strata)
-            btn:SetFrameLevel(main_frame:GetFrameLevel() + 5)
-            
-            local icon = btn:CreateTexture(nil, "ARTWORK")
-            icon:SetAllPoints()
-            icon:SetTexture(data.texture or C_Spell.GetSpellTexture(data.id))
-            icon:SetVertexColor(1, 1, 1, 1)
-            btn.icon = icon
-
-            -- 던전명 FontString (하단)
-            local text = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightOutline")
-            text:SetPoint("TOP", btn, "BOTTOM", 0, -2)
-            text:SetJustifyH("CENTER")
-            text:SetText(data.name)
-            local fontPath = text:GetFont()
-            if fontPath then
-                text:SetFont(fontPath, 10, "OUTLINE")
-            end
-            btn.text = text
-
-            -- 단수용 FontString (TOPLEFT)
-            local lvlText = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightOutline")
-            lvlText:SetPoint("TOPLEFT", btn, "TOPLEFT", 2, -2)
-            if fontPath then
-                lvlText:SetFont(fontPath, 11, "OUTLINE")
-            end
-            local r, g, b = 1.0, 0.82, 0.0
-            if dodo.Colors and dodo.Colors.Primary and dodo.Colors.Primary.Gold then
-                r, g, b = dodo.Colors.Primary.Gold.r, dodo.Colors.Primary.Gold.g, dodo.Colors.Primary.Gold.b
-            end
-            lvlText:SetTextColor(r, g, b)
-            btn.lvlText = lvlText
-
-            local cooldown = CreateFrame("Cooldown", nil, btn, "CooldownFrameTemplate")
-            cooldown:SetAllPoints()
-            btn.cooldown = cooldown
+        -- 단수용 FontString 생성 (TOPLEFT)
+        local lvlText = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightOutline")
+        lvlText:SetPoint("TOPLEFT", btn, "TOPLEFT", 2, -2)
+        local fontPath = lvlText:GetFont()
+        if fontPath then
+            lvlText:SetFont(fontPath, 11, "OUTLINE")
         end
+        local r, g, b = 1.0, 0.82, 0.0
+        if dodo.Colors and dodo.Colors.Primary and dodo.Colors.Primary.Gold then
+            r, g, b = dodo.Colors.Primary.Gold.r, dodo.Colors.Primary.Gold.g, dodo.Colors.Primary.Gold.b
+        end
+        lvlText:SetTextColor(r, g, b)
+        btn.lvlText = lvlText
+    else
+        -- 폴백: 일반 프레임 방식
+        btn = CreateFrame("Frame", nil, main_frame)
+        btn:SetSize(Config.iconSize, Config.iconSize)
+        btn:SetFrameStrata(parent_strata)
+        btn:SetFrameLevel(main_frame:GetFrameLevel() + 5)
+        
+        local icon = btn:CreateTexture(nil, "ARTWORK")
+        icon:SetAllPoints()
+        icon:SetTexture(data.texture or C_Spell.GetSpellTexture(data.id))
+        icon:SetVertexColor(1, 1, 1, 1)
+        btn.icon = icon
 
-        -- Config에 정의된 동적 간격(step)을 적용하여 정렬 배치!
-        btn:SetPoint("LEFT", main_frame, "LEFT", (i - 1) * step, 0)
-        btn.dID = data.lfgID
-        btn:SetScript("OnMouseDown", on_button_down)
+        -- 던전명 FontString (하단)
+        local text = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightOutline")
+        text:SetPoint("TOP", btn, "BOTTOM", 0, -2)
+        text:SetJustifyH("CENTER")
+        text:SetText(data.name)
+        local fontPath = text:GetFont()
+        if fontPath then
+            text:SetFont(fontPath, 10, "OUTLINE")
+        end
+        btn.text = text
 
-        dungeon_buttons[i] = btn
+        -- 단수용 FontString (TOPLEFT)
+        local lvlText = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightOutline")
+        lvlText:SetPoint("TOPLEFT", btn, "TOPLEFT", 2, -2)
+        if fontPath then
+            lvlText:SetFont(fontPath, 11, "OUTLINE")
+        end
+        local r, g, b = 1.0, 0.82, 0.0
+        if dodo.Colors and dodo.Colors.Primary and dodo.Colors.Primary.Gold then
+            r, g, b = dodo.Colors.Primary.Gold.r, dodo.Colors.Primary.Gold.g, dodo.Colors.Primary.Gold.b
+        end
+        lvlText:SetTextColor(r, g, b)
+        btn.lvlText = lvlText
+
+        local cooldown = CreateFrame("Cooldown", nil, btn, "CooldownFrameTemplate")
+        cooldown:SetAllPoints()
+        btn.cooldown = cooldown
     end
 
+    -- Config에 정의된 동적 간격(step)을 적용하여 정렬 배치!
+    btn:SetPoint("LEFT", main_frame, "LEFT", (i - 1) * step, 0)
+    btn.dID = data.lfgID
+    btn:SetScript("OnMouseDown", on_button_down)
+
+    dungeon_buttons[i] = btn
+end
+
+local function finish_ui()
     hooksecurefunc(LFGListFrame.EntryCreation, "Show", apply_space_fix)
+    update_visual() -- 생성 완료 후 표시/쐐기 상태 반영
+end
+
+local function build_ui_step()
+    if not main_frame then
+        create_frame()
+    elseif #dungeon_buttons < #DungeonList then
+        local from = #dungeon_buttons + 1
+        local to = from + BUTTONS_PER_STEP - 1
+        if to > #DungeonList then to = #DungeonList end
+        for i = from, to do create_button(i, DungeonList[i]) end
+    else
+        finish_ui()
+        return
+    end
+    C_Timer.After(0, build_ui_step)
+end
+
+local function create_ui()
+    if ui_started then return end
+
+    if not LFGListFrame or not LFGListFrame.EntryCreation then
+        return
+    end
+
+    ui_started = true
+    C_Timer.After(0, build_ui_step)
 end
 
 local function initialize()
@@ -268,14 +299,17 @@ local function initialize()
     create_ui()
     refresh_keystones()
 
-    hooksecurefunc(C_GossipInfo, "SelectOption", on_gossip_select)
+    if not gossip_hooked then
+        gossip_hooked = true
+        hooksecurefunc(C_GossipInfo, "SelectOption", on_gossip_select)
+    end
 end
 
 -- ==============================
 -- 기능 2: 상태 업데이트 (자원 절약 가드 포함)
 -- ==============================
-local function update_visual()
-    local is_enabled = (dodoDB and dodoDB.enableQuickselect ~= false)
+update_visual = function()
+    local is_enabled = (dodoDB and dodo.QOLIsEnabled("enableQuickselect"))
     if is_enabled then
         if main_frame then
             main_frame:Show()

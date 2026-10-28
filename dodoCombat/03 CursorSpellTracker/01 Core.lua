@@ -452,7 +452,7 @@ tracker_frame:SetScript("OnUpdate", on_update)
 
 -- 토글 꺼짐 또는 현재 특성 추적 대상 없음 → 상태 이벤트 해제 + OnUpdate 정지 (자원소모 0)
 local function update_tracker_running()
-    tracker_running = dodoDB.enableCursorSpellTracker ~= false and #active_spells > 0
+    tracker_running = dodo.CombatIsEnabled("enableCursorSpellTracker") and #active_spells > 0
     for i = 1, #STATE_EVENTS do
         if tracker_running then
             init_frame:RegisterEvent(STATE_EVENTS[i])
@@ -579,7 +579,7 @@ local function initialize()
     init_cdm_hooks()
     C_Timer.After(1, rescan_cdm_items) -- CDM 뷰어 초기화가 늦는 경우 대비 (OverlayCDM의 0.5s 지연과 동일 목적)
 
-    set_events(dodoDB.enableCursorSpellTracker ~= false)
+    set_events(dodo.CombatIsEnabled("enableCursorSpellTracker"))
     refresh_active_spells()
 end
 

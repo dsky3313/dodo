@@ -43,11 +43,11 @@ local function chat_bubble()
     backup_default_font()
 
     -- 1. 글꼴 설정 적용 여부 확인
-    local use_font = (dodoDB.useChatbubbleFont ~= false)
+    local use_font = (dodo.QOLIsEnabled("useChatbubbleFont"))
     local font_path = use_font and (dodoDB.chatbubbleFontPath or (dodo.QOL_DEFAULTS and dodo.QOL_DEFAULTS.chatbubbleFontPath) or "Fonts\\2002.TTF") or default_font_path
 
     -- 2. 글꼴 크기 설정 적용 여부 확인
-    local use_size = (dodoDB.useChatbubbleFontSize ~= false)
+    local use_size = (dodo.QOLIsEnabled("useChatbubbleFontSize"))
     local font_size = use_size and (dodoDB.chatbubbleFontSize or (dodo.QOL_DEFAULTS and dodo.QOL_DEFAULTS.chatbubbleFontSize) or 10) or default_font_size
 
     local font_flag = "OUTLINE"

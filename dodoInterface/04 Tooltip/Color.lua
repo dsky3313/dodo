@@ -42,7 +42,7 @@ local function apply_border_color(tooltip, r, g, b)
 end
 
 local function reset_border_color(tooltip)
-    if dodoDB.enableTooltip == false or dodoDB.useTooltipColor == false then return end
+    if dodoDB.enableInterface == false or dodoDB.useTooltipColor == false then return end
     if not tooltip or not tooltip.NineSlice then return end
     tooltip.NineSlice:SetBorderColor(1, 1, 1, 1)
 end
@@ -57,7 +57,7 @@ local function get_name_line(tooltip)
 end
 
 local function match_border_to_name_color(tooltip, r, g, b)
-    if dodoDB.useTooltipColor == false or dodoDB.enableTooltip == false then return end
+    if dodoDB.useTooltipColor == false or dodoDB.enableInterface == false then return end
     if not r then
         local name_line = get_name_line(tooltip)
         if name_line then
@@ -73,7 +73,7 @@ end
 -- 콜백 핸들러
 -- ==============================
 local function on_unit_tooltip(self, data)
-    if dodoDB.enableTooltip == false or dodoDB.useTooltipColor == false then return end
+    if dodoDB.enableInterface == false or dodoDB.useTooltipColor == false then return end
     if not data or is_secret(data) then return end
     
     local guid = data.guid
@@ -115,12 +115,12 @@ local function on_unit_tooltip(self, data)
 end
 
 local function on_item_tooltip(self, data)
-    if dodoDB.enableTooltip == false or dodoDB.useTooltipColor == false then return end
+    if dodoDB.enableInterface == false or dodoDB.useTooltipColor == false then return end
     match_border_to_name_color(self)
 end
 
 local function on_spell_tooltip(self, data)
-    if dodoDB.enableTooltip == false or dodoDB.useTooltipColor == false then return end
+    if dodoDB.enableInterface == false or dodoDB.useTooltipColor == false then return end
     local gold = dodo.ColorsPrimary.Gold
     if gold then
         apply_border_color(self, gold.r, gold.g, gold.b)

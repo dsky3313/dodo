@@ -7,6 +7,7 @@
 -- 설정 및 테이블
 -- ==============================
 local dodo = _G.dodo
+local _lt = debugprofilestop() -- TMP-PROF
 dodoDB = dodoDB or {}
 
 local EXTENDED_WIDTH  = 650
@@ -70,7 +71,7 @@ end
 -- ==============================
 -- 1. 장비창 기본 배경 투명화
 function dodo.HideCharacterFrameBackgrounds()
-    if dodoDB.enableCharacterFrame == false then return end
+    if not dodo.QOLIsEnabled("enableCharacterFrame") then return end
 
     local textures = {
         "CharacterModelFrameBackgroundOverlay",
@@ -94,7 +95,7 @@ local function disable_extended_layout(force_reset)
 
     -- 마스터 토글(enableCharacterFrame)이 꺼져있을 때는
     -- 외부 복원 지시(force_reset)가 아닌 한 훅 개입 방지 즉시 리턴
-    local is_module_active = (dodoDB.enableCharacterFrame ~= false)
+    local is_module_active = (dodo.QOLIsEnabled("enableCharacterFrame"))
     if not is_module_active and not force_reset then
         return
     end
@@ -162,7 +163,7 @@ local function enable_extended_layout()
     if not PaperDollFrame or not PaperDollFrame:IsShown() then return end
     
     -- 마스터 토글이 꺼져있으면 개입 방지 즉시 리턴
-    if dodoDB.enableCharacterFrame == false then
+    if not dodo.QOLIsEnabled("enableCharacterFrame") then
         return
     end
 
@@ -229,3 +230,4 @@ CharacterFrame:HookScript("OnShow", on_show_character_frame)
 hooksecurefunc(CharacterFrame, "Expand", enable_extended_layout)
 hooksecurefunc(CharacterFrame, "UpdateSize", enable_extended_layout)
 hooksecurefunc(CharacterFrame, "Collapse", disable_extended_layout)
+dodoCFProf[#dodoCFProf + 1] = "file_load 06 Layout.lua " .. (debugprofilestop() - _lt) -- TMP-PROF

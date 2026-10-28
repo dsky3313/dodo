@@ -48,7 +48,7 @@ end
 -- 가방 열기/닫기 훅
 -- ==============================
 local function on_bag_show(label)
-    if not dodoDB or dodoDB.enableToken == false then return end
+    if not dodoDB or not dodo.QOLIsEnabled("enableToken") then return end
     if IsInInstance() then return end
     if C_WowTokenPublic and C_WowTokenPublic.UpdateMarketPrice then
         pcall(C_WowTokenPublic.UpdateMarketPrice)

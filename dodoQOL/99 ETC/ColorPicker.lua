@@ -452,7 +452,7 @@ local function create_input_frame()
     -- ColorPicker 색상 변경 시 입력창 동기화
     ColorPickerFrame.Content.ColorPicker:HookScript("OnColorSelect", function()
         if update_running then return end
-        if not (dodoDB and dodoDB.enableColorPicker ~= false) then return end
+        if not (dodoDB and dodo.QOLIsEnabled("enableColorPicker")) then return end
         input_update_all(f)
     end)
     f:SetScript("OnShow", function() input_update_all(f) end)
@@ -500,7 +500,7 @@ end
 -- ColorPickerFrame 후킹
 -- ==============================
 local function on_picker_show(self)
-    local enabled = dodoDB and dodoDB.enableColorPicker ~= false
+    local enabled = dodoDB and dodo.QOLIsEnabled("enableColorPicker")
     ColorPickerFrame:UnregisterEvent("GLOBAL_MOUSE_DOWN")
 
     if not enabled then
@@ -520,7 +520,7 @@ local function on_picker_show(self)
 end
 
 local function on_okay_click()
-    if not (dodoDB and dodoDB.enableColorPicker ~= false) then return end
+    if not (dodoDB and dodo.QOLIsEnabled("enableColorPicker")) then return end
     local r, g, b = ColorPickerFrame:GetColorRGB()
     local color   = { r, g, b, 1 }
 
@@ -552,7 +552,7 @@ end
 
 local function update_visibility()
     if not created then return end
-    local on = dodoDB and dodoDB.enableColorPicker ~= false
+    local on = dodoDB and dodo.QOLIsEnabled("enableColorPicker")
     if palette_frame    then palette_frame:SetShown(on)    end
     if palette_dropdown then palette_dropdown:SetShown(on) end
     if input_frame      then input_frame:SetShown(on)      end
@@ -581,7 +581,7 @@ local function on_event(self, event, arg1)
 
         init_palettes()
 
-        if dodoDB.enableColorPicker then create_ui() end
+        if dodo.QOLIsEnabled("enableColorPicker") then create_ui() end
 
         self:UnregisterEvent("PLAYER_LOGIN")
         self:UnregisterEvent("ADDON_LOADED")

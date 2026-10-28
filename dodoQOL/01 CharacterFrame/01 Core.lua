@@ -8,6 +8,10 @@
 -- 설정 및 테이블
 -- ==============================
 local dodo = _G.dodo
+local _lt = debugprofilestop() -- TMP-PROF
+local _P = {} -- TMP-PROF
+dodoCFProf = _P -- TMP-PROF
+local function _rec(n, t) if #_P < 300 then _P[#_P + 1] = n .. " " .. (debugprofilestop() - t) end end -- TMP-PROF
 dodoDB = dodoDB or {}
 
 dodo.OUTLINE_FONT = STANDARD_TEXT_FONT or "Fonts\\2002.TTF"
@@ -49,7 +53,7 @@ local event_frame = CreateFrame("Frame")
 -- ==============================
 -- 캐릭터창 및 살펴보기창 통합 갱신 제어 허브
 local function update_all_character_slots()
-    if dodoDB.enableCharacterFrame == false then
+    if not dodo.QOLIsEnabled("enableCharacterFrame") then
         -- 비활성화 시 모든 오버레이 숨김 처리 유도
         if dodo.UpdateCharacterFrameIlvl then dodo.UpdateCharacterFrameIlvl("player", dodo.CharacterFrameSLOT_LIST) end
         if dodo.UpdateCharacterFrameEnchant then dodo.UpdateCharacterFrameEnchant("player", dodo.CharacterFrameSLOT_LIST) end
@@ -75,8 +79,12 @@ end
 local is_update_pending = false
 
 local function do_update()
+    local _t = debugprofilestop() -- TMP-PROF
     is_update_pending = false
+    -- 장비창이 닫혀 있으면 갱신 불필요 (열릴 때 PaperDollFrame OnShow 훅이 다시 요청)
+    if not (PaperDollFrame and PaperDollFrame:IsShown()) then return end
     update_all_character_slots()
+    _rec("do_update", _t) -- TMP-PROF
 end
 
 local function request_update()
@@ -91,14 +99,20 @@ dodo.UpdateAllCharacterSlots = update_all_character_slots
 -- ==============================
 -- 이벤트 핸들러
 -- ==============================
-local function on_event(self, event, ...)
+local on_event_inner -- TMP-PROF
+local function on_event(self, event, ...) -- TMP-PROF
+    local _t = debugprofilestop() -- TMP-PROF
+    on_event_inner(self, event, ...) -- TMP-PROF
+    _rec("on_event " .. event, _t) -- TMP-PROF
+end -- TMP-PROF
+on_event_inner = function(self, event, ...) -- TMP-PROF
     if event == "PLAYER_LOGIN" then
         -- DB 변수 기본값 셋팅
         if dodoDB.enableCharacterFrame == nil then dodoDB.enableCharacterFrame = true end
         if dodoDB.useItemLevel == nil then dodoDB.useItemLevel = true end
 
         -- 활성화 상태인 경우에만 감지 이벤트 등록
-        if dodoDB.enableCharacterFrame then
+        if dodo.QOLIsEnabled("enableCharacterFrame") then
             event_frame:RegisterEvent("UNIT_INVENTORY_CHANGED")
             event_frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
             event_frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
@@ -151,3 +165,4 @@ local function toggle_character_frame(checked)
     update_all_character_slots()
 end
 dodo.ToggleCharacterFrame = toggle_character_frame
+dodoCFProf[#dodoCFProf + 1] = "file_load 01 Core.lua " .. (debugprofilestop() - _lt) -- TMP-PROF

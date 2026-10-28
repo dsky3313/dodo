@@ -50,7 +50,6 @@ local ipairs = ipairs
 local issecretvalue = issecretvalue
 local pairs = pairs
 local tonumber = tonumber
-local unpack = unpack
 
 -- 변수
 local C_ChatInfo = C_ChatInfo
@@ -160,9 +159,11 @@ local function on_reset_click()
     end
 end
 
-create_ui = function()
-    if difficulty_frame then return end
+-- 호출 1회당 1ms 초과 방지: UI 생성을 단계별로 나눠 프레임마다 1단계씩 실행
+local ui_step = 0
+local ui_ready = false
 
+local function build_panel()
     -- dodo.UI 표준 포트레이트 패널로 전환 (닫기 버튼 숨김 옵션 true 전달)
     difficulty_frame = dodo.UI:CreatePortraitPanel("DifficultySelector", "인스턴스 난이도", true)
     difficulty_frame:SetFrameStrata("LOW")
@@ -181,12 +182,19 @@ create_ui = function()
         difficulty_frame.Bg:Hide()
     end
 
+    -- 미리 생성(로딩 직후) → 표시 여부는 update_ui_status가 결정
+    difficulty_frame:Hide()
+end
+
+local function build_background()
     -- FlatPanelBackgroundTemplate 배경 설정
     difficulty_frame.Background = CreateFrame("Frame", nil, difficulty_frame, "FlatPanelBackgroundTemplate")
     difficulty_frame.Background:SetFrameLevel(difficulty_frame:GetFrameLevel() - 1)
     difficulty_frame.Background:SetPoint("TOPLEFT", 7, -18)
     difficulty_frame.Background:SetPoint("BOTTOMRIGHT", -3, 3)
+end
 
+local function build_rows()
     local row1 = create_category_row(difficulty_frame, -25, "던전")
     for i, data in ipairs(dodo.difficultyTable.dungeon) do create_difficulty_button(row1, "dungeon", i, data) end
 
@@ -195,7 +203,9 @@ create_ui = function()
 
     local row3 = create_category_row(difficulty_frame, -85, "낭만")
     for i, data in ipairs(dodo.difficultyTable.legacy) do create_difficulty_button(row3, "legacy", i, data) end
+end
 
+local function build_reset()
     -- 닫기 버튼이 없으므로 새로고침 버튼을 타이틀바 맨 우측 끝에 배치 (가려짐 방지)
     reset_btn = CreateFrame("Button", nil, difficulty_frame.NineSlice, "SquareIconButtonTemplate")
     reset_btn:SetSize(30, 30)
@@ -213,6 +223,25 @@ create_ui = function()
     end
 
     reset_btn:SetScript("OnClick", on_reset_click)
+    ui_ready = true
+end
+
+local ui_steps = { build_panel, build_background, build_rows, build_reset }
+
+local function run_ui_step()
+    ui_step = ui_step + 1
+    ui_steps[ui_step]()
+end
+
+local function build_ui_async()
+    if ui_ready then return end
+    run_ui_step()
+    if not ui_ready then C_Timer.After(0, build_ui_async) end
+end
+
+-- 남은 단계를 즉시 마무리 (표시가 먼저 필요할 때)
+create_ui = function()
+    while not ui_ready do run_ui_step() end
 end
 
 -- ==============================
@@ -225,14 +254,30 @@ check_permission = function()
     return (not IsInGroup() and not IsInRaid()) or UnitIsGroupLeader("player")
 end
 
+-- 첫 표시(레이아웃 계산)가 버튼 상태 갱신과 한 호출에 몰리지 않도록 다음 프레임에 표시
+local show_pending = false
+
+local function show_frame()
+    show_pending = false
+    if dodoDB and dodo.QOLIsEnabled("useInsDifficultyFrame") and not is_ins() then
+        difficulty_frame:Show()
+    end
+end
+
+local function request_show()
+    if show_pending or difficulty_frame:IsShown() then return end
+    show_pending = true
+    C_Timer.After(0, show_frame)
+end
+
 update_ui_status = function(force_category, force_val)
-    local is_enabled = (dodoDB and dodoDB.useInsDifficultyFrame ~= false)
+    local is_enabled = (dodoDB and dodo.QOLIsEnabled("useInsDifficultyFrame"))
     if not is_enabled or is_ins() then
         if difficulty_frame and difficulty_frame:IsShown() then difficulty_frame:Hide() end
         return
     else
-        if not difficulty_frame then create_ui() end
-        if not difficulty_frame:IsShown() then difficulty_frame:Show() end
+        if not ui_ready then create_ui() end
+        request_show()
     end
 
     local has_permission = check_permission()
@@ -305,7 +350,7 @@ end
 -- 이벤트 등록 상태 관리: 두 기능 중 하나라도 켜있으면 이벤트 유지
 update_event_registration = function()
     if not init_ins_difficulty then return end
-    local ui_on = (dodoDB and dodoDB.useInsDifficultyFrame ~= false)
+    local ui_on = (dodoDB and dodo.QOLIsEnabled("useInsDifficultyFrame"))
     if ui_on then
         init_ins_difficulty:RegisterEvent("PLAYER_ENTERING_WORLD")
         init_ins_difficulty:RegisterEvent("PARTY_LEADER_CHANGED")
@@ -319,12 +364,26 @@ update_event_registration = function()
     end
 end
 
+-- 입장 타이머 호출이 무거워지지 않도록 UI 갱신은 다음 프레임에 처리
+local status_pending = false
+
+local function status_deferred()
+    status_pending = false
+    update_ui_status()
+end
+
+local function request_status()
+    if status_pending then return end
+    status_pending = true
+    C_Timer.After(0, status_deferred)
+end
+
 -- 난이도 자동 고정 (Option.lua용)
 ins_difficulty = function()
     if not dodoDB then return end
     update_event_registration()
-    if dodoDB.useInsDifficultyFrame == false or not check_permission() then
-        update_ui_status()
+    if not dodo.QOLIsEnabled("useInsDifficultyFrame") or not check_permission() then
+        request_status()
         return
     end
 
@@ -351,7 +410,7 @@ ins_difficulty = function()
             SetLegacyRaidDifficultyID(legacy_val)
         end
     end
-    update_ui_status()
+    request_status()
 end
 
 ins_difficulty_ui = function()
@@ -383,11 +442,12 @@ local function on_event(self, event, arg1)
         anchor_frame = CreateFrame("Frame", "dodoEditModeInsDifficulty", UIParent)
         anchor_frame:SetSize(230, 124)
         anchor_frame:SetPoint(_pt.point, UIParent, _pt.relativePoint or _pt.point, _pt.xOfs or 0, _pt.yOfs or 0)
-        LEM:AddFrame(anchor_frame, function(f, l, p, x, y)
+        LEM:AddFrame(anchor_frame, function(_, _, p, x, y)
             dodoDB.editMode = dodoDB.editMode or {}
             dodoDB.editMode["InsDifficulty"] = { point=p, relativeTo="UIParent", relativePoint=p, xOfs=x, yOfs=y }
         end, { point=_pt.point, x=_pt.xOfs or 0, y=_pt.yOfs or 0 }, "인스턴스 난이도")
         update_event_registration()
+        if dodo.QOLIsEnabled("useInsDifficultyFrame") then C_Timer.After(0, build_ui_async) end
         self:UnregisterEvent("PLAYER_LOGIN")
     elseif event == "PLAYER_ENTERING_WORLD" then
         C_Timer.After(1, on_entering_world_timer)
@@ -402,17 +462,5 @@ init_ins_difficulty:RegisterEvent("PLAYER_LOGIN")
 init_ins_difficulty:RegisterEvent("PLAYER_ENTERING_WORLD")
 init_ins_difficulty:SetScript("OnEvent", on_event)
 
-
--- ==============================
--- 외부 노출 및 모듈 설정창 등록 (dodoEditModePanel)
--- ==============================
-local function get_use_ins_difficulty_frame()
-    return dodoDB.useInsDifficultyFrame ~= false
-end
-
-local function set_use_ins_difficulty_frame(val)
-    dodoDB.useInsDifficultyFrame = val
-    ins_difficulty_ui()
-end
 
 dodo.InsDifficultyUI = ins_difficulty_ui

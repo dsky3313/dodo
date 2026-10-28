@@ -44,7 +44,7 @@ end
 -- 콜백 핸들러
 -- ==============================
 local function process_item_icon(tooltip, data)
-    if dodoDB.enableTooltip == false or dodoDB.useTooltipIcon == false then return end
+    if dodoDB.enableInterface == false or dodoDB.useTooltipIcon == false then return end
     if not GetItemInfo then return end
 
     local item_id = data.id
@@ -61,7 +61,7 @@ local function process_item_icon(tooltip, data)
 end
 
 local function process_spell_icon(tooltip, data)
-    if dodoDB.enableTooltip == false or dodoDB.useTooltipIcon == false then return end
+    if dodoDB.enableInterface == false or dodoDB.useTooltipIcon == false then return end
     if not GetSpellInfo then return end
 
     local spell_id = data.id
@@ -78,7 +78,7 @@ local function process_spell_icon(tooltip, data)
 end
 
 local function process_macro_icon(tooltip, data)
-    if dodoDB.enableTooltip == false or dodoDB.useTooltipIcon == false then return end
+    if dodoDB.enableInterface == false or dodoDB.useTooltipIcon == false then return end
     if not GetMacroSpellID or not GetSpellInfo then return end
 
     local macro_id = data.id

@@ -235,7 +235,7 @@ end
 
 local function esc_teleport_frame()
     if InCombatLockdown() then return end
-    local is_enabled = (dodoDB and dodoDB.useTeleport ~= false)
+    local is_enabled = (dodoDB and dodo.QOLIsEnabled("useTeleport"))
 
     if is_enabled and GameMenuFrame:IsShown() then
         if not teleport_frame:IsShown() then
@@ -258,7 +258,7 @@ teleport_frame:SetScript("OnShow", update_ui_status)
 init_teleport_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 
 local function on_event(self, event, ...)
-    local is_enabled = (dodoDB and dodoDB.useTeleport ~= false)
+    local is_enabled = (dodoDB and dodo.QOLIsEnabled("useTeleport"))
     if not is_enabled then
         toggle_events(false)
         return

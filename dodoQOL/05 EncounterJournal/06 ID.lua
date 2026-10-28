@@ -144,7 +144,7 @@ local function on_event(self, event, arg1)
             if dodoDB.enableEJID == nil then dodoDB.enableEJID = true end
         end
     elseif event == "PLAYER_LOGIN" then
-        M.SetEnabled(dodoDB.enableEJID ~= false)
+        M.SetEnabled(dodo.QOLIsEnabled("enableEJID"))
         self:UnregisterEvent("PLAYER_LOGIN")
     end
 end

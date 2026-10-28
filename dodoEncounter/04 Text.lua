@@ -23,16 +23,20 @@ local table_sort          = table.sort
 local wipe                = wipe
 
 local SOUND_DEFAULT_TEXT = {
-    Adds    = "쫄 등장",
-    AOE     = "광역딜",
-    Dispel  = "해제",
-    Frontal = "전방",
-    Interrupt = "차단",
-    Phase   = "사이페",
-    Pool = "바닥 유도" ,
-    Soak = "바닥 밟기",
-    Tank    = "탱커",
-    Target = "대상",
+    Adds         = "쫄 소환",
+    AOE          = "광역기",
+    Dispel       = "해제",
+    Dodge        = "바닥 피하기",
+    Frontal      = "전방",
+    Intermission = "사이페",
+    Interrupt    = "차단",
+    Phase        = "페이즈 전환",
+    Pool         = "바닥 유도" ,
+    Share        = "같이 맞기",
+    Soak         = "바닥 밟기",
+    Spread       = "산개",
+    Tank         = "탱커",
+    Wave         = "파도",
 }
 
 -- ==============================
@@ -507,6 +511,7 @@ local function on_event(self, event, arg1)
         })
         anchor_frame:HookScript("OnShow", show_preview)
         anchor_frame:HookScript("OnHide", hide_preview)
+        dodo.EncounterApplyText()
         self:UnregisterEvent("PLAYER_LOGIN")
     elseif event == "PLAYER_ENTERING_WORLD" then
         hide_all_alerts()
@@ -536,12 +541,27 @@ local function on_event(self, event, arg1)
     end
 end
 
+-- 마스터 + 텍스트 알림 켜짐일 때만 전투 이벤트 등록, 꺼지면 해제 + 알림 숨김
+local TEXT_EVENTS = {
+    "PLAYER_ENTERING_WORLD", "ENCOUNTER_START", "ENCOUNTER_END",
+    "ENCOUNTER_TIMELINE_EVENT_ADDED", "ENCOUNTER_TIMELINE_EVENT_HIGHLIGHT",
+    "ENCOUNTER_TIMELINE_EVENT_STATE_CHANGED", "ENCOUNTER_TIMELINE_EVENT_REMOVED",
+}
+
+function dodo.EncounterApplyText()
+    local is_enabled = dodo.Encounter.IsEnabled() and dodoDB.enableEncounterText ~= false
+    for i = 1, #TEXT_EVENTS do
+        if is_enabled then
+            text_frame:RegisterEvent(TEXT_EVENTS[i])
+        else
+            text_frame:UnregisterEvent(TEXT_EVENTS[i])
+        end
+    end
+    if not is_enabled then
+        hide_all_alerts()
+        clear_encounter_state()
+    end
+end
+
 text_frame:RegisterEvent("PLAYER_LOGIN")
-text_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-text_frame:RegisterEvent("ENCOUNTER_START")
-text_frame:RegisterEvent("ENCOUNTER_END")
-text_frame:RegisterEvent("ENCOUNTER_TIMELINE_EVENT_ADDED")
-text_frame:RegisterEvent("ENCOUNTER_TIMELINE_EVENT_HIGHLIGHT")
-text_frame:RegisterEvent("ENCOUNTER_TIMELINE_EVENT_STATE_CHANGED")
-text_frame:RegisterEvent("ENCOUNTER_TIMELINE_EVENT_REMOVED")
 text_frame:SetScript("OnEvent", on_event)

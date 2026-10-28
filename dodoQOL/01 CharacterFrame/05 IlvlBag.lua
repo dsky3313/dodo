@@ -7,6 +7,7 @@
 -- 설정 및 테이블
 -- ==============================
 local dodo = _G.dodo
+local _lt = debugprofilestop() -- TMP-PROF
 dodoDB = dodoDB or {}
 
 local NUM_CONTAINER_FRAMES = NUM_CONTAINER_FRAMES or 13
@@ -70,7 +71,7 @@ local function update_bag_slot(button)
     local ilvl_fs = get_or_create_bag_ilvl_fs(button)
 
     -- 애드온 전체 또는 가방 템렙 설정 비활성화 시 감추기 처리
-    if dodoDB.enableCharacterFrame == false or not dodoDB.useItemLevel then
+    if not dodo.QOLIsEnabled("enableCharacterFrame") or not dodoDB.useItemLevel then
         ilvl_fs:Hide()
         return
     end
@@ -121,7 +122,7 @@ end
 -- 이벤트 핸들러
 -- ==============================
 local function on_bag_update_items(self)
-    if dodoDB.enableCharacterFrame == false or not dodoDB.useItemLevel then return end
+    if not dodo.QOLIsEnabled("enableCharacterFrame") or not dodoDB.useItemLevel then return end
     update_bag_frame(self)
 end
 
@@ -135,3 +136,4 @@ end
 if ContainerFrameCombinedBags then
     hooksecurefunc(ContainerFrameCombinedBags, "UpdateItems", on_bag_update_items)
 end
+dodoCFProf[#dodoCFProf + 1] = "file_load 05 IlvlBag.lua " .. (debugprofilestop() - _lt) -- TMP-PROF

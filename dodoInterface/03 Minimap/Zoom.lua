@@ -39,7 +39,7 @@ local function on_zoom_timer_tick()
 end
 
 local function reset_minimap_zoom()
-    if not dodoDB or dodoDB.useResetMinimapZoom == false then return end
+    if not dodoDB or dodoDB.enableInterface == false or dodoDB.useResetMinimapZoom == false then return end
     local _, instance_type, difficulty_id = GetInstanceInfo()
     if difficulty_id == 8 or instance_type == "raid" then return end
     if zoom_timer then return end
@@ -49,7 +49,7 @@ end
 
 local function update_minimap_zoom_reset()
     if not init_frame then return end
-    local is_enabled = (dodoDB and dodoDB.useResetMinimapZoom ~= false)
+    local is_enabled = (dodoDB and dodoDB.enableInterface ~= false and dodoDB.useResetMinimapZoom ~= false)
     local _, instance_type, difficulty_id = GetInstanceInfo()
     local in_instance = (difficulty_id == 8 or instance_type == "raid")
 

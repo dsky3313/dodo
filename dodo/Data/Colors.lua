@@ -139,8 +139,7 @@ dodo.ColorsEncounter = { -- 보스 인카운터 타임라인 색상 (EXBoss 기�
     Phase    = { r = 0.53, g = 0.53, b = 0.93, hex = "ff8787ed" }, -- Class.WARLOCK
     Other    = { r = 0.65, g = 0.69, b = 0.64, hex = "ffa5afa2" },
     Adds     = { r = 0.25, g = 0.78, b = 0.92, hex = "ff3fc7eb" }, -- Class.MAGE (임시)
-    ETC2     = { r = 0.25, g = 0.78, b = 0.92, hex = "ff3fc7eb" }, -- Class.MAGE (임시)
-    ETC3     = { r = 0.25, g = 0.78, b = 0.92, hex = "ff3fc7eb" }, -- Class.MAGE (임시)
+    ETC      = { r = 0.25, g = 0.78, b = 0.92, hex = "ff3fc7eb" }, -- Class.MAGE (임시)
 }
 
 dodo.ColorsQoL = {

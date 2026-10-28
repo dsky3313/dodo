@@ -96,7 +96,7 @@ local function apply_minimap_square()
     create_ui()
     if not minimap_border then return end
 
-    local is_enabled = (dodoDB and dodoDB.useMinimapSquare ~= false)
+    local is_enabled = (dodoDB and dodoDB.enableInterface ~= false and dodoDB.useMinimapSquare ~= false)
     if is_enabled then
         Minimap:SetMaskTexture(Config.squareMask)
         _G.GetMinimapShape = get_minimap_shape_square

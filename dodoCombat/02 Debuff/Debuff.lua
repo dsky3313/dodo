@@ -286,7 +286,7 @@ local function build_container()
         })
     end
 
-    local is_enabled = (dodoDB and dodoDB.useDebuff ~= false) and not is_preview_active
+    local is_enabled = dodo.CombatIsEnabled("useDebuff") and not is_preview_active
     debuff_container:SetEnabled(is_enabled)
     debuff_container:SetShown(is_enabled)
     debuff_anchor:SetShown(is_enabled)
@@ -475,7 +475,7 @@ local function hide_preview_data()
             end
         end
     end
-    local is_enabled = dodoDB and dodoDB.useDebuff ~= false
+    local is_enabled = dodo.CombatIsEnabled("useDebuff")
     if debuff_container then
         debuff_container:SetEnabled(is_enabled)
         debuff_container:SetShown(is_enabled)
@@ -550,7 +550,7 @@ local function update_debuff_option()
         anchor_frame:SetSize(dw + (w + configs.gap) + configs.gap * 2, h)
     end
 
-    local is_enabled = dodoDB and dodoDB.useDebuff ~= false
+    local is_enabled = dodo.CombatIsEnabled("useDebuff")
     if is_enabled then
         build_container()
         for button in pairs(debuff_buttons) do
@@ -633,7 +633,7 @@ local function init_frames()
 
     main_frame:SetScript("OnEvent", on_event)
 
-    if dodoDB and dodoDB.useDebuff ~= false then
+    if dodo.CombatIsEnabled("useDebuff") then
         build_container()
         main_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
         main_frame:RegisterEvent("PLAYER_REGEN_ENABLED")

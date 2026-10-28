@@ -114,7 +114,7 @@ end
 -- ==============================
 local function update_visual()
     if not hud_frame then return end
-    local enabled = (dodoDB and dodoDB.enableSkyriding ~= false)
+    local enabled = (dodoDB and dodo.QOLIsEnabled("enableSkyriding"))
     if not enabled then
         hud_frame:Hide()
         sky_ticker:Stop()
@@ -421,7 +421,7 @@ evt_frame:SetScript("OnEvent", function(self, event, ...)
         local is_gliding = C_PlayerInfo.GetGlidingInfo()
         _gliding = (is_gliding == true)
         if _gliding and hud_frame then
-            local enabled = (dodoDB and dodoDB.enableSkyriding ~= false)
+            local enabled = (dodoDB and dodo.QOLIsEnabled("enableSkyriding"))
             if enabled then
                 hud_frame:Show()
                 charges_dirty = true

@@ -93,14 +93,14 @@ local function update_icon()
     end
 
     stance_icon.icon:SetTexture(texture)
-    stance_icon:SetShown(shown and dodoDB.enableStance ~= false)
+    stance_icon:SetShown(shown and dodo.CombatIsEnabled("enableStance"))
 end
 
 -- ==============================
 -- EditMode checkActive (정적 참조, GC 프리)
 -- ==============================
 local function stance_is_active()
-    return dodoDB and dodoDB.enableStance ~= false
+    return dodo.CombatIsEnabled("enableStance")
 end
 
 -- ==============================
@@ -167,7 +167,7 @@ local function on_event(self, event, arg1, _, spellID)
 
     elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
         if arg1 ~= "player" or not CAST_TRIGGERS[spellID] then return end
-        if dodoDB.enableStance == false then return end
+        if not dodo.CombatIsEnabled("enableStance") then return end
 
         if WARRIOR_ALERT_STANCES[warrior_spec] == spellID then
             local tex = C_Spell.GetSpellTexture(spellID)

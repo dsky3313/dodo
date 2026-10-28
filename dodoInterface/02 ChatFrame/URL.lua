@@ -136,7 +136,7 @@ end
 
 -- 5. 대화 메시지 속 URL 감지 포맷 함수 (CHAT_MSG_* 필터에서 호출됨)
 local function format_urls_in_text(text)
-    if not text or not dodoDB.enableChatModule or not dodoDB.useLinkURLs or type(text) ~= "string" or (issecretvalue and issecretvalue(text)) then
+    if not text or dodoDB.enableInterface == false or not dodoDB.useLinkURLs or type(text) ~= "string" or (issecretvalue and issecretvalue(text)) then
         return text
     end
 

@@ -53,6 +53,12 @@ dodo.RegisterOption("인터페이스", function(category)
         "인터페이스와 관련된 추가적인 기능을 활성화합니다.",
         D.enableInterface, function(val)
             if dodoDB then dodoDB.enableInterface = val end
+            if dodo.UpdateDamageMeterSyncState then dodo.UpdateDamageMeterSyncState() end
+            if dodo.UpdateDamageMeterResetState then dodo.UpdateDamageMeterResetState() end
+            if dodo.UpdateChatModuleState then dodo.UpdateChatModuleState() end
+            if dodo.UpdateMinimapState then dodo.UpdateMinimapState() end
+            if dodo.UpdateMinimapIconAddonsState then dodo.UpdateMinimapIconAddonsState() end
+            if dodo.UpdateTooltipAll then dodo.UpdateTooltipAll() end
         end)
 
     -- 피해량 전투기

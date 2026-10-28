@@ -19,7 +19,7 @@ local GameMenuFrame = GameMenuFrame
 -- 기능: 스케일 업데이트
 -- ==============================
 local function frame_scale()
-    local enabled = dodoDB and dodoDB.enableFrameOption ~= false
+    local enabled = dodoDB and dodo.QOLIsEnabled("enableFrameOption")
 
     local gmf = GameMenuFrame
     if gmf then gmf:SetScale(enabled and 0.9 or 1.0) end

@@ -49,6 +49,21 @@ dodo.COMBAT_DEFAULTS = {
     stanceIconSize          = 80,
 }
 
+-- 마스터(enableCombat) + 기능 토글 모두 켜져 있는지 (각 기능 활성 판정 공용)
+function dodo.CombatIsEnabled(key)
+    return dodoDB ~= nil and dodoDB.enableCombat ~= false and dodoDB[key] ~= false
+end
+
+-- 마스터 토글 변경 시 모든 기능 재적용 (꺼지면 각 기능이 이벤트/티커 해제 + 숨김)
+function dodo.CombatUpdateModuleState()
+    if dodo.UpdateResourceBarVisibility then dodo.UpdateResourceBarVisibility() end
+    if dodo.DebuffApply then dodo.DebuffApply() end
+    if dodo.CursorSpellTrackerSetEnabled then dodo.CursorSpellTrackerSetEnabled(dodo.CombatIsEnabled("enableCursorSpellTracker")) end
+    if dodo.BloodBrez then dodo.BloodBrez() end
+    if dodo.StanceApply then dodo.StanceApply(dodo.CombatIsEnabled("enableStance")) end
+    if dodo.PTSyncAll then dodo.PTSyncAll() end
+end
+
 -- 커서 주문추적: group별 배치 열 (2열 배치일 때만 적용, 미지정 group은 1열)
 dodo.CST_ROW_BY_GROUP = {
     cd = 1,        -- 쿨기
@@ -70,6 +85,8 @@ dodo.RegisterOption("전투", function(category)
         "전투 관련 모듈을 활성화합니다.",
         true, function(val)
             if dodoDB then dodoDB.enableCombat = val end
+            dodo.CombatUpdateModuleState()
+            dodo.CombatRefreshPreview()
         end)
 
     -- 탭별 sub-list
@@ -93,7 +110,7 @@ dodo.RegisterOption("전투", function(category)
     end
 
     -- 통합 미리보기 (마스터 ON이면 탭 무관 항상 표시)
-    local _preview_init = dodo.UI:SettingsTabbedPreview(category, { "자원바", "디버프", "커서 주문추적", "블러드 & 전투부활", "태세" }, dodoCombatPreviewMixin)
+    local _preview_init = dodo.UI:SettingsTabbedPreview(category, { "자원바", "디버프", "커서 주문 추적", "블러드 & 전투부활", "태세", "파티 주문 추적" }, dodoCombatPreviewMixin)
     if _preview_init and _preview_init.AddShownPredicate then
         _preview_init:AddShownPredicate(function() return master_setting:GetValue() end)
     end
@@ -183,13 +200,13 @@ dodo.RegisterOption("전투", function(category)
         end))
 
     -- ── 커서 주문추적 탭 ──
-    C(dodo.UI:SettingsSectionHeader(category, "커서 주문추적"))
+    C(dodo.UI:SettingsSectionHeader(category, "커서 주문 추적"))
 
-    local cst_init, cst_setting = dodo.UI:SettingsCheckbox(category, "enableCursorSpellTracker", "커서 주문추적",
+    local cst_init, cst_setting = dodo.UI:SettingsCheckbox(category, "enableCursorSpellTracker", "커서 주문 추적",
         "현재 직업/특성의 주요 스킬을 커서 근처에 표시합니다.",
         true, function(val)
             if dodoDB then dodoDB.enableCursorSpellTracker = val end
-            if dodo.CursorSpellTrackerSetEnabled then dodo.CursorSpellTrackerSetEnabled(val) end
+            if dodo.CursorSpellTrackerSetEnabled then dodo.CursorSpellTrackerSetEnabled(dodo.CombatIsEnabled("enableCursorSpellTracker")) end
             dodo.CombatRefreshPreview()
         end)
     C(cst_init)
@@ -249,21 +266,7 @@ dodo.RegisterOption("전투", function(category)
 
     -- 주문 목록 (모든 직업/특성 켜기/끄기, 위젯은 99 Options Preview.lua dodoCSTSpellListMixin)
     CS(dodo.UI:SettingsSectionHeader(category, "주문 목록"))
-    if layout then
-        local list_init = Settings.CreatePanelInitializer("dodoCSTSpellListTemplate", {})
-        list_init.GetExtent = function() return dodoCSTSpellListMixin.GetExtent() end
-        list_init.InitFrame = function(_, frame)
-            frame:SetHeight(dodoCSTSpellListMixin.GetExtent())
-            if not frame._dodo_init then
-                frame._dodo_init = true
-                Mixin(frame, dodoCSTSpellListMixin)
-                frame:OnLoad()
-            end
-            frame:Update()
-        end
-        layout:AddInitializer(list_init)
-        CS(list_init)
-    end
+    CS(dodo.UI:SettingsPanelList(category, dodoCSTSpellListMixin))
 
     -- ── 블러드 & 전투부활 탭 ──
     B(dodo.UI:SettingsSectionHeader(category, "블러드 & 전투부활"))
@@ -303,7 +306,7 @@ dodo.RegisterOption("전투", function(category)
         "전사의 현재 태세를 아이콘으로 표시합니다.",
         true, function(val)
             if dodoDB then dodoDB.enableStance = val end
-            if dodo.StanceApply then dodo.StanceApply(val) end
+            if dodo.StanceApply then dodo.StanceApply(dodo.CombatIsEnabled("enableStance")) end
             dodo.CombatRefreshPreview()
         end)
     S(st_init)
@@ -319,6 +322,9 @@ dodo.RegisterOption("전투", function(category)
             dodo.CombatRefreshPreview()
         end))
 
+    -- ── 파티 주문 추적 탭 (설정 항목은 04 PartyTracker/99 Options.lua) ──
+    local _pt_sub = dodo.PTBuildOptions and dodo.PTBuildOptions(category) or {}
+
     -- 탭 전환 시 AddShownPredicate 재평가 트리거
     dodo.CombatSetTabChangeFn(function()
         if master_setting then master_setting:SetValue(master_setting:GetValue()) end
@@ -330,6 +336,7 @@ dodo.RegisterOption("전투", function(category)
     local function _cst_shown() return master_setting:GetValue() and _tab() == 3 end
     local function _bb_shown() return master_setting:GetValue() and _tab() == 4 end
     local function _st_shown() return master_setting:GetValue() and _tab() == 5 end
+    local function _pt_shown() return master_setting:GetValue() and _tab() == 6 end
 
     for _, v in ipairs(_rb_sub) do if v.AddShownPredicate then v:AddShownPredicate(_rb_shown) end end
     local function _rbs_shown() return _rb_shown() and (rb_setting and rb_setting:GetValue()) end
@@ -353,4 +360,5 @@ dodo.RegisterOption("전투", function(category)
     for _, v in ipairs(_st_sub) do if v.AddShownPredicate then v:AddShownPredicate(_st_shown) end end
     local function _sts_shown() return _st_shown() and (st_setting and st_setting:GetValue()) end
     for _, v in ipairs(_sts_sub) do if v.AddShownPredicate then v:AddShownPredicate(_sts_shown) end end
+    for _, v in ipairs(_pt_sub) do if v.AddShownPredicate then v:AddShownPredicate(_pt_shown) end end
 end, 4000)

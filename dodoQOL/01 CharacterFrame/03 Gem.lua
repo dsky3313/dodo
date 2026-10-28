@@ -8,6 +8,7 @@
 -- 설정 및 테이블
 -- ==============================
 local dodo = _G.dodo
+local _lt = debugprofilestop() -- TMP-PROF
 dodoDB = dodoDB or {}
 
 local OUTLINE_FONT = dodo.OUTLINE_FONT
@@ -94,7 +95,7 @@ end
 
 -- 3. 보석 상태 업데이트 함수
 function dodo.UpdateCharacterFrameGem(unit, slot_list)
-    local is_enabled = (dodoDB.enableCharacterFrame ~= false)
+    local is_enabled = (dodo.QOLIsEnabled("enableCharacterFrame"))
 
     for _, info in ipairs(slot_list) do
         local prefix = (unit == "player") and "Character" or "Inspect"
@@ -119,3 +120,4 @@ function dodo.UpdateCharacterFrameGem(unit, slot_list)
         end
     end
 end
+dodoCFProf[#dodoCFProf + 1] = "file_load 03 Gem.lua " .. (debugprofilestop() - _lt) -- TMP-PROF

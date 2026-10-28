@@ -22,12 +22,19 @@ dodo.EC_DEFAULTS = {
     soundEncounterAdds                 = "Adds",
     soundEncounterAOE                  = "AOE",
     soundEncounterDispel               = "Dispel",
+    soundEncounterDodge                = "Dodge",
     soundEncounterFrontal              = "Frontal",
+    soundEncounterIntermission         = "Intermission",
     soundEncounterInterrupt            = "Interrupt",
     soundEncounterPhase                = "Phase",
     soundEncounterPool                 = "Pool",
+    soundEncounterShare                = "Share",
     soundEncounterSoak                 = "Soak",
+    soundEncounterSpread               = "Spread",
     soundEncounterTank                 = "Tank",
+    soundEncounterWave                 = "Wave",
+    -- 디버그: 타임라인 기록 (02 DataDump.lua)
+    useEncounterRecord                 = false,
 }
 
 -- ==============================
@@ -41,6 +48,7 @@ dodo.RegisterOption("우두머리 경보", function(category)
         "우두머리 경보 기능을 활성화합니다.",
         D.enableEncounter, function(val)
             dodoDB.enableEncounter = val
+            if dodo.EncounterApplyText then dodo.EncounterApplyText() end
             if dodo.EncounterApplySounds then dodo.EncounterApplySounds() end
             if dodo.EncounterUpdateTimelineVisual then dodo.EncounterUpdateTimelineVisual() end
         end)
@@ -64,6 +72,7 @@ dodo.RegisterOption("우두머리 경보", function(category)
         "우두머리 기술 시전 5초전에 텍스트 알림을 표시합니다.",
         D.enableEncounterText, function(val)
             dodoDB.enableEncounterText = val
+            if dodo.EncounterApplyText then dodo.EncounterApplyText() end
             if dodo.EncounterRefreshPreview then dodo.EncounterRefreshPreview() end
         end)
     T(text_init)
@@ -124,24 +133,34 @@ dodo.RegisterOption("우두머리 경보", function(category)
         { value = "Adds",      text = "쫄 소환" },
         { value = "AOE",       text = "광역"    },
         { value = "Dispel",    text = "해제"    },
+        { value = "Dodge",     text = "바닥 피하기" },
         { value = "Frontal",   text = "정면"    },
+        { value = "Intermission", text = "사이페" },
         { value = "Interrupt", text = "차단"    },
         { value = "Phase",     text = "페이즈"  },
         { value = "Pool",      text = "장판"    },
+        { value = "Share",     text = "같이 맞기" },
         { value = "Soak",      text = "흡수"    },
+        { value = "Spread",    text = "산개"    },
         { value = "Tank",      text = "탱커"    },
+        { value = "Wave",      text = "파도"    },
         { value = "none",      text = "없음"    },
     }
     local sound_items = {
         { key = "soundEncounterAdds",      label = "쫄 소환" },
         { key = "soundEncounterAOE",       label = "광역"    },
         { key = "soundEncounterDispel",    label = "해제"    },
+        { key = "soundEncounterDodge",     label = "바닥 피하기" },
         { key = "soundEncounterFrontal",   label = "정면"    },
+        { key = "soundEncounterIntermission", label = "사이페" },
         { key = "soundEncounterInterrupt", label = "차단"    },
         { key = "soundEncounterPhase",     label = "페이즈"  },
         { key = "soundEncounterPool",      label = "장판"    },
+        { key = "soundEncounterShare",     label = "같이 맞기" },
         { key = "soundEncounterSoak",      label = "흡수"    },
+        { key = "soundEncounterSpread",    label = "산개"    },
         { key = "soundEncounterTank",      label = "탱커"    },
+        { key = "soundEncounterWave",      label = "파도"    },
     }
     for _, item in ipairs(sound_items) do
         local _, drop_init = dodo.UI:SettingsDropDown(category, item.key, item.label, "", sound_opts, D[item.key], function(val)
@@ -152,6 +171,21 @@ dodo.RegisterOption("우두머리 경보", function(category)
         C(drop_init)
         _sub_drop[#_sub_drop + 1] = drop_init
     end
+
+    -- ── 디버그 (두 탭 모두, 최하단) ─────────────────────────
+    C(dodo.UI:SettingsSectionHeader(category, "디버그"))
+
+    C(dodo.UI:SettingsButton(category, "데이터수집", "데이터수집", function()
+            if dodo.EncounterCollectData then dodo.EncounterCollectData() end
+        end,
+        "모험안내서 정보를 기록합니다."))
+
+    C(dodo.UI:SettingsCheckbox(category, "useEncounterRecord", "타임라인 기록",
+        "우두머리 전투마다 타임라인 이벤트 시간을 기록합니다.",
+        D.useEncounterRecord, function(val)
+            dodoDB.useEncounterRecord = val
+            if dodo.EncounterUpdateRecorder then dodo.EncounterUpdateRecorder() end
+        end))
 
     -- 탭 전환 시 predicate 재평가 트리거
     dodo.EncounterSetTabChangeFn(function()

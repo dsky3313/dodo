@@ -17,7 +17,7 @@ local function on_event(_, event)
 end
 
 local function update_visual()
-    local is_enabled = (dodoDB and dodoDB.useCinematicSkip ~= false)
+    local is_enabled = (dodoDB and dodo.QOLIsEnabled("useCinematicSkip"))
     if is_enabled then
         f:RegisterEvent("CINEMATIC_START")
         f:RegisterEvent("PLAY_MOVIE")

@@ -75,7 +75,7 @@ end
 local has_drawn_divider = true
 
 local function append_tooltip_id_row(tooltip, label, id)
-    if not id or dodoDB.useTooltipID == false or dodoDB.enableTooltip == false then return end
+    if not id or dodoDB.useTooltipID == false or dodoDB.enableInterface == false then return end
     if has_drawn_divider then
         tooltip:AddLine(" ")
         has_drawn_divider = false
@@ -93,7 +93,7 @@ end
 -- 콜백 핸들러
 -- ==============================
 local function handle_unit_id(tooltip, data)
-    if dodoDB.enableTooltip == false or dodoDB.useTooltipID == false then return end
+    if dodoDB.enableInterface == false or dodoDB.useTooltipID == false then return end
     if not data or check_restricted_data(data) then return end
     
     local guid = data.guid
@@ -109,7 +109,7 @@ local function handle_unit_id(tooltip, data)
 end
 
 local function handle_item_id(tooltip, data)
-    if dodoDB.enableTooltip == false or dodoDB.useTooltipID == false then return end
+    if dodoDB.enableInterface == false or dodoDB.useTooltipID == false then return end
     has_drawn_divider = true
     
     local item_id = data.id 
@@ -123,7 +123,7 @@ local function handle_item_id(tooltip, data)
 end
 
 local function handle_spell_id(tooltip, data)
-    if dodoDB.enableTooltip == false or dodoDB.useTooltipID == false then return end
+    if dodoDB.enableInterface == false or dodoDB.useTooltipID == false then return end
     has_drawn_divider = true
     
     local spell_id = data.id 
@@ -138,7 +138,7 @@ local function handle_spell_id(tooltip, data)
 end
 
 local function handle_generic_id(tooltip, data)
-    if dodoDB.enableTooltip == false or dodoDB.useTooltipID == false then return end
+    if dodoDB.enableInterface == false or dodoDB.useTooltipID == false then return end
     has_drawn_divider = true
     local label = tooltip_id_labels[data.type] or "ObjectID"
     append_tooltip_id_row(tooltip, label, data.id)

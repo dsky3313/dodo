@@ -17,7 +17,7 @@ local CreateFrame = CreateFrame
 -- 즉시 적용 토글 (설정창 on/off → 바로 반영)
 -- ==============================
 local function update_macro_visual()
-    local enabled = not (dodoDB and dodoDB.enableMacro == false)
+    local enabled = not (dodoDB and not dodo.QOLIsEnabled("enableMacro"))
     if enabled then
         if MacroFrame then
             if dodo.Macro.InstallLayoutHooks  then dodo.Macro.InstallLayoutHooks()  end
@@ -55,7 +55,7 @@ init:SetScript("OnEvent", function(self, event, arg1)
             dodoDB = dodoDB or {}
             dodoDB.macroFactory = dodoDB.macroFactory or {}
         elseif arg1 == "Blizzard_MacroUI" then
-            if dodoDB and dodoDB.enableMacro ~= false then
+            if dodoDB and dodo.QOLIsEnabled("enableMacro") then
                 C_Timer.After(0, function()
                     if dodo.Macro.InstallLayoutHooks  then dodo.Macro.InstallLayoutHooks()  end
                     if dodo.Macro.InstallSearchHooks  then dodo.Macro.InstallSearchHooks()  end

@@ -18,6 +18,7 @@ local command_table = {
     { label = "프레임스택",            desc = "/fs, /ㄹㄴ" },
     { label = "dodo 설정창",           desc = "/dd, /ㅇㅇ" },
     { label = "dodo DB 초기화",        desc = "/ddr" },
+    -- { label = "프로파일러",            desc = "/pf, /ㅔㄹ" }, -- 비활성
 }
 
 local LINE_H = 20

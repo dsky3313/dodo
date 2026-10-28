@@ -125,7 +125,7 @@ end
 -- 기능 4: 핀 위치 및 표시 업데이트
 -- ==============================
 local function update_pins()
-    local is_enabled = (dodoDB and dodoDB.enableWorldMapIcon ~= false)
+    local is_enabled = (dodoDB and dodo.QOLIsEnabled("enableWorldMapIcon"))
     local map_id     = WorldMapFrame:GetMapID()
     local visible    = WorldMapFrame:IsVisible()
     local canvas     = WorldMapFrame:GetCanvas()
@@ -185,7 +185,7 @@ local function create_pins()
 end
 
 local function update_visual()
-    local is_enabled = (dodoDB and dodoDB.enableWorldMapIcon ~= false)
+    local is_enabled = (dodoDB and dodo.QOLIsEnabled("enableWorldMapIcon"))
     if is_enabled then
         create_pins()
         update_pins()

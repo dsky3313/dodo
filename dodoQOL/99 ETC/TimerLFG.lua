@@ -55,7 +55,7 @@ local function on_loop()
 end
 
 local function update_visual()
-    local isEnabled = (dodoDB and dodoDB.enableLFGTimer ~= false)
+    local isEnabled = (dodoDB and dodo.QOLIsEnabled("enableLFGTimer"))
     if isEnabled then
         if initFrame then
             initFrame:RegisterEvent("LFG_PROPOSAL_SHOW")

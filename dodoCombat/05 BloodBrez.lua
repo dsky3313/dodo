@@ -314,7 +314,7 @@ end
 local init_frame = CreateFrame("Frame")
 
 local function update_ticker_and_events()
-    local isEnabled = (dodoDB and dodoDB.useBloodBrez ~= false)
+    local isEnabled = dodo.CombatIsEnabled("useBloodBrez")
     if isEnabled then
         init_frame:RegisterUnitEvent("UNIT_AURA", "player")
         init_frame:RegisterEvent("SPELL_UPDATE_CHARGES")
@@ -335,7 +335,7 @@ init_frame:SetScript("OnEvent", on_event)
 -- 설정 등록
 -- ==============================
 dodo.BloodBrez = function()
-    local isEnabled = (dodoDB and dodoDB.useBloodBrez ~= false)
+    local isEnabled = dodo.CombatIsEnabled("useBloodBrez")
     if isEnabled then
         create_ui()
         update_position()
