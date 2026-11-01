@@ -54,15 +54,15 @@ local DEFAULTS = {
 	partyCd = 15,
 }
 
-local function Migrate(cfg)
+local function migrate(cfg)
 	cfg.growth = 'DOWN' -- dodo: 하단 성장 고정
 	if cfg.iconSource ~= 'kick' and cfg.iconSource ~= 'kicked' then cfg.iconSource = 'kick' end
 	cfg.kickCd, cfg.memberCd, cfg.kickOrder, cfg.texture = nil, nil, nil, nil
 	if type(cfg.off) ~= 'table' then cfg.off = {} end -- dodo: 주문별 끄기 { [spellID] = true }
 end
 
-local function GetCfg() return ns.ModuleCfg('interrupts', DEFAULTS, Migrate) end
-ns.IKGetCfg = GetCfg
+local function get_cfg() return ns.ModuleCfg('interrupts', DEFAULTS, migrate) end
+ns.IKGetCfg = get_cfg
 
 local KICKS = {
 	[47528]  = { cd = 15, class = 'DEATHKNIGHT', name = 'Mind Freeze', mods = { { 378848, landed = -3, likely = true } } },
@@ -109,7 +109,7 @@ local HEALER_NO_KICK = { DRUID = true, EVOKER = true, PALADIN = true, PRIEST = t
 
 local HEALER_SPEC = { [65] = true, [105] = true, [256] = true, [257] = true, [264] = true, [270] = true, [1468] = true }
 
-local function Heals(spec, role)
+local function heals_of(spec, role)
 	if spec then return HEALER_SPEC[spec] or false end
 	return role == 'HEALER'
 end
@@ -126,7 +126,7 @@ function tal.Own()
 	return config and ns.TalentRanks(tal, class, config) or nil
 end
 
-local function KickCd(spell, heals, ranks, landed)
+local function kick_cd(spell, heals, ranks, landed)
 	local kick = spell and KICKS[spell]
 	if not kick then return nil end
 	if heals and kick.healerCd then return kick.healerCd end
@@ -145,7 +145,7 @@ local function KickCd(spell, heals, ranks, landed)
 	return mfloor(cd * 100 + 0.5) / 100
 end
 
-local function SelfSpecId()
+local function self_spec_id()
 	local idx = ns.PlayerSpec()
 	local get = C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo or _G.GetSpecializationInfo
 	if not idx or not get then return nil end
@@ -162,7 +162,7 @@ local PLAYER_KICKS = {
 }
 local WARLOCK_PET_KICKS = { { pet = 89766, poll = 119914 }, { pet = 19647, poll = 119910 } }
 
-local function SpellKnown(id, bank)
+local function spell_known(id, bank)
 	if not (C_SpellBook and C_SpellBook.IsSpellKnownOrInSpellBook) then
 		return _G.IsSpellKnown and _G.IsSpellKnown(id) or false
 	end
@@ -170,19 +170,19 @@ local function SpellKnown(id, bank)
 	return ok and known and not secret(known) and true or false
 end
 
-local function PlayerKick()
+local function player_kick()
 	local class = UnitClassBase('player')
 	if not class or secret(class) then return nil end
 	if class == 'WARLOCK' then
 		local petBank = _G.Enum and _G.Enum.SpellBookSpellBank and _G.Enum.SpellBookSpellBank.Pet
 		for _, k in ipairs(WARLOCK_PET_KICKS) do
-			if petBank and SpellKnown(k.pet, petBank) then return k.pet, k.poll end
+			if petBank and spell_known(k.pet, petBank) then return k.pet, k.poll end
 		end
-		if SpellKnown(132409) then return 19647, 132409 end
+		if spell_known(132409) then return 19647, 132409 end
 		return nil
 	end
 	for _, id in ipairs(PLAYER_KICKS[class] or {}) do
-		if SpellKnown(id) then return id, id end
+		if spell_known(id) then return id, id end
 	end
 	return nil
 end
@@ -197,7 +197,7 @@ local CAST_OWNER = {
 }
 
 local probe = {}
-local function Probe(unit)
+local function probe_of(unit)
 	local p = probe[unit]
 	if not p then p = { plain = 0, secret = 0 } probe[unit] = p end
 	return p
@@ -211,10 +211,10 @@ local mtr = { by = {}, cur = {}, grown = {}, named = {}, plateSeen = {}, plateN 
 
 local PARTY_UNITS = { 'party1', 'party2', 'party3', 'party4' }
 
-local function MemberCd(row)
+local function member_cd(row)
 	local spell = row.spell
 	if spell and KICKS[spell] then return row.cd or KICKS[spell].cd end
-	return GetCfg().partyCd or 15
+	return get_cfg().partyCd or 15
 end
 
 local frame
@@ -229,7 +229,7 @@ local BUNDLED_BAR = 'Interface\\Buttons\\WHITE8X8' -- dodo: 바 텍스처
 local barTexPath
 local barTexMiss, barTexWatched = false, false
 
-local function BarTex()
+local function bar_tex()
 	local chosen = ns.BarTexture(BUNDLED_BAR)
 	if chosen ~= BUNDLED_BAR then return chosen end
 	if barTexPath then return barTexPath end
@@ -254,16 +254,18 @@ local function BarTex()
 	return BUNDLED_BAR
 end
 
-local function ClassRGB(class)
+ns.IKBarTex = bar_tex -- dodo: 11 Defensives 바가 같은 텍스처를 쓰도록
+
+local function class_r_g_b(class)
 	local c = class and C_ClassColor and C_ClassColor.GetClassColor and C_ClassColor.GetClassColor(class)
 	if not c and class and _G.RAID_CLASS_COLORS then c = _G.RAID_CLASS_COLORS[class] end
 	if c then return c.r or 0.7, c.g or 0.7, c.b or 0.7 end
 	return 0.7, 0.7, 0.7
 end
 
-local function ApplyPosition()
+local function apply_position()
 	if not frame then return end
-	local cfg = GetCfg()
+	local cfg = get_cfg()
 	frame:ClearAllPoints()
 	-- dodo: 바 그룹 좌측상단 → 파티 프레임 우측상단
 	local party = ns.PartyAnchor()
@@ -274,7 +276,7 @@ local function ApplyPosition()
 	frame:SetPoint('CENTER', UIParent, 'CENTER', cfg.x or 0, cfg.y or 0)
 end
 
-local function EnsureFrame()
+local function ensure_frame()
 	if frame then return end
 	frame = CreateFrame('Frame', 'dodoPartyInterrupts', UIParent)
 	frame:SetFrameStrata('MEDIUM')
@@ -282,13 +284,13 @@ local function EnsureFrame()
 	frame:SetMovable(true)
 	frame:EnableMouse(false)
 	frame:RegisterForDrag('RightButton')
-	ns.MakeDraggable(frame, GetCfg, 'x', 'y', function() ApplyPosition() end)
-	ns.OnGrabChange(function() frame:EnableMouse(ns.CanGrab(GetCfg(), previewActive)) end)
+	ns.MakeDraggable(frame, get_cfg, 'x', 'y', function() apply_position() end)
+	ns.OnGrabChange(function() frame:EnableMouse(ns.CanGrab(get_cfg(), previewActive)) end)
 	frame:Hide()
 end
 
 -- dodo: 행 툴팁 (전투 중 끔)
-local function RowEnter(self)
+local function row_enter(self)
 	local tip = _G.GameTooltip
 	if not tip or InCombatLockdown() or type(self.spell) ~= 'number' then return end
 	tip:SetOwner(self, 'ANCHOR_RIGHT')
@@ -296,15 +298,15 @@ local function RowEnter(self)
 	tip:Show()
 end
 
-local function RowLeave(self)
+local function row_leave(self)
 	local tip = _G.GameTooltip
 	if tip and tip:IsOwned(self) then tip:Hide() end
 end
 
-local function NewRow()
+local function new_row()
 	local row = CreateFrame('Frame', nil, frame)
-	row:SetScript('OnEnter', RowEnter)
-	row:SetScript('OnLeave', RowLeave)
+	row:SetScript('OnEnter', row_enter)
+	row:SetScript('OnLeave', row_leave)
 	row:SetMouseClickEnabled(false)
 	row.bg = row:CreateTexture(nil, 'BACKGROUND')
 	row.span = CreateFrame('Frame', nil, row)
@@ -345,15 +347,15 @@ local function NewRow()
 	return row
 end
 
-local function AcquireRow()
+local function acquire_row()
 	local row = table.remove(pool)
-	if not row then row = NewRow() end
+	if not row then row = new_row() end
 	row.cdStart, row.cdDur, row.previewRestart = nil, nil, nil
 	row.kickedTex, row.markIdx, row.previewKicked = nil, nil, nil
 	return row
 end
 
-local function ReleaseRow(row)
+local function release_row(row)
 	stack.Clear(row)
 	row:Hide()
 	row.cdStart, row.cdDur, row.previewRestart, row.guid, row.sureAt = nil, nil, nil, nil, nil
@@ -365,7 +367,7 @@ end
 
 local KICK_ICON = 'Interface\\Icons\\Ability_Kick'
 
-local function PaintIcon(row, cfg)
+local function paint_icon(row, cfg)
 	if cfg.iconSource == 'kicked' and type(row.kickedTex) ~= 'nil'
 		and pcall(row.icon.SetTexture, row.icon, row.kickedTex) then
 		return
@@ -374,12 +376,12 @@ local function PaintIcon(row, cfg)
 	row.icon:SetTexture(tex or KICK_ICON)
 end
 
-local function StyleRow(row, cfg)
+local function style_row(row, cfg)
 	local h, w = cfg.height or 20, cfg.width or 180
 	row:SetSize(w, h)
-	local r, g, b = ClassRGB(row.class)
+	local r, g, b = class_r_g_b(row.class)
 	local dark = cfg.darkBars and true or false
-	local tex = BarTex()
+	local tex = bar_tex()
 	if dark then
 		row.bg:SetTexture(tex)
 		row.bg:SetVertexColor(0.31, 0.31, 0.31, cfg.bgAlpha or 0.6)
@@ -430,7 +432,7 @@ local function StyleRow(row, cfg)
 	row.name:SetJustifyH('LEFT')
 	if dark then row.name:SetTextColor(r, g, b) else row.name:SetTextColor(1, 1, 1) end
 	row.name:SetText(row.label or '')
-	PaintIcon(row, cfg)
+	paint_icon(row, cfg)
 	if row.lay then
 		for s = 1, SLOTS do
 			if row.lay[s] then stack.Style(row, row.lay[s], cfg) end
@@ -441,7 +443,7 @@ end
 -- dodo: 차단바 목록 전체를 감싸는 테두리 (dodoUnitframe Castbar 와 동일한 NineSlice)
 local listBorder
 
-local function PlaceListBorder(first, last, up)
+local function place_list_border(first, last, up)
 	if not listBorder then
 		listBorder = CreateFrame('Frame', nil, frame)
 		listBorder:SetFrameLevel(frame:GetFrameLevel() + 3 * SLOTS + 20)
@@ -463,9 +465,9 @@ local function PlaceListBorder(first, last, up)
 	listBorder:Show()
 end
 
-local function Layout(list)
+local function layout(list)
 	if not frame then return end
-	local cfg = GetCfg()
+	local cfg = get_cfg()
 	local h, w, gap = cfg.height or 20, cfg.width or 180, cfg.spacing or 2
 	frame:SetSize(w, h)
 	local prev
@@ -485,12 +487,12 @@ local function Layout(list)
 	-- dodo: 화면상 맨 아래 줄은 하단 금속 테두리 생략
 	local bottom = cfg.growth == 'UP' and list[1] or prev
 	if bottom then bottom.edgeBottom:Hide() end
-	PlaceListBorder(list[1], prev, cfg.growth == 'UP')
+	place_list_border(list[1], prev, cfg.growth == 'UP')
 end
 
-local function ShouldShow()
+local function should_show()
 	if previewActive then return true end
-	local cfg = GetCfg()
+	local cfg = get_cfg()
 	if not cfg.enable then return false end
 	if #shown == 0 then return false end
 	if cfg.groupOnly and not IsInGroup() then return false end
@@ -499,27 +501,27 @@ local function ShouldShow()
 	return true
 end
 
-local Tick
+local tick
 
-local function StartTicker()
+local function start_ticker()
 	if frame and not frame:GetScript('OnUpdate') then
 		frame.__acc = 0
-		frame:SetScript('OnUpdate', Tick)
+		frame:SetScript('OnUpdate', tick)
 	end
 end
 
 -- dodo: 정수 표시 (올림)
-local function FormatRem(rem)
+local function format_rem(rem)
 	return sformat('%d', math.ceil(rem))
 end
 
-local function PaintTime(fs, rem, last)
+local function paint_time(fs, rem, last)
 	local k = math.ceil(rem)
-	if k ~= last then fs:SetText(FormatRem(rem)) end
+	if k ~= last then fs:SetText(format_rem(rem)) end
 	return k
 end
 
-local function StackBefore(a, b)
+local function stack_before(a, b)
 	local ra, rb = a.cdStart ~= nil, b.cdStart ~= nil
 	if ra ~= rb then return rb end
 	if ra then
@@ -533,28 +535,28 @@ local function StackBefore(a, b)
 	return (a.order or 0) < (b.order or 0)
 end
 
-local function ShowRows()
-	table.sort(shown, StackBefore)
+local function show_rows()
+	table.sort(shown, stack_before)
 	local visible = {}
 	for _, row in ipairs(shown) do
 		if row:IsShown() then visible[#visible + 1] = row end
 	end
-	Layout(visible)
-	if frame then frame:SetShown(ShouldShow()) end
+	layout(visible)
+	if frame then frame:SetShown(should_show()) end
 end
 
-local function SetMark(row, idx)
+local function set_mark(row, idx)
 	row.hasMark = false
 	row.markIdx = idx
 	if type(idx) ~= 'nil' and _G.SetRaidTargetIconTexture then
 		row.hasMark = pcall(_G.SetRaidTargetIconTexture, row.mark, idx) and true or false
 	end
-	row.mark:SetShown((row.hasMark and GetCfg().showMark) and true or false)
+	row.mark:SetShown((row.hasMark and get_cfg().showMark) and true or false)
 end
 
-local function SetKicked(row, tex)
+local function set_kicked(row, tex)
 	row.kickedTex = tex
-	PaintIcon(row, GetCfg())
+	paint_icon(row, get_cfg())
 end
 
 function stack.Busy(row)
@@ -601,7 +603,7 @@ function stack.Style(row, L, cfg)
 		L.gw = gw
 		pcall(L.tally.SetWidth, L.tally, gw)
 	end
-	L.bar:SetStatusBarTexture(row.tex or BarTex())
+	L.bar:SetStatusBarTexture(row.tex or bar_tex())
 	L.bar:SetStatusBarColor(row.fr or 0.7, row.fg or 0.7, row.fb or 0.7, row.fa or 1)
 	L.timer:SetFont(ns.GetFont(), cfg.textSize or 12, 'OUTLINE')
 	L.timer:SetShown(cfg.showTimer and true or false)
@@ -657,12 +659,12 @@ function stack.Layer(row, s)
 	L.mark:Hide()
 	L.root:Hide()
 	lay[s] = L
-	stack.Style(row, L, GetCfg())
+	stack.Style(row, L, get_cfg())
 	return L
 end
 
 function stack.Look(L, row, mark, tex)
-	local cfg = GetCfg()
+	local cfg = get_cfg()
 	local own = cfg.iconSource == 'kicked' and type(tex) ~= 'nil' and pcall(L.icon.SetTexture, L.icon, tex)
 	if not own then
 		local spell = row.spell and C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(row.spell)
@@ -706,9 +708,9 @@ function stack.Put(row, before, after, at, dur, mark, tex)
 	L.root:Show()
 	if not row:IsShown() then
 		row:Show()
-		ShowRows()
+		show_rows()
 	end
-	StartTicker()
+	start_ticker()
 	return true, s, L
 end
 
@@ -724,31 +726,31 @@ function stack.Step(row, now, showTimer)
 				ended = true
 			else
 				L.bar:SetValue(L.dur - rem) -- dodo: 차오르는 바
-				if showTimer then L.last = PaintTime(L.timer, rem, L.last) end
+				if showTimer then L.last = paint_time(L.timer, rem, L.last) end
 				busy = true
 			end
 		end
 	end
-	if ended and not busy and not row.cdStart and not previewActive and not GetCfg().showReady then
+	if ended and not busy and not row.cdStart and not previewActive and not get_cfg().showReady then
 		row:Hide()
-		ShowRows()
+		show_rows()
 	end
 	return busy
 end
 
-local function SetReady(row)
+local function set_ready(row)
 	row.cdStart, row.cdDur = nil, nil
 	row.timer:SetText('')
 	row.__lastText = nil
 	row.bar:Hide()
 	row.ready:Show()
-	SetMark(row, nil)
-	SetKicked(row, nil)
-	if not GetCfg().showReady and not previewActive and not stack.Busy(row) then row:Hide() end
-	ShowRows()
+	set_mark(row, nil)
+	set_kicked(row, nil)
+	if not get_cfg().showReady and not previewActive and not stack.Busy(row) then row:Hide() end
+	show_rows()
 end
 
-local function StartCooldown(row, start, dur)
+local function start_cooldown(row, start, dur)
 	if not dur or dur <= 0 then return end
 	row.cdStart, row.cdDur = start, dur
 	row.bar:SetMinMaxValues(0, dur)
@@ -756,12 +758,12 @@ local function StartCooldown(row, start, dur)
 	row.ready:Hide()
 	row.bar:Show()
 	row:Show()
-	ShowRows()
-	StartTicker()
+	show_rows()
+	start_ticker()
 end
 
 local learnedSwept = false
-local function LearnedStore()
+local function learned_store()
 	local db = _G.dodoDB and _G.dodoDB.partyTracker -- dodo: 저장소
 	if type(db) ~= 'table' then return nil end
 	if type(db.ikLearned) ~= 'table' then db.ikLearned = {} end
@@ -776,33 +778,33 @@ local function LearnedStore()
 	return store
 end
 
-local function OwnHealerCd(spell)
+local function own_healer_cd(spell)
 	local m = members.player
 	return m and m.heals and KICKS[spell] and KICKS[spell].healerCd or nil
 end
 
-local function LearnLength(spell, secs)
-	local store = LearnedStore()
+local function learn_length(spell, secs)
+	local store = learned_store()
 	if not store or not spell or type(secs) ~= 'number' or secs < 3 then return end
-	if OwnHealerCd(spell) then return end
+	if own_healer_cd(spell) then return end
 	local cap = KICKS[spell] and KICKS[spell].cd
 	if cap and secs > cap + 0.25 then return end
 	local cur = store[spell]
 	if type(cur) ~= 'number' or secs < cur then store[spell] = mfloor(secs * 2 + 0.5) / 2 end
 end
 
-local function OwnCd(spell)
-	local healerCd = OwnHealerCd(spell)
+local function own_cd(spell)
+	local healerCd = own_healer_cd(spell)
 	if healerCd then return healerCd, 'healer table' end
-	local store = LearnedStore()
+	local store = learned_store()
 	local v = store and spell and store[spell]
 	if type(v) == 'number' and v > 0 then return v, 'measured' end
-	local cd = spell and KickCd(spell, false, tal.Own(), false)
+	local cd = spell and kick_cd(spell, false, tal.Own(), false)
 	if cd then return cd, 'table' end
-	return GetCfg().partyCd or 15, 'fallback'
+	return get_cfg().partyCd or 15, 'fallback'
 end
 
-local function RefreshSelf(castSpell)
+local function refresh_self(castSpell)
 	local row = rows.player
 	if not row or previewActive then return end
 	local poll = row.poll or row.spell
@@ -810,30 +812,30 @@ local function RefreshSelf(castSpell)
 	local info = poll and C_Spell and C_Spell.GetSpellCooldown and C_Spell.GetSpellCooldown(poll)
 	if not info then
 		if castSpell and KICKS[castSpell] and not row.cdStart then
-			StartCooldown(row, now, OwnCd(castSpell))
+			start_cooldown(row, now, own_cd(castSpell))
 		end
 		return
 	end
 	local running = (info.isActive and not info.isOnGCD) and true or false
 	if not running then
-		if row.cdStart then SetReady(row) end
+		if row.cdStart then set_ready(row) end
 		return
 	end
 	local st, du = info.startTime, info.duration
 	if not secret(st) and not secret(du) and type(st) == 'number' and type(du) == 'number' and du > 2 then
-		LearnLength(poll, du)
+		learn_length(poll, du)
 		if not row.cdStart or row.cdDur ~= du or (row.cdStart - st) > 0.5 or (st - row.cdStart) > 0.5 then
-			StartCooldown(row, st, du)
+			start_cooldown(row, st, du)
 		end
 		row.fromCast = nil
 		return
 	end
 	if row.cdStart then return end
-	StartCooldown(row, now, OwnCd(poll))
+	start_cooldown(row, now, own_cd(poll))
 	row.fromCast = castSpell ~= nil
 end
 
-local function SelfStillDown(row, now)
+local function self_still_down(row, now)
 	row.__pollAt = now
 	local poll = row.poll or row.spell
 	local info = poll and C_Spell and C_Spell.GetSpellCooldown and C_Spell.GetSpellCooldown(poll)
@@ -841,48 +843,48 @@ local function SelfStillDown(row, now)
 	return (info.isActive and not info.isOnGCD) and true or false
 end
 
-local function SelfEndedEarly(row, now)
-	if SelfStillDown(row, now) then return false end
+local function self_ended_early(row, now)
+	if self_still_down(row, now) then return false end
 	local elapsed = now - row.cdStart
-	if row.fromCast then LearnLength(row.poll or row.spell, elapsed) end
+	if row.fromCast then learn_length(row.poll or row.spell, elapsed) end
 	row.fromCast = nil
 	return true
 end
 
-local function SelfStretch(row)
+local function self_stretch(row)
 	row.cdDur = row.cdDur + 0.5
 	row.bar:SetMinMaxValues(0, row.cdDur)
 end
 
-Tick = function(self, elapsed)
+tick = function(self, elapsed)
 	self.__acc = (self.__acc or 0) + elapsed
 	if self.__acc < 0.05 then return end
 	self.__acc = 0
 	local now, busy = GetTime(), false
-	local showTimer = GetCfg().showTimer
+	local showTimer = get_cfg().showTimer
 	for _, row in ipairs(shown) do
 		if row.lay and stack.Step(row, now, showTimer) then busy = true end
 		if row.cdStart then
 			local rem = row.cdStart + row.cdDur - now
-			if rem <= 0 and row.unit == 'player' and not previewActive and SelfStillDown(row, now) then
-				SelfStretch(row)
+			if rem <= 0 and row.unit == 'player' and not previewActive and self_still_down(row, now) then
+				self_stretch(row)
 				busy = true
 			elseif rem <= 0 then
 				if previewActive then row.previewRestart = now + 2 busy = true end
-				SetReady(row)
-			elseif row.unit == 'player' and not previewActive and now - (row.__pollAt or 0) >= 0.15 and SelfEndedEarly(row, now) then
-				SetReady(row)
+				set_ready(row)
+			elseif row.unit == 'player' and not previewActive and now - (row.__pollAt or 0) >= 0.15 and self_ended_early(row, now) then
+				set_ready(row)
 			else
 				row.bar:SetValue(row.cdDur - rem) -- dodo: 차오르는 바
-				if showTimer then row.__lastText = PaintTime(row.timer, rem, row.__lastText) end
+				if showTimer then row.__lastText = paint_time(row.timer, rem, row.__lastText) end
 				busy = true
 			end
 		elseif previewActive and row.previewRestart then
 			if now >= row.previewRestart then
 				row.previewRestart = nil
-				StartCooldown(row, now, row.cd or 15)
-				SetMark(row, 8)
-				SetKicked(row, row.previewKicked)
+				start_cooldown(row, now, row.cd or 15)
+				set_mark(row, 8)
+				set_kicked(row, row.previewKicked)
 			end
 			busy = true
 		end
@@ -890,14 +892,14 @@ Tick = function(self, elapsed)
 	if not busy then self:SetScript('OnUpdate', nil) end
 end
 
-local function Read(fn, unit)
+local function read(fn, unit)
 	if not fn then return nil end
 	local ok, v = pcall(fn, unit)
 	if not ok or secret(v) then return nil end
 	return v
 end
 
-local function MemberSpell(m)
+local function member_spell(m)
 	if m.spec and SPEC_KICK[m.spec] ~= nil then return SPEC_KICK[m.spec] or nil end
 	if m.role == 'HEALER' and HEALER_NO_KICK[m.class] then return nil end
 	return CLASS_KICK[m.class]
@@ -905,67 +907,67 @@ end
 
 ns.IKKickLength = function(unit)
 	if unit == 'player' then
-		local spell = PlayerKick()
-		return spell and KickCd(spell, Heals(SelfSpecId(), Read(UnitGroupRolesAssigned, unit)), tal.Own(), true), spell
+		local spell = player_kick()
+		return spell and kick_cd(spell, heals_of(self_spec_id(), read(UnitGroupRolesAssigned, unit)), tal.Own(), true), spell
 	end
-	local class = Read(UnitClassBase, unit)
+	local class = read(UnitClassBase, unit)
 	if not class then return nil end
-	local guid = Read(UnitGUID, unit)
-	local m = { class = class, role = Read(UnitGroupRolesAssigned, unit), spec = guid and specByGUID[guid] or nil }
-	local spell = MemberSpell(m)
-	return spell and KickCd(spell, Heals(m.spec, m.role), guid and tal.byGUID[guid], true), spell
+	local guid = read(UnitGUID, unit)
+	local m = { class = class, role = read(UnitGroupRolesAssigned, unit), spec = guid and specByGUID[guid] or nil }
+	local spell = member_spell(m)
+	return spell and kick_cd(spell, heals_of(m.spec, m.role), guid and tal.byGUID[guid], true), spell
 end
 
-local function WantsTalents(m)
+local function wants_talents(m)
 	local kick = m.spell and KICKS[m.spell]
 	return (m.guid and kick and kick.mods and not tal.byGUID[m.guid] and ns.InDungeon()) and true or false
 end
 
-local function WantsSpec(m)
-	return not m.spec or WantsTalents(m)
+local function wants_spec(m)
+	return not m.spec or wants_talents(m)
 end
 
 local inspectQueue = {}
 local inspectTicker
-local QueueInspect
+local queue_inspect
 
-local function UnitForGUID(guid)
+local function unit_for_g_u_i_d(guid)
 	for unit, m in pairs(members) do
 		if m.guid == guid then return unit end
 	end
 end
 
-local ScheduleRebuild
+local schedule_rebuild
 
-local function ReadSpec(unit)
+local function read_spec(unit)
 	local get = C_SpecializationInfo and C_SpecializationInfo.GetInspectSpecialization or _G.GetInspectSpecialization
-	local spec = Read(get, unit)
+	local spec = read(get, unit)
 	if type(spec) == 'number' and spec > 0 then return spec end
 	return nil
 end
 
-local function StopInspects()
+local function stop_inspects()
 	wipe(inspectQueue)
 	if inspectTicker then inspectTicker:Cancel() inspectTicker = nil end
 	for _, m in pairs(members) do m.tries = nil end
 end
 
-local function InspectStep()
-	if not GetCfg().enable then StopInspects() return end
+local function inspect_step()
+	if not get_cfg().enable then stop_inspects() return end
 	if #inspectQueue == 0 then
 		if inspectTicker then inspectTicker:Cancel() inspectTicker = nil end
 		return
 	end
 	local unit = inspectQueue[1]
 	local m = members[unit]
-	if not m or not WantsSpec(m) then
+	if not m or not wants_spec(m) then
 		table.remove(inspectQueue, 1)
 		return
 	end
 	if m.guid and specByGUID[m.guid] and not m.spec then
 		m.spec = specByGUID[m.guid]
-		ScheduleRebuild()
-		if not WantsTalents(m) then
+		schedule_rebuild()
+		if not wants_talents(m) then
 			table.remove(inspectQueue, 1)
 			return
 		end
@@ -975,9 +977,9 @@ local function InspectStep()
 		table.remove(inspectQueue, 1)
 		C_Timer.After(30, function()
 			local cur = members[unit]
-			if cur and cur.guid == m.guid and WantsSpec(cur) then
+			if cur and cur.guid == m.guid and wants_spec(cur) then
 				cur.tries = 0
-				QueueInspect(unit)
+				queue_inspect(unit)
 			end
 		end)
 		return
@@ -989,20 +991,20 @@ local function InspectStep()
 	inspectQueue[#inspectQueue + 1] = unit
 end
 
-QueueInspect = function(unit)
+queue_inspect = function(unit)
 	for _, u in ipairs(inspectQueue) do if u == unit then return end end
 	inspectQueue[#inspectQueue + 1] = unit
 	if not inspectTicker and C_Timer and C_Timer.NewTicker then
-		inspectTicker = C_Timer.NewTicker(1, InspectStep)
+		inspectTicker = C_Timer.NewTicker(1, inspect_step)
 	end
 end
 
-local function OnInspectReady(guid)
+local function on_inspect_ready(guid)
 	if secret(guid) then return end
-	local unit = UnitForGUID(guid)
+	local unit = unit_for_g_u_i_d(guid)
 	if not unit then return end
 	local m = members[unit]
-	local spec = ReadSpec(unit)
+	local spec = read_spec(unit)
 	local changed = false
 	if spec then
 		specByGUID[guid] = spec
@@ -1016,12 +1018,12 @@ local function OnInspectReady(guid)
 		tal.byGUID[guid] = ranks
 		changed = true
 	end
-	if changed then ScheduleRebuild() end
+	if changed then schedule_rebuild() end
 end
 
-local function Rebuild()
+local function rebuild()
 	if previewActive or not frame then return end
-	local cfg = GetCfg()
+	local cfg = get_cfg()
 	local old = members
 	members = {}
 	wipe(shown)
@@ -1029,44 +1031,44 @@ local function Rebuild()
 	for idx, unit in ipairs(UNITS) do
 		local isSelf = unit == 'player'
 		if (not isSelf or cfg.showSelf) and UnitExists(unit) then
-			local class = Read(UnitClassBase, unit)
+			local class = read(UnitClassBase, unit)
 			if class then
-				local guid = Read(UnitGUID, unit)
+				local guid = read(UnitGUID, unit)
 				local m = {
 					guid = guid,
-					name = Read(UnitName, unit),
+					name = read(UnitName, unit),
 					class = class,
-					role = Read(UnitGroupRolesAssigned, unit),
+					role = read(UnitGroupRolesAssigned, unit),
 					spec = guid and specByGUID[guid] or nil,
 					tries = old[unit] and old[unit].guid == guid and old[unit].tries or nil,
 				}
-				m.heals = Heals(isSelf and SelfSpecId() or m.spec, m.role)
+				m.heals = heals_of(isSelf and self_spec_id() or m.spec, m.role)
 				members[unit] = m
 				local spell, poll
 				if isSelf then
-					spell, poll = PlayerKick()
+					spell, poll = player_kick()
 				else
-					spell = MemberSpell(m)
+					spell = member_spell(m)
 				end
 				m.spell = spell
-				if not isSelf and WantsSpec(m) then QueueInspect(unit) end
+				if not isSelf and wants_spec(m) then queue_inspect(unit) end
 				-- if spell then
 				if spell and not cfg.off[spell] then -- dodo: 꺼진 차단기는 행 안 만듦
 					local row = rows[unit]
 					if row and row.guid ~= guid then
-						ReleaseRow(row)
+						release_row(row)
 						row = nil
 					end
 					if not row then
-						row = AcquireRow()
+						row = acquire_row()
 						rows[unit] = row
 					end
 					keep[unit] = true
 					row.unit, row.guid, row.class, row.order = unit, guid, class, idx
 					row.label = m.name or unit
 					row.spell, row.poll = spell, poll
-					row.cd = KickCd(spell, m.heals, isSelf and tal.Own() or (guid and tal.byGUID[guid]), not isSelf) or 15
-					StyleRow(row, cfg)
+					row.cd = kick_cd(spell, m.heals, isSelf and tal.Own() or (guid and tal.byGUID[guid]), not isSelf) or 15
+					style_row(row, cfg)
 					local busy = row.cdStart ~= nil
 					if busy then
 						row.ready:Hide()
@@ -1085,23 +1087,24 @@ local function Rebuild()
 	end
 	for unit, row in pairs(rows) do
 		if not keep[unit] then
-			ReleaseRow(row)
+			release_row(row)
 			rows[unit] = nil
 		end
 	end
 	if mtr.on then mtr.Base(false) end
-	ShowRows()
-	RefreshSelf()
+	show_rows()
+	refresh_self()
 end
 
 local rebuildPending = false
-ScheduleRebuild = function()
+local function on_rebuild_due()
+	rebuildPending = false
+	rebuild()
+end
+schedule_rebuild = function()
 	if rebuildPending then return end
 	rebuildPending = true
-	C_Timer.After(0.2, function()
-		rebuildPending = false
-		Rebuild()
-	end)
+	C_Timer.After(0.2, on_rebuild_due)
 end
 
 local PREVIEW = {
@@ -1112,19 +1115,19 @@ local PREVIEW = {
 	{ label = '플레이어', class = 'ROGUE',       spell = 1766,   kicked = 'Interface\\Icons\\Spell_Nature_Lightning' },
 }
 
-local function BuildPreview()
-	local cfg = GetCfg()
-	for unit, row in pairs(rows) do ReleaseRow(row) rows[unit] = nil end
+local function build_preview()
+	local cfg = get_cfg()
+	for unit, row in pairs(rows) do release_row(row) rows[unit] = nil end
 	wipe(shown)
 	local now = GetTime()
 	for i, p in ipairs(PREVIEW) do
-		local row = AcquireRow()
+		local row = acquire_row()
 		rows['preview' .. i] = row
 		row.unit, row.guid, row.class, row.order = nil, nil, p.class, i
 		row.label, row.spell, row.poll = p.label, p.spell, nil
-		row.cd = KickCd(p.spell, false, nil, true)
+		row.cd = kick_cd(p.spell, false, nil, true)
 		row.previewKicked = p.kicked
-		StyleRow(row, cfg)
+		style_row(row, cfg)
 		row:Show()
 		shown[#shown + 1] = row
 		if i == 1 then
@@ -1132,29 +1135,29 @@ local function BuildPreview()
 			row.ready:Show()
 			row.previewRestart = now + 3
 		else
-			StartCooldown(row, now - (i - 1) * 2.5, row.cd)
-			SetMark(row, 10 - i)
-			SetKicked(row, p.kicked)
+			start_cooldown(row, now - (i - 1) * 2.5, row.cd)
+			set_mark(row, 10 - i)
+			set_kicked(row, p.kicked)
 		end
 	end
-	ShowRows()
-	StartTicker()
+	show_rows()
+	start_ticker()
 end
 
-local function SetPreview(on)
+local function set_preview(on)
 	on = on and true or false
 	if on == previewActive then return end
 	previewActive = on
-	EnsureFrame()
+	ensure_frame()
 	if on then
-		BuildPreview()
+		build_preview()
 	else
-		for unit, row in pairs(rows) do ReleaseRow(row) rows[unit] = nil end
+		for unit, row in pairs(rows) do release_row(row) rows[unit] = nil end
 		wipe(shown)
-		Rebuild()
+		rebuild()
 	end
-	frame:EnableMouse(ns.CanGrab(GetCfg(), previewActive))
-	frame:SetShown(ShouldShow())
+	frame:EnableMouse(ns.CanGrab(get_cfg(), previewActive))
+	frame:SetShown(should_show())
 end
 ns.IKIsPreview = function() return previewActive end
 
@@ -1167,7 +1170,7 @@ table.sort(KICK_IDS, function(a, b)
 end)
 
 ns.IKSpells = function()
-	local off, out = GetCfg().off, {}
+	local off, out = get_cfg().off, {}
 	for _, id in ipairs(KICK_IDS) do
 		out[#out + 1] = { id = id, class = KICKS[id].class, cd = KICKS[id].cd, off = off[id] and true or false }
 	end
@@ -1176,30 +1179,30 @@ end
 
 ns.IKSetShown = function(id, on)
 	if not KICKS[id] then return end
-	GetCfg().off[id] = (not on) and true or nil
-	ScheduleRebuild()
+	get_cfg().off[id] = (not on) and true or nil
+	schedule_rebuild()
 end
-ns.IKSetPreview = SetPreview
+ns.IKSetPreview = set_preview
 
-local function Apply()
-	EnsureFrame()
-	local cfg = GetCfg()
-	ApplyPosition()
+local function apply()
+	ensure_frame()
+	local cfg = get_cfg()
+	apply_position()
 	frame:EnableMouse(ns.CanGrab(cfg, previewActive))
 	if not cfg.enable then
-		if previewActive then SetPreview(false) end
-		for unit, row in pairs(rows) do ReleaseRow(row) rows[unit] = nil end
+		if previewActive then set_preview(false) end
+		for unit, row in pairs(rows) do release_row(row) rows[unit] = nil end
 		wipe(shown)
-		StopInspects()
+		stop_inspects()
 		frame:Hide()
 		return
 	end
 	stack.Check()
 	if previewActive then
-		for _, row in ipairs(shown) do StyleRow(row, cfg) end
-		ShowRows()
+		for _, row in ipairs(shown) do style_row(row, cfg) end
+		show_rows()
 	else
-		Rebuild()
+		rebuild()
 	end
 end
 
@@ -1209,22 +1212,22 @@ local lastObservedAt = -10
 local lastObservedUnit
 local lastGuessRow, lastGuessAt = nil, -10
 
-local function MarkSelf(mark, tex)
+local function mark_self(mark, tex)
 	local row = rows.player
 	if row then
 		C_Timer.After(0, function()
 			if row.cdStart then
-				SetMark(row, mark)
-				SetKicked(row, tex)
+				set_mark(row, mark)
+				set_kicked(row, tex)
 			end
 		end)
 	end
 end
 
-local function OnCast(unit, spellID)
+local function on_cast(unit, spellID)
 	local owner = CAST_OWNER[unit]
 	if not owner then return end
-	local p = Probe(unit)
+	local p = probe_of(unit)
 	if secret(spellID) then
 		p.secret = p.secret + 1
 		p.lastAt = GetTime()
@@ -1239,7 +1242,7 @@ local function OnCast(unit, spellID)
 		lastSelfKickAt = GetTime()
 		if lastGuessRow and GetTime() - lastGuessAt < 0.4 then
 			handed, handMark, handTex = true, lastGuessRow.markIdx, lastGuessRow.kickedTex
-			SetReady(lastGuessRow)
+			set_ready(lastGuessRow)
 			obs.guessed = obs.guessed - 1
 			obs.mine = obs.mine + 1
 			lastGuessRow = nil
@@ -1252,34 +1255,34 @@ local function OnCast(unit, spellID)
 			selfClaimKick = lastSelfKickAt
 		end
 	end
-	if not GetCfg().enable or previewActive then return end
+	if not get_cfg().enable or previewActive then return end
 	local row = rows[owner]
 	if not row or row.class ~= kick.class then return end
 	if owner == 'player' then
-		C_Timer.After(0, function() RefreshSelf(spellID) end)
-		if handed then MarkSelf(handMark, handTex) end
+		C_Timer.After(0, function() refresh_self(spellID) end)
+		if handed then mark_self(handMark, handTex) end
 		return
 	end
 	local iconSpell = kick.icon or spellID
 	if row.spell ~= iconSpell then
 		row.spell = iconSpell
-		row.cd = KickCd(spellID, members[owner] and members[owner].heals, row.guid and tal.byGUID[row.guid], true)
+		row.cd = kick_cd(spellID, members[owner] and members[owner].heals, row.guid and tal.byGUID[row.guid], true)
 		if members[owner] then members[owner].spell = iconSpell end
-		StyleRow(row, GetCfg())
+		style_row(row, get_cfg())
 	end
 	lastObservedAt, lastObservedUnit = GetTime(), owner
 	stack.Clear(row)
 	row.sureAt = GetTime()
-	StartCooldown(row, GetTime(), MemberCd(row))
+	start_cooldown(row, GetTime(), member_cd(row))
 end
 
-local function OwnerOfGUID(guid)
-	local owner = UnitForGUID(guid)
+local function owner_of_g_u_i_d(guid)
+	local owner = unit_for_g_u_i_d(guid)
 	if owner then return owner end
 	for _, unit in ipairs(PARTY_UNITS) do
-		if members[unit] and Read(UnitGUID, 'partypet' .. unit:sub(-1)) == guid then return unit end
+		if members[unit] and read(UnitGUID, 'partypet' .. unit:sub(-1)) == guid then return unit end
 	end
-	if Read(UnitGUID, 'pet') == guid then return 'player' end
+	if read(UnitGUID, 'pet') == guid then return 'player' end
 	return nil
 end
 
@@ -1288,7 +1291,7 @@ local meterSnap = {}
 local lastMeterLists = {}
 local specIconCache = {}
 
-local function SpecIcon(specID)
+local function spec_icon(specID)
 	if not specID then return nil end
 	local cached = specIconCache[specID]
 	if cached ~= nil then return cached or nil end
@@ -1299,11 +1302,11 @@ local function SpecIcon(specID)
 	return icon or nil
 end
 
-local function ShortName(n)
+local function short_name(n)
 	return (tostring(n):gsub('%-.*$', ''))
 end
 
-local function ReadMeterList(sessionType)
+local function read_meter_list(sessionType)
 	local DM, E = _G.C_DamageMeter, _G.Enum
 	if not (DM and DM.GetCombatSessionFromType and E and E.DamageMeterType and E.DamageMeterType.Interrupts) then return nil end
 	local ok, session = pcall(DM.GetCombatSessionFromType, sessionType, E.DamageMeterType.Interrupts)
@@ -1320,7 +1323,7 @@ local function ReadMeterList(sessionType)
 				if secret(icon) or type(icon) ~= 'number' then icon = nil end
 				local name = src.name
 				if secret(name) or type(name) ~= 'string' or name == '' then name = nil end
-				local key = name and ShortName(name) or (class .. ':' .. tostring(icon) .. (me and ':me' or ''))
+				local key = name and short_name(name) or (class .. ':' .. tostring(icon) .. (me and ':me' or ''))
 				seen[key] = (seen[key] or 0) + 1
 				if seen[key] > 1 then key = key .. '#' .. seen[key] end
 				list[#list + 1] = { key = key, class = class, icon = icon, me = me, name = name }
@@ -1330,7 +1333,7 @@ local function ReadMeterList(sessionType)
 	return list
 end
 
-local function MatchMember(e, out)
+local function match_member(e, out)
 	local n = 0
 	for _, unit in ipairs(UNITS) do
 		local m = members[unit]
@@ -1338,9 +1341,9 @@ local function MatchMember(e, out)
 		local okUnit = e.me ~= nil and e.me and isMe
 		if not okUnit and m and m.class == e.class then
 			okUnit = e.me == nil or (e.me == isMe)
-			if okUnit and e.name and m.name and ShortName(e.name) ~= ShortName(m.name) then okUnit = false end
+			if okUnit and e.name and m.name and short_name(e.name) ~= short_name(m.name) then okUnit = false end
 			if okUnit and e.icon and m.spec then
-				local icon = SpecIcon(m.spec)
+				local icon = spec_icon(m.spec)
 				if icon and icon ~= e.icon then okUnit = false end
 			end
 		end
@@ -1352,8 +1355,8 @@ local function MatchMember(e, out)
 	return n
 end
 
-local function DiffMeter(sessionType)
-	local list = ReadMeterList(sessionType)
+local function diff_meter(sessionType)
+	local list = read_meter_list(sessionType)
 	if not list then return nil end
 	local old = meterSnap[sessionType]
 	meterSnap[sessionType] = list
@@ -1374,7 +1377,7 @@ local function DiffMeter(sessionType)
 	return nil, list
 end
 
-local function MeterKicker()
+local function meter_kicker()
 	local E = _G.Enum
 	local ST = E and E.DamageMeterSessionType
 	if not ST then return nil, nil end
@@ -1384,19 +1387,19 @@ local function MeterKicker()
 	for _, name in ipairs(SESSIONS) do
 		local st = ST[name]
 		if st then
-			local e, list = DiffMeter(st)
+			local e, list = diff_meter(st)
 			lastMeterLists[name] = list
 			if owner then
 				e = nil
 			elseif e then
 				local mine = {}
-				if MatchMember(e, mine) == 1 then
+				if match_member(e, mine) == 1 then
 					owner, ownerSet, via = next(mine), mine, name
 				elseif next(mine) and not narrowed then
 					cands, narrowed = mine, true
 				end
 			elseif list and not narrowed then
-				for _, entry in ipairs(list) do MatchMember(entry, cands) end
+				for _, entry in ipairs(list) do match_member(entry, cands) end
 			end
 		end
 	end
@@ -1405,18 +1408,18 @@ local function MeterKicker()
 	return nil, cands, nil
 end
 
-local function GuessKicker(cands, allowBusy)
+local function guess_kicker(cands, allowBusy)
 	local best
 	for _, unit in ipairs(PARTY_UNITS) do
 		local row = rows[unit]
-		if row and (allowBusy or not row.cdStart) and (not cands or cands[unit]) and (not best or StackBefore(row, best)) then best = row end
+		if row and (allowBusy or not row.cdStart) and (not cands or cands[unit]) and (not best or stack_before(row, best)) then best = row end
 	end
 	return best
 end
 
 local pendings, meterHits = {}, {}
 
-local function CloserToOwnKick(at)
+local function closer_to_own_kick(at)
 	local d = mabs(at - lastSelfKickAt)
 	for _, q in ipairs(pendings) do
 		if mabs(q.at - lastSelfKickAt) < d then return true end
@@ -1424,15 +1427,15 @@ local function CloserToOwnKick(at)
 	return false
 end
 
-local function ChargeRow(row, at, mark, tex)
-	StartCooldown(row, at, MemberCd(row))
-	SetMark(row, mark)
-	SetKicked(row, tex)
+local function charge_row(row, at, mark, tex)
+	start_cooldown(row, at, member_cd(row))
+	set_mark(row, mark)
+	set_kicked(row, tex)
 end
 
-local function Guess(at, mark, cands, tex)
-	local row = GuessKicker(cands)
-	if not row and cands then row = GuessKicker(cands, true) or GuessKicker(nil) end
+local function guess(at, mark, cands, tex)
+	local row = guess_kicker(cands)
+	if not row and cands then row = guess_kicker(cands, true) or guess_kicker(nil) end
 	if not row then
 		obs.unmatched = obs.unmatched + 1
 		lastObservedUnit = nil
@@ -1441,32 +1444,32 @@ local function Guess(at, mark, cands, tex)
 	obs.guessed = obs.guessed + 1
 	lastObservedUnit = row.unit
 	lastGuessRow, lastGuessAt = row, at
-	ChargeRow(row, at, mark, tex)
+	charge_row(row, at, mark, tex)
 end
 
-local function Sure(row, at, mark, tex)
+local function sure(row, at, mark, tex)
 	stack.Clear(row)
 	row.sureAt = at
 	lastObservedAt, lastObservedUnit = at, row.unit
-	ChargeRow(row, at, mark, tex)
+	charge_row(row, at, mark, tex)
 end
 
-local function Charge(at, owner, mark, cands, tex)
+local function charge(at, owner, mark, cands, tex)
 	if owner then
-		if owner == 'player' then RefreshSelf() MarkSelf(mark, tex) return end
+		if owner == 'player' then refresh_self() mark_self(mark, tex) return end
 		local row = rows[owner]
-		if row then Sure(row, at, mark, tex) else lastObservedAt, lastObservedUnit = at, owner end
+		if row then sure(row, at, mark, tex) else lastObservedAt, lastObservedUnit = at, owner end
 		return
 	end
 	lastObservedAt = at
-	if lastSelfKickAt ~= selfClaimKick and mabs(at - lastSelfKickAt) < 0.8 and not CloserToOwnKick(at) then
+	if lastSelfKickAt ~= selfClaimKick and mabs(at - lastSelfKickAt) < 0.8 and not closer_to_own_kick(at) then
 		selfClaimKick = lastSelfKickAt
 		obs.mine = obs.mine + 1
 		lastObservedUnit = 'player'
-		MarkSelf(mark, tex)
+		mark_self(mark, tex)
 		return
 	end
-	Guess(at, mark, cands, tex)
+	guess(at, mark, cands, tex)
 end
 
 function stack.Check()
@@ -1487,7 +1490,7 @@ function stack.Check()
 		t = { bar = bar, c = c }
 		stack.test = t
 	end
-	local function Width()
+	local function width()
 		local l, r = t.c:GetLeft(), t.c:GetRight()
 		if type(l) ~= 'number' or type(r) ~= 'number' or secret(l) or secret(r) then return nil end
 		return r - l
@@ -1498,12 +1501,12 @@ function stack.Check()
 	end
 	stack.checking = true
 	C_Timer.After(0.1, function()
-		local open = Width()
+		local open = width()
 		pcall(t.bar.SetMinMaxValues, t.bar, 0, 3)
 		pcall(t.bar.SetValue, t.bar, 3)
 		C_Timer.After(0.1, function()
 			stack.checking = false
-			local shut = Width()
+			local shut = width()
 			if not open or not shut then
 				stack.ok, stack.why = false, 'the clip edge could not be read'
 			elseif mabs(open - 500) > 2 or mabs(shut) > 2 then
@@ -1559,7 +1562,7 @@ function mtr.Read()
 			asked = true
 			mtr.Take(cur, m.guid, unit)
 			if m.class == 'WARLOCK' then
-				local pet = Read(UnitGUID, 'partypet' .. i)
+				local pet = read(UnitGUID, 'partypet' .. i)
 				if pet then mtr.Take(cur, pet, unit) end
 			end
 		end
@@ -1591,7 +1594,7 @@ function mtr.Base(force)
 end
 
 function mtr.Down(row, now)
-	return (row.sureAt and now - row.sureAt < MemberCd(row) - mtr.SLACK) and true or false
+	return (row.sureAt and now - row.sureAt < member_cd(row) - mtr.SLACK) and true or false
 end
 
 function mtr.Stops(now)
@@ -1656,7 +1659,7 @@ function mtr.Update(now)
 			end
 		end
 	end
-	local moved, cands, via = MeterKicker()
+	local moved, cands, via = meter_kicker()
 	lastMeterOwner, lastMeterVia = moved, via
 	if nGrown == 0 and not owners and moved and moved ~= 'player' and rows[moved] and not mtr.Down(rows[moved], now) then
 		named[moved] = 'sure'
@@ -1665,7 +1668,7 @@ function mtr.Update(now)
 	local placed = false
 	for unit, why in pairs(named) do
 		if why == 'sure' then
-			Sure(rows[unit], now, mark, tex)
+			sure(rows[unit], now, mark, tex)
 			obs.sure = obs.sure + 1
 			h.rows[#h.rows + 1] = rows[unit]
 			placed = true
@@ -1676,7 +1679,7 @@ function mtr.Update(now)
 		if pending then selfClaimKick = lastSelfKickAt end
 		obs.mine = obs.mine + 1
 		h.self, h.taken = true, true
-		MarkSelf(mark, tex)
+		mark_self(mark, tex)
 	end
 	local drew = 0
 	if stack.ok == true then
@@ -1686,7 +1689,7 @@ function mtr.Update(now)
 			local p = prev[g]
 			if row and not named[unit] and not fell and p and p.n >= 1 and type(p.a) ~= 'nil' and type(c.a) ~= 'nil'
 				and not mtr.Down(row, now) then
-				local ok, _, L = stack.Put(row, p.a, c.a, now, MemberCd(row), mark, tex)
+				local ok, _, L = stack.Put(row, p.a, c.a, now, member_cd(row), mark, tex)
 				if ok then
 					drew = drew + 1
 					h.layers[#h.layers + 1] = L
@@ -1703,7 +1706,7 @@ function mtr.Update(now)
 	elseif not placed and not h.self then
 		if stack.ok ~= true and not fell then
 			obs.fell = obs.fell + 1
-			Guess(now, mark, cands, tex)
+			guess(now, mark, cands, tex)
 		else
 			obs.nobody = obs.nobody + 1
 		end
@@ -1717,10 +1720,10 @@ function mtr.Attach(now, mark, tex)
 	if not h or h.marked or now < h.at or now - h.at > mtr.PAIR then return false end
 	h.marked, h.mark, h.tex = true, mark, tex
 	obs.late = obs.late + 1
-	if h.self then MarkSelf(mark, tex) end
+	if h.self then mark_self(mark, tex) end
 	for _, row in ipairs(h.rows) do
-		SetMark(row, mark)
-		SetKicked(row, tex)
+		set_mark(row, mark)
+		set_kicked(row, tex)
 	end
 	for _, L in ipairs(h.layers) do
 		if L.on and L.start == h.at then stack.Look(L, L.row, mark, tex) end
@@ -1728,20 +1731,20 @@ function mtr.Attach(now, mark, tex)
 	return true
 end
 
-local function Expire(list, now, onDrop)
+local function expire(list, now, onDrop)
 	while list[1] and now - list[1].at > 1.5 do
 		local e = table.remove(list, 1)
 		if onDrop then onDrop(e) end
 	end
 end
 
-local function DropUnconfirmed()
+local function drop_unconfirmed()
 	obs.unconfirmed = obs.unconfirmed + 1
 end
 
-local function Pair(now)
-	Expire(pendings, now, DropUnconfirmed)
-	Expire(meterHits, now)
+local function pair(now)
+	expire(pendings, now, drop_unconfirmed)
+	expire(meterHits, now)
 	while pendings[1] and meterHits[1] do
 		local p, h = pendings[1], meterHits[1]
 		local gap = p.at - h.at
@@ -1749,7 +1752,7 @@ local function Pair(now)
 			table.remove(meterHits, 1)
 		elseif gap < -1 then
 			table.remove(pendings, 1)
-			DropUnconfirmed()
+			drop_unconfirmed()
 		else
 			table.remove(pendings, 1)
 			table.remove(meterHits, 1)
@@ -1759,17 +1762,17 @@ local function Pair(now)
 				owner = h.owner
 				obs.named = obs.named + 1
 			end
-			Charge(p.at, owner, p.mark, h.cands, p.icon)
+			charge(p.at, owner, p.mark, h.cands, p.icon)
 		end
 	end
 end
 
-local function OnEnemyInterrupted(unit, spellID, interruptedBy)
+local function on_enemy_interrupted(unit, spellID, interruptedBy)
 	if type(unit) ~= 'string' or secret(unit) then return end
 	if CAST_OWNER[unit] then return end
 	if ns.Ask(_G.UnitCanAttack, 'player', unit) == false then return end
 	obs.total = obs.total + 1
-	local cfg = GetCfg()
+	local cfg = get_cfg()
 	if not cfg.enable or not cfg.observe or previewActive then return end
 	local now = GetTime()
 	if unit:find('^nameplate%d') then
@@ -1785,7 +1788,7 @@ local function OnEnemyInterrupted(unit, spellID, interruptedBy)
 	local owner
 	if not secret(interruptedBy) and interruptedBy ~= nil then
 		obs.readable = obs.readable + 1
-		owner = OwnerOfGUID(interruptedBy)
+		owner = owner_of_g_u_i_d(interruptedBy)
 		if not owner then return end
 	else
 		obs.secret = obs.secret + 1
@@ -1806,39 +1809,39 @@ local function OnEnemyInterrupted(unit, spellID, interruptedBy)
 	if cfg.meterConfirm then
 		if mtr.Attach(now, mark, icon) then return end
 		pendings[#pendings + 1] = { at = now, owner = owner, mark = mark, icon = icon }
-		Pair(now)
+		pair(now)
 	else
-		Charge(now, owner, mark, nil, icon)
+		charge(now, owner, mark, nil, icon)
 	end
 end
 
 local lastMeterAt = -10
 
-local function OnMeterUpdate(dmType)
+local function on_meter_update(dmType)
 	if not mtr.TYPE or secret(dmType) or dmType ~= mtr.TYPE then return end
 	local now = GetTime()
 	if now == lastMeterAt then return end
 	lastMeterAt = now
 	obs.meter = obs.meter + 1
-	local cfg = GetCfg()
+	local cfg = get_cfg()
 	if not cfg.observe or previewActive then
-		MeterKicker()
+		meter_kicker()
 		mtr.Base(true)
 		return
 	end
 	if mtr.Update(now) then return end
 	obs.fell = obs.fell + 1
-	local owner, cands, via = MeterKicker()
+	local owner, cands, via = meter_kicker()
 	lastMeterOwner, lastMeterVia = owner, via
 	meterHits[#meterHits + 1] = { at = now, owner = owner, cands = cands }
-	Pair(now)
+	pair(now)
 end
 
 local castFrames = {}
 for unit in pairs(CAST_OWNER) do
 	local f = CreateFrame('Frame')
 	f.unit = unit
-	f:SetScript('OnEvent', function(_, _, _, _, spellID) OnCast(unit, spellID) end)
+	f:SetScript('OnEvent', function(_, _, _, _, spellID) on_cast(unit, spellID) end)
 	castFrames[#castFrames + 1] = f
 end
 
@@ -1856,8 +1859,8 @@ local LIVE_EVENTS = { 'SPELL_UPDATE_COOLDOWN', 'UNIT_SPELLCAST_INTERRUPTED',
 	'UNIT_SPELLCAST_CHANNEL_STOP' }
 local METER_EVENT = 'DAMAGE_METER_COMBAT_SESSION_UPDATED'
 local listening, listeningMeter
-local function SyncEvents()
-	local cfg = GetCfg()
+local function sync_events()
+	local cfg = get_cfg()
 	local on = cfg.enable and true or false
 	local meter = on and cfg.meterConfirm and true or false
 	if meter ~= listeningMeter then
@@ -1887,37 +1890,41 @@ local function SyncEvents()
 	end
 end
 ns.IKApply = function()
-	Apply()
-	SyncEvents()
+	apply()
+	sync_events()
 end
 
-local QueueSelf = ns.Coalesce(function() RefreshSelf() end)
+local QueueSelf = ns.Coalesce(function() refresh_self() end)
+
+local function on_meter_settle()
+	if mtr.on then mtr.Base(false) end
+end
 
 evt:SetScript('OnEvent', function(_, event, arg1, arg2, arg3, arg4)
 	if event == 'DAMAGE_METER_COMBAT_SESSION_UPDATED' then
-		OnMeterUpdate(arg1)
+		on_meter_update(arg1)
 	elseif event == 'DAMAGE_METER_CURRENT_SESSION_UPDATED' then
 		mtr.Base(false)
 	elseif event == 'PLAYER_REGEN_DISABLED' then
 		mtr.Base(false)
-		C_Timer.After(0.5, function() if mtr.on then mtr.Base(false) end end)
+		C_Timer.After(0.5, on_meter_settle)
 	elseif event == 'DAMAGE_METER_RESET' then
 		wipe(meterSnap)
 		if listeningMeter then mtr.Base(true) end
 	elseif event == 'UNIT_SPELLCAST_INTERRUPTED' then
-		OnEnemyInterrupted(arg1, arg3, arg4)
+		on_enemy_interrupted(arg1, arg3, arg4)
 	elseif event == 'UNIT_SPELLCAST_CHANNEL_STOP' then
-		if secret(arg4) or arg4 ~= nil then OnEnemyInterrupted(arg1, arg3, arg4) end
+		if secret(arg4) or arg4 ~= nil then on_enemy_interrupted(arg1, arg3, arg4) end
 	elseif event == 'PLAYER_ENTERING_WORLD' then
 		if not stack.checking then stack.ok = nil end
 		if ns.InDungeon() and not (ns.KeyActive and ns.KeyActive()) then wipe(tal.byGUID) end
-		Apply()
-		SyncEvents()
+		apply()
+		sync_events()
 		if listeningMeter then mtr.Base(true) end
 	elseif event == 'INSPECT_READY' then
-		OnInspectReady(arg1)
+		on_inspect_ready(arg1)
 	elseif event == 'SPELL_UPDATE_COOLDOWN' then
-		if GetCfg().enable then QueueSelf() end
+		if get_cfg().enable then QueueSelf() end
 	elseif event == 'PLAYER_SPECIALIZATION_CHANGED' then
 		if type(arg1) == 'string' and not secret(arg1) and arg1 ~= 'player' then
 			local m = members[arg1]
@@ -1926,15 +1933,15 @@ evt:SetScript('OnEvent', function(_, event, arg1, arg2, arg3, arg4)
 				tal.byGUID[m.guid] = nil
 			end
 		end
-		if GetCfg().enable then ScheduleRebuild() end
+		if get_cfg().enable then schedule_rebuild() end
 	else
-		if GetCfg().enable then ScheduleRebuild() end
+		if get_cfg().enable then schedule_rebuild() end
 	end
 end)
 
 _G.SLASH_DODOPTKICK1 = '/ptkick'
 _G.SlashCmdList.DODOPTKICK = function()
-	local cfg = GetCfg()
+	local cfg = get_cfg()
 	local restr = _G.C_Secrets and _G.C_Secrets.HasSecretRestrictions and _G.C_Secrets.HasSecretRestrictions()
 	ns.Msg(sformat('Interrupts: %s, %s, preview %s, secret restrictions %s, only in dungeons %s (%s)',
 		cfg.enable and 'enabled' or 'disabled',
@@ -1953,7 +1960,7 @@ _G.SlashCmdList.DODOPTKICK = function()
 			local cdText
 			if unit == 'player' then
 				local poll = row and (row.poll or row.spell)
-				local secs, from = OwnCd(poll)
+				local secs, from = own_cd(poll)
 				local info = poll and C_Spell and C_Spell.GetSpellCooldown and C_Spell.GetSpellCooldown(poll)
 				local live
 				if not info then live = 'no cooldown info'
@@ -1961,7 +1968,7 @@ _G.SlashCmdList.DODOPTKICK = function()
 				else live = sformat('numbers readable now (duration %s)', tostring(info.duration)) end
 				cdText = sformat('own: real read when allowed, else %gs (%s); %s', secs, from, live)
 			elseif row then
-				cdText = sformat('%gs (%s)', MemberCd(row), m.guid and tal.byGUID[m.guid] and 'from their talents' or 'common talents assumed')
+				cdText = sformat('%gs (%s)', member_cd(row), m.guid and tal.byGUID[m.guid] and 'from their talents' or 'common talents assumed')
 			else cdText = '-' end
 			local seen = unit ~= 'player' and m.guid and mtr.by[m.guid]
 			ns.Msg(sformat('  %s: %s %s role=%s spec=%s kick=%s uses %s, %s%s%s%s',
@@ -1970,7 +1977,7 @@ _G.SlashCmdList.DODOPTKICK = function()
 				m.spell and state or 'no interrupt',
 				seen and sformat(' | meter: %d enemy spells kicked this fight', seen.n) or '',
 				not m.spec and unit ~= 'player' and ' (spec pending)' or '',
-				unit ~= 'player' and WantsTalents(m) and ' (talents pending)' or ''))
+				unit ~= 'player' and wants_talents(m) and ' (talents pending)' or ''))
 		end
 	end
 	ns.Msg(sformat('  casts ended early %d (%d named the kicker, %d secret, %d never confirmed), meter interrupts %d, confirmed %d: %d named by the meter, %d guessed, %d yours, %d unmatched%s',
@@ -1984,10 +1991,10 @@ _G.SlashCmdList.DODOPTKICK = function()
 		obs.read, obs.sure, obs.moved, obs.extra, obs.area, obs.drawn, obs.layers, obs.nobody, obs.fell, obs.late, obs.dropped,
 		mtr.why and (' | last problem: ' .. tostring(mtr.why)) or ''))
 	do
-		local store = LearnedStore()
+		local store = learned_store()
 		local poll = rows.player and (rows.player.poll or rows.player.spell)
 		if store and poll then
-			ns.Msg(sformat('  own kick %d: measured %s, table %s', poll, tostring(store[poll]), tostring(OwnHealerCd(poll) or KickCd(poll, false, tal.Own(), false))))
+			ns.Msg(sformat('  own kick %d: measured %s, table %s', poll, tostring(store[poll]), tostring(own_healer_cd(poll) or kick_cd(poll, false, tal.Own(), false))))
 		end
 	end
 	ns.Msg(sformat('  last meter hit: %s', lastMeterOwner and sformat('%s via the %s list', lastMeterOwner, tostring(lastMeterVia)) or 'kicker not readable from the lists'))
@@ -1997,7 +2004,7 @@ _G.SlashCmdList.DODOPTKICK = function()
 			local parts = {}
 			for i, e in ipairs(list) do
 				local units = {}
-				MatchMember(e, units)
+				match_member(e, units)
 				local names = {}
 				for unit in pairs(units) do names[#names + 1] = unit end
 				table.sort(names)

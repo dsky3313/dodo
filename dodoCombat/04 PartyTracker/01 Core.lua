@@ -5,8 +5,8 @@ local _G = _G
 local format, pcall, ipairs, pairs = string.format, pcall, ipairs, pairs
 local UnitClass = UnitClass
 local IsInInstance = IsInInstance
-local function IsSecret(v) return issecretvalue and issecretvalue(v) or false end
-ns.IsSecret = IsSecret
+local function is_secret(v) return issecretvalue and issecretvalue(v) or false end
+ns.IsSecret = is_secret
 
 if C_AddOns and C_AddOns.LoadAddOn then
     pcall(C_AddOns.LoadAddOn, 'Blizzard_AuraContainer')
@@ -17,10 +17,10 @@ function ns.GetFont() return STANDARD_TEXT_FONT end
 -- dodo: Locale.lua 제외, 키 그대로 반환
 ns.L = setmetatable({}, { __index = function(_, key) return key end })
 
-local function Copy(value)
+local function copy_table(value)
     if type(value) ~= 'table' then return value end
     local out = {}
-    for key, item in pairs(value) do out[key] = Copy(item) end
+    for key, item in pairs(value) do out[key] = copy_table(item) end
     return out
 end
 
@@ -36,7 +36,7 @@ function ns.ModuleCfg(key, defaults, migrate)
     local cfg = cfgOwner[key]
     if type(cfg) ~= 'table' then cfg = {} cfgOwner[key] = cfg end
     for name, value in pairs(defaults) do
-        if cfg[name] == nil then cfg[name] = Copy(value) end
+        if cfg[name] == nil then cfg[name] = copy_table(value) end
     end
     if migrate then migrate(cfg) end
     cfgCache[key] = cfg
@@ -48,9 +48,9 @@ function ns.CHSpecID()
     local getIndex = api and api.GetSpecialization or GetSpecialization
     local getInfo = api and api.GetSpecializationInfo or GetSpecializationInfo
     local index = getIndex and getIndex()
-    if not index or IsSecret(index) or not getInfo then return nil end
+    if not index or is_secret(index) or not getInfo then return nil end
     local ok, id = pcall(getInfo, index)
-    if ok and not IsSecret(id) then return id end
+    if ok and not is_secret(id) then return id end
 end
 
 function ns.KeyActive()
@@ -66,7 +66,7 @@ function ns.PlayerSpec()
     if not get then return nil, false end
     local ok, spec = pcall(get)
     if not ok then return nil, false end
-    if IsSecret(spec) then return nil, true end
+    if is_secret(spec) then return nil, true end
     return spec, false
 end
 
@@ -94,31 +94,31 @@ end
 
 function ns.CdSpellName(id)
     local name = C_Spell.GetSpellName(id)
-    if not IsSecret(name) and name then return name end
+    if not is_secret(name) and name then return name end
     return string.format(ns.L['Spell %s'], tostring(id))
 end
 
 function ns.CdSpellTexture(id)
     local texture = C_Spell.GetSpellTexture(id)
-    if not IsSecret(texture) and texture then return texture end
+    if not is_secret(texture) and texture then return texture end
     return 134400
 end
 function ns.Ask(fn, ...)
 	if not fn then return nil end
 	local ok, v = pcall(fn, ...)
-	if not ok or IsSecret(v) then return nil end
+	if not ok or is_secret(v) then return nil end
 	return v and true or false
 end
 
 function ns.InDungeon()
 	local ok, inside, kind = pcall(IsInInstance)
-	if not ok or IsSecret(inside) or IsSecret(kind) then return true end
+	if not ok or is_secret(inside) or is_secret(kind) then return true end
 	return (inside and kind == 'party') and true or false
 end
 
 function ns.ClassOf(unit)
 	local ok, _, token = pcall(UnitClass, unit)
-	if not ok or IsSecret(token) then return nil end
+	if not ok or is_secret(token) then return nil end
 	return token
 end
 
@@ -133,14 +133,14 @@ end
 
 do
 	local issecrettable = _G.issecrettable
-	local function Churns(info)
-		if IsSecret(info) or info == nil or (issecrettable and issecrettable(info)) then return true end
+	local function payload_churns(info)
+		if is_secret(info) or info == nil or (issecrettable and issecrettable(info)) then return true end
 		local full, added, removed = info.isFullUpdate, info.addedAuras, info.removedAuraInstanceIDs
-		if IsSecret(full) or IsSecret(added) or IsSecret(removed) then return true end
+		if is_secret(full) or is_secret(added) or is_secret(removed) then return true end
 		return (full or added or removed) and true or false
 	end
 	function ns.AuraPayloadChurns(info)
-		local ok, churns = pcall(Churns, info)
+		local ok, churns = pcall(payload_churns, info)
 		return not ok or churns
 	end
 end
@@ -148,7 +148,7 @@ end
 ns.IS_121 = (select(4, _G.GetBuildInfo()) or 0) >= 120100
 function ns.Letters(s, n)
 	n = math.floor(tonumber(n) or 0)
-	if IsSecret(s) or type(s) ~= 'string' or n <= 0 then return s end
+	if is_secret(s) or type(s) ~= 'string' or n <= 0 then return s end
 	local i, count, len = 1, 0, #s
 	while i <= len and count < n do
 		local b = s:byte(i)

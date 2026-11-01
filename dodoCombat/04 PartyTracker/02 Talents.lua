@@ -37,7 +37,7 @@ do
 		wanted[id] = true
 	end
 
-	local function Index(T, tree, config)
+	local function build_index(T, tree, config)
 		local nodes = T.GetTreeNodes(tree)
 		if type(nodes) ~= 'table' then return nil, 0 end
 		local idx, found = {}, 0
@@ -79,7 +79,7 @@ do
 			local idx = index[tree]
 			if not idx and (state.misses[tree] or 0) < 3 then
 				local found
-				idx, found = Index(T, tree, config)
+				idx, found = build_index(T, tree, config)
 				if idx and found > 0 then
 					index[tree] = idx
 				else

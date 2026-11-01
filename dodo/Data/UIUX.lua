@@ -775,6 +775,31 @@ function dodo.UI:CreateIconDropdownButton(parent, name, menuSetupFn)
     return btn
 end
 
+-- 우클릭 컨텍스트 메뉴 등록 — generator(owner, rootDescription) (SetupMenu와 동일한 형식)
+-- title 지정 시 맨 위에 노란색 제목(CreateTitle, 기본 NORMAL_FONT_COLOR) 자동 추가 (블리자드 유닛메뉴와 동일, 구분선 없음)
+-- generator 안에서 새 섹션 제목(root:CreateTitle) 앞에 root:CreateDivider() 로 구분선, sub = root:CreateButton(text) 로 하위메뉴 구성
+-- 좌클릭 등 기존 OnClick은 그대로 유지 (HookScript)
+local function build_context_menu(owner, root)
+    local title = owner._dodoContextMenuTitle
+    if title then root:CreateTitle(title) end
+    owner._dodoContextMenu(owner, root)
+end
+
+local function on_context_menu_click(self, button)
+    if button == "RightButton" then
+        MenuUtil.CreateContextMenu(self, build_context_menu)
+    end
+end
+
+function dodo.UI:SetRightClickMenu(frame, generator, title)
+    frame._dodoContextMenu = generator
+    frame._dodoContextMenuTitle = title
+    if frame._dodoContextMenuHooked then return end
+    frame._dodoContextMenuHooked = true
+    frame:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    frame:HookScript("OnClick", on_context_menu_click)
+end
+
 -- 트래커·프레임 헤더에 설정 드롭다운 버튼 추가
 -- anchor 생략 시 header.MinimizeButton 기준으로 배치
 ---@return Button

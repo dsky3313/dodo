@@ -15,13 +15,13 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 		local stack, deep, found, top = {}, {}, {}, 0
 		local scanning, waking, later = false, false, false
 
-		local function Want()
+		local function want_frames()
 			local w = GetCfg().frames
 			if type(w) == 'string' and w ~= '' then return w end
 			return nil
 		end
 
-		local function Size(f)
+		local function size(f)
 			local ok, w, h = pcall(f.GetSize, f)
 			if ok and not secret(w) and not secret(h) and type(w) == 'number' and type(h) == 'number' and w > 0 and h > 0 then
 				return w, h
@@ -29,7 +29,7 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 			return nil
 		end
 
-		local function Unit(f)
+		local function unit(f)
 			if f:IsForbidden() or not f:IsVisible() or f:GetObjectType() ~= 'Button' then return nil end
 			local u = f:GetAttribute('unit')
 			if secret(u) or type(u) ~= 'string' then return nil end
@@ -37,15 +37,15 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 			return WANT[u] and u or nil
 		end
 
-		local function Trim(set)
+		local function trim(set)
 			local units = set.units
 			local own = units.player
 			if not own then return end
-			local pw, ph = Size(own)
+			local pw, ph = size(own)
 			if not pw then return end
 			for u, f in pairs(units) do
 				if u ~= 'player' then
-					local w, h = Size(f)
+					local w, h = size(f)
 					if w then
 						if abs(pw - w) > w * 0.1 or abs(ph - h) > h * 0.1 then units.player = nil end
 						return
@@ -54,7 +54,7 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 			end
 		end
 
-		local function Reread(set)
+		local function reread(set)
 			local units, n = set.units, 0
 			local rf = getRF()
 			local eui = rf and rf._partyUnitToButton
@@ -64,7 +64,7 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 				if kids[1] then
 					for i = 2, #kids do
 						local f = kids[i]
-						local ok, u = pcall(Unit, f)
+						local ok, u = pcall(unit, f)
 						if ok and u and not units[u] and not (eui and eui[u] == f) then
 							units[u] = f
 							if u ~= 'player' then n = n + 1 end
@@ -73,11 +73,11 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 				end
 			end
 			set.n = n
-			Trim(set)
+			trim(set)
 			return n
 		end
 
-		local function Name(set)
+		local function name_of(set)
 			local key = set.key
 			local ok, name = pcall(key.GetName, key)
 			if ok and key ~= UIParent and type(name) == 'string' and name ~= '' then return name end
@@ -88,7 +88,7 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 			return nil
 		end
 
-		local function Stock(f)
+		local function stock(f)
 			local a, b, c = _G.CompactPartyFrame, _G.PartyFrame, _G.CompactRaidFrameContainer
 			for _ = 1, 4 do
 				if not f then return false end
@@ -99,7 +99,7 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 			return false
 		end
 
-		local function Pick(want)
+		local function pick(want)
 			local best
 			for _, set in ipairs(frames.sets) do
 				if want and set.name == want then return set end
@@ -111,7 +111,7 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 			return best
 		end
 
-		local function Group()
+		local function group()
 			local rf = getRF()
 			local eui = rf and rf._partyUnitToButton
 			local count, lifted, byKey, sets = {}, {}, {}, {}
@@ -155,13 +155,13 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 					local area = 0
 					for u, f in pairs(set.units) do
 						if u ~= 'player' and area == 0 then
-							local w, h = Size(f)
+							local w, h = size(f)
 							if w then area = w * h end
 						end
 					end
-					set.name = Name(set)
-					set.rank = (Stock(set.key) and 0 or 1e9) + area
-					Trim(set)
+					set.name = name_of(set)
+					set.rank = (stock(set.key) and 0 or 1e9) + area
+					trim(set)
 					keep[#keep + 1] = set
 					local name, listed = set.name, false
 					for _, k in ipairs(frames.known) do
@@ -173,7 +173,7 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 			return keep
 		end
 
-		local function Finish()
+		local function finish()
 			local now = GetTime()
 			scanning = false
 			frames.scans, frames.at = frames.scans + 1, now
@@ -181,12 +181,12 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 			frames.next = now + (GAPS[frames.tries] or 0)
 			local cands = 0
 			for _ in pairs(found) do cands = cands + 1 end
-			frames.sets = Group()
+			frames.sets = group()
 			wipe(found)
 			local cfg = GetCfg()
 			local old = frames.set
 			local had = (old and old.n > 0) and true or false
-			local best = Pick(Want())
+			local best = pick(want_frames())
 			if best then
 				frames.set, frames.none, frames.owed = best, false, not had
 			else
@@ -202,12 +202,12 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 				end
 			end
 			if done then C_Timer.After(0, done) end
-			if cfg.attach == false or (frames.how == 'eui' and not Want()) then return end
+			if cfg.attach == false or (frames.how == 'eui' and not want_frames()) then return end
 			local sig = best and MapSig(best.units) or ''
 			if sig ~= frames.sig or frames.how == 'wait' then QueueRefresh() end
 		end
 
-		local function Visit(f, d)
+		local function visit(f, d)
 			if f:IsForbidden() or not f:IsVisible() then return end
 			local kind = f:GetObjectType()
 			if kind == 'Button' then
@@ -227,31 +227,31 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 			end
 		end
 
-		local function Slice()
+		local function slice()
 			local t0 = clock and clock() or 0
 			local n = 0
 			while top > 0 do
 				local f, d = stack[top], deep[top]
 				stack[top] = nil
 				top = top - 1
-				pcall(Visit, f, d)
+				pcall(visit, f, d)
 				n = n + 1
 				if n % 25 == 0 and (clock and clock() - t0 or n / 400) >= 1 then break end
 			end
 			frames.seen = frames.seen + n
 			frames.cost = frames.cost + (clock and clock() - t0 or 0)
 			if top > 0 then
-				C_Timer.After(0, Slice)
+				C_Timer.After(0, slice)
 				return
 			end
-			local ok, err = pcall(Finish)
+			local ok, err = pcall(finish)
 			if not ok then
 				scanning = false
 				Fault(err)
 			end
 		end
 
-		local function Start()
+		local function start()
 			scanning = true
 			wipe(found)
 			top, frames.seen, frames.cost = 0, 0, 0
@@ -260,10 +260,10 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 				top = top + 1
 				stack[top], deep[top] = kids[i], 1
 			end
-			Slice()
+			slice()
 		end
 
-		local function Others()
+		local function others()
 			local n = 0
 			for i = 2, #TOKENS do
 				if ns.Ask(UnitExists, TOKENS[i]) == true then n = n + 1 end
@@ -271,7 +271,7 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 			return n
 		end
 
-		local function Recheck()
+		local function recheck()
 			local cfg = GetCfg()
 			if cfg.attach == false or not IsInGroup() or IsInRaid() then return end
 			if not isActive() then return end
@@ -280,12 +280,12 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 			if frames.sig ~= sig or how ~= was then QueueRefresh() end
 		end
 
-		local function Wake(delay)
+		local function wake(delay)
 			if waking then return end
 			waking = true
 			C_Timer.After(delay, function()
 				waking = false
-				local ok, err = pcall(Recheck)
+				local ok, err = pcall(recheck)
 				if not ok then Fault(err) end
 			end)
 		end
@@ -295,31 +295,31 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 			later = true
 			C_Timer.After(0.5, function()
 				later = false
-				local ok, err = pcall(Recheck)
+				local ok, err = pcall(recheck)
 				if not ok then Fault(err) end
 			end)
 		end
 
-		local function Short(set, want)
+		local function short(set, want)
 			local n = set and set.n or 0
-			return n == 0 or n < Others() or (want ~= nil and set.name ~= want)
+			return n == 0 or n < others() or (want ~= nil and set.name ~= want)
 		end
 
 		frames.Live = function(want)
 			local set, now = frames.set, GetTime()
-			if set then Reread(set) end
-			if Short(set, want) or frames.owed then
+			if set then reread(set) end
+			if short(set, want) or frames.owed then
 				if not scanning and frames.tries < 3 and now >= frames.next then
-					Start()
+					start()
 					set = frames.set
 				end
 				if scanning then
-					Wake(1)
-				elseif frames.tries < 3 and (Short(set, want) or frames.owed) then
-					Wake(mmax(frames.next - now, 0.1))
+					wake(1)
+				elseif frames.tries < 3 and (short(set, want) or frames.owed) then
+					wake(mmax(frames.next - now, 0.1))
 				elseif not set or set.n == 0 then
 					if now - (frames.at or 0) >= 60 then frames.tries = 2 end
-					Wake(10)
+					wake(10)
 				end
 			end
 			if set and set.n > 0 then
@@ -330,7 +330,7 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 		end
 
 		frames.Use = function(cfg, euiOn)
-			local want = Want()
+			local want = want_frames()
 			frames.eui, frames.sig = euiOn, ''
 			if not IsInGroup() or (euiOn and not want) then return nil, euiOn and 'eui' or 'none' end
 			local set = frames.Live(want)
@@ -351,7 +351,7 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 			if scanning then return false end
 			if not say and (not IsInGroup() or IsInRaid() or GetTime() - (frames.at or -60) < 30) then return false end
 			frames.done, frames.say = done, say
-			Start()
+			start()
 			return true
 		end
 

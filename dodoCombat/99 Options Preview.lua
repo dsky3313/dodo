@@ -59,13 +59,91 @@ local function create_cst_preview_icon(parent)
     return f
 end
 
--- 파티 추적 샘플 (군중제어 / 차단기)
+-- 파티 추적 샘플 (차단기 / 군중제어 / 공생기)
 local PT_SAMPLE_CC = { 46968, 5246, 107570, 2094, 118, 179057 }
 local PT_SAMPLE_KICK = {
     { spellID = 6552, class = "WARRIOR", value = 1,   timer = "" },
     { spellID = 1766, class = "ROGUE",   value = 0.4, timer = "9" },
     { spellID = 2139, class = "MAGE",    value = 1,   timer = "" },
 }
+local PT_SAMPLE_DEF = {
+    { spellID = 51052, class = "DEATHKNIGHT", value = 1,   timer = "" },
+    { spellID = 97462, class = "WARRIOR",     value = 0.3, timer = "2:06" },
+    { spellID = 62618, class = "PRIEST",      value = 1,   timer = "" },
+}
+local PT_DEF_GAP = -1 -- 11 Defensives BAR_GAP
+local PT_TOP  = -32 -- 미리보기 위쪽 여백
+local PT_SIDE = 50  -- 좌우 바 묶음 여백
+
+-- 12 Interrupts / 11 Defensives 바 행과 같은 구조 (아이콘 + 직업색 바 + 하단 금속 테두리)
+local function create_pt_preview_row(parent, data)
+    local row = CreateFrame("Frame", nil, parent)
+    row.icon = row:CreateTexture(nil, "ARTWORK")
+    row.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    row.icon:SetTexture(C_Spell.GetSpellTexture(data.spellID))
+    local cc = RAID_CLASS_COLORS[data.class]
+    row.bar = CreateFrame("StatusBar", nil, row)
+    row.bar:SetStatusBarTexture([[Interface\Buttons\WHITE8X8]])
+    row.bar:SetStatusBarColor(cc.r, cc.g, cc.b, 1)
+    row.bar:SetMinMaxValues(0, 1)
+    row.bar:SetValue(data.value)
+    row.bg = row.bar:CreateTexture(nil, "BACKGROUND")
+    row.bg:SetAllPoints()
+    row.bg:SetColorTexture(cc.r * 0.15, cc.g * 0.15, cc.b * 0.15, 0.6)
+    -- 이름/타이머/하단 금속 테두리: 바 채움보다 위 프레임 (12 Interrupts row.text 와 동일)
+    row.over = CreateFrame("Frame", nil, row)
+    row.over:SetAllPoints()
+    row.over:SetFrameLevel(row.bar:GetFrameLevel() + 2)
+    -- 실제 바와 같은 폰트 (STANDARD_TEXT_FONT 12 OUTLINE)
+    row.name = row.over:CreateFontString(nil, "OVERLAY")
+    row.name:SetFont(STANDARD_TEXT_FONT, 12, "OUTLINE")
+    row.name:SetPoint("LEFT", row.bar, "LEFT", 4, 0)
+    row.name:SetText("플레이어")
+    row.timer = row.over:CreateFontString(nil, "OVERLAY")
+    row.timer:SetFont(STANDARD_TEXT_FONT, 12, "OUTLINE")
+    row.timer:SetPoint("RIGHT", row.bar, "RIGHT", -4, 0)
+    row.timer:SetText(data.timer)
+    row.edgeBottom = row.over:CreateTexture(nil, "BORDER")
+    row.edgeBottom:SetAtlas("_UI-Frame-Metal-EdgeBottom", true)
+    row.edgeBottom:SetHeight(16)
+    row.edgeBottom:SetPoint("BOTTOMLEFT",  row, "BOTTOMLEFT",  0, -2)
+    row.edgeBottom:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, -2)
+    return row
+end
+
+-- 목록 전체 테두리 (12 Interrupts / 11 Defensives PlaceListBorder 와 동일한 NineSlice)
+local function create_pt_preview_border(parent)
+    local border = CreateFrame("Frame", nil, parent)
+    border:SetFrameLevel(parent:GetFrameLevel() + 20)
+    border.NineSlice = CreateFrame("Frame", nil, border, "NineSliceCodeTemplate")
+    border.NineSlice:SetPoint("TOPLEFT", border, "TOPLEFT", -4, 3)
+    border.NineSlice:SetPoint("BOTTOMRIGHT", border, "BOTTOMRIGHT", 7, -6)
+    border.NineSlice:SetScale(0.6)
+    NineSliceUtil.ApplyUniqueCornersLayout(border.NineSlice, "UI-HUD-ActionBar-Frame")
+    return border
+end
+
+-- 행 묶음 배치 (위에서 아래로, 맨 아래 줄 하단 테두리 생략)
+local function layout_pt_preview_rows(rows, ns, point, x, w, h, iconGap, gap, on)
+    for i, row in ipairs(rows) do
+        row:SetSize(w, h)
+        row:ClearAllPoints()
+        row:SetPoint(point, ns, point, x, PT_TOP - (i - 1) * (h + gap))
+        row.icon:SetSize(h, h)
+        row.icon:ClearAllPoints()
+        row.icon:SetPoint("LEFT", row, "LEFT", 0, 0)
+        row.bar:ClearAllPoints()
+        row.bar:SetPoint("TOPLEFT", row, "TOPLEFT", h + iconGap, 0)
+        row.bar:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
+        row.edgeBottom:SetShown(i < #rows)
+        row:SetShown(on)
+    end
+    local border = rows.border
+    border:ClearAllPoints()
+    border:SetPoint("TOPLEFT", rows[1], "TOPLEFT", 0, 0)
+    border:SetPoint("BOTTOMRIGHT", rows[#rows], "BOTTOMRIGHT", 0, 0)
+    border:SetShown(on)
+end
 
 -- 05 BloodBrez/06 Stance 미리보기와 같은 아이콘 구조 (배경 + 아이콘 + 테두리)
 local function create_pt_preview_icon(parent, spellID)
@@ -451,40 +529,21 @@ dodoCombatPreviewMixin = dodo.UI:CreatePreviewMixin({
                 p.icon_frame:SetPoint("CENTER", ns, "CENTER", 0, 0)
             end,
         },
-        { -- 탭6: 파티 추적 (왼쪽: 군중제어 아이콘 / 오른쪽: 차단기 바)
+        { -- 탭6: 파티 추적 (왼쪽: 차단기 바 / 가운데: 군중제어 아이콘 / 오른쪽: 공생기 바)
             OnLoad = function(p, ns)
                 p:SetClipsChildren(true)
-                p.cc_icons, p.kick_rows = {}, {}
+                p.cc_icons, p.kick_rows, p.def_rows = {}, {}, {}
                 for i, spellID in ipairs(PT_SAMPLE_CC) do
                     p.cc_icons[i] = create_pt_preview_icon(p, spellID)
                 end
                 for i, data in ipairs(PT_SAMPLE_KICK) do
-                    local row = CreateFrame("Frame", nil, p)
-                    row.icon = row:CreateTexture(nil, "ARTWORK")
-                    row.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-                    row.icon:SetTexture(C_Spell.GetSpellTexture(data.spellID))
-                    row.bar = CreateFrame("StatusBar", nil, row)
-                    row.bar:SetStatusBarTexture([[Interface\Buttons\WHITE8X8]])
-                    local cc = RAID_CLASS_COLORS[data.class]
-                    row.bar:SetStatusBarColor(cc.r, cc.g, cc.b, 1)
-                    row.bar:SetMinMaxValues(0, 1)
-                    row.bar:SetValue(data.value)
-                    row.bg = row.bar:CreateTexture(nil, "BACKGROUND")
-                    row.bg:SetAllPoints()
-                    row.bg:SetColorTexture(0, 0, 0, 0.5)
-                    row.name = row.bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-                    row.name:SetPoint("LEFT", row.bar, "LEFT", 4, 0)
-                    row.name:SetText("플레이어")
-                    row.timer = row.bar:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
-                    row.timer:SetPoint("RIGHT", row.bar, "RIGHT", -4, 0)
-                    row.timer:SetText(data.timer)
-                    -- 12 Interrupts 행 하단 금속 테두리와 동일
-                    row.edgeBottom = row.bar:CreateTexture(nil, "BORDER")
-                    row.edgeBottom:SetAtlas("_UI-Frame-Metal-EdgeBottom", true)
-                    row.edgeBottom:SetPoint("BOTTOMLEFT",  row, "BOTTOMLEFT",  0, -5)
-                    row.edgeBottom:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, -5)
-                    p.kick_rows[i] = row
+                    p.kick_rows[i] = create_pt_preview_row(p, data)
                 end
+                for i, data in ipairs(PT_SAMPLE_DEF) do
+                    p.def_rows[i] = create_pt_preview_row(p, data)
+                end
+                p.kick_rows.border = create_pt_preview_border(p)
+                p.def_rows.border = create_pt_preview_border(p)
             end,
             Update = function(p, ns)
                 local D  = dodo.PT_DEFAULTS
@@ -495,34 +554,28 @@ dodoCombatPreviewMixin = dodo.UI:CreatePreviewMixin({
                     return v
                 end
 
-                -- 군중제어: 행 당 개수 넘치면 다음 줄
+                -- 차단기: 왼쪽 위부터 아래로
+                layout_pt_preview_rows(p.kick_rows, ns, "TOPLEFT", PT_SIDE,
+                    get("partyInterruptsWidth"), get("partyInterruptsHeight"),
+                    get("partyInterruptsIconGap"), get("partyInterruptsSpacing"), get("enablePartyInterrupts"))
+
+                -- 공생기: 오른쪽 위부터 아래로 (아이콘 간격 0, 바 간격 -1 고정)
+                layout_pt_preview_rows(p.def_rows, ns, "TOPRIGHT", -PT_SIDE,
+                    get("partyDefensivesWidth"), get("partyDefensivesHeight"),
+                    0, PT_DEF_GAP, get("enablePartyDefensives"))
+
+                -- 군중제어: 가운데 정렬, 행 당 개수 넘치면 다음 줄
                 local ccOn = get("enablePartyCC")
                 local ccSize, ccGap = get("partyCCSize"), get("partyCCSpacing")
                 local per = math_max(1, get("partyCCPerRow"))
-                local ccTop = -20
+                local cols = math.min(per, #p.cc_icons)
+                local left = -(cols * (ccSize + ccGap) - ccGap) / 2
                 for i, f in ipairs(p.cc_icons) do
                     local col, line = (i - 1) % per, math.floor((i - 1) / per)
                     f:SetSize(ccSize, ccSize)
                     f:ClearAllPoints()
-                    f:SetPoint("TOPLEFT", ns, "TOPLEFT", 20 + col * (ccSize + ccGap), ccTop - line * (ccSize + ccGap))
+                    f:SetPoint("TOPLEFT", ns, "TOP", left + col * (ccSize + ccGap), PT_TOP - line * (ccSize + ccGap) + 2)
                     f:SetShown(ccOn)
-                end
-
-                -- 차단기: 아이콘 + 바, 오른쪽 위부터 아래로
-                local kickOn = get("enablePartyInterrupts")
-                local w, h = get("partyInterruptsWidth"), get("partyInterruptsHeight")
-                local iconGap, gap = get("partyInterruptsIconGap"), get("partyInterruptsSpacing")
-                for i, row in ipairs(p.kick_rows) do
-                    row:SetSize(w, h)
-                    row:ClearAllPoints()
-                    row:SetPoint("TOPRIGHT", ns, "TOPRIGHT", -20, -20 - (i - 1) * (h + gap))
-                    row.icon:SetSize(h, h)
-                    row.icon:ClearAllPoints()
-                    row.icon:SetPoint("LEFT", row, "LEFT", 0, 0)
-                    row.bar:ClearAllPoints()
-                    row.bar:SetPoint("TOPLEFT", row, "TOPLEFT", h + iconGap, 0)
-                    row.bar:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
-                    row:SetShown(kickOn)
                 end
             end,
         },

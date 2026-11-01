@@ -10,12 +10,12 @@ local tconcat = table.concat
 
 local kit = ns.PTCKit
 
-local function Unavailable()
+local function unavailable()
 	return not (kit and ns.PTCBar and not ns.PTCUnavailable)
 end
 
 ns.hasPartyDefensives = true
-ns.PDFUnavailable = Unavailable()
+ns.PDFUnavailable = unavailable()
 
 ns.PDFWhy = function()
 	if not (kit and ns.PTCBar) then return 'Party CDs is not loaded, and Party Defensives reads and draws its icons with it.' end
@@ -49,12 +49,12 @@ local DEFAULTS = {
 	barWidth = 180, -- dodo: bar 모드 전체 너비 (아이콘 포함)
 }
 
-local function Catalogue() return ns.PTCBarCatalogue and ns.PTCBarCatalogue('guard') or {} end
+local function catalogue() return ns.PTCBarCatalogue and ns.PTCBarCatalogue('guard') or {} end
 
-local function Migrate(cfg)
+local function migrate(cfg)
 	if type(cfg.off) ~= 'table' then cfg.off = {} end
 	local left, order = {}, {}
-	for _, e in ipairs(Catalogue()) do left[e.id] = true end
+	for _, e in ipairs(catalogue()) do left[e.id] = true end
 	if type(cfg.order) == 'table' then
 		for _, id in ipairs(cfg.order) do
 			if left[id] then
@@ -63,23 +63,23 @@ local function Migrate(cfg)
 			end
 		end
 	end
-	for _, e in ipairs(Catalogue()) do
+	for _, e in ipairs(catalogue()) do
 		if left[e.id] then order[#order + 1] = e.id end
 	end
 	cfg.order = order
 end
 
-local function GetCfg() return ns.ModuleCfg('partyDefensives', DEFAULTS, Migrate) end
-ns.PDFGetCfg = GetCfg
+local function get_cfg() return ns.ModuleCfg('partyDefensives', DEFAULTS, migrate) end
+ns.PDFGetCfg = get_cfg
 
 local frame
 local preview = false
 local look = {}
 local drawn = 0
 
-local function ApplyPosition()
+local function apply_position()
 	if not frame then return end
-	local cfg = GetCfg()
+	local cfg = get_cfg()
 	frame:ClearAllPoints()
 	-- dodo: 바 그룹 좌측상단 → 파티 프레임 우측상단
 	local party = ns.PartyAnchor()
@@ -90,7 +90,7 @@ local function ApplyPosition()
 	frame:SetPoint('CENTER', UIParent, 'CENTER', cfg.x or 0, cfg.y or 0)
 end
 
-local function Tag(c)
+local function guard_tag(c)
 	local tag = c.guardTag
 	if tag then return tag end
 	tag = CreateFrame('Frame', nil, c)
@@ -122,8 +122,8 @@ local moved = {} -- 타이머를 바 오른쪽으로 옮긴 셀 (해제 시 원�
 
 -- 쿨 숫자: 아이콘 중앙 → 바 오른쪽 (차단바 row.timer 'RIGHT', -4 와 같은 자리)
 -- 슬롯 경로: 엔진 c.win 중심 가로 오프셋(c.winX, 10 PartyCDs) / 본인 주문: 09 ExactCooldowns ex.text
-local function MoveTimer(c, b, size, barW)
-	c.winX = barW - 7 -- 아이콘 중심 → 바 오른쪽 끝 - 여백 4 - 창 절반 (size + 6) / 2 + size / 2
+local function move_timer(c, b, size, barW, gap)
+	c.winX = barW + gap - 7 -- 아이콘 중심 → 바 오른쪽 끝 - 여백 4 - 창 절반 (size + 6) / 2 + size / 2
 	c.win:SetPoint('CENTER', c, 'CENTER', c.winX, c.seat or 0)
 	local ex = c.ex
 	if ex then
@@ -136,7 +136,7 @@ local function MoveTimer(c, b, size, barW)
 	moved[c] = true
 end
 
-local function ResetTimer(c)
+local function reset_timer(c)
 	c.winX = nil
 	c.win:SetPoint('CENTER', c, 'CENTER', 0, c.seat or 0)
 	local ex = c.ex
@@ -150,7 +150,7 @@ local function ResetTimer(c)
 	moved[c] = nil
 end
 
-local function Bar(c)
+local function guard_bar(c)
 	local b = c.guardBar
 	if b then return b end
 	b = CreateFrame('Frame', nil, c)
@@ -197,9 +197,11 @@ local function Bar(c)
 	b.over = CreateFrame('Frame', nil, b)
 	b.over:SetAllPoints(b)
 	b.over:SetFrameLevel(b:GetFrameLevel() + 3)
-	b.name = b.over:CreateFontString(nil, 'OVERLAY')
-	b.name:SetPoint('LEFT', b, 'LEFT', 4, 0)
-	b.name:SetPoint('RIGHT', b, 'RIGHT', -4, 0)
+	-- dodo: '...' 없이 이름을 그냥 잘라냄 → 오른쪽 앵커 없이 클립 프레임으로 가림
+	b.clip = CreateFrame('Frame', nil, b.over)
+	b.clip:SetClipsChildren(true)
+	b.name = b.clip:CreateFontString(nil, 'OVERLAY')
+	b.name:SetPoint('LEFT', b.clip, 'LEFT', 0, 0)
 	b.name:SetJustifyH('LEFT')
 	b.name:SetWordWrap(false)
 	-- 행 하단 금속 테두리 (12 Interrupts 와 동일, 아이콘 ~ 바 전체)
@@ -215,7 +217,7 @@ end
 -- 본인 주문(t.exact)은 엔진이 슬롯 대신 게임 쿨다운(09 ExactCooldowns)으로 그림 → 바도 DurationObject 로 그림.
 -- 켜짐 전환 시 + 1초마다만 DurationObject 갱신 (매 틱 생성 방지)
 local EXACT_REFRESH = 10 -- BAR_TICK 단위
-local function ExactFill(b, id)
+local function exact_fill(b, id)
 	local S = _G.C_Spell
 	local info = S.GetSpellCooldown(id)
 	local on = type(info) == 'table' and info.isActive == true and info.isOnGCD ~= true
@@ -234,8 +236,8 @@ local function ExactFill(b, id)
 	b.gate[2]:SetValue(0)
 end
 
-local function BarFill(b, t, now)
-	if t.exact then return ExactFill(b, t.exact) end
+local function bar_fill(b, t, now)
+	if t.exact then return exact_fill(b, t.exact) end
 	b.exactOn = nil
 	local span = 255 * t.u
 	for k = 1, 2 do
@@ -248,7 +250,7 @@ local function BarFill(b, t, now)
 	end
 end
 
-local function BarTick(self, elapsed)
+local function bar_tick(self, elapsed)
 	barAcc = barAcc + elapsed
 	if barAcc < BAR_TICK then return end
 	barAcc = 0
@@ -258,7 +260,7 @@ local function BarTick(self, elapsed)
 		local e = placed[i]
 		local b = e.c.guardBar
 		if e.t and b and b:IsShown() then
-			local ok, err = pcall(BarFill, b, e.t, now)
+			local ok, err = pcall(bar_fill, b, e.t, now)
 			if ok then
 				barDiag.fills = barDiag.fills + 1
 			else
@@ -272,8 +274,8 @@ local function BarTick(self, elapsed)
 	end
 end
 
--- 목록 전체 테두리 (12 Interrupts PlaceListBorder 와 동일)
-local function PlaceListBorder(first, last, up)
+-- 목록 전체 테두리 (12 Interrupts place_list_border 와 동일)
+local function place_list_border(first, last, up)
 	if not listBorder then
 		listBorder = CreateFrame('Frame', nil, frame)
 		listBorder.NineSlice = CreateFrame('Frame', nil, listBorder, 'NineSliceCodeTemplate')
@@ -296,8 +298,8 @@ local function PlaceListBorder(first, last, up)
 	listBorder:Show()
 end
 
-local function Place(list)
-	local cfg = GetCfg()
+local function place(list)
+	local cfg = get_cfg()
 	local size = cfg.size or 36
 	-- local barMode = cfg.style == 'bar'
 	local barMode = true -- dodo: 바 형식 고정
@@ -320,25 +322,44 @@ local function Place(list)
 		-- c.clip:Show()
 		c.clip:Hide() -- dodo: 쿨 중 아이콘 어둡게 하는 레이어 숨김 (차단바 아이콘처럼)
 		c.win:SetShown(timers)
-		local tag = Tag(c)
+		local tag = guard_tag(c)
 		tag:SetFrameLevel(c:GetFrameLevel() + 7)
 		kit.Lay(c, tag.who, e.m, frame, i, n, lay)
 		if barMode then
-			local b = Bar(c)
+			local b = guard_bar(c)
 			local r, g, bl = ns.ClassRGB(e.m and e.m.class, 1)
+			-- dodo: 차단바 설정(12 Interrupts)을 그대로 따름
+			local ik = ns.IKGetCfg and ns.IKGetCfg() or {}
+			local dark = ik.darkBars and true or false
+			local tex = ns.IKBarTex and ns.IKBarTex() or BAR_TEX
+			local textSize = ik.textSize or BAR_TEXT
+			local gap = ik.iconGap or 2
 			b:ClearAllPoints()
-			b:SetPoint('TOPLEFT', c, 'TOPRIGHT', 0, 0)
-			b:SetPoint('BOTTOMLEFT', c, 'BOTTOMRIGHT', 0, 0)
-			local barW = math.max(10, (cfg.barWidth or 180) - size)
+			b:SetPoint('TOPLEFT', c, 'TOPRIGHT', gap, 0)
+			b:SetPoint('BOTTOMLEFT', c, 'BOTTOMRIGHT', gap, 0)
+			local barW = math.max(10, (cfg.barWidth or 180) - size - gap)
 			b:SetWidth(barW)
-			MoveTimer(c, b, size, barW)
-			b.bg:SetColorTexture(r * 0.15, g * 0.15, bl * 0.15, 0.6)
-			b.ready:SetVertexColor(r, g, bl, 1)
-			for k = 1, 2 do
-				b.fill[k]:SetStatusBarColor(r, g, bl, 1)
+			move_timer(c, b, size, barW, gap)
+			if dark then
+				b.bg:SetTexture(tex)
+				b.bg:SetVertexColor(0.31, 0.31, 0.31, ik.bgAlpha or 0.6)
+			else
+				b.bg:SetColorTexture(r * 0.15, g * 0.15, bl * 0.15, ik.bgAlpha or 0.6)
+				b.bg:SetVertexColor(1, 1, 1, 1)
 			end
-			b.name:SetFont(ns.GetFont(), BAR_TEXT, 'OUTLINE')
-			b.name:SetPoint('RIGHT', b, 'RIGHT', -(BAR_TEXT * 2 + 8), 0) -- 타이머 자리 비움
+			local fr, fg, fb, fa = r, g, bl, 1
+			if dark then fr, fg, fb, fa = 0, 0, 0, ik.darkAlpha or 1 end
+			b.ready:SetTexture(tex)
+			b.ready:SetVertexColor(fr, fg, fb, fa)
+			for k = 1, 2 do
+				b.fill[k]:SetStatusBarTexture(tex)
+				b.fill[k]:SetStatusBarColor(fr, fg, fb, fa)
+			end
+			b.name:SetFont(ns.GetFont(), textSize, 'OUTLINE')
+			if dark then b.name:SetTextColor(r, g, bl) else b.name:SetTextColor(1, 1, 1) end
+			b.clip:ClearAllPoints()
+			b.clip:SetPoint('TOPLEFT', b, 'TOPLEFT', 4, 0)
+			b.clip:SetPoint('BOTTOMRIGHT', b, 'BOTTOMRIGHT', -(textSize * 2 + 8), 0) -- 타이머 자리 비움
 			if not (e.m and pcall(b.name.SetText, b.name, e.m.name)) then b.name:SetText('') end
 			b.edgeBottom:Show()
 			b:Show()
@@ -354,24 +375,24 @@ local function Place(list)
 		for i = 1, #placed do
 			if placed[i].c == c then keep = true end
 		end
-		if not keep then ResetTimer(c) end
+		if not keep then reset_timer(c) end
 	end
 	-- dodo: 화면상 맨 아래 줄은 하단 금속 테두리 생략
 	local bottom = grow == 'UP' and placed[1] or placed[#placed]
 	if bottom then bottom.c.guardBar.edgeBottom:Hide() end
-	PlaceListBorder(placed[1], placed[#placed], grow == 'UP')
+	place_list_border(placed[1], placed[#placed], grow == 'UP')
 	drawn = n
 	frame:SetShown(n > 0)
 	frame:EnableMouse(ns.CanGrab(cfg, preview))
 	if barMode and n > 0 then
 		barAcc = BAR_TICK
-		frame:SetScript('OnUpdate', BarTick)
+		frame:SetScript('OnUpdate', bar_tick)
 	else
 		frame:SetScript('OnUpdate', nil)
 	end
 end
 
-local function EnsureFrame()
+local function ensure_frame()
 	if frame then return end
 	frame = CreateFrame('Frame', 'dodoPartyDefensives', UIParent)
 	frame:SetFrameStrata('MEDIUM')
@@ -381,44 +402,44 @@ local function EnsureFrame()
 	frame:EnableMouse(false)
 	frame:RegisterForDrag('RightButton')
 	frame:Hide()
-	ns.MakeDraggable(frame, GetCfg, 'x', 'y', ApplyPosition)
-	ns.OnGrabChange(function() frame:EnableMouse(ns.CanGrab(GetCfg(), preview)) end)
+	ns.MakeDraggable(frame, get_cfg, 'x', 'y', apply_position)
+	ns.OnGrabChange(function() frame:EnableMouse(ns.CanGrab(get_cfg(), preview)) end)
 end
 
-local function Apply()
-	local cfg = GetCfg()
-	ns.PDFUnavailable = Unavailable()
+local function apply()
+	local cfg = get_cfg()
+	ns.PDFUnavailable = unavailable()
 	local want = (cfg.enable or preview) and not ns.PDFUnavailable
 	if not (want or frame) then return end
-	EnsureFrame()
-	ApplyPosition()
+	ensure_frame()
+	apply_position()
 	if not want then
 		frame:Hide()
 		drawn = 0
-		for c in pairs(moved) do ResetTimer(c) end -- dodo: 타이머 원위치
+		for c in pairs(moved) do reset_timer(c) end -- dodo: 타이머 원위치
 		if ns.PTCBar then ns.PTCBar('guard', nil) end
 		return
 	end
 	look.enable, look.preview = cfg.enable and true or false, preview
 	look.showSelf, look.groupOnly, look.dungeonOnly = cfg.showSelf, cfg.groupOnly, cfg.dungeonOnly
 	-- look.highlight, look.size, look.textSize = cfg.highlight, cfg.size, cfg.textSize
-	look.highlight, look.size, look.textSize = cfg.highlight, cfg.size, BAR_TEXT -- dodo: 차단바와 같은 글자 크기
+	look.highlight, look.size, look.textSize = cfg.highlight, cfg.size, (ns.IKGetCfg and ns.IKGetCfg().textSize or BAR_TEXT) -- dodo: 차단바와 같은 글자 크기
 	look.tooltip = cfg.tooltip == true
-	look.order, look.off, look.Place = cfg.order, cfg.off, Place
+	look.order, look.off, look.Place = cfg.order, cfg.off, place
 	ns.PTCBar('guard', frame, look)
 end
 
-ns.PDFApply = ns.Coalesce(Apply)
+ns.PDFApply = ns.Coalesce(apply)
 
 ns.PDFIsPreview = function() return preview end
 ns.PDFSetPreview = function(state)
 	preview = state and true or false
-	Apply()
+	apply()
 end
 
 ns.PDFSpells = function()
-	local cfg, out, byID = GetCfg(), {}, {}
-	for _, e in ipairs(Catalogue()) do byID[e.id] = e end
+	local cfg, out, byID = get_cfg(), {}, {}
+	for _, e in ipairs(catalogue()) do byID[e.id] = e end
 	for _, id in ipairs(cfg.order) do
 		local e = byID[id]
 		if e then out[#out + 1] = { id = id, class = e.class, spec = e.spec, off = cfg.off[id] and true or false } end
@@ -427,12 +448,12 @@ ns.PDFSpells = function()
 end
 
 ns.PDFSetShown = function(id, on)
-	GetCfg().off[id] = (not on) and true or nil
+	get_cfg().off[id] = (not on) and true or nil
 	ns.PDFApply()
 end
 
 ns.PDFMove = function(id, dir)
-	if not kit.Swap(GetCfg().order, id, dir) then return false end
+	if not kit.Swap(get_cfg().order, id, dir) then return false end
 	ns.PDFApply()
 	return true
 end
@@ -440,8 +461,8 @@ end
 _G.SLASH_DODOPTDEF1 = '/ptdef'
 _G.SlashCmdList.DODOPTDEF = function()
 	local function p(...) print('[dodo] 공생기', ...) end
-	local cfg = GetCfg()
-	if Unavailable() then
+	local cfg = get_cfg()
+	if unavailable() then
 		p('|cffff5555not available:|r', ns.PDFWhy())
 		return
 	end

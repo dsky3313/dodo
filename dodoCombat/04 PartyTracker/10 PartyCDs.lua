@@ -22,7 +22,7 @@ local EvalBool = _G.C_CurveUtil and _G.C_CurveUtil.EvaluateColorValueFromBoolean
 local DOOR_SLACK, DOOR_PASSES = 1e-6, 16
 local DOOR_BYTES = { 0, 1, 48, 85, 127, 200, 254, 255 }
 
-local function TestDoor()
+local function test_door()
 	local d = { state = 'error' }
 	if not EvalBool then
 		d.detail = 'the client has no EvaluateColorValueFromBoolean'
@@ -57,15 +57,15 @@ local function TestDoor()
 	return d
 end
 
-local door = TestDoor()
+local door = test_door()
 local HAS_WIDGETS = (ns.IS_121 and ns.HasTemplate('CustomAuraContainerTemplate')) and true or false
 
-local function DoorOpen() return door.state == 'exact' or door.state == 'close' or door.state == 'hidden' end
+local function door_open() return door.state == 'exact' or door.state == 'close' or door.state == 'hidden' end
 
 ns.hasPartyCDs = true
-ns.PTCUnavailable = not (HAS_WIDGETS and DoorOpen())
+ns.PTCUnavailable = not (HAS_WIDGETS and door_open())
 
-local function DoorLine()
+local function door_line()
 	if door.state == 'exact' then return 'whole steps come back exact' end
 	if door.state == 'close' then return format('whole steps come back, off by %.1e at most', door.off) end
 	if door.state == 'hidden' then return 'the answer is hidden, so it cannot be checked from here' end
@@ -185,20 +185,20 @@ local DEFAULTS = {
 	order = {},
 }
 
-local function Migrate(cfg)
+local function migrate(cfg)
 	cfg.talents = nil -- Talent reading is always enabled; discard the old toggle.
 	cfg.cds, cfg.extSeeded, cfg.glowStyle, cfg.glowColor = nil, nil, nil, nil
 	if type(cfg.off) ~= 'table' then cfg.off = {} end
 	if type(cfg.order) ~= 'table' then cfg.order = {} end
 end
 
-local function GetCfg() return ns.ModuleCfg('partyCDs', DEFAULTS, Migrate) end
-ns.PTCGetCfg = GetCfg
+local function get_cfg() return ns.ModuleCfg('partyCDs', DEFAULTS, migrate) end
+ns.PTCGetCfg = get_cfg
 
-local function CdKey(spec, id) return spec .. ':' .. id end
+local function cd_key(spec, id) return spec .. ':' .. id end
 
 -- dodo: 아이콘 역순 정렬 (제자리 뒤집기). ghost(외생기/공생기 바 항목)는 제자리
-local function Reverse(list)
+local function reverse_list(list)
 	local i, j = 1, #list
 	while i < j do
 		if list[i].ghost then
@@ -213,7 +213,7 @@ local function Reverse(list)
 end
 
 -- dodo: 아이콘 개수 제한 (ghost 제외). keepRace 면 종족 특성이 한 칸 차지하고 항상 남음
-local function Limit(list, cfg)
+local function limit(list, cfg)
 	local max = cfg.maxIcons
 	if not max then return end
 	local n, race = 0, nil
@@ -240,7 +240,7 @@ local function Limit(list, cfg)
 	for i = #list, j + 1, -1 do list[i] = nil end
 end
 
-local function SpecList(spec, cfg, all)
+local function spec_list(spec, cfg, all)
 	local src = SPECS[spec]
 	if not src then return nil end
 	local order, rank = cfg.order and cfg.order[spec], nil
@@ -255,7 +255,7 @@ local function SpecList(spec, cfg, all)
 		local id, base, charges = e, nil, nil
 		if type(e) == 'table' then id, base, charges = e[1], e[2], e[3] end
 		local sp = SPELLS[id]
-		local off = (cfg.off and cfg.off[CdKey(spec, id)]) and true or false
+		local off = (cfg.off and cfg.off[cd_key(spec, id)]) and true or false
 		if sp and (all or not off) then
 			base = base or sp.cooldown
 			local cd = floor(mmax(CD_MIN, mmin(CD_MAX, base)))
@@ -275,7 +275,7 @@ for _, id in ipairs(racial.ids) do racial.byRace[SPELLS[id].race] = id end
 
 racial.Def = function(id, cfg, all, kind)
 	local sp = SPELLS[id]
-	local off = (cfg.off and cfg.off[CdKey(kind or 'race', id)]) and true or false
+	local off = (cfg.off and cfg.off[cd_key(kind or 'race', id)]) and true or false
 	if not sp or (off and not all) then return nil end
 	return { id = id, show = id, cd = floor(mmax(CD_MIN, mmin(CD_MAX, sp.cooldown))), base = sp.cooldown, spell = sp, off = off }
 end
@@ -313,7 +313,7 @@ tsort(trinket.ids)
 
 trinket.On = function(cfg)
 	for _, id in ipairs(trinket.ids) do
-		if not (cfg.off and cfg.off[CdKey('item', id)]) then return true end
+		if not (cfg.off and cfg.off[cd_key('item', id)]) then return true end
 	end
 	return false
 end
@@ -366,7 +366,7 @@ trinket.Wanted = function(m)
 	local guid = m.guid
 	if m.fake or not guid or not _G.GetInventoryItemID then return false end
 	if trinket.byGUID[guid] ~= nil and not trinket.stale[guid] then return false end
-	return (trinket.On(GetCfg()) and ns.InDungeon()) and true or false
+	return (trinket.On(get_cfg()) and ns.InDungeon()) and true or false
 end
 
 trinket.Read = function(s, m)
@@ -410,36 +410,36 @@ ns.PTCIcon = function(id)
 end
 ns.PTCClasses = function() return CLASSES end
 ns.PTCSpecSpells = function(spec)
-	if spec == 'race' then return racial.List(GetCfg()) end
-	if spec == 'item' then return racial.List(GetCfg(), 'item', trinket.ids) end
-	return SpecList(spec, GetCfg(), true) or {}
+	if spec == 'race' then return racial.List(get_cfg()) end
+	if spec == 'item' then return racial.List(get_cfg(), 'item', trinket.ids) end
+	return spec_list(spec, get_cfg(), true) or {}
 end
 
 local ClassOf, ClassRGB = ns.ClassOf, ns.ClassRGB
 
-local function NameOf(unit)
+local function name_of(unit)
 	local ok, name = pcall(UnitName, unit)
 	if not ok then return nil end
 	return name
 end
 
-local function Key(unit)
+local function unit_key(unit)
 	local ok, guid = pcall(UnitGUID, unit)
 	if ok and not secret(guid) and guid then return guid end
 	return unit
 end
 
-local function RoleOf(unit)
+local function role_of(unit)
 	local ok, role = pcall(UnitGroupRolesAssigned, unit)
 	if ok and not secret(role) and type(role) == 'string' then return role end
 	return nil
 end
 
 local T0 = GetTime() - 1024
-local function Now() return floor(GetTime() - T0 + 0.5) end
+local function now_whole() return floor(GetTime() - T0 + 0.5) end
 
 local holder, layer, meter, sensHost, arcHost
-local QueueRefresh, RefreshSoon
+local queue_refresh, refresh_soon
 local swipe = { failHidden = 0, failOpen = 0, hidden = 0, checks = 0, bad = 0, last = 0, try = 0 }
 local slots, members = {}, {}
 local built, failed, waitBuild, pending, fought = false, nil, false, false, false
@@ -448,7 +448,7 @@ local ticker, lastN
 local stats = { reads = 0, secret = 0, errors = 0, edges = 0, own = 0, ownHidden = 0, quick = 0, quickEdges = 0 }
 local specByGUID = {}
 
-local function Fault(err)
+local function fault(err)
 	stats.errors = stats.errors + 1
 	stats.lastErr = tostring(err)
 end
@@ -495,7 +495,7 @@ do
 		end
 	end
 
-	local function Taken(ranks, set)
+	local function talent_taken(ranks, set)
 		local on
 		for talent in pairs(set) do
 			local rank = ranks[talent]
@@ -507,7 +507,7 @@ do
 		return on
 	end
 
-	local function Mine(sw, id)
+	local function mine(sw, id)
 		local on
 		local get = _G.C_Spell and _G.C_Spell.GetOverrideSpell
 		if get and sw.known then
@@ -569,7 +569,7 @@ do
 		if not want or (spec and not swaps.bySpec[spec]) then return false end
 		local ok, got = pcall(ns.TalentRanks, swaps, m.class)
 		if not ok then
-			Fault(got)
+			fault(got)
 			got = nil
 		end
 		local old = swaps.byGUID[guid]
@@ -605,8 +605,8 @@ do
 			end
 			if sw then
 				local on, said
-				if s.index == 1 then on, said = Mine(sw, def.id), 'your talents' end
-				if on == nil and ranks then on, said = Taken(ranks, sw.talents), how end
+				if s.index == 1 then on, said = mine(sw, def.id), 'your talents' end
+				if on == nil and ranks then on, said = talent_taken(ranks, sw.talents), how end
 				if on == nil then on, said = sw.likely and true or false, 'assumed, talents not read' end
 				if not sw.known then
 					def.show, def.how = on and sw.id or def.id, said
@@ -639,7 +639,7 @@ do
 	end
 end
 
-local function PerUnit(region)
+local function per_unit(region)
 	local es = region:GetEffectiveScale()
 	local _, ph = GetPhysicalScreenSize()
 	if type(es) ~= 'number' or secret(es) or es <= 0 or type(ph) ~= 'number' or ph <= 0 then return nil end
@@ -648,21 +648,21 @@ end
 
 local metrics, strips = {}, {}
 
-local function Height(text)
+local function text_height(text)
 	meter:SetText(text)
 	local h = meter:GetStringHeight()
 	if type(h) ~= 'number' or secret(h) or h <= 0 then return nil end
 	return h
 end
 
-local function LineMetrics(font, size)
-	local ppu = PerUnit(layer)
+local function line_metrics(font, size)
+	local ppu = per_unit(layer)
 	local key = format('%s|%s|%.4f', tostring(font), tostring(size), ppu or 0)
 	local m = metrics[key]
 	if m then return m[1], m[2], m[3] end
 	meter:SetFont(font, size, 'OUTLINE')
 	meter:SetSpacing(0)
-	local one, nine = Height('0'), Height('0\n0\n0\n0\n0\n0\n0\n0\n0')
+	local one, nine = text_height('0'), text_height('0\n0\n0\n0\n0\n0\n0\n0\n0')
 	if not (one and nine and nine > one) then return size, size, 0 end
 	local step, gap = (nine - one) / 8, 0
 	local px = ppu and step * ppu
@@ -671,7 +671,7 @@ local function LineMetrics(font, size)
 		for want = ceil(px), ceil(px) + 1 do
 			local s = want / ppu - base
 			meter:SetSpacing(s)
-			nine = Height('0\n0\n0\n0\n0\n0\n0\n0\n0')
+			nine = text_height('0\n0\n0\n0\n0\n0\n0\n0\n0')
 			local got = nine and nine > one and (nine - one) / 8 * ppu
 			if got and abs(got - floor(got + 0.5)) <= 0.02 then
 				step, gap = got / ppu, s
@@ -684,7 +684,7 @@ local function LineMetrics(font, size)
 	return step, one, gap
 end
 
-local function StripText(cd)
+local function strip_text(cd)
 	local s = strips[cd]
 	if s then return s end
 	local out = {}
@@ -701,7 +701,7 @@ local GLOW_EDGES = {
 	{ 'TOPLEFT', 'BOTTOMLEFT', 'SetWidth' }, { 'TOPRIGHT', 'BOTTOMRIGHT', 'SetWidth' },
 }
 
-local function NewArc(wide)
+local function new_arc(wide)
 	local arc = CreateFrame('StatusBar', nil, wide and layer or arcHost)
 	arc:SetStatusBarTexture(WHITE)
 	arc:SetStatusBarColor(0, 0, 0, 0)
@@ -722,7 +722,7 @@ end
 local LibIcon = _G.dodo.LibIcon
 local cellCount = 0
 
-local function NewCell(row)
+local function new_cell(row)
 	cellCount = cellCount + 1
 	local c = LibIcon:Create('dodoPartyCDCell' .. cellCount, row, { iconsize = { 28, 28 } })
 	c:Hide()
@@ -807,7 +807,7 @@ local function NewCell(row)
 	return c
 end
 
-local function Scrap(c)
+local function scrap(c)
 	c:Hide()
 	c.clip:Hide()
 	c.win:Hide()
@@ -818,9 +818,9 @@ local function Scrap(c)
 	end
 end
 
-local function Unit(cd) return mmax(1, ceil(cd / CODES)) end
+local function code_units(cd) return mmax(1, ceil(cd / CODES)) end
 
-local function Dress(c, def, cfg, size, text)
+local function dress(c, def, cfg, size, text)
 	size = ns.PixelSize(size or cfg.size or 28, c)
 	c:SetSize(size, size)
 	if c.RescaleIcon then c:RescaleIcon() end -- dodo: LibIcon 여백 재계산
@@ -847,7 +847,7 @@ local function Dress(c, def, cfg, size, text)
 		c.grey[k]:SetTexture(tex)
 	end
 	local font, ts = ns.GetFont(), text or cfg.textSize or 12
-	local step, one, gap = LineMetrics(font, ts)
+	local step, one, gap = line_metrics(font, ts)
 	c.ts = ts
 	local chg = def.charges and true or false
 	local radial = swipe.on == true
@@ -855,7 +855,7 @@ local function Dress(c, def, cfg, size, text)
 		radial and (swipe.wide and 'w' or 'r') or 'f', swipe.turn and 't' or '', swipe.mirror and 'm' or '',
 		chg and 'c' or '' }, '|')
 	if c.sig == sig then return end
-	local cd, u = def.cd, Unit(def.cd)
+	local cd, u = def.cd, code_units(def.cd)
 	c.chg, c.wz = chg, nil
 	c.win:SetAlpha(1)
 	c.cover:SetAlpha(1)
@@ -880,7 +880,7 @@ local function Dress(c, def, cfg, size, text)
 		strip:SetFont(font, ts, 'OUTLINE')
 		strip:SetSpacing(gap)
 		strip:SetTextColor(1, 1, 1)
-		strip:SetText(StripText(cd))
+		strip:SetText(strip_text(cd))
 		gate:SetMinMaxValues(0, 1)
 		gate:SetValue(1)
 		gate:ClearAllPoints()
@@ -893,7 +893,7 @@ local function Dress(c, def, cfg, size, text)
 		if radial then
 			if c.arcWide ~= swipe.wide or not c.arc[k] then
 				if c.arc[k] then c.arc[k]:Hide() end
-				c.arc[k], c.gap[k] = NewArc(swipe.wide)
+				c.arc[k], c.gap[k] = new_arc(swipe.wide)
 			end
 			dim:SetRotation(swipe.turn and 0 or pi)
 			dim:SetRadialProgressBarReverse(not swipe.mirror)
@@ -911,8 +911,8 @@ local function Dress(c, def, cfg, size, text)
 	c.sig = sig
 end
 
-local function SeatNow(c)
-	local line, ppu = c.line, PerUnit(c)
+local function seat_now(c)
+	local line, ppu = c.line, per_unit(c)
 	if not (line and ppu) then return end
 	local _, y = c:GetCenter()
 	local seat = 0.25 / ppu
@@ -931,19 +931,19 @@ local function SeatNow(c)
 	c.seat = seat
 end
 
-local function Seat(c)
-	local ok, err = pcall(SeatNow, c)
-	if not ok then Fault(err) end
+local function seat_cell(c)
+	local ok, err = pcall(seat_now, c)
+	if not ok then fault(err) end
 end
 
-local function SeatLine(cfg)
+local function seat_line(cfg)
 	for _, s in ipairs(slots) do
 		for j = 1, MAX do
 			local c = s.cells[j]
 			if c and c.line and c:IsShown() then
-				local ppu = PerUnit(c)
+				local ppu = per_unit(c)
 				if not ppu then return 'the screen scale cannot be read' end
-				local step, one, gap = LineMetrics(ns.GetFont(), c.ts or cfg.textSize or 12)
+				local step, one, gap = line_metrics(ns.GetFont(), c.ts or cfg.textSize or 12)
 				local _, y = c:GetCenter()
 				local at = 'unknown'
 				if type(y) == 'number' and not secret(y) then
@@ -958,7 +958,7 @@ local function SeatLine(cfg)
 	return 'no icon on screen'
 end
 
-local function Clear(t, n)
+local function clear(t, n)
 	local a, b = t.slot[1], t.slot[2]
 	a.c, a.v, a.epoch = 1, 0, n
 	b.c, b.v, b.epoch = 1, 0, n
@@ -969,7 +969,7 @@ local function Clear(t, n)
 	end
 end
 
-local function Roll(t, n)
+local function roll(t, n)
 	local k = t.cur
 	if n - t.slot[k].epoch < t.P then return false end
 	k = 3 - k
@@ -979,27 +979,27 @@ local function Roll(t, n)
 	return true
 end
 
-local function Stamp(t, n)
+local function stamp(t, n)
 	local code = floor((n - t.slot[t.cur].epoch) / t.u)
 	local low = t.charges and 1 or 0
 	if code < low then code = low elseif code > CODES then code = CODES end
 	return (255 - code) / 255
 end
 
-local function Left(t, sl, n)
+local function time_left(t, sl, n)
 	local code = 255 - floor(sl.c * 255 + 0.5)
 	return t.cd - ((n - sl.epoch) - t.u * code)
 end
 
-local function Range(c, k, sl, u, n)
+local function range(c, k, sl, u, n)
 	local m = (254 - (n - sl.epoch) / u) / 255
 	c.pos[k]:SetMinMaxValues(m, m + 1)
 	c.gate[k]:SetMinMaxValues(m, m + 1)
 end
 
-local function Clock() return GetTime() - T0 + 0.5 end
+local function now_exact() return GetTime() - T0 + 0.5 end
 
-local function Sweep(c, k, sl, t, now)
+local function sweep(c, k, sl, t, now)
 	local span = 255 * t.u
 	local m = 1 - (now - sl.epoch) / span
 	c.arc[k]:SetMinMaxValues(m, m + t.cd / span)
@@ -1018,22 +1018,22 @@ local function Sweep(c, k, sl, t, now)
 	end
 end
 
-local function Arc(c, k, sl, t, now)
-	local ok, err = pcall(Sweep, c, k, sl, t, now)
+local function sweep_safe(c, k, sl, t, now)
+	local ok, err = pcall(sweep, c, k, sl, t, now)
 	local key = secret(sl.c) and 'failHidden' or 'failOpen'
 	if ok then
 		swipe[key] = 0
 		return
 	end
-	Fault(err)
+	fault(err)
 	swipe[key] = swipe[key] + 1
 	if swipe[key] >= 5 then
 		swipe.on, swipe.why = false, tostring(err)
-		QueueRefresh()
+		queue_refresh()
 	end
 end
 
-local function WriteSlot(c, k, sl, u, n)
+local function write_slot(c, k, sl, u, n)
 	c.pos[k]:SetMinMaxValues(0, 1)
 	c.pos[k]:SetValue(sl.c)
 	c.gate[k]:SetMinMaxValues(0, 1)
@@ -1041,7 +1041,7 @@ local function WriteSlot(c, k, sl, u, n)
 	c.text[k]:SetAlpha(sl.v)
 	c.veil[k]:SetAlpha(sl.v)
 	c.shade[k]:SetAlpha(sl.v)
-	Range(c, k, sl, u, n)
+	range(c, k, sl, u, n)
 	local arc = c.arc[k]
 	if arc then
 		arc:SetMinMaxValues(0, 1)
@@ -1049,24 +1049,24 @@ local function WriteSlot(c, k, sl, u, n)
 	end
 end
 
-local function PushCell(t, c, n)
+local function push_cell(t, c, n)
 	local arc = swipe.on and c.arc[1] and (not c.chg or charge.Wedge(t, c))
 	for k = 1, 2 do
-		local ok, err = pcall(WriteSlot, c, k, t.slot[k], t.u, n)
-		if not ok then Fault(err) end
-		if arc then Arc(c, k, t.slot[k], t, Clock()) end
+		local ok, err = pcall(write_slot, c, k, t.slot[k], t.u, n)
+		if not ok then fault(err) end
+		if arc then sweep_safe(c, k, t.slot[k], t, now_exact()) end
 	end
 	if c.chg and not t.exact then
 		local ok, err = pcall(charge.Cell, t, c, n)
-		if not ok then Fault(err) end
+		if not ok then fault(err) end
 	end
 end
 
-local function Push(t)
+local function push(t)
 	t.redraw = nil
-	local n = Now()
-	if t.cell then PushCell(t, t.cell, n) end
-	if t.twin then PushCell(t, t.twin, n) end
+	local n = now_whole()
+	if t.cell then push_cell(t, t.cell, n) end
+	if t.twin then push_cell(t, t.twin, n) end
 end
 
 trinket.Died = function(who)
@@ -1081,7 +1081,7 @@ trinket.Died = function(who)
 					t.slot[2].epoch = t.slot[2].epoch - cut
 					t.quiet = quiet
 					trinket.cuts = trinket.cuts + 1
-					Push(t)
+					push(t)
 				end
 			end
 		end
@@ -1100,19 +1100,19 @@ trinket.Deaths = function()
 	end
 end
 
-local function StartPlain(t, n)
-	Roll(t, n)
+local function start_plain(t, n)
+	roll(t, n)
 	local sl, other = t.slot[t.cur], t.slot[3 - t.cur]
-	sl.c, sl.v, other.v = Stamp(t, n), 1, 0
+	sl.c, sl.v, other.v = stamp(t, n), 1, 0
 end
 
-local function Plain(v)
+local function plain(v)
 	if secret(v) then return 'hidden' end
 	if type(v) == 'number' then return format('%.3f', v) end
 	return tostring(v)
 end
 
-local function CheckSwipe()
+local function check_swipe()
 	local want = swipe.want
 	if want then
 		for _, pr in ipairs(swipe.probe) do
@@ -1120,14 +1120,14 @@ local function CheckSwipe()
 			pr.got = ok and h or nil
 			if ok and type(h) == 'number' and not secret(h) and abs(h - (1 - want)) < 0.02 then
 				swipe.on, swipe.wide = true, pr.wide
-				QueueRefresh()
+				queue_refresh()
 				return
 			end
 		end
 		if swipe.try >= #PROBE then
 			swipe.on = false
-			swipe.why = format('a bar set to %.3f read back as %s and %s', 1 - want, Plain(swipe.probe[1].got), Plain(swipe.probe[2].got))
-			QueueRefresh()
+			swipe.why = format('a bar set to %.3f read back as %s and %s', 1 - want, plain(swipe.probe[1].got), plain(swipe.probe[2].got))
+			queue_refresh()
 			return
 		end
 	end
@@ -1139,19 +1139,19 @@ local function CheckSwipe()
 	end
 end
 
-local function SwipeDump(p)
+local function swipe_dump(p)
 	if not swipe.probe then return end
 	local _, sc = pcall(arcHost.GetScale, arcHost)
 	local _, es = pcall(arcHost.GetEffectiveScale, arcHost)
 	local _, ui = pcall(UIParent.GetEffectiveScale, UIParent)
-	p('   measuring frame: scale', Plain(sc), '| effective', Plain(es), '| screen', Plain(ui), '| tries', swipe.try)
+	p('   measuring frame: scale', plain(sc), '| effective', plain(es), '| screen', plain(ui), '| tries', swipe.try)
 	for _, pr in ipairs(swipe.probe) do
 		local fill = pr.arc:GetStatusBarTexture()
 		local _, bar = pcall(pr.arc.GetHeight, pr.arc)
 		local _, fh = pcall(fill.GetHeight, fill)
 		local _, gh = pcall(pr.gap.GetHeight, pr.gap)
 		p(format('   %s bar: height %s, fill %s, gap %s, gap wanted %s', pr.wide and 'screen-size' or 'small',
-			Plain(bar), Plain(fh), Plain(gh), swipe.want and format('%.3f', 1 - swipe.want) or 'nothing yet'))
+			plain(bar), plain(fh), plain(gh), swipe.want and format('%.3f', 1 - swipe.want) or 'nothing yet'))
 	end
 	for _, s in ipairs(slots) do
 		for j = 1, MAX do
@@ -1165,7 +1165,7 @@ local function SwipeDump(p)
 					local _, rv = pcall(dim.GetRadialProgressBarReverse, dim)
 					local _, al = pcall(c.veil[k].GetAlpha, c.veil[k])
 					p(format('   first icon, timer %d: wedge %s, percent %s, start %s, end %s, reverse %s | grey cover alpha %s',
-						k, dim:IsShown() and 'shown' or 'not shown', Plain(pc), Plain(so), Plain(eo), tostring(rv), Plain(al)))
+						k, dim:IsShown() and 'shown' or 'not shown', plain(pc), plain(so), plain(eo), tostring(rv), plain(al)))
 				end
 				return
 			end
@@ -1173,8 +1173,8 @@ local function SwipeDump(p)
 	end
 end
 
-local function SweepAll()
-	local now = Clock()
+local function sweep_all()
+	local now = now_exact()
 	for i = 1, #slots + #bars do
 		local s = slots[i] or bars[i - #slots].slot
 		for j = 1, s.n do
@@ -1183,35 +1183,35 @@ local function SweepAll()
 			if c and c.arc[1] and (not c.chg or charge.Wedge(t, c)) then
 				for k = 1, 2 do
 					local sl = t.slot[k]
-					if secret(sl.v) or sl.v ~= 0 then Arc(c, k, sl, t, now) end
+					if secret(sl.v) or sl.v ~= 0 then sweep_safe(c, k, sl, t, now) end
 				end
 			end
 			local w = t and t.twin
 			if w and w.arc[1] and not w.chg then
 				for k = 1, 2 do
 					local sl = t.slot[k]
-					if secret(sl.v) or sl.v ~= 0 then Arc(w, k, sl, t, now) end
+					if secret(sl.v) or sl.v ~= 0 then sweep_safe(w, k, sl, t, now) end
 				end
 			end
 		end
 	end
 end
 
-local function SwipeLine()
+local function swipe_line()
 	if swipe.on == nil then return 'not checked yet' end
 	if not swipe.on then return 'off: ' .. tostring(swipe.why) end
 	return format('on (%s bar) | open timers checked %d, off by over 5%% %d, last off by %.4f | hidden timers drawn %d',
 		swipe.wide and 'screen-size' or 'small', swipe.checks, swipe.bad, swipe.last, swipe.hidden)
 end
 
-local function Tick()
-	local n = Now()
-	if swipe.on == nil and swipe.probe then CheckSwipe() end
+local function tick()
+	local n = now_whole()
+	if swipe.on == nil and swipe.probe then check_swipe() end
 	if charge.ok == nil and charge.probe then
 		local ok, err = pcall(charge.Check)
 		if not ok then charge.ok, charge.why = false, tostring(err) end
 	end
-	if swipe.on then SweepAll() end
+	if swipe.on then sweep_all() end
 	if n == lastN then return end
 	lastN = n
 	trinket.Deaths()
@@ -1223,36 +1223,36 @@ local function Tick()
 			local c = t and t.cell
 			if c then
 				any = true
-				if Roll(t, n) then Push(t) end
+				if roll(t, n) then push(t) end
 				if t.exact then
 					exact.Read(t)
 					exact.Update(t)
 				elseif t.charges then
 					local moved, failed = charge.Try(charge.Tick, t, n)
-					if moved or failed then Push(t) end
+					if moved or failed then push(t) end
 				end
 				local running = false
 				for k = 1, 2 do
 					local sl = t.slot[k]
 					if secret(sl.v) or sl.v ~= 0 then
-						if not secret(sl.v) and not secret(sl.c) and Left(t, sl, n) <= -LINGER then
+						if not secret(sl.v) and not secret(sl.c) and time_left(t, sl, n) <= -LINGER then
 							sl.v = 0
 							if t.loop then charge.Start(t, n) end
-							Push(t)
+							push(t)
 						else
-							local ok, err = pcall(Range, c, k, sl, t.u, n)
-							if not ok then Fault(err) end
+							local ok, err = pcall(range, c, k, sl, t.u, n)
+							if not ok then fault(err) end
 							if t.twin then
-								ok, err = pcall(Range, t.twin, k, sl, t.u, n)
-								if not ok then Fault(err) end
+								ok, err = pcall(range, t.twin, k, sl, t.u, n)
+								if not ok then fault(err) end
 							end
 							running = true
 						end
 					end
 				end
 				if running then
-					Seat(c)
-					if t.twin then Seat(t.twin) end
+					seat_cell(c)
+					if t.twin then seat_cell(t.twin) end
 				end
 			end
 		end
@@ -1264,7 +1264,7 @@ local function Tick()
 				s.away = nil
 				stats.backs = (stats.backs or 0) + 1
 				zone.Stale(s)
-				QueueRefresh()
+				queue_refresh()
 			end
 		end
 	end
@@ -1274,12 +1274,12 @@ local function Tick()
 	end
 end
 
-local function EnsureTicker()
+local function ensure_ticker()
 	lastN = nil
-	if not ticker then ticker = C_Timer.NewTicker(TICK, Tick) end
+	if not ticker then ticker = C_Timer.NewTicker(TICK, tick) end
 end
 
-local function Pick(cur, dual, short, a, b)
+local function pick_value(cur, dual, short, a, b)
 	if not dual then return EvalBool(cur, a, b) end
 	if dual == 'any' then
 		local r = EvalBool(cur, a, b)
@@ -1289,7 +1289,7 @@ local function Pick(cur, dual, short, a, b)
 	return EvalBool(cur, EvalBool(short, b, a), b)
 end
 
-local function State(cur, dual, short)
+local function read_state(cur, dual, short)
 	if secret(cur) then return false, false end
 	if dual == 'any' then
 		local up = cur and true or false
@@ -1304,37 +1304,37 @@ local function State(cur, dual, short)
 	return true, (cur and not (dual and short)) and true or false
 end
 
-ns.InitCharges(charge, free, swipe, Fault, Now, Roll, Stamp, Left, StartPlain, Pick, EvalBool,
+ns.InitCharges(charge, free, swipe, fault, now_whole, roll, stamp, time_left, start_plain, pick_value, EvalBool,
 	function() return layer end, T0)
 
-local function Feed(t, cur, dual, short, n)
+local function feed(t, cur, dual, short, n)
 	if t.primed then
-		if Roll(t, n) then Push(t) end
+		if roll(t, n) then push(t) end
 		local prev, prevShort = t.prev, t.prevShort
-		local curKnown, up = State(cur, dual, short)
-		local prevKnown, was = State(prev, dual, prevShort)
+		local curKnown, up = read_state(cur, dual, short)
+		local prevKnown, was = read_state(prev, dual, prevShort)
 		local idle = (curKnown and not up) or (prevKnown and was)
 		if not idle then
 			local known = curKnown and prevKnown
 			if not (t.charges and charge.Try(charge.Use, t, cur, dual, short, prev, prevShort, known, n)) then
 				if known and free.Plain(t) then
-					if not free.Vetoed(t) then StartPlain(t, n) end
+					if not free.Vetoed(t) then start_plain(t, n) end
 				else
 					local sl, other = t.slot[t.cur], t.slot[3 - t.cur]
 					local V = free.Veto
-					sl.c = V(t, Pick(cur, dual, short, Pick(prev, dual, prevShort, sl.c, Stamp(t, n)), sl.c), sl.c)
-					sl.v = V(t, Pick(cur, dual, short, Pick(prev, dual, prevShort, sl.v, 1), sl.v), sl.v)
-					other.v = V(t, Pick(cur, dual, short, Pick(prev, dual, prevShort, other.v, 0), other.v), other.v)
+					sl.c = V(t, pick_value(cur, dual, short, pick_value(prev, dual, prevShort, sl.c, stamp(t, n)), sl.c), sl.c)
+					sl.v = V(t, pick_value(cur, dual, short, pick_value(prev, dual, prevShort, sl.v, 1), sl.v), sl.v)
+					other.v = V(t, pick_value(cur, dual, short, pick_value(prev, dual, prevShort, other.v, 0), other.v), other.v)
 				end
 			end
 			if known then stats.edges = stats.edges + 1 end
-			Push(t)
+			push(t)
 		end
 	end
 	t.prev, t.prevShort, t.primed = cur, short, true
 end
 
-local function ReadOne(s, j, t, n, glowOn)
+local function read_one(s, j, t, n, glowOn)
 	if t.def.bar then glowOn = t.def.bar.look.highlight ~= false end
 	local cur = not t.def.spell.others and ns.SensorLit(s.sens[j])
 	local dual, short = s.dual[j], false
@@ -1346,27 +1346,27 @@ local function ReadOne(s, j, t, n, glowOn)
 	if t.quiet and trinket.Quiet(t) then t.primed = false end
 	local sp = t.def.spell
 	if sp.free or sp.proc then free.Before(s, j, t, n) end
-	Feed(t, cur, dual, short, n)
+	feed(t, cur, dual, short, n)
 	if sp.free or sp.proc then
 		t.pf, t.pp = t.vf, t.vp
-		if t.redraw then Push(t) end
+		if t.redraw then push(t) end
 	end
 	t.last = cur
 	local c = t.cell
 	if not c then return end
 	local lit = 0
-	if glowOn then lit = Pick(cur, dual, short, 1, 0) end
+	if glowOn then lit = pick_value(cur, dual, short, 1, 0) end
 	c.glow:SetAlpha(lit)
 	if t.twin then t.twin.glow:SetAlpha(lit) end
 end
 
-local function ReadSlot(s, n)
-	local glowOn = GetCfg().highlight ~= false
+local function read_slot(s, n)
+	local glowOn = get_cfg().highlight ~= false
 	for j = 1, s.n do
 		local t = s.tr[j]
 		if t and s.live[j] then
-			local ok, err = pcall(ReadOne, s, j, t, n, glowOn)
-			if not ok then Fault(err) end
+			local ok, err = pcall(read_one, s, j, t, n, glowOn)
+			if not ok then fault(err) end
 		end
 	end
 end
@@ -1374,7 +1374,7 @@ end
 local driver = CreateFrame('Frame')
 driver:Hide()
 local acc = 0
-driver:SetScript('OnUpdate', function(self, elapsed)
+local function on_driver_update(self, elapsed)
 	acc = acc + elapsed
 	local now, n = GetTime(), nil
 	for i = 1, #slots do
@@ -1382,15 +1382,15 @@ driver:SetScript('OnUpdate', function(self, elapsed)
 		if s.quick > 0 then
 			s.quick = s.quick - 1
 			if s.member and now >= s.hold then
-				n = n or Now()
-				local glowOn = GetCfg().highlight ~= false
+				n = n or now_whole()
+				local glowOn = get_cfg().highlight ~= false
 				for j = 1, s.n do
 					local t = s.tr[j]
 					if t and s.live[j] and t.def.spell.fast then
 						local edges = stats.edges
 						stats.quick = stats.quick + 1
-						local ok, err = pcall(ReadOne, s, j, t, n, glowOn)
-						if not ok then Fault(err) end
+						local ok, err = pcall(read_one, s, j, t, n, glowOn)
+						if not ok then fault(err) end
 						if stats.edges > edges then stats.quickEdges = stats.quickEdges + 1 end
 					end
 				end
@@ -1400,7 +1400,7 @@ driver:SetScript('OnUpdate', function(self, elapsed)
 	if acc < READ_EVERY then return end
 	acc = 0
 	local busy = false
-	n = n or Now()
+	n = n or now_whole()
 	for i = 1, #slots do
 		local s = slots[i]
 		if s.reads > 0 then
@@ -1408,21 +1408,22 @@ driver:SetScript('OnUpdate', function(self, elapsed)
 				s.reads = 0
 			elseif now >= s.hold then
 				s.reads = s.reads - 1
-				ReadSlot(s, n)
+				read_slot(s, n)
 			end
 			if s.reads > 0 then busy = true end
 		end
 	end
 	if not busy then self:Hide() end
-end)
+end
+driver:SetScript('OnUpdate', on_driver_update)
 
-local function Wake()
+local function wake()
 	if driver:IsShown() then return end
 	acc = 0
 	driver:Show()
 end
 
-local function OwnCast(s, spellID)
+local function own_cast(s, spellID)
 	if secret(spellID) then
 		stats.ownHidden = stats.ownHidden + 1
 		return
@@ -1431,15 +1432,15 @@ local function OwnCast(s, spellID)
 	if not t then return end
 	if t.quiet and trinket.Quiet(t) then return end
 	stats.own, stats.ownLast = stats.own + 1, spellID
-	local n = Now()
+	local n = now_whole()
 	if (t.def.spell.free or t.def.spell.proc) and free.Own(t, spellID, n) then
-		Push(t)
-		EnsureTicker()
+		push(t)
+		ensure_ticker()
 		return
 	end
-	if not (t.charges and charge.Try(charge.Use, t, true, false, false, false, false, true, n)) then StartPlain(t, n) end
-	Push(t)
-	EnsureTicker()
+	if not (t.charges and charge.Try(charge.Use, t, true, false, false, false, false, true, n)) then start_plain(t, n) end
+	push(t)
+	ensure_ticker()
 end
 
 for i, unit in ipairs(TOKENS) do
@@ -1458,23 +1459,23 @@ for i, unit in ipairs(TOKENS) do
 				if churn and s.fast then s.quick = 3 end
 				if s.reads >= READS_AFTER or churn then
 					s.reads = READS_AFTER
-					Wake()
+					wake()
 				end
 			end
 		else
-			OwnCast(s, b)
+			own_cast(s, b)
 		end
 	end)
 	slots[i] = s
 end
 
-local function NewSensor(unit)
+local function new_sensor(unit)
 	local c, why = ns.NewUnitSensor(sensHost, unit, 'cd', {})
 	if not c then failed = why end
 	return c
 end
 
-local function Aim(c, sig, filters, who)
+local function aim(c, sig, filters, who)
 	local hot = InCombatLockdown() and true or nil
 	local fresh = false
 	if c.aim ~= sig then
@@ -1511,7 +1512,7 @@ zone.Stale = function(s)
 	for _, h in pairs(s.zone) do h.who = nil end
 end
 
-local function Park(c)
+local function park(c)
 	if c and c.on then
 		c.on = false
 		pcall(c.SetEnabled, c, false)
@@ -1549,7 +1550,7 @@ zone.Churn = function(info)
 			o.reads = READS_AFTER
 		end
 	end
-	if churn then Wake() end
+	if churn then wake() end
 end
 
 zone.Aim = function()
@@ -1584,16 +1585,16 @@ zone.Aim = function()
 				if InCombatLockdown() or failed then
 					pending = true
 				else
-					h = NewSensor(s.unit)
+					h = new_sensor(s.unit)
 					s.zone[sig] = h
 				end
 			end
 			if h then
-				if need and Aim(h, sig, sp.filters, s.who) then lit = true else Park(h) end
+				if need and aim(h, sig, sp.filters, s.who) then lit = true else park(h) end
 			end
 		end
 		for sig, h in pairs(s.zone) do
-			if not want[sig] then Park(h) end
+			if not want[sig] then park(h) end
 		end
 		if lit ~= (s.zon or false) then
 			s.zon = lit
@@ -1639,23 +1640,23 @@ free.Need = function(s, list, j, make)
 end
 
 free.Park = function(s, j)
-	Park(s.fr[j])
-	Park(s.pr[j])
+	park(s.fr[j])
+	park(s.pr[j])
 end
 
 free.Aim = function(s, j, def)
 	local sp = def.spell
 	if sp.free then
-		local c = free.Need(s, s.fr, j, NewSensor)
-		if c then Aim(c, sp.free.sig, sp.free.filters, s.who) end
+		local c = free.Need(s, s.fr, j, new_sensor)
+		if c then aim(c, sp.free.sig, sp.free.filters, s.who) end
 	else
-		Park(s.fr[j])
+		park(s.fr[j])
 	end
 	if sp.proc and not def.noProc and not free.broken then
 		local c = free.Need(s, s.pr, j, free.NewHarm)
-		if c then Aim(c, 'whi', free.WHI, s.who) end
+		if c then aim(c, 'whi', free.WHI, s.who) end
 	else
-		Park(s.pr[j])
+		park(s.pr[j])
 	end
 end
 
@@ -1705,7 +1706,7 @@ free.Refill = function(t, f, pf, n)
 		if f and not pf then
 			free.Fill(t)
 			free.refills = free.refills + 1
-			Push(t)
+			push(t)
 		end
 		return
 	end
@@ -1782,23 +1783,23 @@ free.Line = function(s, j, t)
 	return out
 end
 
-local function AimPair(s, j, def)
+local function aim_pair(s, j, def)
 	local sp = def.spell
 	local main = s.sens[j]
 	if sp.others then
-		Park(main)
-		Park(s.short[j])
+		park(main)
+		park(s.short[j])
 		free.Park(s, j)
 		return main ~= nil, false
 	end
-	if not main or not Aim(main, sp.sig, sp.filters, s.who) then
-		Park(s.short[j])
+	if not main or not aim(main, sp.sig, sp.filters, s.who) then
+		park(s.short[j])
 		free.Park(s, j)
 		return false, false
 	end
 	free.Aim(s, j, def)
 	if not sp.short or def.noShort then
-		Park(s.short[j])
+		park(s.short[j])
 		return true, false
 	end
 	local sh = s.short[j]
@@ -1807,35 +1808,35 @@ local function AimPair(s, j, def)
 			pending = true
 			return true, false
 		end
-		sh = NewSensor(s.unit)
+		sh = new_sensor(s.unit)
 		s.short[j] = sh
 		if not sh then return true, false end
 	end
-	if not Aim(sh, sp.shortSig, sp.shortFilters, s.who) then
+	if not aim(sh, sp.shortSig, sp.shortFilters, s.who) then
 		return true, false
 	end
 	return true, true
 end
 
-local function Seed(t, def, i, j)
+local function seed(t, def, i, j)
 	local frac = PREVIEW_AT[(i + j) % #PREVIEW_AT + 1]
 	if frac < 1 then
-		local began = Now() - floor(def.cd * frac)
-		Clear(t, began - 1)
+		local began = now_whole() - floor(def.cd * frac)
+		clear(t, began - 1)
 		charge.Start(t, began)
 		t.loop = true
 	end
 	t.lit = (i == 2 and j == 1)
 end
 
-local function Unbind(s, j)
+local function unbind(s, j)
 	local t = s.tr[j]
 	if t then
 		if t.cell == s.cells[j] then t.cell = nil end
 		s.tr[j] = nil
 	end
-	Park(s.sens[j])
-	Park(s.short[j])
+	park(s.sens[j])
+	park(s.short[j])
 	free.Park(s, j)
 	s.live[j], s.dual[j], s.any[j] = false, false, nil
 end
@@ -1858,7 +1859,7 @@ ext.Add = function(list, spec, cfg)
 			end
 		end
 		if not found then
-			all = all or SpecList(spec, cfg, true) or {}
+			all = all or spec_list(spec, cfg, true) or {}
 			for _, def in ipairs(all) do
 				if def.id == id then
 					def.ext, def.ghost = k, true
@@ -1881,15 +1882,15 @@ ext.Bind = function(s, found)
 			local old, c = cur[n], cells[n]
 			if old and old ~= t and old.twin == c then old.twin = nil end
 			cur[n] = t
-			if not c or not pcall(Dress, c, t.def, ext.look) then
-				if c then Scrap(c) end
-				c = NewCell(ext.host)
+			if not c or not pcall(dress, c, t.def, ext.look) then
+				if c then scrap(c) end
+				c = new_cell(ext.host)
 				cells[n] = c
-				Dress(c, t.def, ext.look)
+				dress(c, t.def, ext.look)
 			end
 			if t.twin ~= c then c.glow:SetAlpha(0) end
 			t.twin = c
-			Push(t)
+			push(t)
 		end
 	end
 	for k = n + 1, was do
@@ -1922,7 +1923,7 @@ ext.Place = function()
 				c:ClearAllPoints()
 				ns.PixelPoint(c, 'TOPLEFT', host, 'TOPLEFT', x, y)
 				at = at + 1
-				Seat(c)
+				seat_cell(c)
 			end
 			c:SetShown(on)
 			c.clip:SetShown(on)
@@ -1976,7 +1977,7 @@ end
 bars.Demo = function(b)
 	local look, demo, tr, k = b.look, b.demo, b.slot.tr, 0
 	if b.host and look.preview then
-		local n = Now()
+		local n = now_whole()
 		local size, text = look.size or 36, look.textSize or 16
 		for _, id in ipairs(look.order or b.order) do
 			if b.who[id] and not (look.off and look.off[id]) then
@@ -1990,23 +1991,23 @@ bars.Demo = function(b)
 				local def = bars.Def(b, id, b.specs[id])
 				local t = d.t
 				if not t or t.def.id ~= id then
-					t = { slot = { {}, {} }, primed = false, cd = def.cd, u = Unit(def.cd), def = def }
+					t = { slot = { {}, {} }, primed = false, cd = def.cd, u = code_units(def.cd), def = def }
 					t.P = CODES * t.u
-					Clear(t, n)
-					Seed(t, def, 2, k)
+					clear(t, n)
+					seed(t, def, 2, k)
 					d.t = t
 				end
 				local c = d.c
-				if not c or not pcall(Dress, c, def, look, size, text) then
-					if c then Scrap(c) end
-					c = NewCell(b.host)
+				if not c or not pcall(dress, c, def, look, size, text) then
+					if c then scrap(c) end
+					c = new_cell(b.host)
 					d.c = c
-					Dress(c, def, look, size, text)
+					dress(c, def, look, size, text)
 				end
 				t.cell = c
 				c.glow:SetAlpha((t.lit and look.highlight ~= false) and 1 or 0)
 				tr[k] = t
-				Push(t)
+				push(t)
 			end
 		end
 	end
@@ -2054,16 +2055,16 @@ bars.Place = function(b)
 	if b.host and look.Place then look.Place(list) end
 end
 
-ns.InitExactCooldowns(exact, charge, Clear, Now, Fault, EvalBool)
+ns.InitExactCooldowns(exact, charge, clear, now_whole, fault, EvalBool)
 
-local function Rows(cfg, count)
+local function row_metrics(cfg, count)
 	local per = type(cfg.perRow) == 'number' and floor(cfg.perRow) or 4
 	if per < 1 then per = 1 end
 	if cfg.wrap and count > per then return per, cfg.size2 or 24, cfg.textSize2 or 10 end
 	return nil, cfg.size or 28, cfg.textSize or 12
 end
 
-local function AssignSlot(s, m, list, cfg, now)
+local function assign_slot(s, m, list, cfg, now)
 	local n = list and mmin(#list, MAX) or 0
 	local fake = m and m.fake or false
 	local sensored = s.sensored and not fake
@@ -2075,7 +2076,7 @@ local function AssignSlot(s, m, list, cfg, now)
 	for j = 1, n do
 		if not list[j].ghost then count = count + 1 end
 	end
-	local per, size, text = Rows(cfg, count)
+	local per, size, text = row_metrics(cfg, count)
 	s.per, s.size, s.ts = per, size, text
 	for j = 1, MAX do
 		local def = j <= n and list[j] or nil
@@ -2086,10 +2087,10 @@ local function AssignSlot(s, m, list, cfg, now)
 				m.tr[def.id] = t
 			end
 			if t.cd ~= def.cd or t.charges ~= def.charges then
-				t.cd, t.u, t.loop, t.charges = def.cd, Unit(def.cd), nil, def.charges
+				t.cd, t.u, t.loop, t.charges = def.cd, code_units(def.cd), nil, def.charges
 				t.P = CODES * t.u
-				Clear(t, Now())
-				if fake then Seed(t, def, s.index, j) end
+				clear(t, now_whole())
+				if fake then seed(t, def, s.index, j) end
 			end
 			t.def = def
 			if t.charges and sensored then charge.Ensure(t) elseif not t.charges then charge.Free(t) end
@@ -2101,16 +2102,16 @@ local function AssignSlot(s, m, list, cfg, now)
 			else
 				c = s.cells[j]
 			end
-			if not c or not pcall(Dress, c, def, look, cs, ct) then
-				if c then Scrap(c) end
+			if not c or not pcall(dress, c, def, look, cs, ct) then
+				if c then scrap(c) end
 				if bar then
-					c = NewCell(bar.host)
+					c = new_cell(bar.host)
 					s.sp[def.id] = c
 				else
-					c = NewCell(s.row)
+					c = new_cell(s.row)
 					s.cells[j] = c
 				end
-				Dress(c, def, look, cs, ct)
+				dress(c, def, look, cs, ct)
 			end
 			local old = s.tr[j]
 			local glowOn = look.highlight ~= false
@@ -2124,7 +2125,7 @@ local function AssignSlot(s, m, list, cfg, now)
 			local live, dual, any = false, false, nil
 			if sensored then
 				exact.Drop(c, t)
-				live, dual = AimPair(s, j, def)
+				live, dual = aim_pair(s, j, def)
 				if live and def.spell.zone then
 					any = def.spell.sig
 					zone.want[any] = def.spell
@@ -2134,8 +2135,8 @@ local function AssignSlot(s, m, list, cfg, now)
 				if live and def.spell.fast then fast = true end
 				if not glowOn then c.glow:SetAlpha(0) end
 			else
-				Park(s.sens[j])
-				Park(s.short[j])
+				park(s.sens[j])
+				park(s.short[j])
 				c.glow:SetAlpha((t.lit and glowOn) and 1 or 0)
 				if fake then
 					exact.Drop(c, t)
@@ -2148,9 +2149,9 @@ local function AssignSlot(s, m, list, cfg, now)
 				xt = xt or {}
 				xt[def.ext] = t
 			end
-			Push(t)
+			push(t)
 		else
-			Unbind(s, j)
+			unbind(s, j)
 		end
 	end
 	ext.Bind(s, xt)
@@ -2171,7 +2172,7 @@ end
 
 local RF, mapSig, mapTimer
 
-local function MapSig(map)
+local function map_sig(map)
 	local out = {}
 	if type(map) ~= 'table' then return '' end
 	for i, s in ipairs(slots) do
@@ -2181,15 +2182,15 @@ local function MapSig(map)
 	return tconcat(out, ' ')
 end
 
-local function MapLater()
+local function map_later()
 	if mapTimer then return end
 	mapTimer = C_Timer.NewTimer(0.5, function()
 		mapTimer = nil
-		if RF and MapSig(RF._partyUnitToButton) ~= mapSig then QueueRefresh() end
+		if RF and map_sig(RF._partyUnitToButton) ~= mapSig then queue_refresh() end
 	end)
 end
 
-local function FindRF()
+local function find_r_f()
 	if RF then return RF end
 	local eui = _G.EllesmereUI
 	local rf = eui and eui._ModuleNS and eui._ModuleNS.EllesmereUIRaidFrames
@@ -2197,38 +2198,38 @@ local function FindRF()
 	RF = rf
 	if type(rf._RebuildPartyUnitMap) == 'function' then
 		hooksecurefunc(rf, '_RebuildPartyUnitMap', function()
-			local cfg = GetCfg()
+			local cfg = get_cfg()
 			if not (holder and holder:IsShown() or cfg.enable) or cfg.attach == false then return end
 			stats.maps = (stats.maps or 0) + 1
-			if MapSig(rf._partyUnitToButton) ~= mapSig then
+			if map_sig(rf._partyUnitToButton) ~= mapSig then
 				stats.mapMoves = (stats.mapMoves or 0) + 1
-				RefreshSoon()
+				refresh_soon()
 			else
-				MapLater()
+				map_later()
 			end
 		end)
 	end
 	return RF
 end
-ns.PTCCanAttach = function() return FindRF() ~= nil end
+ns.PTCCanAttach = function() return find_r_f() ~= nil end
 
-local function Seen(btn)
+local function is_seen(btn)
 	return (btn and ns.Ask(btn.IsVisible, btn) == true) or false
 end
 
-local frames = ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig,
-	function() QueueRefresh() end, Fault,
-	function() return (holder and holder:IsShown()) or GetCfg().enable end,
+local frames = ns.NewPartyFrameFinder(get_cfg, TOKENS, map_sig,
+	function() queue_refresh() end, fault,
+	function() return (holder and holder:IsShown()) or get_cfg().enable end,
 	function() return RF end)
 
 local mock = { frames = {}, map = {}, on = false }
 
-local function HideMock()
+local function hide_mock()
 	if mock.host and not (mock.guest and not IsInGroup()) then mock.host:Hide() end
 	mock.on = false
 end
 
-local function MockFrame(i)
+local function mock_frame(i)
 	local f = mock.frames[i]
 	if f then return f end
 	f = CreateFrame('Frame', nil, mock.host)
@@ -2246,7 +2247,7 @@ local function MockFrame(i)
 	return f
 end
 
-local function DrawMock(rf)
+local function draw_mock(rf)
 	local box, prof = rf._partyContainerFrame, rf.db and rf.db.profile
 	if type(box) ~= 'table' or type(prof) ~= 'table'
 		or type(rf.RF_PartyDims) ~= 'function' or type(rf._PartyGrowth) ~= 'function' then
@@ -2285,7 +2286,7 @@ local function DrawMock(rf)
 	wipe(mock.map)
 	local font = ns.GetFont()
 	for i = 1, #TOKENS do
-		local f = MockFrame(i)
+		local f = mock_frame(i)
 		if i < first then
 			f:Hide()
 		else
@@ -2311,16 +2312,16 @@ local function DrawMock(rf)
 end
 
 ns.PTCPartyMock = function(want)
-	local rf = want and not IsInGroup() and FindRF() or nil
+	local rf = want and not IsInGroup() and find_r_f() or nil
 	mock.guest = rf and true or false
 	if rf then
 		local on, why = mock.on, mock.why
-		local ok, map = pcall(DrawMock, rf)
+		local ok, map = pcall(draw_mock, rf)
 		mock.on, mock.why = on, why
 		if ok and map then return map end
 		mock.guest = false
 	end
-	if not mock.on then HideMock() end
+	if not mock.on then hide_mock() end
 	return nil
 end
 
@@ -2338,12 +2339,12 @@ frames.sides = {
 }
 
 ns.PTCOffsetKeys = function(side)
-	local hang = frames.sides[side or GetCfg().side] or frames.sides.RIGHT
+	local hang = frames.sides[side or get_cfg().side] or frames.sides.RIGHT
 	if hang.x ~= 0 then return 'offX', 'offY' end
 	return 'offY', 'offX'
 end
 
-local function PlaceRow(row, anchor, stack, cfg, prev, hang)
+local function place_row(row, anchor, stack, cfg, prev, hang)
 	row:ClearAllPoints()
 	if not stack then
 		local away, along = cfg.offX or 4, cfg.offY or 0
@@ -2360,19 +2361,19 @@ local function PlaceRow(row, anchor, stack, cfg, prev, hang)
 	end
 end
 
-local function Layout(cfg)
+local function layout_all(cfg)
 	local gap = ns.PixelSize(cfg.spacing or 2, holder)
 	local attach = cfg.attach ~= false
-	local rf = attach and FindRF() or nil
+	local rf = attach and find_r_f() or nil
 	local map = rf and rf._partyUnitToButton or nil
-	mapSig = rf and MapSig(map) or nil
+	mapSig = rf and map_sig(map) or nil
 	local stack, drawn, any = true, false, false
 	for _, s in ipairs(slots) do
 		if (s.vis or 0) > 0 then any = true end
 	end
 	if map and (IsInGroup() or not preview) then
 		for _, s in ipairs(slots) do
-			if (s.vis or 0) > 0 and Seen(map[s.unit]) then
+			if (s.vis or 0) > 0 and is_seen(map[s.unit]) then
 				stack = false
 				break
 			end
@@ -2391,7 +2392,7 @@ local function Layout(cfg)
 	if stack then
 		map = nil
 		if preview and rf and frames.last ~= 'found' and type(cfg.frames) ~= 'string' then
-			local ok, m = pcall(DrawMock, rf)
+			local ok, m = pcall(draw_mock, rf)
 			if ok and m then
 				map, stack, drawn = m, false, true
 			elseif not ok then
@@ -2399,7 +2400,7 @@ local function Layout(cfg)
 			end
 		end
 	end
-	if not drawn then HideMock() end
+	if not drawn then hide_mock() end
 	local attachOnly = stack and not preview and (how == 'wait' or (rf ~= nil and not IsInGroup()))
 	local hang = not stack and frames.sides[cfg.side] or frames.sides.RIGHT
 	local column = hang.dy ~= 0
@@ -2415,12 +2416,12 @@ local function Layout(cfg)
 		local per = s.per
 		local along = per or vis
 		local lines = per and ceil(vis / per) or 1
-		if show and not stack then show = Seen(btn) end
+		if show and not stack then show = is_seen(btn) end
 		if show then
 			local long = along * size + (along - 1) * gap
 			local wide = lines * size + (lines - 1) * gap
 			if column then row:SetSize(wide, long) else row:SetSize(long, wide) end
-			if pcall(PlaceRow, row, btn, stack, cfg, prev, hang) then
+			if pcall(place_row, row, btn, stack, cfg, prev, hang) then
 				if stack then prev = row end
 				rows = rows + 1
 			else
@@ -2447,7 +2448,7 @@ local function Layout(cfg)
 						ns.PixelPoint(c, hang.from, row, hang.from, hang.dx * step, hang.dy * step)
 					end
 					at = at + 1
-					Seat(c)
+					seat_cell(c)
 				end
 				c:SetShown(on)
 				c.clip:SetShown(on)
@@ -2470,7 +2471,7 @@ local function Layout(cfg)
 	holder:EnableMouse((preview and stack and not cfg.lock) and true or false)
 end
 
-local function InspectSpec(unit)
+local function inspect_spec(unit)
 	local get = (_G.C_SpecializationInfo and _G.C_SpecializationInfo.GetInspectSpecialization) or _G.GetInspectSpecialization
 	if not get then return nil end
 	local ok, id = pcall(get, unit)
@@ -2480,7 +2481,7 @@ end
 
 local queue, inspectTicker = {}, nil
 
-local function StopInspects()
+local function stop_inspects()
 	wipe(queue)
 	if inspectTicker then
 		inspectTicker:Cancel()
@@ -2488,9 +2489,9 @@ local function StopInspects()
 	end
 end
 
-local function InspectStep()
-	if #queue == 0 or not bars.Any(GetCfg()) then
-		StopInspects()
+local function inspect_step()
+	if #queue == 0 or not bars.Any(get_cfg()) then
+		stop_inspects()
 		return
 	end
 	local s = queue[1]
@@ -2503,7 +2504,7 @@ local function InspectStep()
 	if (m.tries or 0) >= 12 then
 		if now - (m.triedAt or 0) < 30 then
 			tremove(queue, 1)
-			C_Timer.After(30, QueueRefresh)
+			C_Timer.After(30, queue_refresh)
 			return
 		end
 		m.tries = 0
@@ -2518,15 +2519,15 @@ local function InspectStep()
 	queue[#queue + 1] = s
 end
 
-local function QueueInspect(s)
+local function queue_inspect(s)
 	for _, q in ipairs(queue) do
 		if q == s then return end
 	end
 	queue[#queue + 1] = s
-	if not inspectTicker then inspectTicker = C_Timer.NewTicker(1, InspectStep) end
+	if not inspectTicker then inspectTicker = C_Timer.NewTicker(1, inspect_step) end
 end
 
-local function SpecFor(s, m)
+local function spec_for(s, m)
 	if s.index == 1 then
 		m.how = 'yours'
 		return ns.CHSpecID() or m.spec
@@ -2537,30 +2538,30 @@ local function SpecFor(s, m)
 		m.how = 'inspected'
 		return spec
 	end
-	spec = InspectSpec(s.unit)
+	spec = inspect_spec(s.unit)
 	if spec then
 		if guid then specByGUID[guid] = spec end
 		m.how = 'inspected'
 		return spec
 	end
 	local byRole = ROLE_SPEC[m.class or '']
-	spec = byRole and byRole[RoleOf(s.unit) or ''] or nil
+	spec = byRole and byRole[role_of(s.unit) or ''] or nil
 	if spec then
 		m.how = 'from the role'
 		return spec
 	end
-	QueueInspect(s)
+	queue_inspect(s)
 	return nil
 end
 
-local function ApplyPosition()
+local function apply_position()
 	if not holder then return end
-	local cfg = GetCfg()
+	local cfg = get_cfg()
 	holder:ClearAllPoints()
 	holder:SetPoint('CENTER', UIParent, 'CENTER', cfg.x or 0, cfg.y or 0)
 end
 
-local function EnsureFrame()
+local function ensure_frame()
 	if holder then return end
 	holder = CreateFrame('Frame', 'dodoPartyCDs', UIParent)
 	holder:SetFrameStrata('MEDIUM')
@@ -2586,14 +2587,14 @@ local function EnsureFrame()
 	if probe.SetRadialProgressBarPercent and probe.SetRadialProgressBarReverse and probe.ClearRadialProgressBar then
 		swipe.probe = {}
 		for i, wide in ipairs({ true, false }) do
-			local arc, gap = NewArc(wide)
+			local arc, gap = new_arc(wide)
 			swipe.probe[i] = { arc = arc, gap = gap, wide = wide }
 		end
 	else
 		swipe.on, swipe.why = false, 'this client cannot draw a texture as a clock wipe'
 	end
 	charge.probe = charge.New()
-	ns.MakeDraggable(holder, GetCfg, 'x', 'y', ApplyPosition)
+	ns.MakeDraggable(holder, get_cfg, 'x', 'y', apply_position)
 	for _, s in ipairs(slots) do
 		local row = CreateFrame('Frame', nil, holder)
 		row:Hide()
@@ -2604,10 +2605,10 @@ local function EnsureFrame()
 		row.name:Hide()
 		s.row = row
 	end
-	ApplyPosition()
+	apply_position()
 end
 
-local function EnsureEngine()
+local function ensure_engine()
 	if failed or ns.PTCUnavailable then return end
 	if InCombatLockdown() then
 		waitBuild = true
@@ -2624,7 +2625,7 @@ local function EnsureEngine()
 		if s.sensored then
 			for j = 1, MAX do
 				if not s.sens[j] then
-					s.sens[j] = NewSensor(s.unit)
+					s.sens[j] = new_sensor(s.unit)
 					if not s.sens[j] then return end
 				end
 			end
@@ -2633,7 +2634,7 @@ local function EnsureEngine()
 	built = true
 end
 
-local function Live(cfg)
+local function is_active(cfg)
 	if not cfg.enable or ns.PTCUnavailable or failed or not built then return false end
 	if IsInRaid() then return false end
 	if cfg.groupOnly ~= false and not IsInGroup() then return false end
@@ -2642,14 +2643,14 @@ local function Live(cfg)
 end
 
 bars.On = function(b)
-	return b.host ~= nil and Live(b.look) and true or false
+	return b.host ~= nil and is_active(b.look) and true or false
 end
 
-local function Refresh()
+local function refresh_all()
 	if not holder then return end
-	local cfg = GetCfg()
+	local cfg = get_cfg()
 	local now = GetTime()
-	local on = Live(cfg)
+	local on = is_active(cfg)
 	local extOn = ext.On()
 	local seen, cells, reads = {}, false, false
 	pending = false
@@ -2671,14 +2672,14 @@ local function Refresh()
 				m = { tr = {}, fake = true, class = p.class, name = p.name, spec = p.spec, race = p.race }
 				members[key] = m
 			end
-			list = racial.Add(trinket.Add(SpecList(p.spec, cfg), p.items, cfg), p.race, cfg)
+			list = racial.Add(trinket.Add(spec_list(p.spec, cfg), p.items, cfg), p.race, cfg)
 			if i > 1 and list then
 				for k = #list, 1, -1 do
 					if list[k].spell.selfOnly then tremove(list, k) end
 				end
 			end
 		elseif (rows or twin or bar) and ns.Ask(UnitExists, s.unit) == true then
-			local key = Key(s.unit)
+			local key = unit_key(s.unit)
 			m = members[key]
 			if not m then
 				m = { tr = {} }
@@ -2687,22 +2688,22 @@ local function Refresh()
 			m.guid = key ~= s.unit and key or nil
 			m.class = ClassOf(s.unit) or m.class
 			m.race = racial.Of(s.unit, m.guid) or m.race
-			m.name = NameOf(s.unit)
-			m.spec = SpecFor(s, m)
-			list = (rows and m.spec) and SpecList(m.spec, cfg) or nil
+			m.name = name_of(s.unit)
+			m.spec = spec_for(s, m)
+			list = (rows and m.spec) and spec_list(m.spec, cfg) or nil
 			if rows then list = racial.Add(trinket.Add(list, trinket.Of(s, m), cfg), m.race, cfg) end
 			if twin and m.spec then list = ext.Add(list, m.spec, cfg) end
 			if bar then list = bars.Add(list, m, i) end
 			if list then swaps.Mark(list, s, m) end
-			if i > 1 and m.spec and (swaps.Wanted(m) or (rows and trinket.Wanted(m))) then QueueInspect(s) end
+			if i > 1 and m.spec and (swaps.Wanted(m) or (rows and trinket.Wanted(m))) then queue_inspect(s) end
 		end
 		if m then seen[m] = true end
 		if list then
-			Limit(list, cfg)
-			if cfg.reverse then Reverse(list) end
+			limit(list, cfg)
+			if cfg.reverse then reverse_list(list) end
 		end
-		local ok, err = pcall(AssignSlot, s, m, list, cfg, now)
-		if not ok then Fault(err) end
+		local ok, err = pcall(assign_slot, s, m, list, cfg, now)
+		if not ok then fault(err) end
 		if s.n > 0 then cells = true end
 		if s.reads > 0 then reads = true end
 	end
@@ -2719,38 +2720,38 @@ local function Refresh()
 	end
 	exact.Listen(next(exact.on) ~= nil)
 	local ok, err = pcall(zone.Aim)
-	if not ok then Fault(err) end
-	ok, err = pcall(Layout, cfg)
-	if not ok then Fault(err) end
+	if not ok then fault(err) end
+	ok, err = pcall(layout_all, cfg)
+	if not ok then fault(err) end
 	ok, err = pcall(ext.Place)
-	if not ok then Fault(err) end
+	if not ok then fault(err) end
 	for _, b in ipairs(bars) do
 		ok, err = pcall(bars.Demo, b)
-		if not ok then Fault(err) elseif err then cells = true end
+		if not ok then fault(err) elseif err then cells = true end
 		ok, err = pcall(bars.Place, b)
-		if not ok then Fault(err) end
+		if not ok then fault(err) end
 	end
-	if cells then EnsureTicker() end
-	if reads then Wake() end
+	if cells then ensure_ticker() end
+	if reads then wake() end
 end
 
-QueueRefresh = ns.Coalesce(Refresh)
+queue_refresh = ns.Coalesce(refresh_all)
 
 local late
-RefreshSoon = function()
-	QueueRefresh()
+refresh_soon = function()
+	queue_refresh()
 	if late then late:Cancel() end
-	late = C_Timer.NewTimer(0.5, QueueRefresh)
+	late = C_Timer.NewTimer(0.5, queue_refresh)
 end
 
-local function ResetAll(hold)
+local function reset_all(hold)
 	local now = GetTime()
-	local n = Now()
+	local n = now_whole()
 	for _, m in pairs(members) do
 		for _, t in pairs(m.tr) do
 			if not t.loop then
-				Clear(t, n)
-				Push(t)
+				clear(t, n)
+				push(t)
 			end
 		end
 	end
@@ -2758,7 +2759,7 @@ local function ResetAll(hold)
 		if s.member and s.event == 'UNIT_AURA' then s.hold, s.reads = now + hold, READS_AFTER end
 	end
 	lastN = nil
-	Wake()
+	wake()
 end
 
 local evt = CreateFrame('Frame')
@@ -2769,11 +2770,11 @@ local LIVE_EVENTS = {
 }
 local listening = false
 
-local function Apply()
-	local cfg = GetCfg()
+local function apply()
+	local cfg = get_cfg()
 	if door.state ~= 'exact' and door.state ~= 'close' then
-		door = TestDoor()
-		ns.PTCUnavailable = not (HAS_WIDGETS and DoorOpen())
+		door = test_door()
+		ns.PTCUnavailable = not (HAS_WIDGETS and door_open())
 	end
 	local wanted = (bars.Any(cfg) and not ns.PTCUnavailable) and true or false
 	if wanted ~= listening then
@@ -2781,16 +2782,16 @@ local function Apply()
 		for _, e in ipairs(LIVE_EVENTS) do
 			if wanted then evt:RegisterEvent(e) else evt:UnregisterEvent(e) end
 		end
-		if not wanted then StopInspects() end
+		if not wanted then stop_inspects() end
 	end
 	if not (wanted or preview or bars.speed.host or bars.guard.host or holder) then return end
-	EnsureFrame()
-	ApplyPosition()
-	if wanted then EnsureEngine() end
-	Refresh()
+	ensure_frame()
+	apply_position()
+	if wanted then ensure_engine() end
+	refresh_all()
 end
 
-ns.PTCApply = ns.Coalesce(Apply)
+ns.PTCApply = ns.Coalesce(apply)
 ns.OnPixelChange(function() ns.PTCApply() end)
 
 ns.PTCIsPreview = function() return preview end
@@ -2804,18 +2805,18 @@ ns.PTCSetPreview = function(state)
 		if not (w and w:IsShown()) then PREVIEW.fresh = true end
 	end
 	preview = state
-	Apply()
+	apply()
 end
 
 ns.PTCSetShown = function(spec, id, on)
 	if not SPELLS[id] then return end
-	GetCfg().off[CdKey(spec, id)] = (not on) and true or nil
+	get_cfg().off[cd_key(spec, id)] = (not on) and true or nil
 	ns.PTCApply()
 end
 
 ns.PTCMove = function(spec, id, dir)
-	local cfg = GetCfg()
-	local list = SpecList(spec, cfg, true)
+	local cfg = get_cfg()
+	local list = spec_list(spec, cfg, true)
 	if not list or (dir ~= 1 and dir ~= -1) then return false end
 	local at
 	for i, def in ipairs(list) do
@@ -2872,25 +2873,25 @@ ns.PTCFrameChoices = function(done)
 		out[#out + 1] = { value = name, text = name }
 		have[name] = true
 	end
-	local want = GetCfg().frames
+	local want = get_cfg().frames
 	if type(want) == 'string' and want ~= '' and not have[want] then out[#out + 1] = { value = want, text = want } end
 	return out
 end
 
 ns.PTCSetFrames = function(name)
-	GetCfg().frames = (type(name) == 'string' and name ~= '' and name ~= 'AUTO') and name or nil
+	get_cfg().frames = (type(name) == 'string' and name ~= '' and name ~= 'AUTO') and name or nil
 	frames.Fresh()
 	frames.owed = true
 	ns.PTCApply()
 end
 
 ns.PTCKit = {
-	Ensure = EnsureFrame, NewCell = NewCell, Dress = Dress, Scrap = Scrap, Seat = Seat,
-	Unit = Unit, Clear = Clear, Roll = Roll, StartPlain = StartPlain, Left = Left, Range = Range,
-	PushCell = PushCell, Feed = Feed, Arc = Arc, Now = Now, Clock = Clock,
+	Ensure = ensure_frame, NewCell = new_cell, Dress = dress, Scrap = scrap, Seat = seat_cell,
+	Unit = code_units, Clear = clear, Roll = roll, StartPlain = start_plain, Left = time_left, Range = range,
+	PushCell = push_cell, Feed = feed, Arc = sweep_safe, Now = now_whole, Clock = now_exact,
 	Swipe = function() return swipe.on == true end,
 	Spec = function(guid) return guid and specByGUID[guid] or nil end,
-	Name = NameOf, Key = Key, InspectSpec = InspectSpec,
+	Name = name_of, Key = unit_key, InspectSpec = inspect_spec,
 	CODES = CODES, LINGER = LINGER,
 	Swap = function(list, id, dir)
 		if type(list) ~= 'table' or (dir ~= 1 and dir ~= -1) then return false end
@@ -2925,7 +2926,7 @@ ns.PTCKit = {
 		end
 		c:ClearAllPoints()
 		ns.PixelPoint(c, 'CENTER', frame, 'CENTER', x, y)
-		Seat(c)
+		seat_cell(c)
 		if not (o.names and m and type(m.name) ~= 'nil') then
 			who:Hide()
 			return
@@ -2953,19 +2954,19 @@ evt:SetScript('OnEvent', function(_, event, arg1)
 		C_Timer.After(0.5, ns.PTCApply)
 		return
 	end
-	if not bars.Any(GetCfg()) then return end
+	if not bars.Any(get_cfg()) then return end
 	if event == 'UNIT_DIED' or event == 'CHALLENGE_MODE_DEATH_COUNT_UPDATED' then
 		trinket.Deaths()
 		return
 	end
 	if event == 'CHALLENGE_MODE_START' then
-		ResetAll(KEY_HOLD)
+		reset_all(KEY_HOLD)
 	elseif event == 'PLAYER_REGEN_ENABLED' then
 		if waitBuild or pending then
 			ns.PTCApply()
 		elseif fought then
 			stats.ends = (stats.ends or 0) + 1
-			QueueRefresh()
+			queue_refresh()
 		else
 			stats.endSkips = (stats.endSkips or 0) + 1
 		end
@@ -2974,14 +2975,14 @@ evt:SetScript('OnEvent', function(_, event, arg1)
 		for _, s in ipairs(slots) do
 			local m = s.member
 			if m and m.guid == arg1 then
-				local spec = InspectSpec(s.unit)
+				local spec = inspect_spec(s.unit)
 				local changed = swaps.Read(m, spec)
 				if trinket.Read(s, m) then changed = true end
 				if spec and specByGUID[arg1] ~= spec then
 					specByGUID[arg1] = spec
 					changed = true
 				end
-				if changed then QueueRefresh() end
+				if changed then queue_refresh() end
 			end
 		end
 	elseif event == 'PLAYER_SPECIALIZATION_CHANGED' then
@@ -2997,26 +2998,26 @@ evt:SetScript('OnEvent', function(_, event, arg1)
 		else
 			swaps.own = nil
 		end
-		QueueRefresh()
+		queue_refresh()
 	elseif event == 'TRAIT_CONFIG_UPDATED' or event == 'PLAYER_TALENT_UPDATE' then
 		swaps.own = nil
-		QueueRefresh()
+		queue_refresh()
 	elseif event == 'PLAYER_EQUIPMENT_CHANGED' then
 		if arg1 == 13 or arg1 == 14 then
 			trinket.own = nil
-			QueueRefresh()
+			queue_refresh()
 		end
 	elseif event == 'READY_CHECK' then
 		if ns.InDungeon() and not ns.KeyActive() then
 			swaps.Again()
-			QueueRefresh()
+			queue_refresh()
 		end
 	else
 		if event == 'GROUP_ROSTER_UPDATE' then
 			frames.Fresh()
-			RefreshSoon()
+			refresh_soon()
 		else
-			QueueRefresh()
+			queue_refresh()
 		end
 	end
 end)
@@ -3025,9 +3026,9 @@ _G.SLASH_DODOPARTYCDDEBUG1 = '/ptcd'
 _G.SlashCmdList.DODOPARTYCDDEBUG = function(msg)
 	local function p(...) print('[dodo] PartyCD', ...) end
 	local cmd = (msg or ''):lower():match('^%s*(%S*)')
-	local cfg = GetCfg()
+	local cfg = get_cfg()
 	if cmd == 'test' then
-		local n, count, through = Now(), 0, 0
+		local n, count, through = now_whole(), 0, 0
 		for _, s in ipairs(slots) do
 			for j = 1, MAX do
 				local t = s.tr[j]
@@ -3042,12 +3043,12 @@ _G.SlashCmdList.DODOPARTYCDDEBUG = function(msg)
 							through = through + 1
 						end
 					end
-					Push(t)
+					push(t)
 					count = count + 1
 				end
 			end
 		end
-		EnsureTicker()
+		ensure_ticker()
 		p('started', count, 'timers by hand,', through, 'of them through the value check; each should show its full length now')
 		return
 	end
@@ -3058,7 +3059,7 @@ _G.SlashCmdList.DODOPARTYCDDEBUG = function(msg)
 			return
 		end
 		local same, differ, seen, blank, talented = 0, 0, {}, {}, {}
-		local function Check(def)
+		local function check_def(def)
 			local raw = def.spell.cooldown
 			if not seen[def.id] then
 				seen[def.id] = true
@@ -3083,12 +3084,12 @@ _G.SlashCmdList.DODOPARTYCDDEBUG = function(msg)
 		end
 		for _, c in ipairs(CLASSES) do
 			for _, spec in ipairs(c.specs) do
-				for _, def in ipairs(SpecList(spec, cfg, true) or {}) do Check(def) end
+				for _, def in ipairs(spec_list(spec, cfg, true) or {}) do check_def(def) end
 			end
 		end
-		for _, def in ipairs(racial.List(cfg)) do Check(def) end
+		for _, def in ipairs(racial.List(cfg)) do check_def(def) end
 		for _, b in ipairs(bars) do
-			for _, id in ipairs(b.order) do Check(bars.Def(b, id, b.specs[id])) end
+			for _, id in ipairs(b.order) do check_def(bars.Def(b, id, b.specs[id])) end
 		end
 		p(format('base cooldowns: %d match, %d differ, %d the client gave no length for', same, differ, #blank))
 		if #blank > 0 then p('   no length: ' .. tconcat(blank, ', ')) end
@@ -3096,8 +3097,8 @@ _G.SlashCmdList.DODOPARTYCDDEBUG = function(msg)
 		return
 	end
 	if cmd == 'door' then
-		door = TestDoor()
-		p('value check =', DoorLine())
+		door = test_door()
+		p('value check =', door_line())
 		if not EvalBool then return end
 		for _, v in ipairs({ 0.5, 0.123456789, 37 / 255, 1 / 3, 1 / 255, 254 / 255, 1.5, 300, -0.25 }) do
 			local ok, r = pcall(EvalBool, true, v, 0)
@@ -3125,17 +3126,17 @@ _G.SlashCmdList.DODOPARTYCDDEBUG = function(msg)
 			swipe.on, swipe.why = false, 'turned off by hand'
 		elseif arg == 'on' and swipe.probe then
 			swipe.on, swipe.why, swipe.try, swipe.want = nil, nil, 0, nil
-			EnsureTicker()
+			ensure_ticker()
 		end
-		QueueRefresh()
-		p('swipe =', SwipeLine())
-		SwipeDump(p)
+		queue_refresh()
+		p('swipe =', swipe_line())
+		swipe_dump(p)
 		p('   built to start at the', swipe.turn and 'bottom' or 'top', 'with the lit part growing', swipe.mirror and 'anticlockwise' or 'clockwise')
 		p('   /ptcd swipe turn | mirror | off | on')
 		return
 	end
 	if cmd == 'reset' then
-		ResetAll(HOLD)
+		reset_all(HOLD)
 		p('every timer cleared')
 		return
 	end
@@ -3149,7 +3150,7 @@ _G.SlashCmdList.DODOPARTYCDDEBUG = function(msg)
 			return
 		end
 		selfSensors = not selfSensors
-		Apply()
+		apply()
 		p('your own row is read', selfSensors and 'from your buffs, the way a party member is' or 'from your casts')
 		return
 	end
@@ -3166,8 +3167,8 @@ _G.SlashCmdList.DODOPARTYCDDEBUG = function(msg)
 	p('enable =', cfg.enable and 'on' or 'off', '| preview =', preview and 'ON' or 'off',
 		'| widgets =', HAS_WIDGETS and 'ok' or '|cffff5555no aura container widgets|r',
 		'| sensors =', built and ('built, ' .. watching .. ' watching') or 'not built')
-	p('value check =', DoorLine(), ns.PTCUnavailable and '| |cffff5555the module is off because of this|r' or '')
-	local live, why = Live(cfg)
+	p('value check =', door_line(), ns.PTCUnavailable and '| |cffff5555the module is off because of this|r' or '')
+	local live, why = is_active(cfg)
 	p('in raid =', IsInRaid() and 'yes' or 'no', '| in group =', IsInGroup() and 'yes' or 'no',
 		'| only in dungeons =', cfg.dungeonOnly and 'on' or 'off',
 		'| watching =', live and 'yes' or (why and ('no, ' .. why) or 'no'),
@@ -3179,7 +3180,7 @@ _G.SlashCmdList.DODOPARTYCDDEBUG = function(msg)
 		p('party frame search = ran', frames.scans, '| last looked at', frames.seen, format('frames in %.1f ms', frames.cost),
 			'| on screen:', #names > 0 and tconcat(names, ', ') or 'none',
 			'| choice =', type(cfg.frames) == 'string' and cfg.frames or 'auto',
-			'| EllesmereUI frames =', FindRF() and 'there' or 'not there')
+			'| EllesmereUI frames =', find_r_f() and 'there' or 'not there')
 	end
 	p('reads =', stats.reads, '| hidden =', stats.secret, '| starts seen in the open =', stats.edges,
 		'| errors =', stats.errors, '| your casts =', stats.own, '| last =', tostring(stats.ownLast),
@@ -3194,9 +3195,9 @@ _G.SlashCmdList.DODOPARTYCDDEBUG = function(msg)
 		p(b.label .. ' =', not b.host and 'not asked for' or (b.look.preview and (b.count .. ' sample icons'))
 			or (bars.On(b) and (b.count .. ' icons drawn')) or 'switched off, or not in a party')
 	end
-	local okSeat, seatLine = pcall(SeatLine, cfg)
+	local okSeat, seatLine = pcall(seat_line, cfg)
 	p('timer text =', okSeat and seatLine or ('cannot be measured: ' .. tostring(seatLine)))
-	p('swipe =', SwipeLine())
+	p('swipe =', swipe_line())
 	p('charges =', charge.Line())
 	p('talents =', 'read ' .. swaps.reads .. ' times | inspects sent ' .. swaps.asks .. ' | asked only inside a dungeon')
 	p('your own row =', next(exact.on) and format('the game\'s own cooldowns | updates %d | hidden charge reads %d', exact.updates, exact.reads) or 'from your casts')
@@ -3206,7 +3207,7 @@ _G.SlashCmdList.DODOPARTYCDDEBUG = function(msg)
 	p('trinkets =', trinket.On(cfg) and ('read ' .. trinket.reads .. ' times from inspects | asked only inside a dungeon') or 'every trinket switched off',
 		format('| allied deaths seen %d, cooldowns cut %d times | barrier reads set aside after a death %d', trinket.deaths, trinket.cuts, trinket.quiet),
 		'| rows =', cfg.wrap and format('%d icons per row, %d px / text %d on two rows, %d px / text %d on one', type(cfg.perRow) == 'number' and floor(cfg.perRow) or 4, cfg.size2 or 24, cfg.textSize2 or 10, cfg.size or 28, cfg.textSize or 12) or 'one row')
-	local n = Now()
+	local n = now_whole()
 	for _, s in ipairs(slots) do
 		local m = s.member
 		if m then
@@ -3247,8 +3248,8 @@ _G.SlashCmdList.DODOPARTYCDDEBUG = function(msg)
 							local sl = t.slot[k]
 							if secret(sl.v) or secret(sl.c) then
 								state = 'timer hidden from addons'
-							elseif sl.v ~= 0 and Left(t, sl, n) > 0 and state == 'ready' then
-								state = format('%d s left', Left(t, sl, n))
+							elseif sl.v ~= 0 and time_left(t, sl, n) > 0 and state == 'ready' then
+								state = format('%d s left', time_left(t, sl, n))
 							end
 						end
 					end

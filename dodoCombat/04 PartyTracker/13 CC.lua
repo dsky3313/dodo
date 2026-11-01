@@ -22,12 +22,12 @@ local kit = ns.PTCKit
 
 local HAS_WIDGETS = (ns.IS_121 and ns.HasTemplate('CustomAuraContainerTemplate')) and true or false
 
-local function Unavailable()
+local function unavailable()
 	return not (kit and HAS_WIDGETS and not ns.PTCUnavailable)
 end
 
 ns.hasPartyCC = true
-ns.CCUnavailable = Unavailable()
+ns.CCUnavailable = unavailable()
 
 ns.CCWhy = function()
 	if not kit then return 'Party CDs is not loaded, and Party CC draws its icons with it.' end
@@ -108,7 +108,7 @@ local DEFAULTS = {
 	nameLen1 = 4, nameLen2 = 4,
 }
 
-local function Migrate(cfg)
+local function migrate(cfg)
 	cfg.cds = nil
 	for g = 1, GROUPS do
 		if type(cfg['spells' .. g]) ~= 'table' then cfg['spells' .. g] = {} end
@@ -140,15 +140,15 @@ local function Migrate(cfg)
 	end
 end
 
-local function GetCfg() return ns.ModuleCfg('partyCC', DEFAULTS, Migrate) end
-ns.CCGetCfg = GetCfg
+local function get_cfg() return ns.ModuleCfg('partyCC', DEFAULTS, migrate) end
+ns.CCGetCfg = get_cfg
 
-local function Sum(sp, known) return ns.TalentLength(sp.cd, sp.mods or EMPTY, known, nil, true) end
+local function sum(sp, known) return ns.TalentLength(sp.cd, sp.mods or EMPTY, known, nil, true) end
 
-local function Cap(cfg) return mmax(1, mmin(MAX_PLATES, floor(tonumber(cfg.maxUnits) or 10))) end
+local function unit_cap(cfg) return mmax(1, mmin(MAX_PLATES, floor(tonumber(cfg.maxUnits) or 10))) end
 
-local function Reach(aoe, cfg)
-	local cap = Cap(cfg)
+local function reach_limit(aoe, cfg)
+	local cap = unit_cap(cfg)
 	if not aoe then return cap end
 	return mmin(cap, mmax(1, floor(tonumber(cfg.aoeUnits) or 4)))
 end
@@ -161,9 +161,9 @@ local filter, filterNote = NOT_MINE, nil
 local ticker, lastN, drawnRadial
 local waitBuild, gated = false, false
 local stats ={ reads = 0, hidden = 0, errors = 0, own = 0, ownHidden = 0, scans = 0 }
-local QueueRefresh, QueueScan
+local queue_refresh, queue_scan
 
-local function Fault(err)
+local function fault(err)
 	stats.errors = stats.errors + 1
 	stats.lastErr = tostring(err)
 end
@@ -176,7 +176,7 @@ do
 		for _, mod in ipairs(sp.mods or EMPTY) do ns.TalentWant(talents, sp.class, mod[1]) end
 	end
 
-	local function Known(id)
+	local function is_known(id)
 		local SB = _G.C_SpellBook
 		return Ask((SB and SB.IsSpellKnown) or _G.IsPlayerSpell, id)
 	end
@@ -190,15 +190,15 @@ do
 			own = (ok and read) or {}
 			for _, id in ipairs(talents.ids[class] or EMPTY) do
 				if own[id] == nil then
-					local known = Known(id)
+					local known = is_known(id)
 					if known ~= nil then own[id] = known and 1 or 0 end
 				end
 			end
 			for id, sp in pairs(SPELLS) do
 				if sp.class == class and sp.need then
-					local base = Known(id)
+					local base = is_known(id)
 					for _, alt in ipairs(sp.cast or EMPTY) do
-						if Known(alt) == true then base = true end
+						if is_known(alt) == true then base = true end
 					end
 					if base == true then
 						for _, need in ipairs(sp.need) do
@@ -234,7 +234,7 @@ do
 		if not m or m.me or m.fake or not talents.ids[m.class or ''] then return false end
 		local ok, got = pcall(ns.TalentRanks, talents, m.class)
 		if not ok then
-			Fault(got)
+			fault(got)
 			got = nil
 		end
 		local old = talents.byGUID[guid]
@@ -253,7 +253,7 @@ do
 
 	local queue, asker = {}, nil
 
-	local function Stop()
+	local function stop()
 		wipe(queue)
 		if asker then
 			asker:Cancel()
@@ -261,10 +261,10 @@ do
 		end
 	end
 
-	local function Step()
-		local cfg = GetCfg()
+	local function step()
+		local cfg = get_cfg()
 		if #queue == 0 or not cfg.enable or cfg.talents == false then
-			Stop()
+			stop()
 			return
 		end
 		local m = queue[1]
@@ -287,14 +287,14 @@ do
 			if q == m then return end
 		end
 		queue[#queue + 1] = m
-		if not asker then asker = C_Timer.NewTicker(1, Step) end
+		if not asker then asker = C_Timer.NewTicker(1, step) end
 	end
 
-	talents.Stop = Stop
+	talents.Stop = stop
 end
 
 
-local function Tracker(m, id, cd, n)
+local function tracker(m, id, cd, n)
 	local t = m.tr[id]
 	if not t then
 		t = { slot = { {}, {} }, primed = false }
@@ -310,7 +310,7 @@ local function Tracker(m, id, cd, n)
 	return t
 end
 
-local function Seed(t, at, n)
+local function seed(t, at, n)
 	local frac = PREVIEW_AT[(at - 1) % #PREVIEW_AT + 1]
 	if frac >= 1 then return end
 	local began = n - floor(t.cd * frac)
@@ -319,7 +319,7 @@ local function Seed(t, at, n)
 	t.loop = true
 end
 
-local function NewCell(bar)
+local function new_cell(bar)
 	local c = kit.NewCell(bar.frame)
 	c.tag = CreateFrame('Frame', nil, c)
 	c.tag:SetAllPoints(c)
@@ -330,13 +330,13 @@ local function NewCell(bar)
 	return c
 end
 
-local function Loose(c)
+local function loose_cell(c)
 	local old = c.t
 	if old and old.cell == c then old.cell = nil end
 	c.t, c.m = nil, nil
 end
 
-local function Bind(g, list, cfg, n)
+local function bind(g, list, cfg, n)
 	local bar = bars[g]
 	local look = bar.look
 	look.size, look.textSize = cfg['size' .. g] or 36, cfg['textSize' .. g] or 16
@@ -346,15 +346,15 @@ local function Bind(g, list, cfg, n)
 		local c = bar.cells[i]
 		if not c or not pcall(kit.Dress, c, t.def, look) then
 			if c then
-				Loose(c)
+				loose_cell(c)
 				kit.Scrap(c)
 			end
-			c = NewCell(bar)
+			c = new_cell(bar)
 			bar.cells[i] = c
 			kit.Dress(c, t.def, look)
 		end
 		if c.t ~= t then
-			Loose(c)
+			loose_cell(c)
 			c.t = t
 		end
 		c.glow:SetAlpha(0)
@@ -362,14 +362,14 @@ local function Bind(g, list, cfg, n)
 		t.cell, c.m = c, e.m
 		kit.PushCell(t, c, n)
 	end
-	for i = #list + 1, #bar.cells do Loose(bar.cells[i]) end
+	for i = #list + 1, #bar.cells do loose_cell(bar.cells[i]) end
 	bar.n = #list
 end
 
 local lay = {}
 
 -- dodo: 행 당 개수 초과 시 줄바꿈 (가로 성장 → 아래로 새 줄, 세로 성장 → 오른쪽으로 새 열)
-local function Wrap(c, frame, i, n, per, o)
+local function wrap(c, frame, i, n, per, o)
 	local k = i - 1
 	local line, pos = floor(k / per), k % per
 	local x, y
@@ -392,7 +392,7 @@ local function Wrap(c, frame, i, n, per, o)
 	kit.Seat(c)
 end
 
-local function Layout(g, cfg)
+local function layout(g, cfg)
 	local bar = bars[g]
 	local size = cfg['size' .. g] or 36
 	kit.LayOpts(lay, size, cfg['spacing' .. g] or 2, cfg['grow' .. g], cfg['names' .. g] ~= false,
@@ -404,7 +404,7 @@ local function Layout(g, cfg)
 		local on = i <= n
 		if on then
 			kit.Lay(c, c.who, c.m, bar.frame, i, n, lay)
-			if n > per then Wrap(c, bar.frame, i, n, per, lay) end
+			if n > per then wrap(c, bar.frame, i, n, per, lay) end
 		end
 		c:SetShown(on)
 		c.clip:SetShown(on)
@@ -414,7 +414,7 @@ local function Layout(g, cfg)
 	bar.frame:EnableMouse(ns.CanGrab(cfg, preview))
 end
 
-local function TickOne(t, c, n)
+local function tick_one(t, c, n)
 	if kit.Roll(t, n) then kit.PushCell(t, c, n) end
 	local running = false
 	for k = 1, 2 do
@@ -426,7 +426,7 @@ local function TickOne(t, c, n)
 				kit.PushCell(t, c, n)
 			else
 				local ok, err = pcall(kit.Range, c, k, sl, t.u, n)
-				if not ok then Fault(err) end
+				if not ok then fault(err) end
 				running = true
 			end
 		end
@@ -434,12 +434,12 @@ local function TickOne(t, c, n)
 	if running then kit.Seat(c) end
 end
 
-local function Tick()
+local function tick()
 	local n = kit.Now()
 	local radial = kit.Swipe()
 	if radial ~= drawnRadial then
 		drawnRadial = radial
-		QueueRefresh()
+		queue_refresh()
 	end
 	local second = n ~= lastN
 	lastN = n
@@ -458,7 +458,7 @@ local function Tick()
 						if secret(sl.v) or sl.v ~= 0 then kit.Arc(c, k, sl, t, now) end
 					end
 				end
-				if second then TickOne(t, c, n) end
+				if second then tick_one(t, c, n) end
 			end
 		end
 	end
@@ -468,9 +468,9 @@ local function Tick()
 	end
 end
 
-local function EnsureTicker()
+local function ensure_ticker()
 	lastN = nil
-	if not ticker then ticker = C_Timer.NewTicker(TICK, Tick) end
+	if not ticker then ticker = C_Timer.NewTicker(TICK, tick) end
 end
 
 local PLATES, IS_PLATE = {}, {}
@@ -483,7 +483,7 @@ local unitOf, slotOf, alive, calm = {}, {}, {}, {}
 local tracking, taken, rulesHold, lingerUntil, loose = false, 0, true, 0, false
 local scanTicker
 
-local function Verdict(unit, strict)
+local function verdict(unit, strict)
 	if Ask(UnitExists, unit) ~= true then return 'no such unit' end
 	if Ask(UnitCanAttack, 'player', unit) == false then return 'not attackable' end
 	if Ask(UnitCanAssist, 'player', unit) ~= false then return 'friendly, or the client would not say' end
@@ -493,7 +493,7 @@ local function Verdict(unit, strict)
 	return nil
 end
 
-local function FeedOf(id)
+local function feed_of(id)
 	local f = feeds[id]
 	if f then return f end
 	f = { include = {}, sensors = {}, n = 0, on = false, hold = SPELLS[id].hold, aoe = SPELLS[id].aoe, at = {}, by = {}, settle = 0 }
@@ -517,14 +517,14 @@ local function FeedOf(id)
 	return f
 end
 
-local function Reads(f, slot)
+local function reads(f, slot)
 	return not f.aoe and (f.hold or not calm[slot])
 end
 
-local function Cover(f, reach)
+local function cover(f, reach)
 	if not f.aoe then return end
 	local at, by, list = f.at, f.by, f.sensors
-	local want = f.on and mmin(#list, reach or Reach(true, GetCfg())) or 0
+	local want = f.on and mmin(#list, reach or reach_limit(true, get_cfg())) or 0
 	for k = 1, #list do
 		local unit = at[k]
 		local slot = unit and slotOf[unit]
@@ -546,7 +546,7 @@ local function Cover(f, reach)
 	end
 end
 
-local function NewSensor(f)
+local function new_sensor(f)
 	local ok, s = pcall(CreateFrame, 'AuraContainer', nil, sensHost, 'CustomAuraContainerTemplate,' .. ns.TAIL_TEMPLATE)
 	if not ok or not s then
 		ok, s = pcall(CreateFrame, 'AuraContainer', nil, sensHost, 'CustomAuraContainerTemplate')
@@ -563,11 +563,11 @@ local function NewSensor(f)
 	return s
 end
 
-local function Grow(f)
-	local s, why, refused = NewSensor(f)
+local function grow(f)
+	local s, why, refused = new_sensor(f)
 	if not s and refused and filter == NOT_MINE then
 		filter, filterNote = ANYONE, why
-		s, why = NewSensor(f)
+		s, why = new_sensor(f)
 	end
 	if not s then
 		f.failed = why
@@ -592,8 +592,8 @@ local function Grow(f)
 	f.sensors[slot] = s
 	local unit = unitOf[slot]
 	if f.aoe then
-		Cover(f)
-	elseif unit and f.on and Reads(f, slot) then
+		cover(f)
+	elseif unit and f.on and reads(f, slot) then
 		pcall(s.SetUnit, s, unit)
 		pcall(s.SetEnabled, s, true)
 		f.settle = GetTime() + SETTLE
@@ -603,23 +603,24 @@ end
 
 local builder = CreateFrame('Frame')
 builder:Hide()
-builder:SetScript('OnUpdate', function(self)
+local function on_builder_update(self)
 	if InCombatLockdown() then
 		waitBuild = true
 		self:Hide()
 		return
 	end
-	local cfg = GetCfg()
+	local cfg = get_cfg()
 	for _, f in pairs(feeds) do
-		if f.on and not f.failed and #f.sensors < Reach(f.aoe, cfg) then
-			Grow(f)
+		if f.on and not f.failed and #f.sensors < reach_limit(f.aoe, cfg) then
+			grow(f)
 			return
 		end
 	end
 	self:Hide()
-end)
+end
+builder:SetScript('OnUpdate', on_builder_update)
 
-local function TopUp()
+local function top_up()
 	if InCombatLockdown() then
 		waitBuild = true
 		return
@@ -631,11 +632,11 @@ end
 local driver = CreateFrame('Frame')
 driver:Hide()
 
-local function Wake()
+local function wake()
 	if not driver:IsShown() then driver:Show() end
 end
 
-local function Release(slot)
+local function release(slot)
 	local unit = unitOf[slot]
 	if not unit then return end
 	unitOf[slot], calm[slot] = nil, nil
@@ -657,14 +658,14 @@ local function Release(slot)
 	end
 end
 
-local function Take(slot, unit, still)
+local function take_slot(slot, unit, still)
 	unitOf[slot] = unit
 	slotOf[unit] = slot
 	calm[slot] = still or nil
 	taken = taken + 1
 	local settle = GetTime() + SETTLE
 	for _, f in pairs(feeds) do
-		local s = f.on and Reads(f, slot) and f.sensors[slot]
+		local s = f.on and reads(f, slot) and f.sensors[slot]
 		if s then
 			pcall(s.SetUnit, s, unit)
 			pcall(s.SetEnabled, s, true)
@@ -673,7 +674,7 @@ local function Take(slot, unit, still)
 	end
 end
 
-local function Calm(slot, still)
+local function calm_slot(slot, still)
 	if (calm[slot] or false) == still then return end
 	calm[slot] = still or nil
 	local unit = unitOf[slot]
@@ -688,29 +689,29 @@ end
 
 local later = {}
 
-local function Room(cap, evict)
+local function free_slot(cap, evict)
 	for slot = 1, cap do
 		if not unitOf[slot] then return slot end
 	end
 	if not evict then return nil end
 	for slot = 1, cap do
 		if calm[slot] then
-			Release(slot)
+			release(slot)
 			return slot
 		end
 	end
 	return nil
 end
 
-local function Rescan()
+local function rescan()
 	if not tracking then return end
 	stats.scans = stats.scans + 1
-	local cap = Cap(GetCfg())
+	local cap = unit_cap(get_cfg())
 	local hold = true
 	if InCombatLockdown() then
 		hold = false
 		for unit in pairs(alive) do
-			if Verdict(unit, true) == nil then
+			if verdict(unit, true) == nil then
 				hold = true
 				break
 			end
@@ -721,24 +722,24 @@ local function Rescan()
 		local unit = unitOf[slot]
 		if unit then
 			local why, still = true, false
-			if slot <= cap then why, still = Verdict(unit, hold) end
+			if slot <= cap then why, still = verdict(unit, hold) end
 			if why == nil then
-				Calm(slot, false)
+				calm_slot(slot, false)
 			elseif loose and still then
-				Calm(slot, true)
+				calm_slot(slot, true)
 			else
-				Release(slot)
+				release(slot)
 			end
 		end
 	end
 	local n = 0
 	for unit in pairs(alive) do
 		if not slotOf[unit] then
-			local why, still = Verdict(unit, hold)
+			local why, still = verdict(unit, hold)
 			if why == nil then
-				local slot = Room(cap, true)
+				local slot = free_slot(cap, true)
 				if not slot then break end
-				Take(slot, unit, false)
+				take_slot(slot, unit, false)
 			elseif still then
 				n = n + 1
 				later[n] = unit
@@ -747,18 +748,18 @@ local function Rescan()
 	end
 	if loose and taken < cap then
 		for i = 1, n do
-			local slot = Room(cap)
+			local slot = free_slot(cap)
 			if not slot then break end
-			Take(slot, later[i], true)
+			take_slot(slot, later[i], true)
 		end
 	end
 	for i = n, 1, -1 do later[i] = nil end
-	local reach = Reach(true, GetCfg())
-	for _, f in pairs(feeds) do Cover(f, reach) end
-	if taken > 0 then Wake() end
+	local reach = reach_limit(true, get_cfg())
+	for _, f in pairs(feeds) do cover(f, reach) end
+	if taken > 0 then wake() end
 end
 
-QueueScan = ns.Coalesce(Rescan)
+queue_scan = ns.Coalesce(rescan)
 
 local watch = CreateFrame('Frame')
 watch:SetScript('OnEvent', function(_, event, unit)
@@ -767,16 +768,16 @@ watch:SetScript('OnEvent', function(_, event, unit)
 		alive[unit] = nil
 		local slot = slotOf[unit]
 		if slot then
-			Release(slot)
-			Wake()
+			release(slot)
+			wake()
 		end
 	elseif event == 'NAME_PLATE_UNIT_ADDED' then
 		alive[unit] = true
 	end
-	QueueScan()
+	queue_scan()
 end)
 
-local function StartTracking()
+local function start_tracking()
 	if tracking then return end
 	tracking = true
 	wipe(alive)
@@ -786,11 +787,11 @@ local function StartTracking()
 	watch:RegisterEvent('NAME_PLATE_UNIT_ADDED')
 	watch:RegisterEvent('NAME_PLATE_UNIT_REMOVED')
 	watch:RegisterEvent('UNIT_FLAGS')
-	scanTicker = C_Timer.NewTicker(2, QueueScan)
-	QueueScan()
+	scanTicker = C_Timer.NewTicker(2, queue_scan)
+	queue_scan()
 end
 
-local function StopTracking()
+local function stop_tracking()
 	if not tracking then return end
 	tracking = false
 	watch:UnregisterAllEvents()
@@ -798,11 +799,11 @@ local function StopTracking()
 		scanTicker:Cancel()
 		scanTicker = nil
 	end
-	for slot = 1, MAX_PLATES do Release(slot) end
+	for slot = 1, MAX_PLATES do release(slot) end
 	wipe(alive)
 end
 
-local function ReadAll()
+local function read_all()
 	local n, now = kit.Now(), GetTime()
 	for id, f in pairs(feeds) do
 		if f.on and f.sensors[1] and f.hold and now < f.settle then
@@ -816,18 +817,18 @@ local function ReadAll()
 				local at = n - (SPELLS[id].lag or 0)
 				for i = 1, f.n do
 					local okF, err = pcall(kit.Feed, f.trackers[i], lit, false, false, at)
-					if not okF then Fault(err) end
+					if not okF then fault(err) end
 				end
 				f.last = lit
 			else
-				Fault(lit)
+				fault(lit)
 			end
 		end
 	end
 end
 
 local acc = 0
-driver:SetScript('OnUpdate', function(self, elapsed)
+local function on_driver_update(self, elapsed)
 	acc = acc + elapsed
 	if acc < READ_EVERY then return end
 	acc = 0
@@ -835,20 +836,21 @@ driver:SetScript('OnUpdate', function(self, elapsed)
 		self:Hide()
 		return
 	end
-	ReadAll()
-end)
+	read_all()
+end
+driver:SetScript('OnUpdate', on_driver_update)
 
-local function SetFeeds(want)
+local function set_feeds(want)
 	local any = false
 	for id, list in pairs(want) do
-		local f = FeedOf(id)
+		local f = feed_of(id)
 		f.trackers, f.n = list, #list
 		if not f.on then
 			f.on, f.settle = true, GetTime() + SETTLE
 			for i = 1, f.n do list[i].primed = false end
 			for slot, s in ipairs(f.sensors) do
 				local unit = unitOf[slot]
-				if unit and Reads(f, slot) then
+				if unit and reads(f, slot) then
 					pcall(s.SetUnit, s, unit)
 					pcall(s.SetEnabled, s, true)
 				end
@@ -862,18 +864,18 @@ local function SetFeeds(want)
 			f.on, f.n, f.trackers, f.last = false, 0, EMPTY, nil
 			for _, s in ipairs(f.sensors) do pcall(s.SetEnabled, s, false) end
 		end
-		Cover(f)
+		cover(f)
 		if f.on and f.hold then wide = true end
 	end
 	if wide ~= loose then
 		loose = wide
-		if tracking then QueueScan() end
+		if tracking then queue_scan() end
 	end
 	if any then
-		StartTracking()
-		TopUp()
+		start_tracking()
+		top_up()
 	else
-		StopTracking()
+		stop_tracking()
 		builder:Hide()
 	end
 end
@@ -891,10 +893,10 @@ own:SetScript('OnEvent', function(_, _, _, _, spellID)
 	stats.own = stats.own + 1
 	kit.StartPlain(t, n)
 	if t.cell then kit.PushCell(t, t.cell, n) end
-	EnsureTicker()
+	ensure_ticker()
 end)
 
-local function Live(cfg)
+local function is_live(cfg)
 	if not cfg.enable or ns.CCUnavailable then return false end
 	if IsInRaid() then return false end
 	if cfg.groupOnly ~= false and not IsInGroup() then return false end
@@ -902,7 +904,7 @@ local function Live(cfg)
 	return true
 end
 
-local function SpecOf(unit, me, guid)
+local function spec_of(unit, me, guid)
 	if me then
 		local own = ns.CHSpecID and ns.CHSpecID()
 		if type(own) == 'number' and not secret(own) and own > 0 then return own, 'your own' end
@@ -915,13 +917,13 @@ local function SpecOf(unit, me, guid)
 	return nil
 end
 
-local function RoleOf(unit)
+local function role_of(unit)
 	local ok, role = pcall(_G.UnitGroupRolesAssigned, unit)
 	if ok and not secret(role) and (role == 'TANK' or role == 'HEALER' or role == 'DAMAGER') then return role end
 	return nil
 end
 
-local function Fits(sp, m, known)
+local function fits(sp, m, known)
 	if m.class ~= sp.class then return false end
 	if known and sp.need then
 		local no = false
@@ -937,7 +939,7 @@ local function Fits(sp, m, known)
 	return true
 end
 
-local function Roster(cfg)
+local function build_roster(cfg)
 	local out = {}
 	for i, unit in ipairs(TOKENS) do
 		local me = i == 1
@@ -952,8 +954,8 @@ local function Roster(cfg)
 			m.guid = key ~= unit and key or nil
 			m.class = ns.ClassOf(unit) or m.class
 			m.name = kit.Name(unit)
-			m.spec, m.how = SpecOf(unit, me, m.guid)
-			m.role = RoleOf(unit)
+			m.spec, m.how = spec_of(unit, me, m.guid)
+			m.role = role_of(unit)
 			if cfg.talents ~= false and talents.Wanted(m) then talents.Queue(m) end
 			out[#out + 1] = m
 		end
@@ -961,7 +963,7 @@ local function Roster(cfg)
 	return out
 end
 
-local function Share(cfg)
+local function share(cfg)
 	local have, take, used = {}, {}, {}
 	for g = 1, GROUPS do
 		local count, ids = 0, cfg['spells' .. g]
@@ -989,15 +991,15 @@ local function Share(cfg)
 	return take
 end
 
-local function Refresh()
+local function refresh()
 	if not built then return end
-	local cfg = GetCfg()
-	local on = Live(cfg)
+	local cfg = get_cfg()
+	local on = is_live(cfg)
 	local n = kit.Now()
 	local seen, want, used = {}, {}, {}
-	local roster = (on and not preview) and Roster(cfg) or EMPTY
+	local roster = (on and not preview) and build_roster(cfg) or EMPTY
 	local fakes, cells = 0, false
-	local room = (preview and ns.EditModeActive and ns.EditModeActive()) and Share(cfg) or nil
+	local room = (preview and ns.EditModeActive and ns.EditModeActive()) and share(cfg) or nil
 	gated = false
 	wipe(byCast)
 	for _, m in ipairs(roster) do seen[m] = true end
@@ -1016,7 +1018,7 @@ local function Refresh()
 					used[id] = true
 					if preview then
 						if not room or #list < room[g] then
-							local cd = Sum(sp)
+							local cd = sum(sp)
 							fakes = fakes + 1
 							local key = 'preview' .. id
 							local m = members[key]
@@ -1026,8 +1028,8 @@ local function Refresh()
 							end
 							m.class, m.name = sp.class, NAME
 							seen[m] = true
-							local t = Tracker(m, id, cd, n)
-							if t.fresh then Seed(t, fakes, n) end
+							local t = tracker(m, id, cd, n)
+							if t.fresh then seed(t, fakes, n) end
 							t.fresh = nil
 							list[#list + 1] = { t = t, m = m }
 						end
@@ -1035,8 +1037,8 @@ local function Refresh()
 						for _, m in ipairs(roster) do
 							if sp.spec and m.class == sp.class then gated = true end
 							local known = m.class == sp.class and talents.Of(m, cfg) or nil
-							if Fits(sp, m, known) then
-								local t = Tracker(m, id, Sum(sp, known), n)
+							if fits(sp, m, known) then
+								local t = tracker(m, id, sum(sp, known), n)
 								t.fresh = nil
 								list[#list + 1] = { t = t, m = m }
 								if m.me then
@@ -1056,43 +1058,43 @@ local function Refresh()
 				end
 			end
 		end
-		local ok, err = pcall(Bind, g, list, cfg, n)
-		if not ok then Fault(err) end
-		ok, err = pcall(Layout, g, cfg)
-		if not ok then Fault(err) end
+		local ok, err = pcall(bind, g, list, cfg, n)
+		if not ok then fault(err) end
+		ok, err = pcall(layout, g, cfg)
+		if not ok then fault(err) end
 		if #list > 0 then cells = true end
 	end
 	for key, m in pairs(members) do
 		if not seen[m] then members[key] = nil end
 	end
-	local ok, err = pcall(SetFeeds, want)
-	if not ok then Fault(err) end
+	local ok, err = pcall(set_feeds, want)
+	if not ok then fault(err) end
 	local wantOwn = next(byCast) ~= nil
 	if wantOwn ~= ownOn then
 		ownOn = wantOwn
 		if wantOwn then own:RegisterUnitEvent('UNIT_SPELLCAST_SUCCEEDED', 'player') else own:UnregisterAllEvents() end
 	end
-	if cells then EnsureTicker() end
+	if cells then ensure_ticker() end
 end
 
-QueueRefresh = ns.Coalesce(Refresh)
+queue_refresh = ns.Coalesce(refresh)
 
 local late
-local function RefreshSoon()
-	QueueRefresh()
+local function refresh_soon()
+	queue_refresh()
 	if late then late:Cancel() end
-	late = C_Timer.NewTimer(0.5, QueueRefresh)
+	late = C_Timer.NewTimer(0.5, queue_refresh)
 end
 
-local function ApplyPosition(g)
+local function apply_position(g)
 	local bar = bars[g]
 	if not bar then return end
-	local cfg = GetCfg()
+	local cfg = get_cfg()
 	bar.frame:ClearAllPoints()
 	bar.frame:SetPoint('CENTER', UIParent, 'CENTER', cfg['x' .. g] or 0, cfg['y' .. g] or 0)
 end
 
-local function EnsureFrames()
+local function ensure_frames()
 	if built then return end
 	kit.Ensure()
 	sensHost = CreateFrame('Frame', nil, UIParent)
@@ -1108,16 +1110,16 @@ local function EnsureFrames()
 		frame:RegisterForDrag('RightButton')
 		frame:Hide()
 		bars[g] = { frame = frame, cells = {}, look = {}, n = 0 }
-		ns.MakeDraggable(frame, GetCfg, 'x' .. g, 'y' .. g, function() ApplyPosition(g) end)
+		ns.MakeDraggable(frame, get_cfg, 'x' .. g, 'y' .. g, function() apply_position(g) end)
 	end
 	ns.OnGrabChange(function()
-		local on = ns.CanGrab(GetCfg(), preview)
+		local on = ns.CanGrab(get_cfg(), preview)
 		for g = 1, GROUPS do bars[g].frame:EnableMouse(on) end
 	end)
 	built = true
 end
 
-local function ResetAll()
+local function reset_all()
 	local n = kit.Now()
 	for _, m in pairs(members) do
 		for _, t in pairs(m.tr) do
@@ -1138,9 +1140,9 @@ local LIVE_EVENTS = {
 	'READY_CHECK',
 }
 
-local function Apply()
-	local cfg = GetCfg()
-	ns.CCUnavailable = Unavailable()
+local function apply()
+	local cfg = get_cfg()
+	ns.CCUnavailable = unavailable()
 	local wanted = (cfg.enable and not ns.CCUnavailable) and true or false
 	if wanted ~= listening then
 		listening = wanted
@@ -1149,21 +1151,21 @@ local function Apply()
 		end
 	end
 	if not kit or not (wanted or preview or built) then return end
-	EnsureFrames()
-	for g = 1, GROUPS do ApplyPosition(g) end
-	Refresh()
+	ensure_frames()
+	for g = 1, GROUPS do apply_position(g) end
+	refresh()
 end
 
-ns.CCApply = ns.Coalesce(Apply)
+ns.CCApply = ns.Coalesce(apply)
 ns.OnPixelChange(function() ns.CCApply() end)
 
 ns.CCIsPreview = function() return preview end
 ns.CCSetPreview = function(state)
 	preview = state and true or false
-	Apply()
+	apply()
 end
 
-local function Entries(ids)
+local function entries(ids)
 	local out = {}
 	for _, id in ipairs(ids or EMPTY) do
 		local sp = SPELLS[id]
@@ -1172,12 +1174,12 @@ local function Entries(ids)
 	return out
 end
 
-ns.CCCatalogue = function() return Entries(ORDER) end
+ns.CCCatalogue = function() return entries(ORDER) end
 
 -- dodo: 주문 목록 (/dd 전투 > 파티 주문 추적 > 주문 목록). 켜짐 = spells1 에 있음
 ns.CCSpells = function()
 	local have, out = {}, {}
-	for _, id in ipairs(GetCfg().spells1 or EMPTY) do have[id] = true end
+	for _, id in ipairs(get_cfg().spells1 or EMPTY) do have[id] = true end
 	for _, id in ipairs(ORDER) do
 		local sp = SPELLS[id]
 		if sp then out[#out + 1] = { id = id, class = sp.class, cd = sp.cd, off = not have[id] } end
@@ -1188,7 +1190,7 @@ end
 -- 켜기/끄기 후 spells1 을 ORDER 순서로 다시 만듦 (끄고 켜도 순서 유지)
 ns.CCSetShown = function(id, on)
 	if not SPELLS[id] then return end
-	local cfg = GetCfg()
+	local cfg = get_cfg()
 	local have = {}
 	for _, v in ipairs(cfg.spells1 or EMPTY) do have[v] = true end
 	have[id] = on and true or nil
@@ -1199,9 +1201,9 @@ ns.CCSetShown = function(id, on)
 	cfg.spells1 = list
 	ns.CCApply()
 end
-ns.CCBarSpells = function(g) return Entries(GetCfg()['spells' .. g]) end
+ns.CCBarSpells = function(g) return entries(get_cfg()['spells' .. g]) end
 
-local function Drop(list, id)
+local function drop(list, id)
 	for i = #list, 1, -1 do
 		if list[i] == id then tremove(list, i) end
 	end
@@ -1209,22 +1211,22 @@ end
 
 ns.CCAdd = function(g, id)
 	if not SPELLS[id] or type(g) ~= 'number' or g < 1 or g > GROUPS then return end
-	local cfg = GetCfg()
-	for k = 1, GROUPS do Drop(cfg['spells' .. k], id) end
+	local cfg = get_cfg()
+	for k = 1, GROUPS do drop(cfg['spells' .. k], id) end
 	local list = cfg['spells' .. g]
 	list[#list + 1] = id
 	ns.CCApply()
 end
 
 ns.CCRemove = function(g, id)
-	local list = GetCfg()['spells' .. g]
+	local list = get_cfg()['spells' .. g]
 	if type(list) ~= 'table' then return end
-	Drop(list, id)
+	drop(list, id)
 	ns.CCApply()
 end
 
 ns.CCMove = function(g, id, dir)
-	if not kit.Swap(GetCfg()['spells' .. g], id, dir) then return false end
+	if not kit.Swap(get_cfg()['spells' .. g], id, dir) then return false end
 	ns.CCApply()
 	return true
 end
@@ -1236,26 +1238,26 @@ evt:SetScript('OnEvent', function(_, event, arg1)
 		C_Timer.After(0.5, ns.CCApply)
 		return
 	end
-	local cfg = GetCfg()
+	local cfg = get_cfg()
 	if not cfg.enable then return end
 	if event == 'READY_CHECK' then
 		if cfg.talents ~= false and ns.InDungeon() and not ns.KeyActive() then
 			talents.Again()
-			RefreshSoon()
+			refresh_soon()
 		end
 	elseif event == 'GROUP_ROSTER_UPDATE' then
 		for _, m in pairs(members) do m.asks = nil end
-		RefreshSoon()
+		refresh_soon()
 	elseif event == 'CHALLENGE_MODE_START' then
-		ResetAll()
+		reset_all()
 	elseif event == 'PLAYER_REGEN_ENABLED' then
-		if waitBuild then TopUp() end
-		QueueScan()
+		if waitBuild then top_up() end
+		queue_scan()
 	elseif event == 'PLAYER_REGEN_DISABLED' then
-		QueueScan()
+		queue_scan()
 	elseif event == 'INSPECT_READY' then
 		local changed = cfg.talents ~= false and talents.Ready(arg1)
-		if changed or gated then RefreshSoon() end
+		if changed or gated then refresh_soon() end
 	elseif event == 'PLAYER_SPECIALIZATION_CHANGED' then
 		if secret(arg1) or type(arg1) ~= 'string' or arg1 == 'player' then
 			talents.own = nil
@@ -1266,12 +1268,12 @@ evt:SetScript('OnEvent', function(_, event, arg1)
 				end
 			end
 		end
-		RefreshSoon()
+		refresh_soon()
 	elseif event == 'TRAIT_CONFIG_UPDATED' or event == 'PLAYER_TALENT_UPDATE' then
 		talents.own = nil
-		RefreshSoon()
+		refresh_soon()
 	elseif gated then
-		RefreshSoon()
+		refresh_soon()
 	end
 end)
 
@@ -1279,7 +1281,7 @@ _G.SLASH_DODOPTCC1 = '/ptcc'
 _G.SlashCmdList.DODOPTCC = function(msg)
 	local function p(...) print('[dodo] 군중제어', ...) end
 	local cmd = (msg or ''):lower():match('^%s*(%S*)')
-	local cfg = GetCfg()
+	local cfg = get_cfg()
 	if not kit then
 		p(ns.CCWhy())
 		return
@@ -1298,11 +1300,11 @@ _G.SlashCmdList.DODOPTCC = function(msg)
 				end
 			end
 		end
-		if count > 0 then EnsureTicker() end
+		if count > 0 then ensure_ticker() end
 		p(cmd == 'test' and 'started' or 'cleared', count, 'timers')
 		return
 	end
-	local live, why = Live(cfg)
+	local live, why = is_live(cfg)
 	p('enabled =', tostring(cfg.enable), '| preview =', preview and 'ON' or 'off',
 		'| in a party =', tostring(IsInGroup() and not IsInRaid()),
 		'| only in dungeons =', cfg.dungeonOnly and 'on' or 'off',
@@ -1312,7 +1314,7 @@ _G.SlashCmdList.DODOPTCC = function(msg)
 	local plates, still = 0, 0
 	for _ in pairs(alive) do plates = plates + 1 end
 	for _ in pairs(calm) do still = still + 1 end
-	p(format('enemies watched = %d of %d (%d out of combat, read for long crowd control only) | area CC watch at most %d', taken, Cap(cfg), still, Reach(true, cfg)),
+	p(format('enemies watched = %d of %d (%d out of combat, read for long crowd control only) | area CC watch at most %d', taken, unit_cap(cfg), still, reach_limit(true, cfg)),
 		'| nameplates up =', plates, '| only enemies in combat =', rulesHold and 'yes' or 'set aside (nobody on screen is in combat)')
 	local made, live = 0, 0
 	for _, f in pairs(feeds) do
@@ -1321,7 +1323,7 @@ _G.SlashCmdList.DODOPTCC = function(msg)
 			for _ in pairs(f.by) do live = live + 1 end
 		elseif f.on then
 			for slot in ipairs(f.sensors) do
-				if unitOf[slot] and Reads(f, slot) then live = live + 1 end
+				if unitOf[slot] and reads(f, slot) then live = live + 1 end
 			end
 		end
 	end

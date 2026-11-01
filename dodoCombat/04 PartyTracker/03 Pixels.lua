@@ -63,7 +63,7 @@ do
 		return 1 / ppu
 	end
 
-	local function Put(region, h)
+	local function put(region, h)
 		local d = h.n * ns.OnePixel(region)
 		local a, pts = h.anchor, {}
 		if h.side then
@@ -83,7 +83,7 @@ do
 		return d
 	end
 
-	local function Holds(region, h)
+	local function holds(region, h)
 		if region:GetNumPoints() ~= 2 then return false end
 		for i = 1, 2 do
 			local p, rel, rp, x, y = region:GetPoint(i)
@@ -97,14 +97,14 @@ do
 	function ns.PixelInset(region, anchor, n, fixed)
 		local h = { anchor = anchor or region:GetParent(), n = n or 1 }
 		if not fixed then held[region] = h end
-		return Put(region, h)
+		return put(region, h)
 	end
 
 	function ns.OnPixelChange(fn)
 		listeners[#listeners + 1] = fn
 	end
 
-	local function Run()
+	local function run()
 		queued = false
 		if _G.InCombatLockdown() then
 			waiting = true
@@ -115,8 +115,8 @@ do
 		local moved = not (ppu and lastPpu and math.abs(ppu - lastPpu) < 0.00001)
 		if force or moved then
 			for region, h in pairs(held) do
-				local ok, yes = pcall(Holds, region, h)
-				if not (ok and yes and pcall(Put, region, h)) then held[region] = nil end
+				local ok, yes = pcall(holds, region, h)
+				if not (ok and yes and pcall(put, region, h)) then held[region] = nil end
 			end
 		end
 		force = false
@@ -128,15 +128,15 @@ do
 		end
 	end
 
-	local function Queue()
+	local function queue()
 		if queued then return end
 		queued = true
-		C_Timer.After(0, Run)
+		C_Timer.After(0, run)
 	end
 
 	function ns.PixelRefresh()
 		force = true
-		Queue()
+		queue()
 	end
 
 	function ns.PixelSetScale(frame, scale)
@@ -151,11 +151,11 @@ do
 	watch:RegisterEvent('PLAYER_REGEN_ENABLED')
 	watch:SetScript('OnEvent', function(_, event)
 		if event == 'PLAYER_REGEN_ENABLED' and not waiting then return end
-		Queue()
+		queue()
 	end)
 	if _G.UIParent then
 		lastPpu = ns.PixelScale(_G.UIParent)
-		hooksecurefunc(_G.UIParent, 'SetScale', Queue)
+		hooksecurefunc(_G.UIParent, 'SetScale', queue)
 	end
 end
 

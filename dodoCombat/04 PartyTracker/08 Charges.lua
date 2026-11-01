@@ -147,13 +147,13 @@ function ns.InitCharges(charge, free, swipe, Fault, Now, Roll, Stamp, Left, Star
 		local o = EvalBool(f1, EvalBool(f2, 0, other.v), other.v)
 		local b = EvalBool(f1, EvalBool(f2, 0, 1), 1)
 		local a1 = EvalBool(f1, EvalBool(f2, 1, 0), 0)
-		local function Set(old, new)
+		local function keep_or_set(old, new)
 			local x = new
 			if not open then x = Pick(cur, dual, short, Pick(prev, dual, prevShort, old, new), old) end
 			return free.Veto(t, x, old)
 		end
-		sl.c, sl.v, other.v = Set(sl.c, c), Set(sl.v, v), Set(other.v, o)
-		t.a0, t.a1, t.a2, t.b = Set(t.a0, b), Set(t.a1, a1), Set(t.a2, 0), Set(t.b, b)
+		sl.c, sl.v, other.v = keep_or_set(sl.c, c), keep_or_set(sl.v, v), keep_or_set(other.v, o)
+		t.a0, t.a1, t.a2, t.b = keep_or_set(t.a0, b), keep_or_set(t.a1, a1), keep_or_set(t.a2, 0), keep_or_set(t.b, b)
 		charge.WriteCmp(t)
 		return true
 	end

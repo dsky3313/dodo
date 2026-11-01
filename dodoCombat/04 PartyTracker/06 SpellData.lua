@@ -491,7 +491,7 @@ local CLASS_SPELLS = {
 		},
 		[71] = { -- 무기
 			{ 227847,  CD,   false, cooldown = 90,  selfOnly = true, known = true }, -- 칼날폭풍
-			{ 228920,  CD,   true,  cooldown = 90,  selfOnly = true, known = true }, -- 쇠날발톱
+			{ 228920,  CD,   false, cooldown = 90,  selfOnly = true, known = true }, -- 쇠날발톱
 			{ 167105,  CD,   true,  cooldown = 45,  selfOnly = true, known = true }, -- 거인의 강타
 			{ 118038,  DEF,  true,  cooldown = 120, specCooldown = 108 }, -- 투사의 혼
 		},
@@ -501,10 +501,10 @@ local CLASS_SPELLS = {
 			{ 184364,  DEF,  true,  cooldown = 120, specCooldown = 108 }, -- 격노의 재생력
 		},
 		[73] = { -- 방어
-			{ 228920,  CD,   true }, -- 쇠날발톱
+			{ 228920,  CD,   false }, -- 쇠날발톱
 			{ 871,     DEF,  true,  cooldown = 180, known = true }, -- 방패의 벽
 			{ 1160,    DEF,  true,  cooldown = 45,  selfOnly = true, known = true }, -- 사기의 외침
-			{ 3411,    EXT,  true,  cooldown = 30,  selfOnly = true, known = true }, -- 가로막기
+			{ 3411,    EXT,  false, cooldown = 30,  selfOnly = true, known = true }, -- 가로막기
 		},
 	},
 }
@@ -524,7 +524,7 @@ local EXTRA_SPELLS = {
 ---@type table<number, PTCSpell>
 local SPELLS = {}
 local NOT_SPELL = { specCooldown = true, charges = true }
-local function Define(e)
+local function define(e)
 	if e.cooldown == nil then return end
 	local id = e[1]
 	assert(not SPELLS[id], 'Duplicate cooldown definition: ' .. id)
@@ -536,10 +536,10 @@ local function Define(e)
 end
 for _, def in pairs(CLASS_SPELLS) do
 	for _, list in pairs(def) do
-		for _, e in ipairs(list) do Define(e) end
+		for _, e in ipairs(list) do define(e) end
 	end
 end
-for _, e in ipairs(EXTRA_SPELLS) do Define(e) end
+for _, e in ipairs(EXTRA_SPELLS) do define(e) end
 
 -- CLASS_SPELLS → SPECS[전문화ID] (엔진 형식 { 주문ID, 기본쿨, 충전수 } + category/on)
 ---@type table<number, PTCSpecEntry[]>
