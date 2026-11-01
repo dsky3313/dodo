@@ -15,6 +15,9 @@ local PANEL_ROW_H = BTN_SIZE + 20 + BTN_GAP
 -- ==============================
 -- 함수
 local CreateFrame             = CreateFrame
+local EditMacro               = EditMacro
+local GetSpecialization       = GetSpecialization
+local GetSpecializationRole   = GetSpecializationRole
 local InCombatLockdown        = InCombatLockdown
 local GetInventoryItemTexture = GetInventoryItemTexture
 local GetMacroIndexByName     = GetMacroIndexByName
@@ -115,6 +118,7 @@ end
 ---@field macroSpells  integer[]?                {n} 토큰용 스펠 ID 배열
 ---@field macroText    string?                   매크로 바디 템플릿 ({n} → spells[n] 이름 치환)
 ---@field extraBody    (fun(db:table):string)?   DB 기반 동적 추가 바디 생성 함수
+---@field menuSetup    (fun(owner:table, root:table))? 버튼 우클릭 컨텍스트 메뉴 구성 함수 (dodo.UI:SetRightClickMenu)
 
 ---@type MacroDef[]
 local COMBAT_DEFS = {
@@ -123,7 +127,8 @@ local COMBAT_DEFS = {
         icon      = 1033497,
         macroName = "주시",
         macroIcon = 1033497,
-        macroText = "/focus [@target,harm,nodead][]\n/tm [@target,harm,nodead][] ~1",
+        macroText = "/focus [@target,harm,nodead][]",
+        -- extraBody / menuSetup 은 아래 "주시 매크로" 섹션에서 연결
     },
     {
         label     = "차단",
@@ -202,6 +207,79 @@ local GENERAL_DEFS = {
 }
 
 -- ==============================
+-- 주시 매크로: 징표 설정 / 탱커 전용 징표
+-- db.markIndex (1~8, 기본 1), db.tankOnly (기본 true; false면 항상 징표)
+-- ==============================
+local FOCUS_MACRO = "주시"
+local MARK_LABEL  = {
+    "별", "동그라미", "마름모", "세모", "달", "네모", "가위표", "해골",
+}
+for i, name in ipairs(MARK_LABEL) do
+    MARK_LABEL[i] = "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_" .. i .. ":16|t " .. name
+end
+
+local focus_pending = false
+
+local function is_tank()
+    local spec = GetSpecialization()
+    return spec ~= nil and GetSpecializationRole(spec) == "TANK"
+end
+
+local function focus_mark_body(db)
+    if db.tankOnly ~= false and not is_tank() then return "" end
+    return "/tm [@target,harm,nodead][] ~" .. (db.markIndex or 1)
+end
+COMBAT_DEFS[1].extraBody = focus_mark_body
+
+local function update_focus_macro()
+    if InCombatLockdown() then
+        focus_pending = true
+        return
+    end
+    focus_pending = false
+    local idx = GetMacroIndexByName(FOCUS_MACRO)
+    if idx == 0 then return end
+    local body = build_macro_body(COMBAT_DEFS[1])
+    if body then EditMacro(idx, FOCUS_MACRO, nil, body) end
+end
+
+local function is_mark_selected(i) return (get_db(FOCUS_MACRO).markIndex or 1) == i end
+local function select_mark(i)
+    get_db(FOCUS_MACRO).markIndex = i
+    update_focus_macro()
+end
+local function is_tank_only() return get_db(FOCUS_MACRO).tankOnly ~= false end
+local function toggle_tank_only()
+    local db = get_db(FOCUS_MACRO)
+    db.tankOnly = not (db.tankOnly ~= false)
+    update_focus_macro()
+end
+
+COMBAT_DEFS[1].menuSetup = function(_, root)
+    local sub = root:CreateButton("징표 설정")
+    for i = 1, #MARK_LABEL do
+        sub:CreateRadio(MARK_LABEL[i], is_mark_selected, select_mark, i)
+    end
+    root:CreateCheckbox("탱커일때만 징표", is_tank_only, toggle_tank_only)
+end
+
+local function on_focus_event(_, event, unit)
+    if event == "PLAYER_REGEN_ENABLED" then
+        if focus_pending then update_focus_macro() end
+    elseif event == "PLAYER_SPECIALIZATION_CHANGED" then
+        if unit == "player" then update_focus_macro() end
+    else
+        update_focus_macro()
+    end
+end
+
+local focus_events = CreateFrame("Frame")
+focus_events:RegisterEvent("PLAYER_ENTERING_WORLD")
+focus_events:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+focus_events:RegisterEvent("PLAYER_REGEN_ENABLED")
+focus_events:SetScript("OnEvent", on_focus_event)
+
+-- ==============================
 -- 패널 UI
 -- ==============================
 local panel       = nil
@@ -275,13 +353,15 @@ local function create_macro_button(parent, def, ox, oy)
         GameTooltip:ClearLines()
         GameTooltip:AddLine((def.label or def.macroName):gsub("\n", " "), 1, 1, 1)
         GameTooltip:AddLine(status)
+        if def.menuSetup then GameTooltip:AddLine("|cff888888우클릭: 설정|r") end
         GameTooltip:Show()
     end)
     btn:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
 
-    btn:SetScript("OnClick", function(self)
+    btn:SetScript("OnClick", function(self, button)
+        if button == "RightButton" then return end
         if self._isGray then return end
         if InCombatLockdown() then
             print("|cffff4444[MacroFactory]|r 전투 중에는 매크로를 생성할 수 없습니다.")
@@ -305,6 +385,8 @@ local function create_macro_button(parent, def, ox, oy)
         refresh_state(); refresh_icon()
         C_Timer.After(0.1, function() if not InCombatLockdown() then ShowMacroFrame() end end)
     end)
+
+    if def.menuSetup then dodo.UI:SetRightClickMenu(btn, def.menuSetup, def.label or def.macroName) end
 
     return btn
 end
