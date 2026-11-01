@@ -279,7 +279,7 @@ end
 local function ensure_frame()
 	if frame then return end
 	frame = CreateFrame('Frame', 'dodoPartyInterrupts', UIParent)
-	frame:SetFrameStrata('MEDIUM')
+	frame:SetFrameStrata('LOW')
 	frame:SetClampedToScreen(true)
 	frame:SetMovable(true)
 	frame:EnableMouse(false)

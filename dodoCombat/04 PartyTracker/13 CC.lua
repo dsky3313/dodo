@@ -1102,7 +1102,7 @@ local function ensure_frames()
 	sensHost:SetPoint('TOPLEFT', UIParent, 'TOPLEFT', 0, 0)
 	for g = 1, GROUPS do
 		local frame = CreateFrame('Frame', 'dodoPartyCC' .. g, UIParent)
-		frame:SetFrameStrata('MEDIUM')
+		frame:SetFrameStrata('LOW')
 		frame:SetSize(36, 36)
 		frame:SetClampedToScreen(true)
 		frame:SetMovable(true)

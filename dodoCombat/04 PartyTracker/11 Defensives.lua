@@ -395,7 +395,7 @@ end
 local function ensure_frame()
 	if frame then return end
 	frame = CreateFrame('Frame', 'dodoPartyDefensives', UIParent)
-	frame:SetFrameStrata('MEDIUM')
+	frame:SetFrameStrata('LOW')
 	frame:SetSize(36, 36)
 	frame:SetClampedToScreen(true)
 	frame:SetMovable(true)
