@@ -4,6 +4,26 @@ local addonName, dodo = ...
 -- ==============================
 -- 탭 & 페이지 헬퍼
 -- ==============================
+local function select_page(settings, displayMode)
+    -- SetDisplayMode 직접 호출 안 함 (addon taint 방지)
+    settings.displayMode = displayMode
+    for _, frame in ipairs(settings.TabButtons) do
+        frame:SetChecked(frame.displayMode == displayMode)
+    end
+    CooldownViewerSettingsEditAlert:Hide()
+    GroupBuffFilterEditVisualAlert:Hide()
+    settings.CooldownScroll:Hide()
+    settings.GroupBuffFilter:Hide()
+    if settings.dodoPageA then settings.dodoPageA:SetShown(displayMode == "dodoPageA") end
+    if settings.dodoPageB then settings.dodoPageB:SetShown(displayMode == "dodoPageB") end
+end
+
+-- 외부(설정창 버튼 등)에서 dodo 페이지 열기
+function dodo.CDMSelectPage(displayMode)
+    local settings = _G.CooldownViewerSettings
+    if settings and settings.TabButtons then select_page(settings, displayMode) end
+end
+
 local function make_tab(settings, anchor_to, display_mode, tooltip, atlas, icon_size)
     local tab = CreateFrame("CheckButton", nil, settings, "LargeSideTabButtonTemplate")
     tab.displayMode   = display_mode
@@ -24,17 +44,7 @@ local function make_tab(settings, anchor_to, display_mode, tooltip, atlas, icon_
         if button == "LeftButton" and upInside then
             local displayMode = t.displayMode
             if settings.displayMode == displayMode then return end
-            -- SetDisplayMode 직접 호출 안 함 (addon taint 방지)
-            settings.displayMode = displayMode
-            for _, frame in ipairs(settings.TabButtons) do
-                frame:SetChecked(frame.displayMode == displayMode)
-            end
-            CooldownViewerSettingsEditAlert:Hide()
-            GroupBuffFilterEditVisualAlert:Hide()
-            settings.CooldownScroll:Hide()
-            settings.GroupBuffFilter:Hide()
-            if settings.dodoPageA then settings.dodoPageA:SetShown(displayMode == "dodoPageA") end
-            if settings.dodoPageB then settings.dodoPageB:SetShown(displayMode == "dodoPageB") end
+            select_page(settings, displayMode)
         end
     end)
     table.insert(settings.TabButtons, tab)
