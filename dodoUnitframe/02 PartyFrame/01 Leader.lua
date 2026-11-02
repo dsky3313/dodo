@@ -60,7 +60,11 @@ local function apply_icon(frame)
 
 	if texture then
 		if not tex then
-			tex = frame:CreateTexture(nil, "OVERLAY")
+			-- 다른 멤버 HealthBar(자식 프레임)에 가려지지 않도록 별도 프레임에 올림
+			local holder = CreateFrame("Frame", nil, frame)
+			holder:SetAllPoints(frame)
+			holder:SetFrameLevel(frame:GetFrameLevel() + 10)
+			tex = holder:CreateTexture(nil, "OVERLAY")
 			icon_by_frame[frame] = tex
 		end
 
