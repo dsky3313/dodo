@@ -438,7 +438,7 @@ dodo.RegisterOption("행동 단축바", function(category)
                         if not s then return end
                         SettingsPanel:Close(true)
                         ShowUIPanel(s)
-                        s:SetDisplayMode("dodoPageA")
+                        if dodo.CDMSelectPage then dodo.CDMSelectPage("dodoPageA") end
                     end,
                     "강화효과 추적 설정창을 엽니다.", false
                 )

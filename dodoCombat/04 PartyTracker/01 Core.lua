@@ -12,7 +12,19 @@ if C_AddOns and C_AddOns.LoadAddOn then
     pcall(C_AddOns.LoadAddOn, 'Blizzard_AuraContainer')
 end
 function ns.Probe(_, hook, timer) return hook, timer end
-function ns.ProbeCoalesced(fn) return fn end
+-- dodo: 03 Pixels.lua 제거 → 같은 프레임 내 중복 호출을 1회로 합치는 디바운스만 이관
+function ns.Coalesce(fn)
+    local queued = false
+    local function run()
+        queued = false
+        fn()
+    end
+    return function()
+        if queued then return end
+        queued = true
+        _G.C_Timer.After(0, run)
+    end
+end
 function ns.GetFont() return STANDARD_TEXT_FONT end
 -- dodo: Locale.lua 제외, 키 그대로 반환
 ns.L = setmetatable({}, { __index = function(_, key) return key end })

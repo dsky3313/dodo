@@ -113,6 +113,14 @@ dodoPTSpellListMixin.GetExtent = function()
     return TOP_H + HEADER_H + max_rows() * ROW_H + 16
 end
 
+-- 드롭다운 항목 앞 아이콘 (직업 아틀라스 / 특성 아이콘)
+local function class_icon(classFile)
+    return classFile and (CreateAtlasMarkup("classicon-" .. classFile:lower(), 16, 16) .. " ") or ""
+end
+local function spec_icon(icon)
+    return icon and ("|T" .. icon .. ":16:16:0:0:64:64:5:59:5:59|t ") or ""
+end
+
 function dodoPTSpellListMixin:OnLoad()
     init_selection()
 
@@ -123,7 +131,7 @@ function dodoPTSpellListMixin:OnLoad()
         self:Update()
     end
 
-    self.specDD = CreateFrame("DropdownButton", nil, self, "WowStyle2DropdownTemplate")
+    self.specDD = CreateFrame("DropdownButton", nil, self, "WowStyle1DropdownTemplate")
     self.specDD:SetSize(140, 25)
     self.specDD:SetPoint("TOPLEFT", self, "TOPLEFT", 37, -4)
     self.specDD:SetupMenu(function(_, root)
@@ -131,11 +139,11 @@ function dodoPTSpellListMixin:OnLoad()
             local className, classFile, classID = GetClassInfo(i)
             if classID then
                 local color = C_ClassColor.GetClassColor(classFile)
-                local sub = root:CreateButton(color and color:WrapTextInColorCode(className) or className)
+                local sub = root:CreateButton(class_icon(classFile) .. (color and color:WrapTextInColorCode(className) or className))
                 for j = 1, num_specs(classID) do
-                    local specID, specName = GetSpecializationInfoForClassID(classID, j)
+                    local specID, specName, _, specIcon = GetSpecializationInfoForClassID(classID, j)
                     if specID then
-                        sub:CreateRadio(specName, is_spec_selected, select_spec, specID)
+                        sub:CreateRadio(spec_icon(specIcon) .. specName, is_spec_selected, select_spec, specID)
                     end
                 end
             end
@@ -148,9 +156,9 @@ function dodoPTSpellListMixin:OnLoad()
     self.specDD:SetSelectionText(function()
         if not _spec_id then return "직업/특성 선택" end
         if _spec_id == COMMON then return "공용" end
-        local _, specName, _, _, _, classFile, className = GetSpecializationInfoByID(_spec_id)
+        local _, specName, _, specIcon, _, classFile, className = GetSpecializationInfoByID(_spec_id)
         local color = classFile and C_ClassColor.GetClassColor(classFile)
-        local text = (className or "?") .. " - " .. (specName or "?")
+        local text = class_icon(classFile) .. (className or "?") .. " - " .. spec_icon(specIcon) .. (specName or "?")
         return color and color:WrapTextInColorCode(text) or text
     end)
     self.specDD:GenerateMenu()
@@ -285,7 +293,7 @@ function dodoPTTrackListMixin:OnLoad()
         _track_tab = i
         self:Update()
     end
-    self.kindDD = CreateFrame("DropdownButton", nil, self, "WowStyle2DropdownTemplate")
+    self.kindDD = CreateFrame("DropdownButton", nil, self, "WowStyle1DropdownTemplate")
     self.kindDD:SetSize(140, 25)
     self.kindDD:SetPoint("TOPLEFT", self, "TOPLEFT", 37, -4)
     self.kindDD:SetupMenu(function(_, root)

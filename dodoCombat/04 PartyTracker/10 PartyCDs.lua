@@ -821,7 +821,7 @@ end
 local function code_units(cd) return mmax(1, ceil(cd / CODES)) end
 
 local function dress(c, def, cfg, size, text)
-	size = ns.PixelSize(size or cfg.size or 28, c)
+	size = size or cfg.size or 28
 	c:SetSize(size, size)
 	if c.RescaleIcon then c:RescaleIcon() end -- dodo: LibIcon 여백 재계산
 	local level = c:GetFrameLevel()
@@ -1903,7 +1903,6 @@ end
 ext.Place = function()
 	local host, look = ext.host, ext.look
 	local size, gap = look.size or 40, look.spacing or 2
-	if host then size, gap = ns.PixelSize(size, host), ns.PixelSize(gap, host) end
 	local at = 0
 	for _, s in ipairs(slots) do
 		for k, c in ipairs(s.xcell) do
@@ -1921,7 +1920,7 @@ ext.Place = function()
 					x = step
 				end
 				c:ClearAllPoints()
-				ns.PixelPoint(c, 'TOPLEFT', host, 'TOPLEFT', x, y)
+				c:SetPoint('TOPLEFT', host, 'TOPLEFT', x, y)
 				at = at + 1
 				seat_cell(c)
 			end
@@ -2237,7 +2236,8 @@ local function mock_frame(i)
 	bg:SetAllPoints(f)
 	bg:SetColorTexture(0, 0, 0, 0.9)
 	f.fill = f:CreateTexture(nil, 'BORDER')
-	ns.PixelInset(f.fill, f)
+	f.fill:SetPoint('TOPLEFT', f, 'TOPLEFT', 1, -1)
+	f.fill:SetPoint('BOTTOMRIGHT', f, 'BOTTOMRIGHT', -1, 1)
 	f.name = f:CreateFontString(nil, 'OVERLAY')
 	f.name:SetPoint('LEFT', f, 'LEFT', 4, 0)
 	f.name:SetPoint('RIGHT', f, 'RIGHT', -4, 0)
@@ -2348,21 +2348,21 @@ local function place_row(row, anchor, stack, cfg, prev, hang)
 	row:ClearAllPoints()
 	if not stack then
 		local away, along = cfg.offX or 4, cfg.offY or 0
-		ns.PixelPoint(row, hang.at, anchor, hang.to, hang.x ~= 0 and hang.x * away or along, hang.y ~= 0 and hang.y * away or along)
+		row:SetPoint(hang.at, anchor, hang.to, hang.x ~= 0 and hang.x * away or along, hang.y ~= 0 and hang.y * away or along)
 		return
 	end
 	local up, gap = cfg.growth == 'UP', cfg.rowSpacing or 6
 	if not prev then
-		ns.PixelPoint(row, up and 'BOTTOMLEFT' or 'TOPLEFT', holder, up and 'BOTTOMLEFT' or 'TOPLEFT', 0, 0)
+		row:SetPoint(up and 'BOTTOMLEFT' or 'TOPLEFT', holder, up and 'BOTTOMLEFT' or 'TOPLEFT', 0, 0)
 	elseif up then
-		ns.PixelPoint(row, 'BOTTOMLEFT', prev, 'TOPLEFT', 0, gap)
+		row:SetPoint('BOTTOMLEFT', prev, 'TOPLEFT', 0, gap)
 	else
-		ns.PixelPoint(row, 'TOPLEFT', prev, 'BOTTOMLEFT', 0, -gap)
+		row:SetPoint('TOPLEFT', prev, 'BOTTOMLEFT', 0, -gap)
 	end
 end
 
 local function layout_all(cfg)
-	local gap = ns.PixelSize(cfg.spacing or 2, holder)
+	local gap = cfg.spacing or 2
 	local attach = cfg.attach ~= false
 	local rf = attach and find_r_f() or nil
 	local map = rf and rf._partyUnitToButton or nil
@@ -2412,7 +2412,7 @@ local function layout_all(cfg)
 		local vis, at = s.vis or 0, 0
 		local btn = map and map[s.unit] or nil
 		local show = vis > 0 and not attachOnly
-		local size = ns.PixelSize(s.size or cfg.size or 28, row)
+		local size = s.size or cfg.size or 28
 		local per = s.per
 		local along = per or vis
 		local lines = per and ceil(vis / per) or 1
@@ -2442,10 +2442,10 @@ local function layout_all(cfg)
 						local here = pos * pitch
 						if hang.mid then here = here + (per - mmin(per, vis - line * per)) * pitch / 2 end
 						local cross = line * pitch
-						ns.PixelPoint(c, hang.corner, row, hang.corner, hang.dx * here + hang.cx * cross, hang.dy * here + hang.cy * cross)
+						c:SetPoint(hang.corner, row, hang.corner, hang.dx * here + hang.cx * cross, hang.dy * here + hang.cy * cross)
 					else
 						local step = at * pitch
-						ns.PixelPoint(c, hang.from, row, hang.from, hang.dx * step, hang.dy * step)
+						c:SetPoint(hang.from, row, hang.from, hang.dx * step, hang.dy * step)
 					end
 					at = at + 1
 					seat_cell(c)
@@ -2792,7 +2792,6 @@ local function apply()
 end
 
 ns.PTCApply = ns.Coalesce(apply)
-ns.OnPixelChange(function() ns.PTCApply() end)
 
 ns.PTCIsPreview = function() return preview end
 ns.PTCSetPreview = function(state)
@@ -2907,8 +2906,8 @@ ns.PTCKit = {
 	LayOpts = function(o, size, gap, grow, names, namePos, nameSize, letters)
 		o.grow, o.names, o.font, o.nameSize, o.letters = grow, names, ns.GetFont(), nameSize, letters
 		o.below = names and namePos == 'BELOW'
-		o.step = ns.PixelSize(size, UIParent) + ns.PixelSize(gap, UIParent)
-		o.tall = o.step + (o.below and ns.PixelSize(nameSize + 2, UIParent) or 0)
+		o.step = size + gap
+		o.tall = o.step + (o.below and nameSize + 2 or 0)
 		return o
 	end,
 	Lay = function(c, who, m, frame, i, n, o)
@@ -2925,7 +2924,7 @@ ns.PTCKit = {
 			x = k * step
 		end
 		c:ClearAllPoints()
-		ns.PixelPoint(c, 'CENTER', frame, 'CENTER', x, y)
+		c:SetPoint('CENTER', frame, 'CENTER', x, y)
 		seat_cell(c)
 		if not (o.names and m and type(m.name) ~= 'nil') then
 			who:Hide()

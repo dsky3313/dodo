@@ -388,7 +388,7 @@ local function wrap(c, frame, i, n, per, o)
 		end
 	end
 	c:ClearAllPoints()
-	ns.PixelPoint(c, 'CENTER', frame, 'CENTER', x, y)
+	c:SetPoint('CENTER', frame, 'CENTER', x, y)
 	kit.Seat(c)
 end
 
@@ -1157,7 +1157,6 @@ local function apply()
 end
 
 ns.CCApply = ns.Coalesce(apply)
-ns.OnPixelChange(function() ns.CCApply() end)
 
 ns.CCIsPreview = function() return preview end
 ns.CCSetPreview = function(state)

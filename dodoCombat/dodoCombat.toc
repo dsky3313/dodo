@@ -27,7 +27,6 @@
 04 PartyTracker/99 Options.lua
 04 PartyTracker/01 Core.lua
 04 PartyTracker/02 Talents.lua
-04 PartyTracker/03 Pixels.lua
 04 PartyTracker/04 Sensors.lua
 04 PartyTracker/06 SpellData.lua
 04 PartyTracker/07 PartyFrames.lua

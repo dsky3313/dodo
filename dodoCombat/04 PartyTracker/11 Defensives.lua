@@ -197,19 +197,16 @@ local function guard_bar(c)
 	b.over = CreateFrame('Frame', nil, b)
 	b.over:SetAllPoints(b)
 	b.over:SetFrameLevel(b:GetFrameLevel() + 3)
-	-- dodo: '...' 없이 이름을 그냥 잘라냄 → 오른쪽 앵커 없이 클립 프레임으로 가림
-	b.clip = CreateFrame('Frame', nil, b.over)
-	b.clip:SetClipsChildren(true)
-	b.name = b.clip:CreateFontString(nil, 'OVERLAY')
-	b.name:SetPoint('LEFT', b.clip, 'LEFT', 0, 0)
+	-- dodo: 12 Interrupts row.name 과 동일 — 좌우 앵커로 폭 제한 (넘치는 이름은 블리자드가 줄임)
+	b.name = b.over:CreateFontString(nil, 'OVERLAY')
 	b.name:SetJustifyH('LEFT')
 	b.name:SetWordWrap(false)
 	-- 행 하단 금속 테두리 (12 Interrupts 와 동일, 아이콘 ~ 바 전체)
 	b.edgeBottom = b.over:CreateTexture(nil, 'BORDER')
 	b.edgeBottom:SetAtlas('_UI-Frame-Metal-EdgeBottom', true)
-	b.edgeBottom:SetHeight(16)
-	b.edgeBottom:SetPoint('BOTTOMLEFT', c, 'BOTTOMLEFT', 0, -2)
-	b.edgeBottom:SetPoint('BOTTOMRIGHT', b, 'BOTTOMRIGHT', 0, -2)
+	b.edgeBottom:SetHeight(28)
+	b.edgeBottom:SetPoint('BOTTOMLEFT', c, 'BOTTOMLEFT', 0, -4)
+	b.edgeBottom:SetPoint('BOTTOMRIGHT', b, 'BOTTOMRIGHT', 0, -4)
 	c.guardBar = b
 	return b
 end
@@ -357,9 +354,9 @@ local function place(list)
 			end
 			b.name:SetFont(ns.GetFont(), textSize, 'OUTLINE')
 			if dark then b.name:SetTextColor(r, g, bl) else b.name:SetTextColor(1, 1, 1) end
-			b.clip:ClearAllPoints()
-			b.clip:SetPoint('TOPLEFT', b, 'TOPLEFT', 4, 0)
-			b.clip:SetPoint('BOTTOMRIGHT', b, 'BOTTOMRIGHT', -(textSize * 2 + 8), 0) -- 타이머 자리 비움
+			b.name:ClearAllPoints()
+			b.name:SetPoint('LEFT', b, 'LEFT', 4, 0)
+			b.name:SetPoint('RIGHT', b, 'RIGHT', -(textSize * 2 + 16), 0) -- 타이머 자리 비움
 			if not (e.m and pcall(b.name.SetText, b.name, e.m.name)) then b.name:SetText('') end
 			b.edgeBottom:Show()
 			b:Show()

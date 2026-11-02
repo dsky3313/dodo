@@ -151,7 +151,8 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 			end
 			local keep = {}
 			for _, set in ipairs(sets) do
-				if set.n > 0 then
+				-- dodo: 파티에 나 혼자일 때도 기본 파티프레임이면 후보로 유지 (PlayerFrame 은 stock 이 아니라 제외)
+				if set.n > 0 or (set.units.player and stock(set.key)) then
 					local area = 0
 					for u, f in pairs(set.units) do
 						if u ~= 'player' and area == 0 then
@@ -185,7 +186,7 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 			wipe(found)
 			local cfg = GetCfg()
 			local old = frames.set
-			local had = (old and old.n > 0) and true or false
+			local had = (old and (old.n > 0 or old.units.player)) and true or false
 			local best = pick(want_frames())
 			if best then
 				frames.set, frames.none, frames.owed = best, false, not had
@@ -302,7 +303,8 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 
 		local function short(set, want)
 			local n = set and set.n or 0
-			return n == 0 or n < others() or (want ~= nil and set.name ~= want)
+			local solo = set and n == 0 and set.units.player and others() == 0
+			return (n == 0 and not solo) or n < others() or (want ~= nil and set.name ~= want)
 		end
 
 		frames.Live = function(want)
@@ -322,7 +324,7 @@ function ns.NewPartyFrameFinder(GetCfg, TOKENS, MapSig, QueueRefresh, Fault, isA
 					wake(10)
 				end
 			end
-			if set and set.n > 0 then
+			if set and (set.n > 0 or set.units.player) then
 				frames.none = false
 				return set
 			end

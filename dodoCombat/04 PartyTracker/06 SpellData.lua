@@ -501,8 +501,8 @@ local CLASS_SPELLS = {
 			{ 184364,  DEF,  true,  cooldown = 120, specCooldown = 108 }, -- 격노의 재생력
 		},
 		[73] = { -- 방어
-			{ 228920,  CD,   false }, -- 쇠날발톱
-			{ 871,     DEF,  true,  cooldown = 180, known = true }, -- 방패의 벽
+			{ 228920,  CD,   true }, -- 쇠날발톱
+			{ 871,    DEF,  true,  cooldown = 180, known = true }, -- 방패의 벽
 			{ 1160,    DEF,  true,  cooldown = 45,  selfOnly = true, known = true }, -- 사기의 외침
 			{ 3411,    EXT,  false, cooldown = 30,  selfOnly = true, known = true }, -- 가로막기
 		},

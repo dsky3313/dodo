@@ -593,7 +593,6 @@ dodo.CombatRefreshPreview = refresh_preview
 -- 저장: dodoDB.cursorSpellTrackerDisabled = { [specID] = { [spellID] = true } } (03 CursorSpellTracker/01 Core.lua 참고)
 --       dodoDB.cursorSpellTrackerCustom   = { [specID] = { { spellID = , group = }, ... } }
 local CST_GROUP_LABEL = { interrupt = "차단기", dispel = "해제", cd = "쿨기", cc = "군중제어" }
-local CST_GROUP_ORDER = dodo.CST_GROUP_ORDER -- 카테고리 드롭다운 순서 (99 Options.lua)
 local CST_LIST_H = 360 -- 드롭다운 + 헤더 + 목록 박스 (주문추가 줄 포함 10줄 + 오류 문구)
 local CST_ROW_H  = 26
 
@@ -868,11 +867,11 @@ local function cst_create_add_row(parent)
     addRow.input:SetScript("OnEnterPressed", cst_add_on_enter)
     addRow.input:SetScript("OnEscapePressed", cst_add_on_escape)
 
-    addRow.groupDD = CreateFrame("DropdownButton", nil, addRow, "WowStyle2DropdownTemplate")
+    addRow.groupDD = CreateFrame("DropdownButton", nil, addRow, "WowStyle1DropdownTemplate")
     addRow.groupDD:SetSize(90, 22)
     addRow.groupDD:SetPoint("LEFT", addRow, "LEFT", 288, 0)
     addRow.groupDD:SetupMenu(function(_, root)
-        for _, group in ipairs(CST_GROUP_ORDER) do
+        for _, group in ipairs(dodo.CST_GROUP_ORDER) do
             root:CreateRadio(CST_GROUP_LABEL[group], cst_is_add_group, cst_set_add_group, group)
         end
     end)
@@ -899,6 +898,14 @@ local function cst_create_add_row(parent)
     return addRow
 end
 
+-- 드롭다운 항목 앞 아이콘 (직업 아틀라스 / 특성 아이콘)
+local function cst_class_icon(classFile)
+    return classFile and (CreateAtlasMarkup("classicon-" .. classFile:lower(), 16, 16) .. " ") or ""
+end
+local function cst_spec_icon(icon)
+    return icon and ("|T" .. icon .. ":16:16:0:0:64:64:5:59:5:59|t ") or ""
+end
+
 dodoCSTSpellListMixin = {}
 
 dodoCSTSpellListMixin.GetExtent = function()
@@ -916,7 +923,7 @@ function dodoCSTSpellListMixin:OnLoad()
         self:Update()
     end
 
-    self.specDD = CreateFrame("DropdownButton", nil, self, "WowStyle2DropdownTemplate")
+    self.specDD = CreateFrame("DropdownButton", nil, self, "WowStyle1DropdownTemplate")
     self.specDD:SetSize(140, 25)
     self.specDD:SetPoint("TOPLEFT", self, "TOPLEFT", 37, -4)
     self.specDD:SetupMenu(function(_, root)
@@ -924,11 +931,11 @@ function dodoCSTSpellListMixin:OnLoad()
             local className, classFile, classID = GetClassInfo(i)
             if classID then
                 local color = C_ClassColor.GetClassColor(classFile)
-                local sub = root:CreateButton(color and color:WrapTextInColorCode(className) or className)
+                local sub = root:CreateButton(cst_class_icon(classFile) .. (color and color:WrapTextInColorCode(className) or className))
                 for j = 1, cst_num_specs(classID) do
-                    local specID, specName = GetSpecializationInfoForClassID(classID, j)
+                    local specID, specName, _, specIcon = GetSpecializationInfoForClassID(classID, j)
                     if specID then
-                        sub:CreateRadio(specName, is_spec_selected, select_spec, specID)
+                        sub:CreateRadio(cst_spec_icon(specIcon) .. specName, is_spec_selected, select_spec, specID)
                     end
                 end
             end
@@ -937,9 +944,9 @@ function dodoCSTSpellListMixin:OnLoad()
     -- 버튼 표시: "직업 - 특성" (직업 색상)
     self.specDD:SetSelectionText(function()
         if not _cst_spec_id then return "직업/특성 선택" end
-        local _, specName, _, _, _, classFile, className = GetSpecializationInfoByID(_cst_spec_id)
+        local _, specName, _, specIcon, _, classFile, className = GetSpecializationInfoByID(_cst_spec_id)
         local color = classFile and C_ClassColor.GetClassColor(classFile)
-        local text = (className or "?") .. " - " .. (specName or "?")
+        local text = cst_class_icon(classFile) .. (className or "?") .. " - " .. cst_spec_icon(specIcon) .. (specName or "?")
         return color and color:WrapTextInColorCode(text) or text
     end)
     -- SetupMenu 시점에 기본 선택 텍스트(특성명만)가 먼저 찍히므로, 커스텀 텍스트로 즉시 재생성
