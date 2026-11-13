@@ -30,6 +30,12 @@ local LibIcon = dodo.LibIcon
 -- 포워드 선언
 local update_consumables
 
+-- 디버그 (/111 테스트 모드 중에만 출력)
+local debug_mode = false
+local function debug_print(...)
+    if debug_mode then print("|cffffd200[dodo]|r|cff888888[debug]|r", ...) end
+end
+
 -- 아이콘 텍스처
 local READY_ICON = "Interface\\RaidFrame\\ReadyCheck-Ready"
 local NOT_READY_ICON = "Interface\\RaidFrame\\ReadyCheck-NotReady"
@@ -103,8 +109,8 @@ local SHAMAN_IMBUE_ENCHANTS = {
 -- 프레임 생성
 -- ==============================
 local main_frame = CreateFrame("Frame", "dodoReadyCheckFrame", UIParent, "SecureHandlerStateTemplate")
-main_frame:SetSize(360, 40)
-main_frame:SetPoint("BOTTOM", ReadyCheckFrame, "TOP", 0, 50)
+main_frame:SetSize(360, 136)
+main_frame:SetPoint("BOTTOM", ReadyCheckFrame, "TOP", 0, 70)
 main_frame:SetFrameStrata("DIALOG")
 main_frame:SetFrameLevel(100)
 main_frame:Hide()
@@ -121,18 +127,19 @@ main_frame:SetAttribute("_onstate-combatstate", [=[
 ---준비 체크 도핑 확인용 보안 아이콘 버튼을 생성합니다.
 ---@param name string 아이콘 고유 이름
 ---@param texture number|string 대표 아이콘 텍스처 ID 또는 경로
----@param index number 배치 순서 인덱스 (1부터 시작)
+---@param row number 행 인덱스 (1부터 시작, 위에서 아래로)
+---@param index number 행 내 아이콘 순서 (1부터 시작)
 ---@param tooltipType "spell"|"item" 마우스오버 툴팁 유형
 ---@param tooltipId number 툴팁에 표시할 주문 또는 아이템 ID
 ---@param macrotext string|nil 클릭 시 실행할 보안 매크로 텍스트
 ---@return ReadyCheckIconFrame # 생성된 아이콘 프레임 객체
-local function create_icon(name, texture, index, tooltipType, tooltipId, macrotext)
+local function create_icon(name, texture, row, index, tooltipType, tooltipId, macrotext)
     local hasMacro = (macrotext ~= nil)
     local f = LibIcon:Create("dodoReadyCheckIcon_" .. name, main_frame, {
         isAction = hasMacro,
         iconsize = {40, 40}
     })
-    f:SetPoint("LEFT", (index - 1) * 40, 0)
+    f:SetPoint("TOPLEFT", main_frame, "TOPLEFT", (index - 1) * 40, -(row - 1) * 48)
 
     f.icon:SetTexture(texture)
     f.icon:SetDesaturated(true)
@@ -211,15 +218,18 @@ local WEAPON_MACRO = "/run print('|cffffd200[dodo]|r 무기 도핑 클릭됨')\n
 
 ---@type ReadyCheckIcons
 local icons = {}
-icons.food = create_icon("Food", 136000, 1, "item", 242275, FOOD_MACRO)
-icons.flask = create_icon("Flask", 7548903, 2, "item", 241327, FLASK_MACRO)
-icons.weapon = create_icon("Weapon", 7548987, 3, "item", 243734, WEAPON_MACRO)
-icons.rune = create_icon("Rune", 3566863, 4, "spell", 393438, RUNE_MACRO)
-icons.potion = create_icon("Potion", 7548911, 5, "item", 241308, nil)
-icons.hs = create_icon("Healthstone", 135230, 6, "item", 5512, HS_MACRO)
-icons.durability = create_icon("Durability", 136241, 7, nil, nil, nil)
-icons.inky = create_icon("Inky", 134757, 8, "item", INKY_ITEM, "/use item:"..INKY_ITEM)
-icons.raidbuff = create_icon("RaidBuff", 135987, 9, "spell", 21562, nil)
+-- 1행: 레이드버프
+icons.raidbuff = create_icon("RaidBuff", 135987, 1, 1, "spell", 21562, nil)
+-- 2행: 기타
+icons.durability = create_icon("Durability", 136241, 2, 1, nil, nil, nil)
+icons.inky = create_icon("Inky", 134757, 2, 2, "item", INKY_ITEM, "/use item:"..INKY_ITEM)
+icons.hs = create_icon("Healthstone", 135230, 2, 3, "item", 5512, HS_MACRO)
+-- 3행: 도핑템
+icons.food = create_icon("Food", 136000, 3, 1, "item", 242275, FOOD_MACRO)
+icons.flask = create_icon("Flask", 7548903, 3, 2, "item", 241327, FLASK_MACRO)
+icons.rune = create_icon("Rune", 3566863, 3, 3, "spell", 393438, RUNE_MACRO)
+icons.weapon = create_icon("Weapon", 7548987, 3, 4, "item", 243734, WEAPON_MACRO)
+icons.potion = create_icon("Potion", 7548911, 3, 5, "item", 241308, nil)
 do
     local cdFont
     for _, r in ipairs({icons.durability.cooldown:GetRegions()}) do
@@ -307,40 +317,46 @@ local function update_icon_item(iconFrame, itemID)
     end
 end
 
-local dd_frame, dd_catch
+local dd_frame
+local dd_owner, dd_owner_icon
 local dd_buttons = {}
 
 local function hide_dropdown()
-    if dd_frame  then dd_frame:Hide()  end
-    if dd_catch  then dd_catch:Hide()  end
+    if dd_frame and dd_frame:IsShown() then
+        debug_print("드롭다운 닫힘")
+        dd_frame:Hide()
+    end
+end
+
+-- 아이콘/화살표/드롭다운 위에 마우스가 없으면 닫기 (표시 중에만 동작)
+local function dropdown_on_update()
+    if not main_frame:IsShown()
+    or not (dd_frame:IsMouseOver(20, 0, 0, 0)
+         or (dd_owner and dd_owner:IsMouseOver())
+         or (dd_owner_icon and dd_owner_icon:IsMouseOver())) then
+        hide_dropdown()
+    end
 end
 
 local DD_SZ, DD_GAP = 36, 3
 
-local function show_dropdown(anchor, category, items, slot)
+local function show_dropdown(anchor, category, items, slot, ownerIcon)
     local avail = {}
     for _, id in ipairs(items) do
         local c = GetItemCount(id, false, true)
         if c > 0 then avail[#avail+1] = {id=id, count=c} end
     end
+    debug_print("드롭다운 열기 시도:", category, "보유 종류", #avail)
     if #avail == 0 then return end
 
-    -- 지연 생성: 클릭-캐처 (드롭다운 바깥 클릭 시 닫기)
-    if not dd_catch then
-        dd_catch = CreateFrame("Frame", nil, UIParent)
-        dd_catch:SetFrameStrata("MEDIUM")
-        dd_catch:SetFrameLevel(800)
-        dd_catch:SetAllPoints(UIParent)
-        dd_catch:EnableMouse(true)
-        dd_catch:SetScript("OnMouseDown", hide_dropdown)
-        dd_catch:Hide()
-    end
     -- 지연 생성: 드롭다운 컨테이너 프레임
     if not dd_frame then
         dd_frame = CreateFrame("Frame", "dodoConsumeDropdown", UIParent)
         dd_frame:SetFrameStrata("HIGH")
         dd_frame:SetFrameLevel(100)
+        dd_frame:SetScript("OnUpdate", dropdown_on_update)
     end
+    dd_owner, dd_owner_icon = anchor, ownerIcon
 
     for _, btn in ipairs(dd_buttons) do btn:Hide() end
 
@@ -394,9 +410,8 @@ local function show_dropdown(anchor, category, items, slot)
     end
 
     dd_frame:ClearAllPoints()
-    dd_frame:SetPoint("TOP", anchor, "BOTTOM", 0, -4)
+    dd_frame:SetPoint("TOPLEFT", ownerIcon, "BOTTOMLEFT", 0, -20) -- 아이콘 왼쪽 기준, 오른쪽으로 성장 (화살표 -16 + 여백 4)
     dd_frame:Show()
-    dd_catch:Show()
 end
 
 local function add_dropdown_arrow(iconFrame, category, items, slot)
@@ -414,7 +429,12 @@ local function add_dropdown_arrow(iconFrame, category, items, slot)
     hl:SetAlpha(0.6)
     arrow:SetScript("OnClick", function()
         if dd_frame and dd_frame:IsShown() then hide_dropdown()
-        else show_dropdown(arrow, category, items, slot) end
+        else show_dropdown(arrow, category, items, slot, iconFrame) end
+    end)
+    -- 아이콘에 마우스 올리면 자동 펼침
+    iconFrame:HookScript("OnEnter", function()
+        if InCombatLockdown() then return end
+        show_dropdown(arrow, category, items, slot, iconFrame)
     end)
 end
 
@@ -510,9 +530,11 @@ function update_consumables()
         end
 
         -- 음식: 아이콘 136000(Well Fed) 스캔 (spell ID 없음)
-        for i = 1, 40 do
-            local data = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
-            if not data then break end
+        -- 제한 상태(M+ 등)에선 인덱스 스캔이 하드 에러 → 스캔 생략
+        local restricted = C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret()
+        for i = 1, (restricted and 0 or 40) do
+            local ok, data = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
+            if not ok or not data then break end
             local ic = data.icon
             if ic and not issecretvalue(ic) and ic == 136000 then
                 hasFood = true
@@ -691,8 +713,19 @@ end
 -- ==============================
 -- 테스트 기능
 -- ==============================
+local function dump_icons()
+    for key, ic in pairs(icons) do
+        debug_print(key,
+            "ready=" .. tostring(not ic.icon:IsDesaturated()),
+            "tip=" .. tostring(ic.tooltipType) .. ":" .. tostring(ic.tooltipId),
+            "count=" .. tostring(ic.Count:GetText()),
+            "mouse=" .. tostring(ic:IsMouseEnabled()))
+    end
+end
+
 local function test_ready_check()
     if main_frame.is_visible then
+        debug_mode = false
         if debounces["ReadyCheckHide"] then
             debounces["ReadyCheckHide"]:Cancel()
         end
@@ -701,16 +734,24 @@ local function test_ready_check()
         main_frame:UnregisterEvent("UNIT_AURA")
         main_frame:UnregisterEvent("UNIT_INVENTORY_CHANGED")
         main_frame:UnregisterEvent("PLAYER_REGEN_DISABLED")
-        
+
         if ReadyCheckFrame then ReadyCheckFrame:Hide() end
+        if ReadyCheckListenerFrame then ReadyCheckListenerFrame:Hide() end
         print("|cffffd200[dodo]|r ReadyCheck 테스트 모드 종료")
     else
-        if ReadyCheckFrame_Start then
-            ReadyCheckFrame_Start(UnitName("player") or "player", 35)
-        elseif ReadyCheckFrame then
-            ReadyCheckFrame:Show()
+        debug_mode = true
+        -- 본인이 시작자면 ShowReadyCheck가 ReadyCheckListenerFrame을 숨기므로, 직접 다시 표시
+        if ReadyCheckFrame then
+            if ShowReadyCheck then ShowReadyCheck("player", 35) end
+            if ReadyCheckListenerFrame then ReadyCheckListenerFrame:Show() end
+            if ReadyCheckPortrait then SetPortraitTexture(ReadyCheckPortrait, "player") end
             ReadyCheckFrameText:SetText("dodo ReadyCheck 테스트 중...")
+            ReadyCheckFrame:Show()
+        else
+            debug_print("전투준비창: ReadyCheckFrame 자체가 nil")
         end
+        debug_print("전투준비창 표시 여부:", ReadyCheckFrame and ReadyCheckFrame:IsShown(),
+            "Listener:", ReadyCheckListenerFrame and ReadyCheckListenerFrame:IsShown())
 
         -- 테스트 시작 시 실시간 추적 이벤트 동적 등록
         main_frame:RegisterEvent("READY_CHECK_FINISHED")
@@ -718,15 +759,19 @@ local function test_ready_check()
         main_frame:RegisterEvent("UNIT_INVENTORY_CHANGED")
         main_frame:RegisterEvent("PLAYER_REGEN_DISABLED")
 
+        debug_mode = true
         show_frame()
-        
+        dump_icons()
+
         debounce("ReadyCheckHide", function()
+            debug_mode = false
             hide_frame()
             main_frame:UnregisterEvent("READY_CHECK_FINISHED")
             main_frame:UnregisterEvent("UNIT_AURA")
             main_frame:UnregisterEvent("UNIT_INVENTORY_CHANGED")
             main_frame:UnregisterEvent("PLAYER_REGEN_DISABLED")
             if ReadyCheckFrame then ReadyCheckFrame:Hide() end
+            if ReadyCheckListenerFrame then ReadyCheckListenerFrame:Hide() end
         end, 35)
 
         print("|cffffd200[dodo]|r ReadyCheck 테스트 모드 시작 (35초 후 자동 종료)")
