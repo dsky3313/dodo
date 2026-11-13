@@ -52,8 +52,8 @@ end
 
 -- 2. 대화창 폰트 및 스타일 갱신
 local function style_chat_frames()
-    for i = 1, NUM_CHAT_WINDOWS do
-        local frame = _G["ChatFrame"..i]
+    for i = 1, #CHAT_FRAMES do
+        local frame = _G[CHAT_FRAMES[i]]
         if frame then
             if dodoDB.enableInterface == false then
                 -- 모듈 비활성화 시 기본값 복구
@@ -124,8 +124,8 @@ local function on_mouse_wheel(selfScroll, delta)
 end
 
 local function apply_mouse_wheel(enabled)
-    for i = 1, NUM_CHAT_WINDOWS do
-        local frame = _G["ChatFrame"..i]
+    for i = 1, #CHAT_FRAMES do
+        local frame = _G[CHAT_FRAMES[i]]
         if frame then
             if enabled then
                 -- HookScript 안전한 마우스 휠 체이닝
@@ -147,3 +147,8 @@ function dodo.UpdateChatFontState()
     apply_mouse_wheel(is_enabled)
     style_chat_frames()
 end
+
+-- 귓속말 등 임시 창 생성 시 폰트 재적용
+hooksecurefunc("FCF_OpenTemporaryWindow", function()
+    dodo.UpdateChatFontState()
+end)
