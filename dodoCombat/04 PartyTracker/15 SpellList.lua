@@ -66,7 +66,21 @@ local function on_check_click(self)
     if data and _spec_id and ns.PTCSetShown then ns.PTCSetShown(_spec_id, data.id, self:GetChecked()) end
 end
 
-local function init_row(row, data)
+-- 순서 이동 (▲/▼) — 저장 + 파티 쿨다운 표시 순서 반영 (10 PartyCDs.lua ns.PTCMove)
+local function on_move_click(self)
+    local row = self:GetParent()
+    if row.data and _spec_id and ns.PTCMove and ns.PTCMove(_spec_id, row.data.id, self.dir) then
+        row:GetParent():GetParent():Update()
+    end
+end
+
+local ORDER_PAD = 8 -- "순서" 헤더 글자 왼쪽 여백에 맞춤
+-- 주문 목록 공통 열 (파티원 주요 기술 / 차단기·군중제어·공생기 동일 템플릿)
+local LIST_COLUMNS = {
+    { "주문명", 210 }, { "spellID", 78 }, { "재사용 대기시간", 120 }, { "카테고리", 90 }, { "순서", 58 },
+}
+
+local function init_row(row, data, index, total, order_x)
     if not row.check then
         row.check = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
         row.check:SetSize(24, 24)
@@ -97,6 +111,16 @@ local function init_row(row, data)
         row.cat = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         row.cat:SetPoint("LEFT", row.cd, "RIGHT", 6, 0)
         row.cat:SetJustifyH("LEFT")
+
+        row.up = CreateFrame("Button", nil, row, "UIPanelScrollUpButtonTemplate")
+        row.up:SetPoint("LEFT", row, "LEFT", order_x + ORDER_PAD, 0)
+        row.up.dir = -1
+        row.up:SetScript("OnClick", on_move_click)
+
+        row.down = CreateFrame("Button", nil, row, "UIPanelScrollDownButtonTemplate")
+        row.down:SetPoint("LEFT", row.up, "RIGHT", 2, 0)
+        row.down.dir = 1
+        row.down:SetScript("OnClick", on_move_click)
     end
     row.data = data
     row.check:SetChecked(not data.off)
@@ -105,6 +129,12 @@ local function init_row(row, data)
     row.spellid:SetText(data.id)
     row.cd:SetText(data.cd and (data.cd .. "초") or "-")
     row.cat:SetText(CAT_LABEL[category_of(data.id)] or "-")
+
+    local movable = _spec_id ~= COMMON -- 공용(종족)은 순서 저장 미지원
+    row.up:SetShown(movable)
+    row.down:SetShown(movable)
+    row.up:SetEnabled(index > 1)
+    row.down:SetEnabled(index < total)
 end
 
 dodoPTSpellListMixin = {}
@@ -164,9 +194,7 @@ function dodoPTSpellListMixin:OnLoad()
     self.specDD:GenerateMenu()
 
     -- 목록 박스 + 컬럼 헤더 (dodo.UI:CreateListBox)
-    self.listBG, self.content = dodo.UI:CreateListBox(self, TOP_H, {
-        { "주문명", 220 }, { "spellID", 78 }, { "재사용 대기시간", 120 }, { "카테고리", 90 },
-    })
+    self.listBG, self.content, self.colX = dodo.UI:CreateListBox(self, TOP_H, LIST_COLUMNS)
 
     self.rows = {}
 end
@@ -183,7 +211,7 @@ function dodoPTSpellListMixin:Update()
             row:SetPoint("RIGHT", self.content, "RIGHT")
             self.rows[i] = row
         end
-        init_row(row, data)
+        init_row(row, data, i, #rows, self.colX[5])
         row:Show()
     end
     for i = #rows + 1, #self.rows do
@@ -203,7 +231,9 @@ end
 --       군중제어 dodoDB.partyTracker.partyCC.spells1 (13 CC ns.CCSetShown)
 --       공생기 dodoDB.partyTracker.partyDefensives.off (11 Defensives ns.PDFSetShown)
 local TRACK_TABS = { "차단기", "군중제어", "공생기" }
-local TRACK_NAME_W = 160 -- 주문명 폭 (파티원 주요 기술 목록 150 + 10)
+local TRACK_COLUMNS = {
+    { "주문명", 210 }, { "spellID", 78 }, { "재사용 대기시간", 120 }, { "직업", 90 }, { "순서", 58 },
+}
 
 local _track_tab = 1 -- 선택 종류 (세션 한정)
 
@@ -241,8 +271,22 @@ local function on_track_check_click(self)
     end
 end
 
+-- 순서 이동 (12 Interrupts ns.IKMove / 13 CC ns.CCMoveListed / 11 Defensives ns.PDFMove)
+local function track_move(id, dir)
+    if _track_tab == 1 then return ns.IKMove and ns.IKMove(id, dir) end
+    if _track_tab == 2 then return ns.CCMoveListed and ns.CCMoveListed(id, dir) end
+    return ns.PDFMove and ns.PDFMove(id, dir)
+end
+
+local function on_track_move_click(self)
+    local row = self:GetParent()
+    if row.data and track_move(row.data.id, self.dir) then
+        row:GetParent():GetParent():Update()
+    end
+end
+
 -- 열 구성: 체크 / 아이콘 / 주문명 / spellID / 직업 (재사용 대기시간은 주문명 뒤 회색)
-local function init_track_row(row, data)
+local function init_track_row(row, data, index, total, order_x)
     if not row.check then
         row.check = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
         row.check:SetSize(24, 24)
@@ -256,7 +300,7 @@ local function init_track_row(row, data)
 
         row.name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         row.name:SetPoint("LEFT", row.icon, "RIGHT", 6, 0)
-        row.name:SetWidth(TRACK_NAME_W)
+        row.name:SetWidth(150)
         row.name:SetJustifyH("LEFT")
         row.name:SetWordWrap(false)
 
@@ -265,16 +309,33 @@ local function init_track_row(row, data)
         row.spellid:SetWidth(70)
         row.spellid:SetJustifyH("LEFT")
 
+        row.cd = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        row.cd:SetPoint("LEFT", row.spellid, "RIGHT", 6, 0)
+        row.cd:SetWidth(112)
+        row.cd:SetJustifyH("LEFT")
+
         row.class = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        row.class:SetPoint("LEFT", row.spellid, "RIGHT", 6, 0)
+        row.class:SetPoint("LEFT", row.cd, "RIGHT", 6, 0)
         row.class:SetJustifyH("LEFT")
+
+        row.up = CreateFrame("Button", nil, row, "UIPanelScrollUpButtonTemplate")
+        row.up:SetPoint("LEFT", row, "LEFT", order_x + ORDER_PAD, 0)
+        row.up.dir = -1
+        row.up:SetScript("OnClick", on_track_move_click)
+
+        row.down = CreateFrame("Button", nil, row, "UIPanelScrollDownButtonTemplate")
+        row.down:SetPoint("LEFT", row.up, "RIGHT", 2, 0)
+        row.down.dir = 1
+        row.down:SetScript("OnClick", on_track_move_click)
     end
     row.data = data
     row.check:SetChecked(not data.off)
     row.icon:SetTexture(C_Spell.GetSpellTexture(data.id) or 134400)
-    local name = C_Spell.GetSpellName(data.id) or "?"
-    row.name:SetText(data.cd and (name .. " |cff888888" .. data.cd .. "초|r") or name)
+    row.up:SetEnabled(index > 1)
+    row.down:SetEnabled(index < total)
+    row.name:SetText(C_Spell.GetSpellName(data.id) or "?")
     row.spellid:SetText(data.id)
+    row.cd:SetText(data.cd and (data.cd .. "초") or "-")
     local className = data.class and LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[data.class] or data.class or "-"
     local color = data.class and C_ClassColor.GetClassColor(data.class)
     row.class:SetText(color and color:WrapTextInColorCode(className) or className)
@@ -303,9 +364,7 @@ function dodoPTTrackListMixin:OnLoad()
     end)
 
     -- 목록 박스 + 컬럼 헤더 (dodo.UI:CreateListBox)
-    self.listBG, self.content = dodo.UI:CreateListBox(self, TOP_H, {
-        { "주문명", 220 + 10 }, { "spellID", 78 }, { "직업", 120 }, -- 주문명 폭 +10
-    })
+    self.listBG, self.content, self.colX = dodo.UI:CreateListBox(self, TOP_H, TRACK_COLUMNS)
 
     self.rows = {}
 end
@@ -322,7 +381,7 @@ function dodoPTTrackListMixin:Update()
             row:SetPoint("RIGHT", self.content, "RIGHT")
             self.rows[i] = row
         end
-        init_track_row(row, data)
+        init_track_row(row, data, i, #rows, self.colX[5])
         row:Show()
     end
     for i = #rows + 1, #self.rows do

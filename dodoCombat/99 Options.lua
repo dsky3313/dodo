@@ -110,7 +110,7 @@ dodo.RegisterOption("전투", function(category)
     end
 
     -- 통합 미리보기 (마스터 ON이면 탭 무관 항상 표시)
-    local _preview_init = dodo.UI:SettingsTabbedPreview(category, { "자원바", "디버프", "커서 주문 추적", "블러드 & 전투부활", "태세", "파티 주문 추적" }, dodoCombatPreviewMixin)
+    local _preview_init = dodo.UI:SettingsTabbedPreview(category, { "자원바", "디버프", "커서 주문 추적", "파티 주문 추적", "블러드 & 전투부활", "태세" }, dodoCombatPreviewMixin)
     if _preview_init and _preview_init.AddShownPredicate then
         _preview_init:AddShownPredicate(function() return master_setting:GetValue() end)
     end
@@ -334,9 +334,9 @@ dodo.RegisterOption("전투", function(category)
     local function _rb_shown() return master_setting:GetValue() and _tab() == 1 end
     local function _df_shown() return master_setting:GetValue() and _tab() == 2 end
     local function _cst_shown() return master_setting:GetValue() and _tab() == 3 end
-    local function _bb_shown() return master_setting:GetValue() and _tab() == 4 end
-    local function _st_shown() return master_setting:GetValue() and _tab() == 5 end
-    local function _pt_shown() return master_setting:GetValue() and _tab() == 6 end
+    local function _pt_shown() return master_setting:GetValue() and _tab() == 4 end
+    local function _bb_shown() return master_setting:GetValue() and _tab() == 5 end
+    local function _st_shown() return master_setting:GetValue() and _tab() == 6 end
 
     for _, v in ipairs(_rb_sub) do if v.AddShownPredicate then v:AddShownPredicate(_rb_shown) end end
     local function _rbs_shown() return _rb_shown() and (rb_setting and rb_setting:GetValue()) end

@@ -106,10 +106,17 @@ local DEFAULTS = {
 	namePos1 = 'IN', namePos2 = 'IN',
 	nameSize1 = 10, nameSize2 = 10,
 	nameLen1 = 4, nameLen2 = 4,
+	order = {}, -- dodo: 주문 목록 전체 순서 (migrate 에서 ORDER 로 채움)
 }
 
 local function migrate(cfg)
 	cfg.cds = nil
+	if type(cfg.order) ~= 'table' then cfg.order = {} end
+	local listed = {}
+	for _, id in ipairs(cfg.order) do listed[id] = true end
+	for _, id in ipairs(ORDER) do
+		if not listed[id] then cfg.order[#cfg.order + 1] = id end
+	end
 	for g = 1, GROUPS do
 		if type(cfg['spells' .. g]) ~= 'table' then cfg['spells' .. g] = {} end
 	end
@@ -1179,26 +1186,41 @@ ns.CCCatalogue = function() return entries(ORDER) end
 ns.CCSpells = function()
 	local have, out = {}, {}
 	for _, id in ipairs(get_cfg().spells1 or EMPTY) do have[id] = true end
-	for _, id in ipairs(ORDER) do
+	for _, id in ipairs(get_cfg().order) do
 		local sp = SPELLS[id]
 		if sp then out[#out + 1] = { id = id, class = sp.class, cd = sp.cd, off = not have[id] } end
 	end
 	return out
 end
 
--- 켜기/끄기 후 spells1 을 ORDER 순서로 다시 만듦 (끄고 켜도 순서 유지)
+-- 켜기/끄기/이동 후 spells1 을 cfg.order 순서로 다시 만듦 (끄고 켜도 순서 유지)
+local function rebuild_spells1(cfg, have)
+	local list = {}
+	for _, v in ipairs(cfg.order) do
+		if have[v] then list[#list + 1] = v end
+	end
+	cfg.spells1 = list
+end
+
 ns.CCSetShown = function(id, on)
 	if not SPELLS[id] then return end
 	local cfg = get_cfg()
 	local have = {}
 	for _, v in ipairs(cfg.spells1 or EMPTY) do have[v] = true end
 	have[id] = on and true or nil
-	local list = {}
-	for _, v in ipairs(ORDER) do
-		if have[v] then list[#list + 1] = v end
-	end
-	cfg.spells1 = list
+	rebuild_spells1(cfg, have)
 	ns.CCApply()
+end
+
+-- 목록 순서 이동 (설정창 ▲▼)
+ns.CCMoveListed = function(id, dir)
+	local cfg = get_cfg()
+	if not kit.Swap(cfg.order, id, dir) then return false end
+	local have = {}
+	for _, v in ipairs(cfg.spells1 or EMPTY) do have[v] = true end
+	rebuild_spells1(cfg, have)
+	ns.CCApply()
+	return true
 end
 ns.CCBarSpells = function(g) return entries(get_cfg()['spells' .. g]) end
 

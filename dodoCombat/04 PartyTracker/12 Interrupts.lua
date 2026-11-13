@@ -59,6 +59,7 @@ local function migrate(cfg)
 	if cfg.iconSource ~= 'kick' and cfg.iconSource ~= 'kicked' then cfg.iconSource = 'kick' end
 	cfg.kickCd, cfg.memberCd, cfg.kickOrder, cfg.texture = nil, nil, nil, nil
 	if type(cfg.off) ~= 'table' then cfg.off = {} end -- dodo: 주문별 끄기 { [spellID] = true }
+	if type(cfg.order) ~= 'table' then cfg.order = {} end -- dodo: 주문 목록 순서 { spellID, ... }
 end
 
 local function get_cfg() return ns.ModuleCfg('interrupts', DEFAULTS, migrate) end
@@ -1169,12 +1170,37 @@ table.sort(KICK_IDS, function(a, b)
 	return a < b
 end)
 
+-- 목록 순서: cfg.order (저장) → 없는 주문은 KICK_IDS 순서로 뒤에. 목록 표시 전용 (차단바 표시 순서와 무관)
 ns.IKSpells = function()
-	local off, out = get_cfg().off, {}
+	local cfg = get_cfg()
+	local off, out, seen = cfg.off, {}, {}
+	for _, id in ipairs(cfg.order) do
+		if KICKS[id] and not seen[id] then
+			seen[id] = true
+			out[#out + 1] = { id = id, class = KICKS[id].class, cd = KICKS[id].cd, off = off[id] and true or false }
+		end
+	end
 	for _, id in ipairs(KICK_IDS) do
-		out[#out + 1] = { id = id, class = KICKS[id].class, cd = KICKS[id].cd, off = off[id] and true or false }
+		if not seen[id] then
+			out[#out + 1] = { id = id, class = KICKS[id].class, cd = KICKS[id].cd, off = off[id] and true or false }
+		end
 	end
 	return out
+end
+
+ns.IKMove = function(id, dir)
+	local list = ns.IKSpells()
+	local at
+	for i, e in ipairs(list) do
+		if e.id == id then at = i end
+	end
+	local to = at and at + dir
+	if not to or not list[to] or (dir ~= 1 and dir ~= -1) then return false end
+	list[at], list[to] = list[to], list[at]
+	local ids = {}
+	for i, e in ipairs(list) do ids[i] = e.id end
+	get_cfg().order = ids
+	return true
 end
 
 ns.IKSetShown = function(id, on)

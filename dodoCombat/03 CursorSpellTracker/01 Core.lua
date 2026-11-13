@@ -498,6 +498,20 @@ local function is_entry_disabled(disabled, entry)
     return v
 end
 
+-- dodoDB.cursorSpellTrackerOrder = { [specID] = { spellID, ... } } 순서대로 정렬 (목록에 없는 주문은 원래 순서로 뒤에)
+-- 설정창 목록(99 Options Preview.lua cst_build_rows)도 같이 사용
+function dodo.CursorSpellTrackerSortByOrder(list, specID)
+    local root = dodoDB.cursorSpellTrackerOrder
+    local order = root and root[specID]
+    if not order then return end
+    local rank, pos, n = {}, {}, #order
+    for i, id in ipairs(order) do rank[id] = i end
+    for i, e in ipairs(list) do pos[e] = i end
+    table.sort(list, function(a, b)
+        return (rank[a.spellID] or (n + pos[a])) < (rank[b.spellID] or (n + pos[b]))
+    end)
+end
+
 local function build_active_spells(specID)
     wipe(merged_spells)
     local disabledBySpec = dodoDB.cursorSpellTrackerDisabled
@@ -521,6 +535,7 @@ local function build_active_spells(specID)
             end
         end
     end
+    dodo.CursorSpellTrackerSortByOrder(merged_spells, specID)
     return merged_spells
 end
 

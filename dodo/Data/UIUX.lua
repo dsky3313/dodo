@@ -403,7 +403,7 @@ end
 ---@param parent Frame
 ---@param top number 박스 위 영역 높이 (드롭다운 등, 헤더 제외)
 ---@param columns table { { "주문명", 220 }, { "spellID", 78 }, ... } 헤더 텍스트 / 폭
----@return Frame listBG, Frame content
+---@return Frame listBG, Frame content, number[] colX 각 컬럼 헤더 왼쪽 끝 (content 왼쪽 기준 x, 행 내부 정렬용)
 local LIST_HEADER_H = 28 -- 컬럼 헤더 높이 (WhoFrameColumnHeaderTemplate)
 local _list_col_count = 0
 function dodo.UI:CreateListBox(parent, top, columns)
@@ -417,7 +417,10 @@ function dodo.UI:CreateListBox(parent, top, columns)
     -- 컬럼 헤더 (목록 박스 TOP 바로 위, dodoQOL 99 ETC/PlayerMemo.lua 방식)
     -- WhoFrameColumn_SetWidth가 GetName().."Middle" 전역 조회 → 전역 이름 자동 부여
     local prev
+    local colX, x = {}, 2 - 6 -- 첫 헤더 left = listBG +2, content = listBG +6
     for _, col in ipairs(columns or {}) do
+        colX[#colX + 1] = x
+        x = x + col[2] - 2
         _list_col_count = _list_col_count + 1
         local header = CreateFrame("Button", "dodoListColumn" .. _list_col_count, parent, "WhoFrameColumnHeaderTemplate")
         if prev then
@@ -434,7 +437,7 @@ function dodo.UI:CreateListBox(parent, top, columns)
     content:SetPoint("TOPLEFT", listBG, "TOPLEFT", 6, -6)
     content:SetPoint("BOTTOMRIGHT", listBG, "BOTTOMRIGHT", -6, 6)
     content:SetFrameLevel(listBG:GetFrameLevel() + 1)
-    return listBG, content
+    return listBG, content, colX
 end
 
 -- 탭 전환 가능한 커스텀 미리보기 프레임 — 탭 클릭 시 OnTabSelected(tabIndex) 호출

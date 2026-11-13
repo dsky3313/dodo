@@ -428,7 +428,57 @@ dodoCombatPreviewMixin = dodo.UI:CreatePreviewMixin({
                 end
             end,
         },
-        { -- 탭4: 혈부활
+        { -- 탭4: 파티 추적 (왼쪽: 차단기 바 / 가운데: 군중제어 아이콘 / 오른쪽: 공생기 바)
+            OnLoad = function(p, ns)
+                p:SetClipsChildren(true)
+                p.cc_icons, p.kick_rows, p.def_rows = {}, {}, {}
+                for i, spellID in ipairs(PT_SAMPLE_CC) do
+                    p.cc_icons[i] = create_pt_preview_icon(p, spellID)
+                end
+                for i, data in ipairs(PT_SAMPLE_KICK) do
+                    p.kick_rows[i] = create_pt_preview_row(p, data)
+                end
+                for i, data in ipairs(PT_SAMPLE_DEF) do
+                    p.def_rows[i] = create_pt_preview_row(p, data)
+                end
+                p.kick_rows.border = create_pt_preview_border(p)
+                p.def_rows.border = create_pt_preview_border(p)
+            end,
+            Update = function(p, ns)
+                local D  = dodo.PT_DEFAULTS
+                local db = dodoDB or {}
+                local function get(key)
+                    local v = db[key]
+                    if v == nil then v = D[key] end
+                    return v
+                end
+
+                -- 차단기: 왼쪽 위부터 아래로
+                layout_pt_preview_rows(p.kick_rows, ns, "TOPLEFT", PT_SIDE,
+                    get("partyInterruptsWidth"), get("partyInterruptsHeight"),
+                    get("partyInterruptsIconGap"), get("partyInterruptsSpacing"), get("enablePartyInterrupts"))
+
+                -- 공생기: 오른쪽 위부터 아래로 (아이콘 간격 0, 바 간격 -1 고정)
+                layout_pt_preview_rows(p.def_rows, ns, "TOPRIGHT", -PT_SIDE,
+                    get("partyDefensivesWidth"), get("partyDefensivesHeight"),
+                    0, PT_DEF_GAP, get("enablePartyDefensives"))
+
+                -- 군중제어: 가운데 정렬, 행 당 개수 넘치면 다음 줄
+                local ccOn = get("enablePartyCC")
+                local ccSize, ccGap = get("partyCCSize"), get("partyCCSpacing")
+                local per = math_max(1, get("partyCCPerRow"))
+                local cols = math.min(per, #p.cc_icons)
+                local left = -(cols * (ccSize + ccGap) - ccGap) / 2
+                for i, f in ipairs(p.cc_icons) do
+                    local col, line = (i - 1) % per, math.floor((i - 1) / per)
+                    f:SetSize(ccSize, ccSize)
+                    f:ClearAllPoints()
+                    f:SetPoint("TOPLEFT", ns, "TOP", left + col * (ccSize + ccGap), PT_TOP - line * (ccSize + ccGap) + 2)
+                    f:SetShown(ccOn)
+                end
+            end,
+        },
+        { -- 탭5: 혈부활
             OnLoad = function(p, ns)
                 p.icon_frames = {}
                 for i = 1, 2 do
@@ -503,7 +553,7 @@ dodoCombatPreviewMixin = dodo.UI:CreatePreviewMixin({
                 f2.cooldown:Show()
             end,
         },
-        { -- 탭5: 태세
+        { -- 탭6: 태세
             OnLoad = function(p, ns)
                 local f = CreateFrame("Frame", nil, p)
                 local bg = f:CreateTexture(nil, "BACKGROUND")
@@ -527,56 +577,6 @@ dodoCombatPreviewMixin = dodo.UI:CreatePreviewMixin({
                 p.icon_frame:SetSize(sz, sz)
                 p.icon_frame:ClearAllPoints()
                 p.icon_frame:SetPoint("CENTER", ns, "CENTER", 0, 0)
-            end,
-        },
-        { -- 탭6: 파티 추적 (왼쪽: 차단기 바 / 가운데: 군중제어 아이콘 / 오른쪽: 공생기 바)
-            OnLoad = function(p, ns)
-                p:SetClipsChildren(true)
-                p.cc_icons, p.kick_rows, p.def_rows = {}, {}, {}
-                for i, spellID in ipairs(PT_SAMPLE_CC) do
-                    p.cc_icons[i] = create_pt_preview_icon(p, spellID)
-                end
-                for i, data in ipairs(PT_SAMPLE_KICK) do
-                    p.kick_rows[i] = create_pt_preview_row(p, data)
-                end
-                for i, data in ipairs(PT_SAMPLE_DEF) do
-                    p.def_rows[i] = create_pt_preview_row(p, data)
-                end
-                p.kick_rows.border = create_pt_preview_border(p)
-                p.def_rows.border = create_pt_preview_border(p)
-            end,
-            Update = function(p, ns)
-                local D  = dodo.PT_DEFAULTS
-                local db = dodoDB or {}
-                local function get(key)
-                    local v = db[key]
-                    if v == nil then v = D[key] end
-                    return v
-                end
-
-                -- 차단기: 왼쪽 위부터 아래로
-                layout_pt_preview_rows(p.kick_rows, ns, "TOPLEFT", PT_SIDE,
-                    get("partyInterruptsWidth"), get("partyInterruptsHeight"),
-                    get("partyInterruptsIconGap"), get("partyInterruptsSpacing"), get("enablePartyInterrupts"))
-
-                -- 공생기: 오른쪽 위부터 아래로 (아이콘 간격 0, 바 간격 -1 고정)
-                layout_pt_preview_rows(p.def_rows, ns, "TOPRIGHT", -PT_SIDE,
-                    get("partyDefensivesWidth"), get("partyDefensivesHeight"),
-                    0, PT_DEF_GAP, get("enablePartyDefensives"))
-
-                -- 군중제어: 가운데 정렬, 행 당 개수 넘치면 다음 줄
-                local ccOn = get("enablePartyCC")
-                local ccSize, ccGap = get("partyCCSize"), get("partyCCSpacing")
-                local per = math_max(1, get("partyCCPerRow"))
-                local cols = math.min(per, #p.cc_icons)
-                local left = -(cols * (ccSize + ccGap) - ccGap) / 2
-                for i, f in ipairs(p.cc_icons) do
-                    local col, line = (i - 1) % per, math.floor((i - 1) / per)
-                    f:SetSize(ccSize, ccSize)
-                    f:ClearAllPoints()
-                    f:SetPoint("TOPLEFT", ns, "TOP", left + col * (ccSize + ccGap), PT_TOP - line * (ccSize + ccGap) + 2)
-                    f:SetShown(ccOn)
-                end
             end,
         },
     },
@@ -658,7 +658,25 @@ local function cst_build_rows(specID)
     if custom then
         for _, e in ipairs(custom) do rows[#rows + 1] = { spellID = e.spellID, group = e.group, custom = true } end
     end
+    if dodo.CursorSpellTrackerSortByOrder then dodo.CursorSpellTrackerSortByOrder(rows, specID) end
     return rows
+end
+
+-- 순서 이동 (▲/▼) — dodoDB.cursorSpellTrackerOrder = { [specID] = { spellID, ... } }
+local function cst_move(specID, spellID, dir)
+    local rows = cst_build_rows(specID)
+    local at
+    for i, r in ipairs(rows) do
+        if r.spellID == spellID then at = i end
+    end
+    local to = at and at + dir
+    if not to or not rows[to] then return false end
+    rows[at], rows[to] = rows[to], rows[at]
+    local ids = {}
+    for i, r in ipairs(rows) do ids[i] = r.spellID end
+    dodoDB.cursorSpellTrackerOrder = dodoDB.cursorSpellTrackerOrder or {}
+    dodoDB.cursorSpellTrackerOrder[specID] = ids
+    return true
 end
 
 local function cst_on_check_click(self)
@@ -722,7 +740,14 @@ local function cst_on_delete_click(self)
     if data and data.custom and _cst_spec_id then cst_remove_custom(_cst_spec_id, data.spellID) end
 end
 
-local function cst_init_row(row, data)
+local function cst_on_move_click(self)
+    local row = self:GetParent()
+    if row.data and _cst_spec_id and cst_move(_cst_spec_id, row.data.spellID, self.dir) then
+        cst_after_list_change()
+    end
+end
+
+local function cst_init_row(row, data, index, total, order_x)
     if not row.check then
         row.check = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
         row.check:SetSize(24, 24)
@@ -745,8 +770,13 @@ local function cst_init_row(row, data)
         row.spellid:SetWidth(70)
         row.spellid:SetJustifyH("LEFT")
 
+        row.cd = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        row.cd:SetPoint("LEFT", row.spellid, "RIGHT", 6, 0)
+        row.cd:SetWidth(112)
+        row.cd:SetJustifyH("LEFT")
+
         row.group = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        row.group:SetPoint("LEFT", row.spellid, "RIGHT", 6, 0)
+        row.group:SetPoint("LEFT", row.cd, "RIGHT", 6, 0)
         row.group:SetJustifyH("LEFT")
 
         -- 삭제 (직접 추가한 주문만, 항상 표시)
@@ -756,14 +786,29 @@ local function cst_init_row(row, data)
         row.del:SetNormalAtlas("common-icon-redx")
         row.del:SetHighlightAtlas("common-icon-redx", "ADD")
         row.del:SetScript("OnClick", cst_on_delete_click)
+
+        -- 순서 이동 (삭제 버튼 왼쪽)
+        row.up = CreateFrame("Button", nil, row, "UIPanelScrollUpButtonTemplate")
+        row.up:SetPoint("LEFT", row, "LEFT", order_x + 8, 0) -- "순서" 헤더 글자 왼쪽에 맞춤
+        row.up.dir = -1
+        row.up:SetScript("OnClick", cst_on_move_click)
+
+        row.down = CreateFrame("Button", nil, row, "UIPanelScrollDownButtonTemplate")
+        row.down:SetPoint("LEFT", row.up, "RIGHT", 2, 0)
+        row.down.dir = 1
+        row.down:SetScript("OnClick", cst_on_move_click)
     end
     row.data = data
+    row.up:SetEnabled(index > 1)
+    row.down:SetEnabled(index < total)
     row.del:SetShown(data.custom == true)
     row.check:SetChecked(not cst_is_disabled(_cst_spec_id, data.spellID, data.defaultOff))
     row.icon:SetTexture(C_Spell.GetSpellTexture(data.spellID) or 134400)
     local name = C_Spell.GetSpellName(data.spellID) or "?"
     row.name:SetText(data.custom and (name .. " |cff888888(추가)|r") or name)
     row.spellid:SetText(data.spellID)
+    local cd_ms = C_Spell.GetSpellBaseCooldown(data.spellID)
+    row.cd:SetText(cd_ms and cd_ms > 0 and (math.floor(cd_ms / 1000 + 0.5) .. "초") or "-")
     row.group:SetText(CST_GROUP_LABEL[data.group] or "-")
 end
 
@@ -830,7 +875,7 @@ local function cst_add_on_cancel(btn) cst_add_set_editing(btn:GetParent(), false
 local function cst_is_add_group(group) return _cst_add_group == group end
 local function cst_set_add_group(group) _cst_add_group = group end
 
--- 열 위치는 cst_init_row와 동일 (아이콘 30 / 주문명 56 / spellID 212 / 카테고리 288)
+-- 열 위치는 cst_init_row와 동일 (아이콘 30 / 주문명 56 / spellID 212 / 재사용 288 / 카테고리 406)
 local function cst_create_add_row(parent)
     local addRow = CreateFrame("Button", nil, parent)
     addRow:SetHeight(CST_ROW_H)
@@ -869,7 +914,7 @@ local function cst_create_add_row(parent)
 
     addRow.groupDD = CreateFrame("DropdownButton", nil, addRow, "WowStyle1DropdownTemplate")
     addRow.groupDD:SetSize(90, 22)
-    addRow.groupDD:SetPoint("LEFT", addRow, "LEFT", 288, 0)
+    addRow.groupDD:SetPoint("LEFT", addRow, "LEFT", 406, 0)
     addRow.groupDD:SetupMenu(function(_, root)
         for _, group in ipairs(dodo.CST_GROUP_ORDER) do
             root:CreateRadio(CST_GROUP_LABEL[group], cst_is_add_group, cst_set_add_group, group)
@@ -954,8 +999,8 @@ function dodoCSTSpellListMixin:OnLoad()
 
     -- 주문 목록 (스크롤 없음, 고정 높이) — 박스/헤더는 dodo.UI:CreateListBox
     -- 헤더 폭은 cst_init_row 열 위치 기준 (박스 안쪽 여백 6 포함: spellID 218 / 카테고리 294)
-    self.listBG, self.content = dodo.UI:CreateListBox(self, 36, {
-        { "주문명", 220 }, { "spellID", 78 }, { "카테고리", 120 },
+    self.listBG, self.content, self.colX = dodo.UI:CreateListBox(self, 36, {
+        { "주문명", 210 }, { "spellID", 78 }, { "재사용 대기시간", 120 }, { "카테고리", 90 }, { "순서", 58 },
     })
 
     self.rows = {}
@@ -974,7 +1019,7 @@ function dodoCSTSpellListMixin:Update()
             row:SetPoint("RIGHT", self.content, "RIGHT")
             self.rows[i] = row
         end
-        cst_init_row(row, data)
+        cst_init_row(row, data, i, #rows, self.colX[5])
         row:Show()
     end
     for i = #rows + 1, #self.rows do
