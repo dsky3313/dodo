@@ -66,9 +66,19 @@ function PotionOverlayMixin:Update(active)
     if active then
         if not self.ProcLoop:IsPlaying() then self.ProcLoop:Play() end
         self:Show()
+        if self.ArrowFrame then
+            self.ArrowFrame:Show()
+            if not self.ArrowFrame.Bounce:IsPlaying() then
+                self.ArrowFrame.Bounce:Play()
+            end
+        end
     else
         if self.ProcLoop:IsPlaying() then self.ProcLoop:Stop() end
         self:Hide()
+        if self.ArrowFrame then
+            self.ArrowFrame.Bounce:Stop()
+            self.ArrowFrame:Hide()
+        end
     end
 end
 
@@ -100,6 +110,26 @@ local function update_potion_proc(btn)
             btn.potionOverlay:SetAllPoints(btn)
             local w, h = btn:GetSize()
             btn.potionOverlay.Proc:SetSize(w * 1.4, h * 1.4)
+
+            -- 통통 튀는 화살표 (아이콘 상단)
+            local arrowFrame = CreateFrame("Frame", nil, btn)
+            local arrow = arrowFrame:CreateTexture(nil, "OVERLAY")
+            arrow:SetAtlas("Crosshair_Wrapper_64", true)
+            arrow:SetPoint("BOTTOM", btn, "TOP", 0, 4)
+            arrow:SetSnapToPixelGrid(false)
+            arrow:SetTexelSnappingBias(0)
+            arrowFrame:SetAllPoints(arrow)
+
+            local bounce = arrowFrame:CreateAnimationGroup()
+            bounce:SetLooping("REPEAT")
+            local up = bounce:CreateAnimation("Translation")
+            up:SetOffset(0, 4); up:SetDuration(0.5); up:SetSmoothing("IN_OUT"); up:SetOrder(1)
+            local dn = bounce:CreateAnimation("Translation")
+            dn:SetOffset(0, -4); dn:SetDuration(0.5); dn:SetSmoothing("IN_OUT"); dn:SetOrder(2)
+            arrowFrame.Bounce = bounce
+
+            btn.potionOverlay.ArrowFrame = arrowFrame
+            arrowFrame:Hide()
         end
 
         local count = C_Item.GetItemCount(id)
