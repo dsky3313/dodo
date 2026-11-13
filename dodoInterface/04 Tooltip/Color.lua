@@ -116,6 +116,7 @@ end
 
 local function on_item_tooltip(self, data)
     if dodoDB.enableInterface == false or dodoDB.useTooltipColor == false then return end
+    if self.IsEmbedded then return end
     match_border_to_name_color(self)
 end
 

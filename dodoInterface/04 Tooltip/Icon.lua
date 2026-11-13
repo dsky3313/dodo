@@ -45,6 +45,7 @@ end
 -- ==============================
 local function process_item_icon(tooltip, data)
     if dodoDB.enableInterface == false or dodoDB.useTooltipIcon == false then return end
+    if tooltip.IsEmbedded then return end
     if not GetItemInfo then return end
 
     local item_id = data.id

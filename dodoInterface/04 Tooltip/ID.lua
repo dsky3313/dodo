@@ -110,6 +110,7 @@ end
 
 local function handle_item_id(tooltip, data)
     if dodoDB.enableInterface == false or dodoDB.useTooltipID == false then return end
+    if tooltip.IsEmbedded then return end
     has_drawn_divider = true
     
     local item_id = data.id 
