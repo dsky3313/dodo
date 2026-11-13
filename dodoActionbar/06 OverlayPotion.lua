@@ -28,8 +28,11 @@ local C_Item = C_Item
 local C_Timer = C_Timer
 local CreateFrame = CreateFrame
 local GetActionInfo = GetActionInfo
+local PlaySoundFile = PlaySoundFile
 local ipairs = ipairs
 local pairs = pairs
+
+local POTION_READY_SOUND = "Interface\\AddOns\\dodo\\Media\\Sound\\PotionReady.mp3"
 
 -- ==============================
 -- 기능 구현
@@ -135,6 +138,12 @@ local function update_potion_proc(btn)
         local count = C_Item.GetItemCount(id)
         local start, duration = C_Container.GetItemCooldown(id)
         local isUsable = dodo.inCombat and (count > 0) and (start == 0 or duration == 0)
+        if isUsable and not btn.__wasUsable then
+            if dodoDB and dodoDB.useActionbarPotionProcSound then
+                PlaySoundFile(POTION_READY_SOUND, "Master")
+            end
+        end
+        btn.__wasUsable = isUsable
         btn.potionOverlay:Update(isUsable)
     elseif btn.potionOverlay then
         btn.potionOverlay:Update(false)

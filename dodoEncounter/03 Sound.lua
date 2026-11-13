@@ -44,20 +44,20 @@ local SOUND_ROOT = "Interface\\AddOns\\dodo\\Media\\Sound\\Encounter\\"
 --   파일명 = SOUND_MAP 키, 문구 = 04 Text.lua SOUND_DEFAULT_TEXT
 ---@type table<dodo.SoundKey, dodo.SoundData>
 local SOUND_MAP = {
-    Adds      = { file = SOUND_ROOT .. "Adds.mp3",      channel = "Master" },
-    AOE       = { file = SOUND_ROOT .. "AOE.mp3",       channel = "Master" },
-    Dispel    = { file = SOUND_ROOT .. "Dispel.mp3",    channel = "Master" },
-    Dodge     = { file = SOUND_ROOT .. "Dodge.mp3",     channel = "Master" },
-    Frontal   = { file = SOUND_ROOT .. "Frontal.mp3",   channel = "Master" },
+    Adds         = { file = SOUND_ROOT .. "Adds.mp3",         channel = "Master" },
+    AOE          = { file = SOUND_ROOT .. "AOE.mp3",          channel = "Master" },
+    Dispel       = { file = SOUND_ROOT .. "Dispel.mp3",       channel = "Master" },
+    Dodge        = { file = SOUND_ROOT .. "Dodge.mp3",        channel = "Master" },
+    Frontal      = { file = SOUND_ROOT .. "Frontal.mp3",      channel = "Master" },
     Intermission = { file = SOUND_ROOT .. "Intermission.mp3", channel = "Master" },
-    Interrupt = { file = SOUND_ROOT .. "Interrupt.mp3", channel = "Master" },
-    Phase     = { file = SOUND_ROOT .. "Phase.mp3",     channel = "Master" },
-    Pool      = { file = SOUND_ROOT .. "Pool.mp3",      channel = "Master" },
-    Share     = { file = SOUND_ROOT .. "Share.mp3",     channel = "Master" },
-    Soak      = { file = SOUND_ROOT .. "Soak.mp3",      channel = "Master" },
-    Spread    = { file = SOUND_ROOT .. "Spread.mp3",    channel = "Master" },
-    Tank      = { file = SOUND_ROOT .. "Tank.mp3",      channel = "Master" },
-    Wave      = { file = SOUND_ROOT .. "Wave.mp3",      channel = "Master" },
+    Interrupt    = { file = SOUND_ROOT .. "Interrupt.mp3",    channel = "Master" },
+    Phase        = { file = SOUND_ROOT .. "Phase.mp3",        channel = "Master" },
+    Pool         = { file = SOUND_ROOT .. "Pool.mp3",         channel = "Master" },
+    Share        = { file = SOUND_ROOT .. "Share.mp3",        channel = "Master" },
+    Soak         = { file = SOUND_ROOT .. "Soak.mp3",         channel = "Master" },
+    Spread       = { file = SOUND_ROOT .. "Spread.mp3",       channel = "Master" },
+    Tank         = { file = SOUND_ROOT .. "Tank.mp3",         channel = "Master" },
+    Wave         = { file = SOUND_ROOT .. "Wave.mp3",         channel = "Master" },
 }
 
 local function get_sound(key)

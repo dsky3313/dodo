@@ -84,6 +84,7 @@ dodo.AB_DEFAULTS = {
         ["StanceBar"]           = false,
         ["PetActionBar"]        = false,
     },
+    potionSound = false,
     hotkey = {
         ["MainActionBar"]       = true,
         ["MultiBarBottomLeft"]  = true,
@@ -176,6 +177,7 @@ dodo.AB_DB_KEYS = {
         ["MultiBar6"]           = "useActionbarPotionProcBar7",
         ["MultiBar7"]           = "useActionbarPotionProcBar8",
     },
+    potionSound = "useActionbarPotionProcSound",
     hotkey = {
         ["MainActionBar"]       = "useActionbarHideHotkeysBar1",
         ["MultiBarBottomLeft"]  = "useActionbarHideHotkeysBar2",
@@ -477,11 +479,28 @@ dodo.RegisterOption("행동 단축바", function(category)
             end
         end
         if #pot_items > 0 then
-            T(dodo.UI:SettingsMultiDropDown(category, "물약 사용가능 알림", pot_items, function(key, selected)
+            local pot_init = dodo.UI:SettingsMultiDropDown(category, "물약 사용가능 알림", pot_items, function(key, selected)
                 if dodoDB then dodoDB[key] = selected end
                 if dodo.ActionbarInvalidatePotionCache then dodo.ActionbarInvalidatePotionCache() end
                 if dodo.ActionbarApplyPotionProc then dodo.ActionbarApplyPotionProc() end
-            end, "물약을 사용할 수 있는 상태일 때, \n물약 아이콘에 알림 효과를 표시합니다."))
+            end, "물약을 사용할 수 있는 상태일 때, \n물약 아이콘에 알림 효과를 표시합니다.")
+            T(pot_init)
+
+            local _pot_sid = "dodo_ab_pot_dd"
+            local _pot_setting = Settings.GetSetting(_pot_sid)
+                or Settings.RegisterProxySetting(category, _pot_sid, Settings.VarType.Boolean, "",
+                    true, function() return true end, function() end)
+            pot_init.GetSetting = function() return _pot_setting end
+
+            local pot_sound_init = dodo.UI:SettingsCheckbox(category, "useActionbarPotionProcSound", "효과음 재생",
+                "물약 쿨다운이 돌아왔을 때 효과음을 재생합니다.",
+                D.potionSound or false, function(val)
+                    if dodoDB then dodoDB.useActionbarPotionProcSound = val end
+                end)
+            T(pot_sound_init)
+            if pot_sound_init and pot_sound_init.SetParentInitializer then
+                pot_sound_init:SetParentInitializer(pot_init, function() return true end)
+            end
         end
     end
 
