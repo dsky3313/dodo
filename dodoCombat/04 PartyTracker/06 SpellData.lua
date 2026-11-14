@@ -483,7 +483,7 @@ local CLASS_SPELLS = {
 	},
 	WARRIOR = { -- 전사
 		shared = { -- 공용
-			{ 107574,  CD,   true,  cooldown = 90,  known = true }, -- 투신
+			{ 107574,  CD,   true,  cooldown = 90,  known = true, buff = { 107574 } }, -- 투신
 			{ 376079,  CD,   false, cooldown = 90,  selfOnly = true, known = true }, -- 용사의 창
 			{ 23920,   DEF,  true,  cooldown = 25,  charge = true, specCooldown = 23 }, -- 주문 반사
 			{ 202168,  DEF,  false, cooldown = 25,  selfOnly = true, known = true }, -- 예견된 승리

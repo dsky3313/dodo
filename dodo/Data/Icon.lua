@@ -269,5 +269,74 @@ function LibIcon:Create(name, parent, config)
         self:SetFrameStrata(data.framestrata or "LOW")
         self:UpdateStatus()
     end
+
+    function frame:SetGlow(active)
+        if active then
+            if not self.glowOverlay then
+                self.glowOverlay = CreateFrame("Frame", nil, self, "PotionOverlayTemplate")
+                self.glowOverlay:SetAllPoints(self)
+                self.glowOverlay:SetFrameLevel(self.overlayLayer:GetFrameLevel() + 1)
+                local w, h = self:GetSize()
+                self.glowOverlay.Proc:SetSize(w * 1.4, h * 1.4)
+                self.glowOverlay.Proc:ClearAllPoints()
+                self.glowOverlay.Proc:SetPoint("CENTER", self, "CENTER", 0, 0)
+            end
+            if not self.glowOverlay.ProcLoop:IsPlaying() then
+                self.glowOverlay.ProcLoop:Play()
+            end
+            self.glowOverlay:Show()
+        else
+            if self.glowOverlay then
+                if self.glowOverlay.ProcLoop:IsPlaying() then
+                    self.glowOverlay.ProcLoop:Stop()
+                end
+                self.glowOverlay:Hide()
+            end
+        end
+    end
+
+    function frame:SetGlowCDM(active, r, g, b)
+        if active then
+            if not self.glowCDMOverlay then
+                self.glowCDMOverlay = CreateFrame("Frame", nil, self)
+                self.glowCDMOverlay:SetAllPoints(self)
+                self.glowCDMOverlay:SetFrameLevel(self.overlayLayer:GetFrameLevel() + 1)
+                self.glowCDMOverlay.border = self.glowCDMOverlay:CreateTexture(nil, "OVERLAY")
+                self.glowCDMOverlay.border:SetAtlas("UI-HUD-ActionBar-IconFrame-Mouseover")
+                self.glowCDMOverlay.border:SetBlendMode("BLEND")
+                self.glowCDMOverlay.border:SetAllPoints(self.glowCDMOverlay)
+            end
+            self.glowCDMOverlay.border:SetVertexColor(r or 0, g or 1, b or 0, 1)
+            self.glowCDMOverlay:Show()
+        else
+            if self.glowCDMOverlay then
+                self.glowCDMOverlay:Hide()
+            end
+        end
+    end
+
+    function frame:SetGlowAssist(active)
+        if active then
+            if not self.glowAssistOverlay then
+                self.glowAssistOverlay = CreateFrame("Frame", nil, self, "ActionBarButtonAssistedCombatHighlightTemplate")
+                self.glowAssistOverlay:SetAllPoints(self)
+                self.glowAssistOverlay:SetFrameLevel(self.overlayLayer:GetFrameLevel() + 1)
+                self.glowAssistOverlay.Flipbook:ClearAllPoints()
+                self.glowAssistOverlay.Flipbook:SetPoint("CENTER", self, "CENTER", 0, 0)
+            end
+            if not self.glowAssistOverlay.Flipbook.Anim:IsPlaying() then
+                self.glowAssistOverlay.Flipbook.Anim:Play()
+            end
+            self.glowAssistOverlay:Show()
+        else
+            if self.glowAssistOverlay then
+                if self.glowAssistOverlay.Flipbook.Anim:IsPlaying() then
+                    self.glowAssistOverlay.Flipbook.Anim:Stop()
+                end
+                self.glowAssistOverlay:Hide()
+            end
+        end
+    end
+
     return frame
 end
