@@ -54,15 +54,17 @@ local OPTIMIZED_CVARS = {
     { "nameplateMaxScale",                  1     },
     { "nameplateMinAlpha",                  0.9   },
     { "nameplateOccludedAlphaMult",         0.4   },
-    { NAMEPLATE_CLASS_COLOR,                1     },
-    { NAMEPLATE_ONLY_NAME,                  1     },
+    { "nameplateUseClassColorForFriendlyPlayerUnitNames", 1 },
+    { "nameplateShowOnlyNameForFriendlyPlayerUnits", 1 },
     { "questTextContrast", 1 },
+    -- 설정에 없는 cvar
     { "advancedCombatLogging",              1     },
     { "cameraDistanceMaxZoomFactor",        2.6   },
     { "cameraIndirectVisibility",           1     },
     { "cameraIndirectOffset",               10    },
     { "showDungeonEntrancesOnMap",          1     },
     { "screenshotQuality",                  10    },
+    { "WorldTextScale_v2",                  0.5   },
     { "xpBarText",                          1     },
 }
 
