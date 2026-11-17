@@ -321,6 +321,8 @@ function LibIcon:Create(name, parent, config)
                 self.glowAssistOverlay = CreateFrame("Frame", nil, self, "ActionBarButtonAssistedCombatHighlightTemplate")
                 self.glowAssistOverlay:SetAllPoints(self)
                 self.glowAssistOverlay:SetFrameLevel(self.overlayLayer:GetFrameLevel() + 1)
+                local w, h = self:GetSize()
+                self.glowAssistOverlay.Flipbook:SetSize(w * 66 / 45, h * 66 / 45)
                 self.glowAssistOverlay.Flipbook:ClearAllPoints()
                 self.glowAssistOverlay.Flipbook:SetPoint("CENTER", self, "CENTER", 0, 0)
             end

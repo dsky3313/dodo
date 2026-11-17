@@ -375,6 +375,29 @@ end
 
 local lay = {}
 
+-- dodo: 스킬명 축약 (이름 표시 = 스킬명). 없는 주문은 앞 글자만 자름
+local SHORT_NAME = {
+	[119381] = '팽차', -- 팽이 차기
+	[179057] = '혼회', -- 혼돈의 회오리
+	[30283] = '어격', -- 어둠의 격노
+	[192058] = '축전', -- 축전 토템
+	[46968] = '충파', -- 충격파
+	[109248] = '구사', -- 구속의 사격
+	[853] = '심망', -- 심판의 망치
+	[19577] = '위협', -- 위협
+	[207167] = '진눈', -- 눈부신 진눈깨비
+	[115750] = '눈뽕', -- 눈부신 빛
+	[8122] = '영절', -- 영혼의 절규
+	[99] = '행불', -- 행동 불가의 포효
+	[5246] = '위협', -- 위협의 외침
+	[207684] = '인장', -- 불행의 인장
+	[202138] = '사슬', -- 사슬의 인장
+	[108199] = '고핀', -- 고어핀드의 손아귀
+	[102793] = '우르솔', -- 우르솔의 회오리
+	[132469] = '태풍', -- 태풍
+	[2094] = '실명', -- 실명
+}
+
 -- dodo: 행 당 개수 초과 시 줄바꿈 (가로 성장 → 아래로 새 줄, 세로 성장 → 오른쪽으로 새 열)
 local function wrap(c, frame, i, n, per, o)
 	local k = i - 1
@@ -411,12 +434,39 @@ local function layout(g, cfg)
 		local on = i <= n
 		if on then
 			kit.Lay(c, c.who, c.m, bar.frame, i, n, lay)
+			-- dodo: 이름 표시 방식 (파티원명 ↔ 스킬명)
+			if cfg['nameMode' .. g] == 'SPELL' and c.who:IsShown() then
+				local id = c.t and c.t.def.id
+				local sname = id and (SHORT_NAME[id] or C_Spell.GetSpellName(id))
+				if sname then c.who:SetText(SHORT_NAME[id] or ns.Letters(sname, lay.letters)) end
+			end
 			if n > per then wrap(c, bar.frame, i, n, per, lay) end
 		end
 		c:SetShown(on)
 		c.clip:SetShown(on)
 		c.win:SetShown(on)
 	end
+	-- dodo: 편집모드 미리보기 중엔 selection 이 아이콘 전체(행/열)를 덮도록 프레임 확장
+	-- 첫 아이콘 위치는 그대로 → 프레임 중심을 (ox, oy) 만큼 옮김 (저장 좌표에선 14 EditMode 가 뺌)
+	local ox, oy = 0, 0
+	if preview and n > 1 and ns.EditModeActive and ns.EditModeActive() then
+		local l, r, t, b = 1e9, -1e9, -1e9, 1e9
+		for i = 1, n do
+			local _, _, _, x, y = bar.cells[i]:GetPoint()
+			l, r, t, b = mmin(l, x), mmax(r, x), mmax(t, y), mmin(b, y)
+		end
+		l, r, t, b = l - size / 2, r + size / 2, t + size / 2, b - size / 2
+		ox, oy = (l + r) / 2, (t + b) / 2
+		bar.frame:SetSize(r - l, t - b)
+		for i = 1, n do
+			local _, _, _, x, y = bar.cells[i]:GetPoint()
+			bar.cells[i]:SetPoint('CENTER', bar.frame, 'CENTER', x - ox, y - oy)
+		end
+	end
+	bar.ox, bar.oy = ox, oy
+	local pos = get_cfg()
+	bar.frame:ClearAllPoints()
+	bar.frame:SetPoint('CENTER', UIParent, 'CENTER', (pos['x' .. g] or 0) + ox, (pos['y' .. g] or 0) + oy)
 	bar.frame:SetShown(n > 0)
 	bar.frame:EnableMouse(ns.CanGrab(cfg, preview))
 end
@@ -1098,7 +1148,13 @@ local function apply_position(g)
 	if not bar then return end
 	local cfg = get_cfg()
 	bar.frame:ClearAllPoints()
-	bar.frame:SetPoint('CENTER', UIParent, 'CENTER', cfg['x' .. g] or 0, cfg['y' .. g] or 0)
+	bar.frame:SetPoint('CENTER', UIParent, 'CENTER', (cfg['x' .. g] or 0) + (bar.ox or 0), (cfg['y' .. g] or 0) + (bar.oy or 0))
+end
+
+-- dodo: 편집모드 미리보기 중 selection 확장으로 생긴 프레임 중심 오프셋 (14 EditMode 가 좌표 저장 시 뺌)
+ns.CCPreviewOffset = function()
+	local bar = bars[1]
+	return bar and bar.ox or 0, bar and bar.oy or 0
 end
 
 local function ensure_frames()

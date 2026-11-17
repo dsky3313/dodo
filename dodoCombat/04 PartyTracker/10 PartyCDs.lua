@@ -743,13 +743,13 @@ local function new_cell(row)
 	local glow = CreateFrame('Frame', nil, c)
 	glow:SetAllPoints(c)
 	glow:SetAlpha(0)
-	for _, e in ipairs(GLOW_EDGES) do
-		local edge = glow:CreateTexture(nil, 'OVERLAY')
-		edge:SetColorTexture(0.12, 0.86, 0.76, 1)
-		edge:SetPoint(e[1], glow, e[1], 0, 0)
-		edge:SetPoint(e[2], glow, e[2], 0, 0)
-		edge[e[3]](edge, 2)
-	end
+	hooksecurefunc(glow, 'SetAlpha', function(self, alpha)
+		if not c.glowAssistOverlay then
+			c:SetGlowAssist(true)
+			c.glowAssistOverlay:SetFrameLevel(self:GetFrameLevel())
+		end
+		c.glowAssistOverlay:SetAlpha(alpha)
+	end)
 	c.glow = glow
 
 	local clip = CreateFrame('Frame', nil, layer)
@@ -1826,7 +1826,7 @@ local function seed(t, def, i, j)
 		charge.Start(t, began)
 		t.loop = true
 	end
-	t.lit = (i == 2 and j == 1)
+	t.lit = false
 end
 
 local function unbind(s, j)
@@ -1979,7 +1979,7 @@ bars.Demo = function(b)
 		local n = now_whole()
 		local size, text = look.size or 36, look.textSize or 16
 		for _, id in ipairs(look.order or b.order) do
-			if b.who[id] and not (look.off and look.off[id]) then
+			if k < 5 and b.who[id] and not (look.off and look.off[id]) then -- dodo: 미리보기 바 5개 고정
 				k = k + 1
 				local d = demo[k]
 				if not d then

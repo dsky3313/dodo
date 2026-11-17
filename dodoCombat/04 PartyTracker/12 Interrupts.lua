@@ -394,7 +394,7 @@ local function style_row(row, cfg)
 	row.span:SetPoint('TOPLEFT', row, 'TOPLEFT', -(h + 3 + stack.ROOM), stack.HIGH / 2)
 	row.span:SetPoint('BOTTOMRIGHT', row, 'BOTTOMRIGHT', stack.OUT, -stack.HIGH / 2)
 	row.mark:ClearAllPoints()
-	row.mark:SetPoint('RIGHT', row, 'LEFT', -3, 0)
+	row.mark:SetPoint('CENTER', row.icon, 'CENTER', 0, 0) -- dodo: 파티프레임과 겹치지 않게 차단기 아이콘 위에 겹침
 	row.mark:SetSize(h, h)
 	row.mark:SetShown((cfg.showMark and row.hasMark) and true or false)
 	local left = 0
@@ -432,7 +432,10 @@ local function style_row(row, cfg)
 	row.name:SetPoint('RIGHT', row.timer, 'LEFT', -4, 0)
 	row.name:SetJustifyH('LEFT')
 	if dark then row.name:SetTextColor(r, g, b) else row.name:SetTextColor(1, 1, 1) end
-	row.name:SetText(row.label or '')
+	-- dodo: 이름 표시 방식 (플레이어명 ↔ 직업명)
+	local class_name = cfg.nameMode == 'CLASS' and row.class and _G.LOCALIZED_CLASS_NAMES_MALE[row.class]
+	if class_name and row.unit and _G.UnitGroupRolesAssigned(row.unit) == 'TANK' then class_name = '탱' end
+	row.name:SetText(class_name or row.label or '')
 	paint_icon(row, cfg)
 	if row.lay then
 		for s = 1, SLOTS do
@@ -471,6 +474,8 @@ local function layout(list)
 	local cfg = get_cfg()
 	local h, w, gap = cfg.height or 20, cfg.width or 180, cfg.spacing or 2
 	frame:SetSize(w, h)
+	-- dodo: 미리보기 중엔 편집모드 selection 이 바 전체를 덮도록 높이 확장
+	if previewActive and #list > 1 then frame:SetHeight(#list * h + (#list - 1) * gap) end
 	local prev
 	for _, row in ipairs(list) do
 		row:ClearAllPoints()

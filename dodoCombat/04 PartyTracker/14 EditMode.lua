@@ -25,7 +25,7 @@ local ENTRIES = {
     { name = "dodoPartyDefensives", label = "공생기", get_cfg = ns.PDFGetCfg, x = "x", y = "y", preview = ns.PDFSetPreview, apply = ns.PDFApply, party = { "TOPLEFT", "TOPRIGHT", "px", "py" } },
     -- dodo: party = { 내 앵커, 파티 프레임 앵커, x키, y키 } → 파티 프레임 기준 오프셋으로 저장
     { name = "dodoPartyInterrupts", label = "차단기", get_cfg = ns.IKGetCfg, x = "x", y = "y", preview = ns.IKSetPreview, apply = ns.IKApply, party = { "TOPLEFT", "TOPRIGHT", "px", "py" } },
-    { name = "dodoPartyCC1", label = "군중제어", get_cfg = ns.CCGetCfg, x = "x1", y = "y1", preview = ns.CCSetPreview, apply = ns.CCApply },
+    { name = "dodoPartyCC1", label = "군중제어", get_cfg = ns.CCGetCfg, x = "x1", y = "y1", preview = ns.CCSetPreview, apply = ns.CCApply, off = ns.CCPreviewOffset },
     -- dodo: 군중제어 하나로 합침
     -- { name = "dodoPartyCC2", label = "군중제어 2", get_cfg = ns.CCGetCfg, x = "x2", y = "y2", preview = ns.CCSetPreview, apply = ns.CCApply },
 }
@@ -63,7 +63,9 @@ local function on_moved(frame)
     local ux, uy = UIParent:GetCenter()
     if not (cx and ux) then return end
     local cfg = e.get_cfg()
-    cfg[e.x], cfg[e.y] = cx - ux, cy - uy
+    local ox, oy = 0, 0
+    if e.off then ox, oy = e.off() end
+    cfg[e.x], cfg[e.y] = cx - ux - ox, cy - uy - oy
     e.apply()
 end
 

@@ -26,18 +26,36 @@ dodo.PT_DEFAULTS = {
     -- partyDefensivesStyle  = "icon", -- dodo: 바 형식 고정 (아이콘 모드 주석처리)
     partyDefensivesWidth  = 180,
     partyDefensivesHeight = 20,
+    partyDefensivesNameMode = "PLAYER",
     usePartyDefensivesTooltip = true,
     enablePartyInterrupts = true,
     partyInterruptsIconGap = 0,
     partyInterruptsSpacing = -1,
     partyInterruptsWidth  = 180,
     partyInterruptsHeight = 20,
+    partyInterruptsNameMode = "PLAYER",
     usePartyInterruptsTooltip = true,
     enablePartyCC      = true,
     partyCCSize        = 36,
     partyCCSpacing     = 2,
     partyCCPerRow      = 8,
+    partyCCNameMode    = "PLAYER",
     usePartyCCTooltip  = true,
+}
+
+local DF_NAME_OPTIONS = {
+    { value = "PLAYER", text = "파티원명" },
+    { value = "SPELL",  text = "스킬명" },
+}
+
+local IK_NAME_OPTIONS = {
+    { value = "PLAYER", text = "파티원명" },
+    { value = "CLASS",  text = "직업명" },
+}
+
+local CC_NAME_OPTIONS = {
+    { value = "PLAYER", text = "파티원명" },
+    { value = "SPELL",  text = "스킬명" },
 }
 
 -- dodo: 공생기 바 형식 고정 (아이콘 모드 주석처리)
@@ -84,6 +102,7 @@ local function sync_defensives()
     cfg.style = "bar" -- dodo: 바 형식 고정
     cfg.barWidth = get("partyDefensivesWidth")
     cfg.size = get("partyDefensivesHeight") -- 바 높이 = 아이콘 크기
+    cfg.nameMode = get("partyDefensivesNameMode")
     cfg.tooltip = get("usePartyDefensivesTooltip")
     ns.PDFApply()
     if dodo.CombatRefreshPreview then dodo.CombatRefreshPreview() end
@@ -97,6 +116,7 @@ local function sync_interrupts()
     cfg.spacing = get("partyInterruptsSpacing")
     cfg.width = get("partyInterruptsWidth")
     cfg.height = get("partyInterruptsHeight")
+    cfg.nameMode = get("partyInterruptsNameMode")
     cfg.tooltip = get("usePartyInterruptsTooltip")
     ns.IKApply()
     if dodo.CombatRefreshPreview then dodo.CombatRefreshPreview() end
@@ -109,6 +129,7 @@ local function sync_cc()
     cfg.size1 = get("partyCCSize")
     cfg.spacing1 = get("partyCCSpacing")
     cfg.perRow = get("partyCCPerRow")
+    cfg.nameMode1 = get("partyCCNameMode")
     cfg.tooltip = get("usePartyCCTooltip")
     ns.CCApply()
     if dodo.CombatRefreshPreview then dodo.CombatRefreshPreview() end
@@ -198,6 +219,9 @@ function dodo.PTBuildOptions(category)
     child(dodo.UI:SettingsSlider(category, "partyInterruptsHeight", "높이",
         "차단기 바 높이를 조절합니다.",
         10, 40, 1, D.partyInterruptsHeight, "Integer", sync_interrupts), ik_init, ik_on)
+    child(select(2, dodo.UI:SettingsDropDown(category, "partyInterruptsNameMode", "이름 표시",
+        "바에 표시할 이름을 파티원명 또는 직업명으로 선택합니다.",
+        IK_NAME_OPTIONS, D.partyInterruptsNameMode, sync_interrupts)), ik_init, ik_on)
     child(dodo.UI:SettingsCheckbox(category, "usePartyInterruptsTooltip", "툴팁 표시",
         "전투 중이 아닐 때 바에 마우스를 올리면 차단기 툴팁을 표시합니다.",
         D.usePartyInterruptsTooltip, sync_interrupts), ik_init, ik_on)
@@ -217,6 +241,9 @@ function dodo.PTBuildOptions(category)
     child(dodo.UI:SettingsSlider(category, "partyCCPerRow", "행 당 개수",
         "한 줄에 표시할 아이콘 수. 넘치면 다음 줄로 넘어갑니다.",
         1, 20, 1, D.partyCCPerRow, "Integer", sync_cc), cc_init, cc_on)
+    child(select(2, dodo.UI:SettingsDropDown(category, "partyCCNameMode", "이름 표시",
+        "아이콘에 표시할 이름을 파티원명 또는 스킬명으로 선택합니다.",
+        CC_NAME_OPTIONS, D.partyCCNameMode, sync_cc)), cc_init, cc_on)
     child(dodo.UI:SettingsCheckbox(category, "usePartyCCTooltip", "툴팁 표시",
         "전투 중이 아닐 때 아이콘에 마우스를 올리면 주문 툴팁을 표시합니다.",
         D.usePartyCCTooltip, sync_cc), cc_init, cc_on)
@@ -237,6 +264,9 @@ function dodo.PTBuildOptions(category)
     child(dodo.UI:SettingsSlider(category, "partyDefensivesHeight", "높이",
         "공생기 바 높이를 조절합니다.",
         10, 40, 1, D.partyDefensivesHeight, "Integer", sync_defensives), df_init, df_on)
+    child(select(2, dodo.UI:SettingsDropDown(category, "partyDefensivesNameMode", "이름 표시",
+        "바에 표시할 이름을 파티원명 또는 스킬명으로 선택합니다.",
+        DF_NAME_OPTIONS, D.partyDefensivesNameMode, sync_defensives)), df_init, df_on)
     child(dodo.UI:SettingsCheckbox(category, "usePartyDefensivesTooltip", "툴팁 표시",
         "전투 중이 아닐 때 아이콘에 마우스를 올리면 주문 툴팁을 표시합니다.",
         D.usePartyDefensivesTooltip, sync_defensives), df_init, df_on)

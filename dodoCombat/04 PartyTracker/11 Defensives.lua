@@ -42,7 +42,7 @@ local DEFAULTS = {
 	x = -160,
 	y = -300,
 	px = 10, -- dodo: 파티 프레임 TOPRIGHT 기준 오프셋 (차단기 시작점 y -100)
-	py = -140,
+	py = -130,
 	order = {},
 	off = {},
 	style = 'bar', -- dodo: 'icon' | 'bar' (바 형식 고정)
@@ -113,6 +113,18 @@ local lay = {}
 local BAR_TEX = 'Interface\\Buttons\\WHITE8X8'
 local BAR_TICK = 0.1
 local BAR_GAP = -1 -- 바 사이 간격 (차단기 기본값과 동일)
+
+-- dodo: 스킬명 축약 (이름 표시 = 스킬명). 없는 주문은 전체 이름
+local SHORT_NAME = {
+	[51052] = '대마지', -- 대마법 지대
+	[97462] = '재집', -- 재집결의 함성
+	[196718] = '어둠', -- 어둠
+	[374227] = '미풍', -- 미풍
+	[31821] = '오숙', -- 오라 숙련
+	[62618] = '방벽', -- 신의 권능: 방벽
+	[98008] = '정고토', -- 정신의 고리 토템
+	[15286] = '흡선', -- 흡혈의 선물
+}
 local placed = {}
 local barAcc = 0
 local listBorder
@@ -312,6 +324,9 @@ local function place(list)
 	local timers = cfg.showTimer ~= false
 	local n = #list
 	frame:SetSize(size, size)
+	-- dodo: 미리보기 중엔 편집모드 selection 이 바 전체를 덮도록 프레임 확장 (아래 성장만)
+	local wide = preview and n > 1 and grow == 'DOWN'
+	if wide then frame:SetSize(cfg.barWidth or 180, size + (n - 1) * (size + BAR_GAP)) end
 	wipe(placed)
 	for i, e in ipairs(list) do
 		local c = e.c
@@ -322,6 +337,10 @@ local function place(list)
 		local tag = guard_tag(c)
 		tag:SetFrameLevel(c:GetFrameLevel() + 7)
 		kit.Lay(c, tag.who, e.m, frame, i, n, lay)
+			if wide then
+				c:ClearAllPoints()
+				c:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, -(i - 1) * (size + BAR_GAP))
+			end
 		if barMode then
 			local b = guard_bar(c)
 			local r, g, bl = ns.ClassRGB(e.m and e.m.class, 1)
@@ -357,7 +376,14 @@ local function place(list)
 			b.name:ClearAllPoints()
 			b.name:SetPoint('LEFT', b, 'LEFT', 4, 0)
 			b.name:SetPoint('RIGHT', b, 'RIGHT', -(textSize * 2 + 16), 0) -- 타이머 자리 비움
-			if not (e.m and pcall(b.name.SetText, b.name, e.m.name)) then b.name:SetText('') end
+			-- dodo: 이름 표시 방식 (플레이어명 ↔ 스킬명)
+			local sid = cfg.nameMode == 'SPELL' and e.t and e.t.def and e.t.def.id
+			local sname = sid and (SHORT_NAME[sid] or C_Spell.GetSpellName(sid))
+			if sname then
+				b.name:SetText(sname)
+			elseif not (e.m and pcall(b.name.SetText, b.name, e.m.name)) then
+				b.name:SetText('')
+			end
 			b.edgeBottom:Show()
 			b:Show()
 			placed[#placed + 1] = e
