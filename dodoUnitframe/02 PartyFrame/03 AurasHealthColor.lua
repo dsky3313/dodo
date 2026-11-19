@@ -137,8 +137,14 @@ end
 -- spec watchlist 갱신
 -- ==============================
 local function refresh_spec_watchlist()
-	local specIndex = GetSpecialization()
-	local specID = specIndex and GetSpecializationInfo(specIndex)
+	local specID
+	if dodo.IS_FOREVER then
+		-- Forever는 spec 없음 → classID(1~13)를 키로 사용 (specID와 겹치지 않음)
+		specID = select(3, UnitClass("player"))
+	else
+		local specIndex = GetSpecialization()
+		specID = specIndex and GetSpecializationInfo(specIndex)
+	end
 	if not specID then
 		if spec_retry_count < RETRY_MAX then
 			spec_retry_count = spec_retry_count + 1

@@ -84,9 +84,15 @@ local active_cdm_overlays = {}
 -- ==============================
 local function get_cdm_map()
     if not dodoDB then return nil end
-    local specIndex = GetSpecialization()
-    if not specIndex then return nil end
-    local specID = GetSpecializationInfo(specIndex)
+    local specID
+    if dodo.IS_FOREVER then
+        -- Forever는 spec 없음 → classID(1~13)를 키로 사용 (specID와 겹치지 않음)
+        specID = select(3, UnitClass("player"))
+    else
+        local specIndex = GetSpecialization()
+        if not specIndex then return nil end
+        specID = GetSpecializationInfo(specIndex)
+    end
     if not specID then return nil end
     dodoDB.cdmMapping = dodoDB.cdmMapping or {}
     if not dodoDB.cdmMapping[specID] then

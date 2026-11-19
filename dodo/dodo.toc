@@ -1,4 +1,4 @@
-﻿## Interface: 120100
+﻿## Interface: 120100, 16001
 ## Version: 12.1.8
 ## Title: dodo
 ## Author: dodo
@@ -23,6 +23,7 @@ Libs/LibOpenRaid/lib.xml
 Libs/LibKeystone/LibKeystone/LibKeystone.lua
 
 # Data
+Data/Version.lua
 Data/Colors.lua
 Data/Icon.lua
 Data/UIUX.xml

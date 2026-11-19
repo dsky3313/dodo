@@ -192,6 +192,10 @@ local function create_ui()
     RB.bar1Frame:SetSize(RB.barConfigs[1].width, RB.barConfigs[1].height)
     RB.bar1Frame:SetFrameStrata("LOW")
     RB.bar1Frame:SetFrameLevel(1)
+    -- Forever는 하단 금속 테두리가 너무 굵어서 높이 절반으로
+    if dodo.IS_FOREVER and RB.bar1Frame.EdgeBottom then
+        RB.bar1Frame.EdgeBottom:SetHeight(RB.bar1Frame.EdgeBottom:GetHeight() * 0.5)
+    end
 
     -- 버프바2 생성
     RB.bar2Frame = CreateFrame("StatusBar", "ResourceBar2", UIParent, RB.barConfigs[2].template)

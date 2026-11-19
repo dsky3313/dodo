@@ -81,7 +81,7 @@ local function create_pt_preview_row(parent, data)
     row.icon = row:CreateTexture(nil, "ARTWORK")
     row.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     row.icon:SetTexture(C_Spell.GetSpellTexture(data.spellID))
-    local cc = RAID_CLASS_COLORS[data.class]
+    local cc = RAID_CLASS_COLORS[data.class] or { r = 0.77, g = 0.12, b = 0.23 } -- Forever엔 죽기 등 일부 직업 없음
     row.bar = CreateFrame("StatusBar", nil, row)
     row.bar:SetStatusBarTexture([[Interface\Buttons\WHITE8X8]])
     row.bar:SetStatusBarColor(cc.r, cc.g, cc.b, 1)

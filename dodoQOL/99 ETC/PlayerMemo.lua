@@ -8,6 +8,7 @@
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local dodo = _G.dodo
+if dodo.IS_FOREVER then return end -- Forever는 친구창 탭 구조가 달라 비활성
 dodoDB = dodoDB or {}
 dodoDBmemo = dodoDBmemo or {}
 

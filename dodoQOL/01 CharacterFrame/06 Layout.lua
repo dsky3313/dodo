@@ -7,6 +7,7 @@
 -- 설정 및 테이블
 -- ==============================
 local dodo = _G.dodo
+if dodo.IS_FOREVER then return end -- Forever 캐릭터창은 구조가 달라 (CharacterFrameInset 없음) 레이아웃 비활성
 local _lt = debugprofilestop() -- TMP-PROF
 dodoDB = dodoDB or {}
 

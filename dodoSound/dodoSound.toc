@@ -1,4 +1,4 @@
-## Interface: 120100
+## Interface: 120100, 16001
 ## Version: 12.1.0
 ## Title: dodoSound
 ## Author: dodo
@@ -7,5 +7,5 @@
 ## IconTexture: Interface\AddOns\dodo\Media\Texture\Logo
 
 99 Options.lua
-Audio.lua
-NewLFG.lua
+01 Audio.lua
+02 NewLFG.lua

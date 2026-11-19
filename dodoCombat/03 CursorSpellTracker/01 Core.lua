@@ -544,8 +544,14 @@ local SPEC_MAX_RETRIES = 10
 local spec_retry_count = 0
 
 local function refresh_active_spells()
-    local specIndex = GetSpecialization()
-    local specID = specIndex and GetSpecializationInfo(specIndex)
+    local specID
+    if dodo.IS_FOREVER then
+        -- Forever는 spec 없음 → classID(1~13)를 키로 사용 (specID와 겹치지 않음)
+        specID = select(3, UnitClass("player"))
+    else
+        local specIndex = GetSpecialization()
+        specID = specIndex and GetSpecializationInfo(specIndex)
+    end
     if not specID then
         if spec_retry_count < SPEC_MAX_RETRIES then
             spec_retry_count = spec_retry_count + 1
@@ -569,7 +575,7 @@ end
 -- 토글 ON일 때만 특성/배율 이벤트 수신 (OFF 시 백그라운드 자원소모 0)
 local function set_events(enabled)
     if enabled then
-        init_frame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
+        if not dodo.IS_FOREVER then init_frame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player") end
         init_frame:RegisterEvent("UI_SCALE_CHANGED")
         init_frame:RegisterEvent("DISPLAY_SIZE_CHANGED")
     else
