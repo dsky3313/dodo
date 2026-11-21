@@ -1,10 +1,10 @@
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 ---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local dodo = _G.dodo
 dodoDB = dodoDB or {}
 
--- ==============================
--- 명령어 테이블 (설정창 목록 표시용)
--- ==============================
 local command_table = {
     { label = "편집 모드",             desc = "/ed, /ㄷㅇ" },
     { label = "재사용대기시간 관리자", desc = "/cd, /ㅊㅇ" },

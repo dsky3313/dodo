@@ -1,8 +1,7 @@
 ﻿-- ==============================
 -- Inspired
 -- ==============================
--- HarreksAdvancedRaidFrames - HealthColor 인디케이터
--- AuraContainer 기반 — GetAuraSlots() taint 회피
+-- Harreks Advanced Raid Frames (HARF) (https://www.curseforge.com/wow/addons/harreks-advanced-raid-frames)
 
 -- ==============================
 -- 설정 및 테이블

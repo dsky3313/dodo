@@ -1,8 +1,6 @@
 ﻿-- ==============================
--- FrameOption
+-- 설정 및 테이블
 -- ==============================
--- dodo
-
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local dodo = _G.dodo
 dodoDB = dodoDB or {}

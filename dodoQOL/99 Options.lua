@@ -36,7 +36,6 @@ dodo.QOL_DEFAULTS = {
     enableToken           = true,
     autoAccept            = false,  autoAcceptShiftSkip  = true,
     autoTurnIn            = false,  autoTurnInShiftSkip  = true,
-    questItemHotkey       = "CTRL-G",
 }
 
 -- 마스터(enableQOL) + 기능 토글 모두 켜져 있는지 (기본 true 토글 공용 판정)
@@ -174,19 +173,17 @@ dodo.RegisterOption("편의기능", function(category)
     T(dodo.UI:SettingsCheckbox(category, "autoTurnIn", "퀘스트 자동 완료",
         "보상 선택지가 없는 퀘스트를 자동으로 완료합니다. Shift 키를 누르면 건너뜁니다.",
         D.autoTurnIn, nil))
-    T(dodo.UI:SettingsDropDown(category, "questItemHotkey", "퀘스트 아이템 단축키",
-        "현재 진행 중인 퀘스트 아이템을 사용하는 단축키입니다.",
-        {
-            { value = "",        text = "비활성" },
-            { value = "CTRL-G",  text = "Ctrl+G" },
-            { value = "SHIFT-G", text = "Shift+G" },
-            { value = "ALT-G",   text = "Alt+G" },
-            { value = "CTRL-E",  text = "Ctrl+E" },
-            { value = "F7",      text = "F7" },
-            { value = "F8",      text = "F8" },
-        },
-        D.questItemHotkey,
-        function() if dodo.ApplyQuestItemHotkey then dodo.ApplyQuestItemHotkey() end end))
+    -- 블리자드 "대상과 상호작용" 단축키 행과 동일 방식 (Bindings.xml의 CLICK 바인딩)
+    do
+        local action = "CLICK dodo_QuestItemHotkeyBtn:LeftButton"
+        local bindingIndex = C_KeyBindings.GetBindingIndex(action)
+        local layout = SettingsPanel:GetLayout(category)
+        if layout and bindingIndex and bindingIndex > 0 then
+            local init = CreateKeybindingEntryInitializer(bindingIndex, true)
+            init:AddSearchTags("퀘스트 아이템 사용")
+            layout:AddInitializer(init)
+        end
+    end
 
     -- 모험안내서
     T(dodo.UI:SettingsSectionHeader(category, "모험안내서"))

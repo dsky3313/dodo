@@ -1,7 +1,7 @@
 ﻿-- ==============================
 -- Inspired
 -- ==============================
--- LFGTimer (BigWigs LFGTimer 로직 이식)
+-- BigWigs (Boss Timers & Tools) (https://www.curseforge.com/wow/addons/bigwigs)
 
 -- ==============================
 -- 설정 및 테이블

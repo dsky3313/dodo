@@ -1,7 +1,7 @@
 ﻿-- ==============================
 -- Inspired
 -- ==============================
--- EXBoss (https://www.curseforge.com/wow/addons/exboss)
+-- EXBOSS (https://www.curseforge.com/wow/addons/exboss)
 
 -- ==============================
 -- 설정 및 테이블

@@ -1,4 +1,12 @@
-﻿---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
+﻿-- ==============================
+-- Inspired
+-- ==============================
+-- EXBOSS (https://www.curseforge.com/wow/addons/exboss)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
+---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local dodo = _G.dodo
 dodoDB = dodoDB or {}
 
@@ -17,9 +25,9 @@ local ipairs                 = ipairs
 local select                 = select
 
 -- ==============================
--- 설정 및 테이블
+-- 기능 1: 로컬 상태 및 설정
 -- ==============================
-local SOUND_ROOT = "Interface\\AddOns\\dodo\\Media\\Sound\\Encounter\\"
+local SOUND_ROOT ="Interface\\AddOns\\dodo\\Media\\Sound\\Encounter\\"
 
 ---@class dodo.SoundData
 ---@field file    string 사운드 파일 경로
@@ -60,6 +68,13 @@ local SOUND_MAP = {
     Wave         = { file = SOUND_ROOT .. "Wave.mp3",         channel = "Master" },
 }
 
+---@type dodo.EncounterEntry[]|nil
+local current_events = nil
+local applied_eids   = {}   -- 실제 적용한 encounterEventID 목록 (해제용)
+
+-- ==============================
+-- 기능 2: 소리 적용/해제
+-- ==============================
 local function get_sound(key)
     if not key then return nil end
     local mapped = dodoDB and dodoDB["soundEncounter" .. key]
@@ -67,13 +82,6 @@ local function get_sound(key)
     return SOUND_MAP[mapped or key]
 end
 
----@type dodo.EncounterEntry[]|nil
-local current_events = nil
-local applied_eids   = {}   -- 실제 적용한 encounterEventID 목록 (해제용)
-
--- ==============================
--- 기능: 소리 적용/해제
--- ==============================
 ---@return nil
 local function clear_sounds()
     if not (C_EncounterEvents and C_EncounterEvents.SetEventSound) then return end

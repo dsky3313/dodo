@@ -1,3 +1,12 @@
+-- ==============================
+-- Inspired
+-- ==============================
+-- KiraUI-Plugin (https://www.curseforge.com/wow/addons/kiraui-plugin)
+-- H3ndall Party Cds (https://www.curseforge.com/wow/addons/h3ndall-party-cds)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 local _, ns = ...
 local hooksecurefunc, C_Timer = ns.Probe('Interrupts', hooksecurefunc, C_Timer)
 local _G = _G
@@ -36,6 +45,7 @@ local DEFAULTS = {
 	showTimer = true,
 	showMark = true,
 	growth = 'DOWN',
+	fixedOrder = false, -- dodo: true 면 파티 순서 고정 (쿨다운/쿨 길이로 재정렬 안 함)
 	width = 180,
 	height = 20,
 	spacing = 2,
@@ -541,8 +551,12 @@ local function stack_before(a, b)
 	return (a.order or 0) < (b.order or 0)
 end
 
+local function stack_fixed(a, b)
+	return (a.order or 0) < (b.order or 0)
+end
+
 local function show_rows()
-	table.sort(shown, stack_before)
+	table.sort(shown, get_cfg().fixedOrder and stack_fixed or stack_before)
 	local visible = {}
 	for _, row in ipairs(shown) do
 		if row:IsShown() then visible[#visible + 1] = row end

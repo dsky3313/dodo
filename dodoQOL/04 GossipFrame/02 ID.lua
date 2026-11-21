@@ -1,7 +1,7 @@
 ﻿-- ==============================
 -- Inspired
 -- ==============================
--- ExwindTools (https://www.curseforge.com/wow/addons/exwindtools) — ExTools.GossipID
+-- ExwindTools (https://www.curseforge.com/wow/addons/exwindtools)
 
 -- ==============================
 -- 설정 및 테이블

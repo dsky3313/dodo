@@ -1,7 +1,7 @@
 ﻿-- ==============================
 -- Inspired
 -- ==============================
--- RefineUI (Modules/EncounterAchievements/Data.lua)
+-- RefineUI (https://www.reddit.com/r/WowUI/comments/1roqkgb/ui_refineui_minimalist_addon_that_improves_the/)
 
 -- ==============================
 -- 설정 및 테이블

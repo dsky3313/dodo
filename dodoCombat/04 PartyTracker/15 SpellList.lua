@@ -1,4 +1,13 @@
 -- ==============================
+-- Inspired
+-- ==============================
+-- KiraUI-Plugin (https://www.curseforge.com/wow/addons/kiraui-plugin)
+-- H3ndall Party Cds (https://www.curseforge.com/wow/addons/h3ndall-party-cds)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
+-- ==============================
 -- 파티원 주요 기술: 주문 목록 (직업/특성 선택 + 켜기/끄기)
 -- ==============================
 -- 커서 주문추적 목록(dodoCombat 99 Options Preview.lua dodoCSTSpellListMixin)과 같은 구성.

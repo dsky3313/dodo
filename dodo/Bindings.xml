@@ -7,4 +7,5 @@
     <Binding name="CLICK WMB_WM6CURSOR:LeftButton" category="dodo" />
     <Binding name="CLICK WMB_WM7CURSOR:LeftButton" category="dodo" />
     <Binding name="CLICK WMB_WM8CURSOR:LeftButton" category="dodo" />
+    <Binding name="CLICK dodo_QuestItemHotkeyBtn:LeftButton" header="QOL" category="dodo" />
 </Bindings>

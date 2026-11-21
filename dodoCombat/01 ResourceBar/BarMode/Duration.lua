@@ -1,7 +1,7 @@
 -- ==============================
 -- Inspired
 -- ==============================
--- dodo ResourceBar - Duration Buff Tracker Mode
+-- ArcUI (https://www.curseforge.com/wow/addons/arc-ui)
 
 -- ==============================
 -- 설정 및 테이블

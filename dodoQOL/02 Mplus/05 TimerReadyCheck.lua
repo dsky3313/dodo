@@ -1,7 +1,7 @@
 ﻿-- ==============================
 -- Inspired
 -- ==============================
--- ReadyCheckTimer
+-- BigWigs (Boss Timers & Tools) (https://www.curseforge.com/wow/addons/bigwigs)
 
 -- ==============================
 -- 설정 및 테이블

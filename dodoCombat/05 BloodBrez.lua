@@ -18,6 +18,7 @@ local Config = {
     iconsize      = {46, 46},
     fontsize      = 12,
     soundPath     = "Interface\\AddOns\\dodo\\Media\\Sound\\Blood.mp3",
+    readySoundPath = "Interface\\AddOns\\dodo\\Media\\Sound\\ReadyBlood.mp3",
 }
 
 local BL_DEBUFFS = {
@@ -62,11 +63,34 @@ local blood_overlay    = nil
 local blood_overlay_glow = nil
 local blood_overlay_timer = nil
 local active_ticker    = nil
+local ready_frame      = nil
+local ready_proc       = nil
+local ready_proc_anim  = nil
+local ready_arrow      = nil
+local ready_bounce     = nil
+local blood_ready      = false
 
 -- ==============================
 -- 기능 2: 상태 업데이트
 -- ==============================
 local on_active_tick  -- forward declaration (update_bloodlust에서 참조)
+
+-- 블러드 사용가능 알림 (반짝임 + 느낌표 + 소리)
+local function update_ready(ready)
+    if not ready_frame then return end
+    if ready == blood_ready then return end
+    blood_ready = ready
+    if ready then
+        ready_frame:Show()
+        ready_proc_anim:Play()
+        ready_bounce:Play()
+        PlaySoundFile(Config.readySoundPath, "Master")
+    else
+        ready_proc_anim:Stop()
+        ready_bounce:Stop()
+        ready_frame:Hide()
+    end
+end
 
 local function update_position()
     if not main_frame then return end
@@ -109,6 +133,7 @@ local function update_bloodlust()
             end
         end
         -- sated 페이즈 중 UNIT_AURA 재발화: cooldown 프레임이 자동 처리하므로 무시
+        update_ready(false)
     else
         if bl_phase ~= "idle" then
             bl_phase = "idle"
@@ -122,6 +147,7 @@ local function update_bloodlust()
             blood_icon.cooldown:Clear()
             blood_icon.Name:SetText("")
         end
+        update_ready(UnitAffectingCombat("player") and true or false)
     end
 end
 
@@ -187,6 +213,7 @@ local function apply_size()
     if not main_frame then return end
     main_frame:SetSize(sz * 2 + pad, sz)
     if blood_icon then blood_icon:SetSize(sz, sz) end
+    if ready_proc then ready_proc:SetSize(sz * 1.4, sz * 1.4) end
     if brez_icon then
         brez_icon:SetSize(sz, sz)
         brez_icon:ClearAllPoints()
@@ -223,6 +250,39 @@ local function create_ui()
     blood_overlay_timer = blood_overlay:CreateFontString(nil, "ARTWORK", "NumberFontNormal")
     blood_overlay_timer:SetPoint("TOPLEFT", blood_overlay, "TOPLEFT", 5, -5)
     blood_overlay_timer:SetTextColor(0.1, 1, 0.1)
+
+    ready_frame = CreateFrame("Frame", nil, blood_icon)
+    ready_frame:SetAllPoints(blood_icon)
+    ready_frame:SetFrameLevel(blood_icon:GetFrameLevel() + 5)
+    ready_frame:Hide()
+
+    ready_proc = ready_frame:CreateTexture(nil, "ARTWORK")
+    ready_proc:SetAtlas("UI-HUD-ActionBar-Proc-Loop-Flipbook")
+    ready_proc:SetPoint("CENTER")
+    ready_proc:SetSize(Config.iconsize[1] * 1.4, Config.iconsize[2] * 1.4)
+
+    ready_proc_anim = ready_frame:CreateAnimationGroup()
+    ready_proc_anim:SetLooping("REPEAT")
+    local flip = ready_proc_anim:CreateAnimation("FlipBook")
+    flip:SetTarget(ready_proc)
+    flip:SetDuration(1)
+    flip:SetOrder(1)
+    flip:SetFlipBookRows(6)
+    flip:SetFlipBookColumns(5)
+    flip:SetFlipBookFrames(30)
+
+    ready_arrow = ready_frame:CreateTexture(nil, "OVERLAY")
+    ready_arrow:SetAtlas("Crosshair_Wrapper_64", true)
+    ready_arrow:SetPoint("BOTTOM", ready_frame, "TOP", 0, 4)
+    ready_arrow:SetSnapToPixelGrid(false)
+    ready_arrow:SetTexelSnappingBias(0)
+
+    ready_bounce = ready_arrow:CreateAnimationGroup()
+    ready_bounce:SetLooping("REPEAT")
+    local up = ready_bounce:CreateAnimation("Translation")
+    up:SetOffset(0, 4); up:SetDuration(0.5); up:SetSmoothing("IN_OUT"); up:SetOrder(1)
+    local dn = ready_bounce:CreateAnimation("Translation")
+    dn:SetOffset(0, -4); dn:SetDuration(0.5); dn:SetSmoothing("IN_OUT"); dn:SetOrder(2)
 
     brez_icon = LibIcon:Create("BLBR_BrezIcon", main_frame, {
         isAction = false,
@@ -272,7 +332,7 @@ local function on_event(self, event, arg1)
         dodo.BloodBrez()
         update_bloodlust()
         update_brez()
-    elseif event == "UNIT_AURA" then
+    elseif event == "UNIT_AURA" or event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
         update_bloodlust()
     elseif event == "SPELL_UPDATE_CHARGES" then
         update_brez()
@@ -319,8 +379,13 @@ local function update_ticker_and_events()
         init_frame:RegisterUnitEvent("UNIT_AURA", "player")
         init_frame:RegisterEvent("SPELL_UPDATE_CHARGES")
         init_frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+        init_frame:RegisterEvent("PLAYER_REGEN_DISABLED")
+        init_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
     else
         if active_ticker then active_ticker:Cancel(); active_ticker = nil end
+        update_ready(false)
+        init_frame:UnregisterEvent("PLAYER_REGEN_DISABLED")
+        init_frame:UnregisterEvent("PLAYER_REGEN_ENABLED")
         init_frame:UnregisterEvent("UNIT_AURA")
         init_frame:UnregisterEvent("SPELL_UPDATE_CHARGES")
         init_frame:UnregisterEvent("PLAYER_ENTERING_WORLD")

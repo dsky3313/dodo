@@ -1,6 +1,5 @@
 ﻿-- ==============================
--- WorldMap 좌표 보강 모듈
--- Blizzard WorldMapCoordsPanel에 mapID + 소수 2자리 포맷 적용
+-- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local dodo = _G.dodo

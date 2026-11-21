@@ -1,7 +1,7 @@
 ﻿-- ==============================
 -- Inspired
 -- ==============================
--- dodo ResourceBar - Demon Hunter Soul Fragments Mode
+-- AyijeCDM (https://www.curseforge.com/wow/addons/ayijecdm)
 
 -- ==============================
 -- 설정 및 테이블

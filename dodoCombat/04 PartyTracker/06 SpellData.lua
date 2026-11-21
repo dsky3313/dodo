@@ -1,4 +1,14 @@
 -- ==============================
+-- Inspired
+-- ==============================
+-- KiraUI-Plugin (https://www.curseforge.com/wow/addons/kiraui-plugin)
+-- H3ndall Party Cds (https://www.curseforge.com/wow/addons/h3ndall-party-cds)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
+
+-- ==============================
 -- PartyTracker 주문 데이터 (원본: H3ndallPartyCds SpellData.lua ← KiraUI PartyCDs)
 -- ==============================
 -- dodo 는 입력 양식만 바꿈. 로드 후 ns.PTCData (spells/specs/...) 형태는 원본과 동일 → 엔진 그대로 사용.

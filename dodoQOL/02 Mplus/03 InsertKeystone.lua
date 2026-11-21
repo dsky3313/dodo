@@ -1,7 +1,7 @@
 ﻿-- ==============================
 -- Inspired
 -- ==============================
--- ExwindTools (ExTools.StreamerTools) — TryAutoInsertKeystone
+-- ExwindTools (https://www.curseforge.com/wow/addons/exwindtools)
 
 -- ==============================
 -- 설정 및 테이블

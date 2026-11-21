@@ -32,7 +32,7 @@ local PlaySoundFile = PlaySoundFile
 local ipairs = ipairs
 local pairs = pairs
 
-local POTION_READY_SOUND = "Interface\\AddOns\\dodo\\Media\\Sound\\PotionReady.mp3"
+local POTION_READY_SOUND = "Interface\\AddOns\\dodo\\Media\\Sound\\ReadyPotion.mp3"
 
 -- ==============================
 -- 기능 구현

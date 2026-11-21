@@ -1,4 +1,13 @@
 -- ==============================
+-- Inspired
+-- ==============================
+-- KiraUI-Plugin (https://www.curseforge.com/wow/addons/kiraui-plugin)
+-- H3ndall Party Cds (https://www.curseforge.com/wow/addons/h3ndall-party-cds)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
+-- ==============================
 -- PartyTracker 설정 (/dd 전투 > 파티 주문 추적 탭, 파티원 주요 기술은 /dd 유닛프레임 > 파티프레임 탭)
 -- ==============================
 -- 엔진 설정은 dodoDB.partyTracker.partyCDs (ns.PTCGetCfg) 에 저장됨.
@@ -35,7 +44,8 @@ dodo.PT_DEFAULTS = {
     partyInterruptsHeight = 20,
     partyInterruptsNameMode = "PLAYER",
     usePartyInterruptsTooltip = true,
-    enablePartyCC      = true,
+    usePartyInterruptsFixed = false,
+    enablePartyCC     = true,
     partyCCSize        = 36,
     partyCCSpacing     = 2,
     partyCCPerRow      = 8,
@@ -118,6 +128,7 @@ local function sync_interrupts()
     cfg.height = get("partyInterruptsHeight")
     cfg.nameMode = get("partyInterruptsNameMode")
     cfg.tooltip = get("usePartyInterruptsTooltip")
+    cfg.fixedOrder = get("usePartyInterruptsFixed")
     ns.IKApply()
     if dodo.CombatRefreshPreview then dodo.CombatRefreshPreview() end
 end
@@ -225,6 +236,9 @@ function dodo.PTBuildOptions(category)
     child(dodo.UI:SettingsCheckbox(category, "usePartyInterruptsTooltip", "툴팁 표시",
         "전투 중이 아닐 때 바에 마우스를 올리면 차단기 툴팁을 표시합니다.",
         D.usePartyInterruptsTooltip, sync_interrupts), ik_init, ik_on)
+    child(dodo.UI:SettingsCheckbox(category, "usePartyInterruptsFixed", "순서 고정",
+        "켜면 파티 순서대로 고정합니다. 끄면 쿨다운 상태에 따라 순서가 바뀝니다.",
+        D.usePartyInterruptsFixed, sync_interrupts), ik_init, ik_on)
 
     -- 군중제어
     local cc_init, cc_setting = dodo.UI:SettingsCheckbox(category, "enablePartyCC", "군중제어",

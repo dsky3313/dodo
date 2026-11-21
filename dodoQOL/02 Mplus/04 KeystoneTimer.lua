@@ -1,9 +1,4 @@
 ﻿-- ==============================
--- Inspired
--- ==============================
--- 블리자드 기본 M+ 타이머(ChallengeModeBlock) 리스킨
-
--- ==============================
 -- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global

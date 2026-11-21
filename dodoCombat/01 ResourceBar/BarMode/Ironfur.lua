@@ -1,7 +1,7 @@
 ﻿-- ==============================
 -- Inspired
 -- ==============================
--- dodo ResourceBar - Ironfur Buff Tracker Mode
+-- AyijeCDM (https://www.curseforge.com/wow/addons/ayijecdm)
 
 -- ==============================
 -- 설정 및 테이블

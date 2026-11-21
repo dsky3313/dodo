@@ -15,10 +15,9 @@
 01 ResourceBar/BarMode/Ironfur.lua
 01 ResourceBar/BarMode/SoulFragments.lua
 01 ResourceBar/BarMode/Duration.lua
-01 ResourceBar/BarMode/Power.lua
+01 ResourceBar/BarMode/SpecPower.lua
 01 ResourceBar/BarMode/Stack.lua
-01 ResourceBar/BarMode/Whirlwind.lua
-01 ResourceBar/Power.lua
+01 ResourceBar/ClassPower.lua
 01 ResourceBar/Tracking.lua
 02 Debuff/Debuff.xml
 02 Debuff/Debuff.lua

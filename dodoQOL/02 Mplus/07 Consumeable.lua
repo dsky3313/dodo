@@ -1,7 +1,7 @@
 -- ==============================
 -- Inspired
 -- ==============================
--- Method Raid Tools (RaidCheck)
+-- Method Raid Tools (https://www.curseforge.com/wow/addons/method-raid-tools)
 
 -- ==============================
 -- 설정 및 테이블

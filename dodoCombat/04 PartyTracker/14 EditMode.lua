@@ -1,4 +1,13 @@
 -- ==============================
+-- Inspired
+-- ==============================
+-- KiraUI-Plugin (https://www.curseforge.com/wow/addons/kiraui-plugin)
+-- H3ndall Party Cds (https://www.curseforge.com/wow/addons/h3ndall-party-cds)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
+-- ==============================
 -- PartyTracker 편집모드 연결 (LibEditMode)
 -- ==============================
 -- 공생기/차단기/군중제어 떠있는 프레임을 편집모드로 이동.

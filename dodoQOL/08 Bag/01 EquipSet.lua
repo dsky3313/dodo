@@ -1,4 +1,9 @@
 -- ==============================
+-- Inspired
+-- ==============================
+-- Baganator (https://www.curseforge.com/wow/addons/baganator)
+
+-- ==============================
 -- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global

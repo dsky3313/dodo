@@ -1,4 +1,13 @@
-local _, ns = ...
+-- ==============================
+-- Inspired
+-- ==============================
+-- KiraUI-Plugin (https://www.curseforge.com/wow/addons/kiraui-plugin)
+-- H3ndall Party Cds (https://www.curseforge.com/wow/addons/h3ndall-party-cds)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
+ocal _, ns = ...
 local _G = _G
 local UIParent, GetTime, C_Timer = UIParent, GetTime, C_Timer
 local IsInGroup, IsInRaid, UnitExists = IsInGroup, IsInRaid, UnitExists

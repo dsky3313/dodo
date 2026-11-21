@@ -1,7 +1,7 @@
 ﻿-- ==============================
 -- Inspired
 -- ==============================
--- dodo ResourceBar - Death Knight Rune Mode
+-- asPowerBar (https://www.curseforge.com/wow/addons/aspowerbar)
 
 -- ==============================
 -- 설정 및 테이블

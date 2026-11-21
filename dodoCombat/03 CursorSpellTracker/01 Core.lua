@@ -1,7 +1,7 @@
 ﻿-- ==============================
 -- Inspired
 -- ==============================
--- CursorSpellTracker 핵심 엔진(커서 추종 + 쿨다운 준비알림 + 버프 지속시간 표시) 단순 포팅
+-- CursorSpellTracker (https://www.curseforge.com/wow/addons/cursorspelltracker)
 
 -- ==============================
 -- 설정 및 테이블

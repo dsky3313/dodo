@@ -1,4 +1,12 @@
-﻿---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
+﻿-- ==============================
+-- Inspired
+-- ==============================
+-- Leatrix Plus (https://www.curseforge.com/wow/addons/leatrix-plus)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
+---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
 local dodo = _G.dodo
 dodoDB = dodoDB or {}
 

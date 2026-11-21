@@ -1,3 +1,6 @@
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 ---@diagnostic disable: lowercase-global, undefined-field, undefined-global
 local dodo = _G.dodo
 dodoDB = dodoDB or {}

@@ -1,3 +1,12 @@
+-- ==============================
+-- Inspired
+-- ==============================
+-- KiraUI-Plugin (https://www.curseforge.com/wow/addons/kiraui-plugin)
+-- H3ndall Party Cds (https://www.curseforge.com/wow/addons/h3ndall-party-cds)
+
+-- ==============================
+-- 설정 및 테이블
+-- ==============================
 local _, ns = ...
 local hooksecurefunc, C_Timer = ns.Probe('PartyCC', hooksecurefunc, C_Timer)
 local _G = _G

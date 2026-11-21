@@ -1,10 +1,4 @@
 ﻿-- ==============================
--- Inspired
--- ==============================
--- dodo ResourceBar Buff Tracker (Bar2) Module
--- ==============================
-
--- ==============================
 -- 설정 및 테이블
 -- ==============================
 ---@diagnostic disable: lowercase-global, param-type-mismatch, redundant-parameter, undefined-field, undefined-global
@@ -66,7 +60,7 @@ local bar2ClassConfig = {
             { barMode = "duration",         spellID = 107574,                                         color = Colors.Spec.WARRIOR[1] }
         },
         [2] = {
-            { barMode = "whirlwind",         spellID   = 12950,  maxStack   = 4, requiredSpell = 12950, color = Colors.Spec.WARRIOR[2] },
+            { barMode = "stack",             spellID   = 12950,  maxStack   = 4, requiredSpell = 12950, color = Colors.Spec.WARRIOR[2] },
             { barMode = "duration",          spellID   = 184361, excludedSpell = 12950, color = Colors.Spec.WARRIOR[2] },
         },
         [3] = { { barMode = "stack",         spellID   = 190456, maxStack   = 100, tickDuration = 12, color = Colors.Spec.WARRIOR[3] } },
@@ -128,7 +122,7 @@ function ResourceBar2Mixin:Update()
         
         local hasNormalBuffTracker = false
         for _, config in ipairs(currentSpecBuffs) do
-            if config.barMode == "duration" or config.barMode == "stack" or config.barMode == "ironfur" or config.barMode == "whirlwind" then
+            if config.barMode == "duration" or config.barMode == "stack" or config.barMode == "ironfur" then
                 hasNormalBuffTracker = true
                 break
             end
@@ -342,7 +336,7 @@ local function update_tracking_spec(englishClass, spec)
             local activeConfig = nil
             for _, config in ipairs(currentSpecBuffs) do
                 if config.barMode == "soulfragments" or config.barMode == "ironfur"
-                or config.barMode == "duration" or config.barMode == "whirlwind" then
+                or config.barMode == "duration" then
                     activeConfig = config
                     break
                 end

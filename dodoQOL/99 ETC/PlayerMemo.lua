@@ -1,7 +1,7 @@
 -- ==============================
 -- Inspired
 -- ==============================
--- GlobalIgnoreList (IceyPop)
+-- Global Ignore List and Chat Spam Filter (https://www.curseforge.com/wow/addons/global-ignore-list)
 
 -- ==============================
 -- 설정 및 테이블

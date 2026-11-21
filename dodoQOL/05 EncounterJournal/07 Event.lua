@@ -1,7 +1,7 @@
 -- ==============================
 -- Inspired
 -- ==============================
--- EXBoss DenOfNalorakk/DungeonCommon.lua
+-- EXBOSS (https://www.curseforge.com/wow/addons/exboss)
 
 -- ==============================
 -- 설정 및 테이블
